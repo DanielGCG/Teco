@@ -1,0 +1,73 @@
+<!-- navigation.ejs -->
+<div class="navigation d-flex align-items-center">
+    <!-- Botão Home -->
+    <a href="/" class="nav-btn home-btn" title="Início">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 3.293l6 6V15h-4v-4H6v4H2v-5.707l6-6zM7 2l-7 7v9h6v-5h2v5h6V9L7 2z"/>
+        </svg>
+    </a>
+
+    <!-- Botão voltar -->
+    <button class="nav-btn" onclick="window.history.back();" title="Voltar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+        </svg>
+    </button>
+
+    <!-- Botão avançar -->
+    <button class="nav-btn" onclick="window.history.forward();" title="Avançar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+        </svg>
+    </button>
+
+    <!-- Nome da página -->
+    <div class="page-title">
+        <div class="d-flex align-items-center">
+                <div class="me-2" style="font-size: 1rem;"><%= locals.icon %></div>
+                <div>
+                    <h2 class="mb-0" style="font-size: 1rem;">
+                        <span class="marca-texto-roxo"><%= locals.title %></span>
+                    </h2>
+                    <p class="text-muted mb-0" style="font-size: 0.7rem;"><%= locals.description %></p>
+                </div>
+            </div>
+        </div>
+</div>
+
+<style>
+.navigation {
+    padding-left: 1rem;
+    padding-top: 0.5rem;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+/* Botões minimalistas sem borda */
+.nav-btn {
+    background: none;
+    border: none;
+    padding: 0.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+}
+
+.nav-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.page-title {
+    margin-left: 0.5rem;
+    font-weight: 600;
+}
+</style>

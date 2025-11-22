@@ -1,0 +1,1259 @@
+<link rel="stylesheet" href="/styles/recebidas.css">
+<link rel="stylesheet" href="/styles/favoritas.css">
+<script src="/js/modal-cartinha.js"></script>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Loading -->
+            <div id="loading" class="loading-spinner">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Carregando favoritas...</span>
+                </div>
+            </div>
+
+            <!-- Container para as cartinhas favoritas -->
+            <div id="cartinhas-container" style="display: none;">    
+                <!-- Container das pilhas empilhadas -->
+                <div class="container-pilhas">
+                    <!-- As pilhas serão inseridas aqui -->
+                </div>
+            </div>
+            
+            <!-- Mensagem quando não há cartinhas favoritas -->
+            <div id="sem-cartinhas" class="sem-cartinhas" style="display: none;">
+                <div class="envelope-vazio">⭐</div>
+                <h4>Nenhuma cartinha favoritada</h4>
+                <p>Você ainda não tem cartinhas favoritas.<br>Quando receber cartinhas especiais, favorite-as para guardá-las aqui!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variáveis globais
+let cartinhasFavoritasData = [];
+
+// Variáveis de controle de estado para modais
+window.cartinhaDesfavoritada = false;
+window.cartinhaExcluida = false;
+
+// ==================== Carregar cartinhas favoritas ====================
+async function carregarCartinhasFavoritas() {
+    try {
+        const response = await fetch('/api/cartinhas/favoritas', {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro: ${response.status}`);
+        }
+
+        // Obter as cartinhas favoritas da API
+        const cartinhasFavoritas = await response.json();
+        
+        // Processar dados para o formato esperado pela interface
+        // A API retorna um formato diferente do que nosso frontend espera
+        const usuariosAgrupados = {};
+        
+        // Agrupar cartinhas por usuário/remetente
+        cartinhasFavoritas.forEach(cartinha => {
+            const userId = cartinha.remetente_id;
+            const username = cartinha.remetente_username;
+            const avatar = cartinha.remetente_avatar;
+            
+            // Se ainda não temos este usuário no objeto agrupado, criar entrada
+            if (!usuariosAgrupados[userId]) {
+                usuariosAgrupados[userId] = {
+                    userId: userId,
+                    username: username,
+                    avatar: avatar,
+                    cartinhas: []
+                };
+            }
+            
+            // Adicionar cartinha à lista do usuário correspondente
+            usuariosAgrupados[userId].cartinhas.push({
+                id: cartinha.id,
+                titulo: cartinha.titulo,
+                conteudo: cartinha.conteudo,
+                dataEnvio: cartinha.data_envio,
+                dataFavoritada: cartinha.data_favoritada,
+                lida: cartinha.lida || true // Assumimos que uma cartinha favoritada foi lida
+            });
+        });
+        
+        // Converter o objeto em array para uso na interface
+        cartinhasFavoritasData = Object.values(usuariosAgrupados);
+        renderizarCartinhasFavoritas();
+        
+    } catch (error) {
+        console.error('Erro ao carregar cartinhas favoritas:', error);
+        
+        // Dados simulados para demonstração em caso de erro
+        // Em produção, você pode querer mostrar uma mensagem de erro em vez disso
+        cartinhasFavoritasData = [
+            {
+                userId: 1,
+                username: '@joao123',
+                avatar: '/images/placeholder.png',
+                cartinhas: [
+                    {
+                        id: 1,
+                        titulo: 'Parabéns pelo aniversário! 🎉',
+                        conteudo: 'Oi querido amigo! Espero que seu dia especial seja repleto de alegria, sorrisos e momentos inesquecíveis. Você merece todas as coisas boas da vida!',
+                        dataEnvio: '2025-09-15T09:30:00Z',
+                        dataFavoritada: '2025-09-15T10:00:00Z',
+                        lida: true
+                    }
+                ]
+            }
+        ];
+        
+        mostrarFeedback('Erro ao carregar cartinhas favoritas. Usando dados de demonstração.', 'danger');
+        renderizarCartinhasFavoritas();
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
+
+// ==================== Renderizar cartinhas favoritas ====================
+function renderizarCartinhasFavoritas() {
+    const container = document.getElementById('cartinhas-container');
+    const semCartinhas = document.getElementById('sem-cartinhas');    
+
+    // Verificar se há cartinhas para exibir
+    if (!Array.isArray(cartinhasFavoritasData) || cartinhasFavoritasData.length === 0) {
+        container.style.display = 'none';
+        semCartinhas.style.display = 'block';
+        return;
+    }
+
+    // Filtrar usuários que têm pelo menos uma cartinha
+    const usuariosComCartinhasValidas = cartinhasFavoritasData.filter(
+        usuario => Array.isArray(usuario.cartinhas) && usuario.cartinhas.length > 0
+    );
+    
+    if (usuariosComCartinhasValidas.length === 0) {
+        container.style.display = 'none';
+        semCartinhas.style.display = 'block';
+        return;
+    }
+
+    // Agrupar cartinhas por usuário
+    const usuariosComCartinhas = usuariosComCartinhasValidas.map(usuario => {
+        return {
+            ...usuario,
+            cartinhas: usuario.cartinhas.sort((a, b) => {
+                // Ordenar por data de favoritada (mais recente primeiro)
+                return new Date(b.dataFavoritada || 0) - new Date(a.dataFavoritada || 0);
+            })
+        };
+    });
+
+    // Ordenar usuários por data da cartinha favoritada mais recente
+    usuariosComCartinhas.sort((a, b) => {
+        const dataA = new Date(a.cartinhas[0]?.dataFavoritada || 0);
+        const dataB = new Date(b.cartinhas[0]?.dataFavoritada || 0);
+        return dataB - dataA;
+    });
+
+    // Armazenar dados processados globalmente para uso posterior
+    window.usuariosProcessados = usuariosComCartinhas;
+    
+    // Renderizar apenas estrutura básica das pilhas (lazy loading)
+    const containerPilhas = container.querySelector('.container-pilhas');
+    let html = '';
+
+    usuariosComCartinhas.forEach((usuario, usuarioIndex) => {
+        const totalCartinhas = usuario.cartinhas.length;
+        const cartinhaMaisRecente = usuario.cartinhas[0];
+        
+        html += `
+            <div class="pilha-cartas" 
+                 data-usuario-index="${usuarioIndex}" 
+                 data-carregada="false">
+                
+                <!-- Contador de cartinhas favoritas na pilha -->
+                <div class="contador-pilha">
+                    ${totalCartinhas}
+                </div>
+                
+                <!-- Instruções para a pilha ativa -->
+                <div class="instrucoes-pilha">
+                    <span>👆 Clique para ler • ⬅️➡️ Trocar carta • ⬆️⬇️ Trocar usuário</span>
+                </div>
+                
+                <!-- As cartas serão carregadas aqui sob demanda -->
+            </div>
+        `;
+    });
+
+    containerPilhas.innerHTML = html;
+    container.style.display = 'block';
+    semCartinhas.style.display = 'none';
+    
+    // Definir pilha ativa global
+    window.pilhaAtivaIndex = 0;
+    window.totalPilhas = usuariosComCartinhas.length;
+    
+    // Aplicar classes de posicionamento às pilhas
+    const pilhas = Array.from(document.querySelectorAll('.pilha-cartas'));
+    pilhas.forEach((pilha, index) => {
+        if (index === 0) {
+            pilha.classList.add('ativa');
+        } else if (index === 1) {
+            pilha.classList.add('segunda');
+        } else if (index === 2) {
+            pilha.classList.add('terceira');
+        } else if (index === 3) {
+            pilha.classList.add('quarta');
+        } else {
+            pilha.classList.add('fundo');
+        }
+    });
+    
+    // Renderizar apenas as pilhas visíveis inicialmente
+    renderizarPilhasVisiveis();
+}
+
+// ==================== Funções de controle das pilhas ====================
+function trocarPilhaAnterior() {
+    if (window.totalPilhas <= 1) return;
+    
+    const novoIndex = window.pilhaAtivaIndex > 0 ? window.pilhaAtivaIndex - 1 : window.totalPilhas - 1;
+    trocarPilhaAtiva(novoIndex);
+}
+
+function trocarProximaPilha() {
+    if (window.totalPilhas <= 1) return;
+    
+    const novoIndex = window.pilhaAtivaIndex < window.totalPilhas - 1 ? window.pilhaAtivaIndex + 1 : 0;
+    trocarPilhaAtiva(novoIndex);
+}
+
+function trocarPilhaAtiva(novoIndex) {
+    if (novoIndex === window.pilhaAtivaIndex) return;
+    
+    const pilhas = Array.from(document.querySelectorAll('.pilha-cartas'));
+    
+    // Remover classes antigas
+    pilhas.forEach(pilha => {
+        pilha.classList.remove('ativa', 'segunda', 'terceira', 'quarta', 'fundo');
+    });
+    
+    // Aplicar novas posições
+    pilhas.forEach((pilha, index) => {
+        const offset = (index - novoIndex + pilhas.length) % pilhas.length;
+        
+        if (offset === 0) {
+            pilha.classList.add('ativa');
+        } else if (offset === 1) {
+            pilha.classList.add('segunda');
+        } else if (offset === 2) {
+            pilha.classList.add('terceira');
+        } else if (offset === 3) {
+            pilha.classList.add('quarta');
+        } else {
+            pilha.classList.add('fundo');
+        }
+    });
+    
+    window.pilhaAtivaIndex = novoIndex;
+    
+    // Renderizar pilhas visíveis após a troca
+    renderizarPilhasVisiveis();
+    
+    // Descarregar pilhas que não estão mais visíveis para economizar memória
+    setTimeout(descarregarPilhasInvisiveis, 500);
+}
+
+function ciclarCartasPilhaAtiva() {
+    const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
+    if (!pilhaAtiva) return;
+
+    const cartas = Array.from(pilhaAtiva.querySelectorAll('.carta-empilhada'));
+    if (cartas.length <= 1) return;
+
+    // Obter dados do usuário e da pilha
+    const usuarioIndex = parseInt(pilhaAtiva.dataset.usuarioIndex);
+    const usuario = window.usuariosProcessados[usuarioIndex];
+    if (!usuario) return;
+
+    // Inicializar ou incrementar o índice de ciclo para este usuário
+    if (!usuario.indiceCiclo) usuario.indiceCiclo = 0;
+    usuario.indiceCiclo = (usuario.indiceCiclo + 1) % usuario.cartinhas.length;
+
+    // Ciclar array de cartas: mover a primeira para o final
+    usuario.cartinhas.push(usuario.cartinhas.shift());
+
+    // Remover todas as cartas do DOM
+    cartas.forEach(carta => carta.remove());
+
+    // Renderizar as 3 cartas corretas
+    for (let i = 0; i < Math.min(3, usuario.cartinhas.length); i++) {
+        const cartinha = usuario.cartinhas[i];
+        let posicaoClasse = '';
+        let zIndex = 10;
+        
+        if (i === 0) {
+            posicaoClasse = 'topo';
+            zIndex = 10;
+        } else if (i === 1) {
+            posicaoClasse = 'meio';
+            zIndex = 5;
+        } else {
+            posicaoClasse = 'fundo';
+            zIndex = 1;
+        }
+        
+        const novaCartaHTML = `
+            <div class="carta-empilhada ${posicaoClasse}" 
+                 id="carta-${cartinha.id}" 
+                 style="z-index: ${zIndex};"
+                 onclick="abrirCartinhaFavorita(${cartinha.id})">
+                
+                <div class="carta-envelope">
+                    <div class="envelope-flap"></div>
+                    <div class="selo favorita">⭐</div>
+                    
+                    <div class="envelope-header">
+                        <div class="remetente-info">
+                            <img src="${usuario.avatar}" alt="${usuario.username}" class="avatar-carta">
+                            <div>
+                                <h6 class="mb-1">${usuario.username}</h6>
+                                <small class="text-muted">Favoritada ${formatarData(cartinha.dataFavoritada)}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cartinha-papel">
+                        <div class="papel-linhas">
+                            <h5 class="titulo-carta">${cartinha.titulo}</h5>
+                            <p class="conteudo-carta">${cortarTexto(cartinha.conteudo, 120)}</p>
+                            <div class="data-carta">${formatarData(cartinha.dataEnvio)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="acoes-carta">
+                    <button class="btn-acao btn-jogar-esquerda" onclick="event.stopPropagation(); jogarCartaEsquerda(${cartinha.id})">
+                        ⬅️
+                    </button>
+                    <button class="btn-acao btn-ler" onclick="event.stopPropagation(); abrirCartinhaFavorita(${cartinha.id})">
+                        👁️
+                    </button>
+                    <button class="btn-acao btn-jogar-direita" onclick="event.stopPropagation(); jogarCartaDireita(${cartinha.id})">
+                        ➡️
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        pilhaAtiva.insertAdjacentHTML('beforeend', novaCartaHTML);
+    }
+}
+
+function lerCartaAtiva() {
+    const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
+    if (!pilhaAtiva) return;
+    
+    const cartaTopo = pilhaAtiva.querySelector('.carta-empilhada.topo');
+    if (cartaTopo) {
+        const cartinhaId = cartaTopo.id.replace('carta-', '');
+        abrirCartinhaFavorita(parseInt(cartinhaId));
+    }
+}
+
+// ==================== Funções de manipulação de cartas ====================
+function jogarCartaDireita(cartinhaId) {
+    const carta = document.getElementById(`carta-${cartinhaId}`);
+    const pilha = carta.closest('.pilha-cartas');
+    
+    // Aplicar animação de jogar para direita
+    carta.classList.add('jogada-direita');
+    
+    // Após a animação, reorganizar a pilha
+    setTimeout(() => {
+        reorganizarPilha(pilha, cartinhaId);
+    }, 400);
+}
+
+function jogarCartaEsquerda(cartinhaId) {
+    const carta = document.getElementById(`carta-${cartinhaId}`);
+    const pilha = carta.closest('.pilha-cartas');
+    
+    // Aplicar animação de jogar para esquerda
+    carta.classList.add('jogada-esquerda');
+    
+    // Após a animação, reorganizar a pilha
+    setTimeout(() => {
+        reorganizarPilha(pilha, cartinhaId);
+    }, 400);
+}
+
+function reorganizarPilha(pilha, cartinhaJogada) {
+    const todasCartas = Array.from(pilha.querySelectorAll('.carta-empilhada'));
+    const cartaJogadaElement = document.getElementById(`carta-${cartinhaJogada}`);
+    const cartasRestantes = todasCartas.filter(carta => carta.id !== `carta-${cartinhaJogada}`);
+    
+    // Reorganizar posições das cartas restantes
+    cartasRestantes.forEach((carta, index) => {
+        carta.classList.remove('topo', 'meio', 'fundo');
+        
+        if (index === 0) {
+            carta.classList.add('topo');
+        } else if (index === 1) {
+            carta.classList.add('meio');
+        } else {
+            carta.classList.add('fundo');
+        }
+        
+        carta.style.zIndex = 10 - index;
+    });
+    
+    // Após 0.5 segundo, mover a carta jogada para o final da pilha
+    setTimeout(() => {
+        cartaJogadaElement.classList.remove('jogada-direita', 'jogada-esquerda');
+        cartaJogadaElement.classList.add('fundo');
+        cartaJogadaElement.style.zIndex = 1;
+        
+        // Reposicionar no DOM
+        pilha.appendChild(cartaJogadaElement);
+        
+        // Reorganizar dados do usuário também
+        const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
+        const usuario = window.usuariosProcessados[usuarioIndex];
+        if (usuario) {
+            const cartinhaIndex = usuario.cartinhas.findIndex(c => c.id == cartinhaJogada);
+            if (cartinhaIndex !== -1) {
+                const cartinha = usuario.cartinhas.splice(cartinhaIndex, 1)[0];
+                usuario.cartinhas.push(cartinha);
+            }
+        }
+    }, 500);
+}
+
+// ==================== Utilitários ====================
+function formatarData(dataISO) {
+    const data = new Date(dataISO);
+    const agora = new Date();
+    const diffMs = agora - data;
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias === 0) {
+        return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
+    } else if (diffDias === 1) {
+        return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
+    } else if (diffDias < 7) {
+        return `${diffDias} dias atrás`;
+    } else {
+        return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear()}`;
+    }
+}
+
+function cortarTexto(texto, limite) {
+    if (texto.length <= limite) return texto;
+    return texto.substring(0, limite) + '...';
+}
+
+// ==================== Abrir cartinha favorita no modal ====================
+function abrirCartinhaFavorita(cartinhaId) {
+    try {
+        const cartinha = encontrarCartinhaFavorita(cartinhaId);
+        if (!cartinha) {
+            mostrarFeedback(`Cartinha com ID ${cartinhaId} não encontrada.`, 'danger');
+            return;
+        }
+    
+        const usuario = encontrarUsuarioPorCartinhaFavorita(cartinhaId);
+        if (!usuario) {
+            mostrarFeedback('Não foi possível encontrar informações do remetente.', 'danger');
+            return;
+        }
+        
+        // Verificar se a carta está no DOM e carregá-la se necessário
+        const cartaElement = document.getElementById(`carta-${cartinhaId}`);
+        if (!cartaElement) {
+            carregarCartaEspecifica(usuario.userId, cartinhaId);
+        }
+        
+        const modalContent = document.getElementById('modal-content');
+        modalContent.innerHTML = `
+        <div class="mb-3">
+            <!-- Cabeçalho da carta -->
+            <div class="d-flex align-items-center mb-3 p-2" style="background: #f8f9fa; border-radius: 8px; border-left: 4px solid #f1c40f;">
+                <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
+                <div>
+                    <strong style="font-size: 1rem; color: #2d3436;">${usuario.username}</strong>
+                    <div>
+                        <small class="text-muted">
+                            📅 ${formatarData(cartinha.dataEnvio)} • 
+                            ⭐ Favoritada em ${formatarData(cartinha.dataFavoritada)}
+                        </small>
+                    </div>
+                </div>
+                <div class="ms-auto">
+                    <span class="badge" style="background: #f1c40f; color: #2d3436; font-size: 0.75rem;">⭐ Favorita</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Papel da carta com linhas -->
+        <div style="background: #fefefe; padding: 1.5rem; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); position: relative; background-image: repeating-linear-gradient(transparent, transparent 1.4rem, rgba(0,0,0,0.03) 1.4rem, rgba(0,0,0,0.03) 1.5rem);">
+            <!-- Linha lateral do papel -->
+            <div style="position: absolute; left: 1.5rem; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #e9ecef 0%, #f1c40f 50%, #e9ecef 100%);"></div>
+            
+            <!-- Título da carta -->
+            <h3 style="font-family: 'Montserrat', sans-serif; color: #2d3436; margin-bottom: 1rem; padding-left: 1rem; font-weight: 600; font-size: 1.1rem;">
+                ${cartinha.titulo}
+            </h3>
+            
+            <!-- Conteúdo da carta -->
+            <div style="font-family: 'Montserrat', sans-serif; font-size: 0.95rem; line-height: 1.6; color: #636e72; padding-left: 1rem; white-space: pre-wrap;">
+                ${cartinha.conteudo}
+            </div>
+            
+            <!-- Assinatura -->
+            <div style="text-align: right; margin-top: 1.5rem; padding-right: 1rem; font-style: italic; color: #74b9ff; font-size: 0.9rem;">
+                Com carinho,<br>
+                <strong>${usuario.username}</strong>
+            </div>
+        </div>
+        `;
+    
+        // Configurar botão de responder
+        const responderBtn = document.getElementById('responder-btn');
+        responderBtn.onclick = () => responderCartinha(usuario.userId, usuario.username);
+        
+        // Configurar botão de excluir
+        const excluirBtn = document.getElementById('excluir-btn');
+        excluirBtn.onclick = () => confirmarExclusaoCartinha(cartinhaId);
+    
+        // Configurar botão de desfavoritar
+        const desfavoritarBtn = document.getElementById('desfavoritar-btn');
+        desfavoritarBtn.onclick = () => confirmarDesfavoritarCartinha(cartinhaId);
+    
+        // Abrir modal
+        const modal = new bootstrap.Modal(document.getElementById('cartinhaModal'));
+        modal.show();
+        
+        // Adicionar event listener para atalhos de teclado no modal
+        document.addEventListener('keydown', handleModalKeydown);
+        
+        // Adicionar event listener para limpeza quando o modal for fechado
+        const modalElement = document.getElementById('cartinhaModal');
+        modalElement.addEventListener('hidden.bs.modal', function limpezaModal() {
+            // Garantir limpeza completa
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+            
+            // Remover os listeners para evitar acúmulo
+            document.removeEventListener('keydown', handleModalKeydown);
+            modalElement.removeEventListener('hidden.bs.modal', limpezaModal);
+        });
+    } catch (error) {
+        console.error('Erro ao abrir cartinha favorita:', error);
+        mostrarFeedback('Ocorreu um erro ao abrir a cartinha.', 'danger');
+    }
+}
+
+// Função para tratar atalhos de teclado no modal
+function handleModalKeydown(e) {
+    // Verificar se há um modal aberto
+    const modalAberto = document.querySelector('.modal.show');
+    if (!modalAberto) return;
+    
+    // Tecla 'D' para desfavoritar
+    if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        const desfavoritarBtn = document.getElementById('desfavoritar-btn');
+        if (desfavoritarBtn) desfavoritarBtn.click();
+    }
+    
+    // Tecla 'R' para responder
+    if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        const responderBtn = document.getElementById('responder-btn');
+        if (responderBtn) responderBtn.click();
+    }
+    
+    // Tecla 'X' ou 'Delete' para excluir
+    if (e.key === 'x' || e.key === 'X' || e.key === 'Delete') {
+        e.preventDefault();
+        const excluirBtn = document.getElementById('excluir-btn');
+        if (excluirBtn) excluirBtn.click();
+    }
+}
+
+// ==================== Funções auxiliares ====================
+function encontrarCartinhaFavorita(cartinhaId) {
+    if (!Array.isArray(cartinhasFavoritasData)) {
+        console.warn('cartinhasFavoritasData não é um array válido');
+        return null;
+    }
+    
+    for (const usuario of cartinhasFavoritasData) {
+        if (!Array.isArray(usuario.cartinhas)) {
+            console.warn(`Usuário ${usuario.username} não tem um array válido de cartinhas`);
+            continue;
+        }
+        
+        const cartinha = usuario.cartinhas.find(c => c && c.id == cartinhaId);
+        if (cartinha) return cartinha;
+    }
+    
+    console.warn(`Cartinha com ID ${cartinhaId} não encontrada`);
+    return null;
+}
+
+function encontrarUsuarioPorCartinhaFavorita(cartinhaId) {
+    if (!Array.isArray(cartinhasFavoritasData)) {
+        console.warn('cartinhasFavoritasData não é um array válido');
+        return null;
+    }
+    
+    const usuario = cartinhasFavoritasData.find(usuario => 
+        Array.isArray(usuario.cartinhas) && 
+        usuario.cartinhas.some(cartinha => cartinha && cartinha.id == cartinhaId)
+    );
+    
+    if (!usuario) {
+        console.warn(`Usuário para cartinha com ID ${cartinhaId} não encontrado`);
+    }
+    
+    return usuario;
+}
+
+async function desfavoritarCartinha(cartinhaId) {
+    try {
+        window.cartinhaDesfavoritada = false;
+        
+        // Desabilitar o botão de confirmação se existir
+        const confirmBtn = document.getElementById('confirmDesfavoritarBtn');
+        let originalText = "";
+        if (confirmBtn) {
+            originalText = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Removendo...`;
+        }
+        
+        // Usar o endpoint toggle-favorito conforme a documentação da API
+        const response = await fetch(`/api/cartinhas/${cartinhaId}/toggle-favorito`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.favoritada === false) {
+            // Cartinha foi desfavoritada com sucesso
+            window.cartinhaDesfavoritada = true;
+            
+            // Fechar modal de confirmação se existir
+            const confirmationModal = document.getElementById('confirmDesfavoritarModal');
+            if (confirmationModal) {
+                const bsModal = bootstrap.Modal.getInstance(confirmationModal);
+                if (bsModal) bsModal.hide();
+            }
+            
+            // Fechar modal da cartinha com limpeza forçada
+            fecharModalCartinha();
+    
+            // Remover cartinha da interface
+            const cartaElement = document.getElementById(`carta-${cartinhaId}`);
+            if (cartaElement) {
+                cartaElement.remove();
+            }
+    
+            // Atualizar dados locais
+            cartinhasFavoritasData.forEach(usuario => {
+                usuario.cartinhas = usuario.cartinhas.filter(c => c.id != cartinhaId);
+            });
+            
+            // Remover usuários que não têm mais cartinhas
+            cartinhasFavoritasData = cartinhasFavoritasData.filter(usuario => usuario.cartinhas.length > 0);
+    
+            // Re-renderizar se necessário
+            if (cartinhasFavoritasData.length === 0) {
+                const container = document.getElementById('cartinhas-container');
+                const semCartinhas = document.getElementById('sem-cartinhas');
+                container.style.display = 'none';
+                semCartinhas.style.display = 'block';
+            } else {
+                // Recarregar a página para atualizar as pilhas
+                renderizarCartinhasFavoritas();
+            }
+    
+            // Mostrar feedback
+            mostrarFeedback(result.message || '💔 Cartinha removida das favoritas', 'warning');
+        } else {
+            // Isso não deveria acontecer aqui, mas apenas por segurança
+            mostrarFeedback('Estado inesperado: a cartinha ainda está favoritada', 'warning');
+            fecharModalCartinha();
+        }
+        
+    } catch (error) {
+        console.error('Erro ao desfavoritar cartinha:', error);
+        mostrarFeedback('❌ Erro ao desfavoritar cartinha', 'danger');
+    }
+}
+
+function responderCartinha(userId, username) {
+    // Fechar modal com limpeza forçada
+    fecharModalCartinha();
+    
+    // Redirecionar para a tela de escrever cartinha com parâmetros
+    window.location.href = `/cartinhas/escrever?para=${userId}&nome=${encodeURIComponent(username)}`;
+}
+
+// ==================== Funções de confirmação e exclusão ====================
+
+// Confirmar desfavoritar uma cartinha (com aviso de possível exclusão)
+function confirmarDesfavoritarCartinha(cartinhaId) {
+    // Fechar o modal da carta
+    const cartinhaModal = bootstrap.Modal.getInstance(document.getElementById('cartinhaModal'));
+    cartinhaModal.hide();
+    
+    // Verificar a idade da cartinha para mostrar aviso adequado
+    const cartinha = encontrarCartinhaFavorita(cartinhaId);
+    const dataEnvio = cartinha ? new Date(cartinha.dataEnvio) : null;
+    const agora = new Date();
+    const diffMs = agora - dataEnvio;
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const riscoExclusao = diffDias >= 3; // Cartinhas com mais de 3 dias podem ser excluídas
+    
+    // Criar modal de confirmação
+    let confirmationModal = document.getElementById('confirmDesfavoritarModal');
+    
+    // Se o modal ainda não existe, criá-lo
+    if (!confirmationModal) {
+        const modalHtml = `
+            <div class="modal fade" id="confirmDesfavoritarModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header ${riscoExclusao ? 'bg-danger' : 'bg-warning'} text-white">
+                            <h5 class="modal-title">${riscoExclusao ? '⚠️ Atenção: Risco de exclusão' : '💔 Confirmar ação'}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Tem certeza que deseja <strong>remover esta cartinha dos favoritos</strong>?</p>
+                            
+                            ${riscoExclusao ? `
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>Esta cartinha tem mais de 3 dias!</strong><br>
+                                Se não estiver marcada como favorita, ela poderá ser excluída 
+                                automaticamente do sistema durante a próxima limpeza.
+                            </div>
+                            ` : ''}
+                            
+                            <p class="mb-0 text-muted fst-italic">
+                                <small>Se essa cartinha tiver mais que 30 dias de vida ela pode ser excluída se desfavoritada.</small>
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn ${riscoExclusao ? 'btn-danger' : 'btn-warning'}" id="confirmDesfavoritarBtn">
+                                ${riscoExclusao ? 'Remover dos favoritos (risco de exclusão)' : 'Remover dos favoritos'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        confirmationModal = document.getElementById('confirmDesfavoritarModal');
+    }
+    
+    // Configurar o botão de confirmar desfavoritar
+    const confirmBtn = confirmationModal.querySelector('#confirmDesfavoritarBtn');
+    confirmBtn.onclick = () => {
+        // Fechar modal de confirmação
+        const confirmModal = bootstrap.Modal.getInstance(confirmationModal);
+        confirmModal.hide();
+        
+        // Executar a desfavoritação
+        desfavoritarCartinha(cartinhaId);
+    };
+    
+    // Mostrar o modal de confirmação
+    const modal = new bootstrap.Modal(confirmationModal);
+    modal.show();
+    
+    // Quando o modal de confirmação for fechado sem confirmação, reabrir o modal da cartinha
+    confirmationModal.addEventListener('hidden.bs.modal', function reopen() {
+        confirmationModal.removeEventListener('hidden.bs.modal', reopen);
+        if (!window.cartinhaDesfavoritada) {
+            // Reabrir o modal da cartinha apenas se não foi desfavoritada
+            setTimeout(() => {
+                const cartinha = encontrarCartinhaFavorita(cartinhaId);
+                if (cartinha) abrirCartinhaFavorita(cartinhaId);
+            }, 100);
+        }
+    });
+}
+
+// Confirmar exclusão permanente de uma cartinha
+function confirmarExclusaoCartinha(cartinhaId) {
+    // Fechar o modal da carta
+    const cartinhaModal = bootstrap.Modal.getInstance(document.getElementById('cartinhaModal'));
+    cartinhaModal.hide();
+    
+    // Criar modal de confirmação
+    let confirmationModal = document.getElementById('confirmExclusaoModal');
+    
+    // Se o modal ainda não existe, criá-lo
+    if (!confirmationModal) {
+        const modalHtml = `
+            <div class="modal fade" id="confirmExclusaoModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">⚠️ Confirmar exclusão permanente</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Tem certeza que deseja <strong>excluir permanentemente</strong> esta cartinha?</p>
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>Esta ação não pode ser desfeita!</strong><br>
+                                A cartinha será permanentemente removida e não poderá ser recuperada.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-danger" id="confirmExcluirBtn">
+                                Excluir permanentemente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        confirmationModal = document.getElementById('confirmExclusaoModal');
+    }
+    
+    // Configurar o botão de confirmar exclusão
+    const confirmBtn = confirmationModal.querySelector('#confirmExcluirBtn');
+    confirmBtn.onclick = () => excluirCartinha(cartinhaId);
+    
+    // Mostrar o modal de confirmação
+    const modal = new bootstrap.Modal(confirmationModal);
+    modal.show();
+    
+    // Quando o modal de confirmação for fechado sem confirmação, reabrir o modal da cartinha
+    confirmationModal.addEventListener('hidden.bs.modal', function reopen() {
+        confirmationModal.removeEventListener('hidden.bs.modal', reopen);
+        if (!window.cartinhaExcluida) {
+            // Reabrir o modal da cartinha apenas se não foi excluída
+            setTimeout(() => {
+                const cartinha = encontrarCartinhaFavorita(cartinhaId);
+                if (cartinha) abrirCartinhaFavorita(cartinhaId);
+            }, 100);
+        }
+    });
+}
+
+// Função para excluir a cartinha via API
+async function excluirCartinha(cartinhaId) {
+    try {
+        window.cartinhaExcluida = false;
+        
+        // Desabilitar o botão de confirmação e mostrar indicador de carregamento
+        const confirmBtn = document.getElementById('confirmExcluirBtn');
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Excluindo...`;
+        
+        // Chamada à API para excluir a cartinha
+        const response = await fetch(`/api/cartinhas/${cartinhaId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        // Processar resposta
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Marcar como excluída para evitar reabrir o modal
+            window.cartinhaExcluida = true;
+            
+            // Fechar o modal de confirmação
+            const confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmExclusaoModal'));
+            confirmationModal.hide();
+            
+            // Remover a cartinha dos dados locais
+            cartinhasFavoritasData.forEach(usuario => {
+                usuario.cartinhas = usuario.cartinhas.filter(c => c.id != cartinhaId);
+            });
+            
+            // Remover usuários que não têm mais cartinhas
+            cartinhasFavoritasData = cartinhasFavoritasData.filter(usuario => usuario.cartinhas.length > 0);
+            
+            // Remover o elemento da cartinha no DOM
+            const cartaElement = document.getElementById(`carta-${cartinhaId}`);
+            if (cartaElement) {
+                cartaElement.remove();
+            }
+            
+            // Re-renderizar se necessário
+            if (cartinhasFavoritasData.length === 0) {
+                const container = document.getElementById('cartinhas-container');
+                const semCartinhas = document.getElementById('sem-cartinhas');
+                container.style.display = 'none';
+                semCartinhas.style.display = 'block';
+            } else {
+                // Recarregar a página para atualizar as pilhas
+                renderizarCartinhasFavoritas();
+            }
+            
+            // Mostrar feedback
+            mostrarFeedback(result.message || "Cartinha excluída com sucesso", "success");
+        } else {
+            // Processar erro
+            let errorMessage = "Erro ao excluir cartinha";
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                console.error("Erro ao processar resposta de erro:", e);
+            }
+            
+            // Reabilitar o botão
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+            
+            // Mostrar mensagem de erro
+            mostrarFeedback(errorMessage, "danger");
+        }
+    } catch (error) {
+        console.error('Erro ao excluir cartinha:', error);
+        
+        // Reabilitar botão de confirmação
+        const confirmBtn = document.getElementById('confirmExcluirBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = "Excluir permanentemente";
+        }
+        
+        // Mostrar erro
+        mostrarFeedback("Erro ao excluir cartinha. Tente novamente.", "danger");
+    }
+}
+
+// ==================== Função para fechar modal com limpeza completa ====================
+function fecharModalCartinha() {
+    const modalElement = document.getElementById('cartinhaModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Forçar limpeza do backdrop após um pequeno delay
+    setTimeout(() => {
+        // Remover qualquer backdrop que possa ter ficado
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Limpar classes do body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Garantir que o modal está fechado
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        modalElement.setAttribute('aria-hidden', 'true');
+        modalElement.removeAttribute('aria-modal');
+    }, 300);
+}
+
+function mostrarFeedback(mensagem, tipo = 'success') {
+    // Verificar se o elemento container já existe
+    let container = document.querySelector('.feedback-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'feedback-container';
+        container.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;';
+        document.body.appendChild(container);
+    }
+
+    // Criar elemento de toast
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${tipo} border-0 mb-2`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${mensagem}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Inicializar toast
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 3000
+    });
+    bsToast.show();
+    
+    // Remover o toast depois de fechado
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// ==================== Funções de carregamento sob demanda ====================
+function renderizarPilhasVisiveis() {
+    const pilhasVisiveis = document.querySelectorAll('.pilha-cartas.ativa, .pilha-cartas.segunda, .pilha-cartas.terceira');
+    
+    pilhasVisiveis.forEach((pilha, index) => {
+        if (pilha.dataset.carregada === 'false') {
+            const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
+            carregarCartasParaPilha(pilha, usuarioIndex);
+        }
+    });
+}
+
+function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
+    const usuario = window.usuariosProcessados[usuarioIndex];
+    if (!usuario) {
+        return;
+    }
+    
+    // Inicializar o índice de ciclo se não existir
+    if (!usuario.indiceCiclo) usuario.indiceCiclo = 0;
+    
+    const cartasDoUsuario = usuario.cartinhas;
+    const totalCartas = cartasDoUsuario.length;
+    let html = '';
+    
+    // Renderizar apenas as primeiras 3 cartas (topo, meio, fundo)
+    const cartasParaRenderizar = cartasDoUsuario.slice(0, Math.min(3, totalCartas));
+    
+    cartasParaRenderizar.forEach((cartinha, index) => {
+        let posicaoClasse = '';
+        let zIndex = 10;
+        
+        if (index === 0) {
+            posicaoClasse = 'topo';
+            zIndex = 10;
+        } else if (index === 1) {
+            posicaoClasse = 'meio';
+            zIndex = 5;
+        } else {
+            posicaoClasse = 'fundo';
+            zIndex = 1;
+        }
+        
+        html += `
+            <div class="carta-empilhada ${posicaoClasse}" 
+                 id="carta-${cartinha.id}" 
+                 style="z-index: ${zIndex};"
+                 onclick="abrirCartinhaFavorita(${cartinha.id})">
+                
+                <div class="carta-envelope">
+                    <div class="envelope-flap"></div>
+                    <div class="selo favorita">⭐</div>
+                    
+                    <div class="envelope-header">
+                        <div class="remetente-info">
+                            <img src="${usuario.avatar}" alt="${usuario.username}" class="avatar-carta">
+                            <div>
+                                <h6 class="mb-1">${usuario.username}</h6>
+                                <small class="text-muted">Favoritada ${formatarData(cartinha.dataFavoritada)}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cartinha-papel">
+                        <div class="papel-linhas">
+                            <h5 class="titulo-carta">${cartinha.titulo}</h5>
+                            <p class="conteudo-carta">${cortarTexto(cartinha.conteudo, 120)}</p>
+                            <div class="data-carta">${formatarData(cartinha.dataEnvio)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="acoes-carta">
+                    <button class="btn-acao btn-jogar-esquerda" onclick="event.stopPropagation(); jogarCartaEsquerda(${cartinha.id})">
+                        ⬅️
+                    </button>
+                    <button class="btn-acao btn-ler" onclick="event.stopPropagation(); abrirCartinhaFavorita(${cartinha.id})">
+                        👁️
+                    </button>
+                    <button class="btn-acao btn-jogar-direita" onclick="event.stopPropagation(); jogarCartaDireita(${cartinha.id})">
+                        ➡️
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    pilhaElement.insertAdjacentHTML('beforeend', html);
+    
+    // Marcar pilha como carregada
+    pilhaElement.dataset.carregada = 'true';
+    
+    // Adicionar evento de clique na carta do topo para abrir
+    const cartaTopo = pilhaElement.querySelector('.carta-empilhada.topo');
+    if (cartaTopo) {
+        cartaTopo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cartinhaId = cartaTopo.id.replace('carta-', '');
+            abrirCartinhaFavorita(parseInt(cartinhaId));
+        });
+    }
+}
+
+function descarregarPilhasInvisiveis() {
+    const pilhasNaoVisiveis = document.querySelectorAll('.pilha-cartas:not(.ativa):not(.segunda):not(.terceira):not(.quarta)');
+    
+    pilhasNaoVisiveis.forEach(pilha => {
+        pilha.innerHTML = '';
+        pilha.dataset.carregada = 'false';
+    });
+}
+
+function carregarCartaEspecifica(usuarioId, cartinhaId) {
+    const usuario = window.usuariosProcessados.find(u => u.userId === usuarioId);
+    if (!usuario) return null;
+    
+    const cartinha = usuario.cartinhas.find(c => c.id === cartinhaId);
+    if (!cartinha) return null;
+    
+    // Já existe esta carta no DOM?
+    if (document.getElementById(`carta-${cartinhaId}`)) {
+        return cartinha;
+    }
+    
+    // Encontrar a pilha do usuário
+    const pilhaUsuario = document.querySelector(`.pilha-cartas[data-usuario-index="${window.usuariosProcessados.indexOf(usuario)}"]`);
+    if (!pilhaUsuario) return null;
+    
+    // Carregar todas as cartas da pilha se ainda não estiver carregada
+    if (pilhaUsuario.dataset.carregada === 'false') {
+        carregarCartasParaPilha(pilhaUsuario, window.usuariosProcessados.indexOf(usuario));
+    }
+    
+    return cartinha;
+}
+
+// ==================== Inicialização ====================
+document.addEventListener('DOMContentLoaded', () => {
+    // Carregar cartinhas favoritas
+    carregarCartinhasFavoritas();
+    
+    // Eventos de teclado para navegação
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        
+        // Verificar se há um modal aberto
+        const modalAberto = document.querySelector('.modal.show');
+        if (modalAberto) {
+            // Teclas de atalho para o modal
+            if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                const responderBtn = document.getElementById('responder-btn');
+                if (responderBtn) responderBtn.click();
+            } else if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                const desfavoritarBtn = document.getElementById('desfavoritar-btn');
+                if (desfavoritarBtn) desfavoritarBtn.click();
+            }
+            return;
+        }
+        
+        // Verificar se temos pilhas antes de processar teclas
+        if (!window.usuariosProcessados || window.usuariosProcessados.length === 0) return;
+        
+        switch(e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                ciclarCartasPilhaAtiva(); // Mudar mensagem (carta anterior)
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                ciclarCartasPilhaAtiva(); // Mudar mensagem (próxima carta)
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                trocarPilhaAnterior(); // Mudar usuário (pilha anterior)
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                trocarProximaPilha(); // Mudar usuário (próxima pilha)
+                break;
+            case ' ':
+            case 'Enter':
+                e.preventDefault();
+                lerCartaAtiva();
+                break;
+        }
+    });
+
+    // Eventos de mouse para navegação na pilha ativa
+    document.addEventListener('click', (e) => {
+        const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
+        if (!pilhaAtiva) return;
+        
+        const rect = pilhaAtiva.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        // Área da pilha ativa (excluindo cartas)
+        if (e.target === pilhaAtiva) {
+            if (clickY < rect.height / 3) {
+                // Clique na parte superior - usuário anterior
+                trocarPilhaAnterior();
+            } else if (clickY > rect.height * 2/3) {
+                // Clique na parte inferior - próximo usuário
+                trocarProximaPilha();
+            } else if (clickX < rect.width / 2) {
+                // Clique na parte esquerda - carta anterior
+                ciclarCartasPilhaAtiva();
+            } else {
+                // Clique na parte direita - próxima carta
+                ciclarCartasPilhaAtiva();
+            }
+        }
+    });
+});
+
+// ==================== Navegação entre pilhas ====================
+function atualizarBotoesNavegacao() {
+    const btnAnterior = document.getElementById('btn-pilha-anterior');
+    const btnProximo = document.getElementById('btn-pilha-proximo');
+    
+    if (btnAnterior) {
+        btnAnterior.disabled = window.totalPilhas <= 1;
+    }
+    
+    if (btnProximo) {
+        btnProximo.disabled = window.totalPilhas <= 1;
+    }
+}
+</script>

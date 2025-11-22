@@ -1,0 +1,22 @@
+const express = require('express');
+const router = express.Router();
+const authMiddleware = require('../middlewares/authMiddleware');
+
+const UsersRouter = require("./users");
+const ChatsRouter = require("./chats");
+const ConversasRouter = require("./conversas");
+const CartinhasRouter = require("./cartinhas");
+const AdminRouter = require("./admin/index");
+const WatchlistRouter = require("./watchlist");
+
+// Rotas de usuários (tem rotas públicas e protegidas dentro)
+router.use("/users", UsersRouter);
+
+// Rotas protegidas (requer autenticação)
+router.use("/chats", authMiddleware(0), ChatsRouter);
+router.use("/conversas", authMiddleware(0), ConversasRouter);
+router.use("/cartinhas", authMiddleware(0), CartinhasRouter);
+router.use("/watchlist", authMiddleware(0), WatchlistRouter);
+router.use("/admin", authMiddleware(1), AdminRouter);
+
+module.exports = router;

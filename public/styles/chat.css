@@ -1,0 +1,47 @@
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.mensagem {
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.8rem;
+    margin-bottom: 0.3rem;
+    max-width: 60%;
+    word-break: break-word;
+    line-height: 1.2rem;
+}
+
+.mensagem.usuario {
+    background-color: var(--mensagem-roxo);
+    align-self: flex-end;
+    color: white;
+}
+
+.mensagem.outrousuario {
+    background-color: #dfe6e9;
+    align-self: flex-start;
+    color: black;
+}
+
+.mensagem.bot {
+    background-color: var(--mensagem-bot);
+    align-self: flex-start;
+    color: black;
+}

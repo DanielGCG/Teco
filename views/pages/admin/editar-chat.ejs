@@ -1,0 +1,358 @@
+<div class="container mt-4">
+    <h2 class="mb-4"><span class="marca-texto-roxo">Painel de Edição de Chats</span></h2>
+
+    <!-- Lista de chats -->
+    <div class="chat-list" id="chatList"></div>
+</div>
+
+<!-- Modal de edição -->
+<div class="modal fade" id="editChatModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar Chat</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="editChatFields">
+          <div class="mb-3">
+            <label for="editChatName" class="form-label">Nome do chat</label>
+            <input type="text" id="editChatName" class="form-control">
+          </div>
+          <div class="mb-3" id="editParticipantsContainer">
+            <label class="form-label">Participantes (apenas DM)</label>
+            <select id="editParticipant1" class="form-select mb-2"></select>
+            <select id="editParticipant2" class="form-select mb-2"></select>
+          </div>
+        </div>
+        <button class="btn btn-danger w-100" id="deleteChatBtn">Excluir Chat</button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary w-100" id="saveChatBtn">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentChat = null;
+let currentLoggedUser = null;
+
+// ==================== Buscar usuário logado ====================
+async function buscarUsuarioLogado() {
+    try {
+        const res = await fetch('/api/users/me', { credentials: "include" });
+        if (res.ok) {
+            currentLoggedUser = await res.json();
+        }
+    } catch(err) {
+        console.error("Erro ao buscar usuário logado:", err);
+    }
+}
+
+// ==================== Listar chats ====================
+async function carregarChats() {
+    try {
+        const res = await fetch('/api/admin/chats', { credentials: "include" });
+        if(!res.ok) throw new Error("Erro ao carregar chats");
+        const data = await res.json();
+        
+        // Log para debug
+        console.log("Dados recebidos:", data);
+
+        // Verifica se os dados estão no formato esperado
+        const chats = data.chats || data;
+        
+        if (!chats || !Array.isArray(chats) || chats.length === 0) {
+            const chatList = document.getElementById("chatList");
+            chatList.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Nenhum chat encontrado.
+                </div>
+            `;
+            return;
+        }
+
+        const chatList = document.getElementById("chatList");
+        chatList.innerHTML = "";
+
+        chats.forEach(chat => {
+            // Formatação da data
+            const dataFormatada = new Date(chat.ultima_mensagem).toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const card = document.createElement("div");
+            card.classList.add("card", "mb-2", "chat-card");
+            
+            // Adicionar classes baseadas no tipo
+            if (chat.tipo === 'public') {
+                card.classList.add('border-primary');
+            } else if (chat.tipo === 'dm') {
+                card.classList.add('border-success');
+            }
+            
+            card.innerHTML = `
+                <div class="card-body">
+                    <h6 class="card-title">${chat.nome || 'DM'}</h6>
+                    <p class="card-text">
+                        <span class="badge ${chat.tipo === 'public' ? 'bg-primary' : 'bg-success'} me-2">${chat.tipo}</span>
+                        <small class="text-muted">
+                            Criado por: ${chat.criado_por_username} | 
+                            Participantes: ${chat.total_participantes} | 
+                            Mensagens: ${chat.total_mensagens}
+                        </small>
+                    </p>
+                    <p class="card-text">
+                        <small>Participantes: ${chat.participantes.map(p => p.username).join(", ")}</small>
+                        <br>
+                        <small class="text-muted">Última atividade: ${dataFormatada}</small>
+                    </p>
+                </div>
+            `;
+            card.addEventListener("click", () => abrirModalEdicao(chat));
+            chatList.appendChild(card);
+        });
+    } catch(err) {
+        console.error("Erro ao carregar chats:", err);
+        const chatList = document.getElementById("chatList");
+        chatList.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Erro ao carregar chats: ${err.message}
+            </div>
+        `;
+    }
+}
+
+// ==================== Carregar usuários ====================
+async function carregarUsuariosAdmin() {
+    try {
+        const res = await fetch('/api/admin/users', { credentials: "include" });
+        if(!res.ok) {
+            // Tentar endpoint alternativo caso o primeiro falhe
+            const res2 = await fetch('/api/chats/users', { credentials: "include" });
+            if(!res2.ok) throw new Error("Erro ao carregar usuários");
+            return processarUsuarios(await res2.json());
+        }
+        
+        const users = await res.json();
+        return processarUsuarios(users);
+        
+    } catch(err) {
+        console.error("Erro ao carregar usuários:", err);
+        alert("Erro ao carregar usuários. Verifique o console para mais detalhes.");
+    }
+}
+
+function processarUsuarios(users) {
+    // Log para debug
+    console.log("Usuários recebidos:", users);
+    
+    // Verificar formato da resposta
+    if (!Array.isArray(users)) {
+        console.warn("Resposta inesperada ao carregar usuários:", users);
+        if (users.users && Array.isArray(users.users)) {
+            users = users.users;
+        } else {
+            throw new Error("Formato de resposta inválido para usuários");
+        }
+    }
+    
+    const select1 = document.getElementById("editParticipant1");
+    const select2 = document.getElementById("editParticipant2");
+    select1.innerHTML = `<option value="">Selecione o Usuário 1</option>`;
+    select2.innerHTML = `<option value="">Selecione o Usuário 2</option>`;
+
+    users.forEach(u => {
+        const option1 = document.createElement("option");
+        option1.value = u.id;
+        option1.textContent = u.username;
+        select1.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = u.id;
+        option2.textContent = u.username;
+        select2.appendChild(option2);
+    });
+}
+
+// ==================== Abrir modal de edição ====================
+async function abrirModalEdicao(chat) {
+    currentChat = chat;
+    console.log("Chat selecionado:", chat);
+
+    document.getElementById("editChatName").value = chat.nome || "";
+
+    const editChatFields = document.getElementById("editChatFields");
+    const saveChatBtn = document.getElementById("saveChatBtn");
+    
+    // Apenas Dono pode editar nome e participantes
+    if (currentLoggedUser && currentLoggedUser.role >= 2) {
+        editChatFields.style.display = 'block';
+        saveChatBtn.style.display = 'block';
+    } else {
+        // Admin só pode excluir
+        editChatFields.style.display = 'none';
+        saveChatBtn.style.display = 'none';
+    }
+
+    const participantsContainer = document.getElementById("editParticipantsContainer");
+    if(chat.tipo === 'dm') {
+        // Apenas Dono pode editar participantes
+        if (currentLoggedUser && currentLoggedUser.role >= 2) {
+            participantsContainer.style.display = 'block';
+            await carregarUsuariosAdmin();
+            
+            // Verificar se os participantes estão no formato correto
+            if (chat.participantes && Array.isArray(chat.participantes) && chat.participantes.length >= 2) {
+                document.getElementById("editParticipant1").value = chat.participantes[0].id;
+                document.getElementById("editParticipant2").value = chat.participantes[1].id;
+            } else if (chat.participants && Array.isArray(chat.participants) && chat.participants.length >= 2) {
+                document.getElementById("editParticipant1").value = chat.participants[0].id;
+                document.getElementById("editParticipant2").value = chat.participants[1].id;
+            } else {
+                console.warn("Formato de participantes inesperado:", chat);
+            }
+        } else {
+            // Admin não pode ver/editar participantes
+            participantsContainer.style.display = 'none';
+        }
+    } else {
+        participantsContainer.style.display = 'none';
+    }
+
+    const editModal = new bootstrap.Modal(document.getElementById('editChatModal'));
+    editModal.show();
+}
+
+// ==================== Salvar alterações ====================
+document.getElementById("saveChatBtn").addEventListener("click", async () => {
+    if(!currentChat) return;
+
+    const nome = document.getElementById("editChatName").value.trim();
+
+    try {
+        const body = { nome };
+        if(currentChat.tipo === 'dm' && currentLoggedUser && currentLoggedUser.role >= 2) {
+            // Apenas Dono envia participantes
+            const user1 = document.getElementById("editParticipant1").value;
+            const user2 = document.getElementById("editParticipant2").value;
+            if(user1 === user2) return alert("Participantes devem ser diferentes");
+            body.participants = [user1, user2];
+            // Adicionar também com nomenclatura alternativa para compatibilidade
+            body.participantes = [user1, user2];
+        }
+
+        // Log para debug
+        console.log(`Atualizando chat ${currentChat.id} com dados:`, body);
+
+        // Tentar primeiro endpoint com /admin/
+        let res = await fetch(`/api/admin/chats/${currentChat.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body)
+        }).catch(err => {
+            console.warn("Erro no primeiro endpoint, tentando alternativo:", err);
+            return { ok: false };
+        });
+
+        // Se o primeiro falhar, tentar sem /admin/
+        if (!res.ok) {
+            res = await fetch(`/api/chats/${currentChat.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(body)
+            });
+        }
+
+        const data = await res.json();
+        if(res.ok){
+            alert("Chat atualizado com sucesso!");
+            carregarChats();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editChatModal'));
+            modal.hide();
+        } else {
+            console.error("Erro ao atualizar chat:", data);
+            alert("Erro: " + (data.message || "Falha ao atualizar o chat"));
+        }
+    } catch(err) {
+        console.error("Erro ao salvar alterações:", err);
+        alert("Erro ao salvar: " + err.message);
+    }
+});
+
+// ==================== Excluir chat ====================
+document.getElementById("deleteChatBtn").addEventListener("click", async () => {
+    if(!currentChat) return;
+    if(!confirm("Tem certeza que deseja excluir este chat?")) return;
+
+    try {
+        // Log para debug
+        console.log(`Tentando excluir chat ${currentChat.id}`);
+
+        // Tentar primeiro endpoint com /admin/
+        let res = await fetch(`/api/admin/chats/${currentChat.id}`, {
+            method: "DELETE",
+            credentials: "include"
+        }).catch(err => {
+            console.warn("Erro no primeiro endpoint de exclusão, tentando alternativo:", err);
+            return { ok: false };
+        });
+
+        // Se o primeiro falhar, tentar sem /admin/
+        if (!res.ok) {
+            res = await fetch(`/api/chats/${currentChat.id}`, {
+                method: "DELETE",
+                credentials: "include"
+            });
+        }
+
+        if(res.ok){
+            alert("Chat excluído com sucesso!");
+            carregarChats();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editChatModal'));
+            modal.hide();
+        } else {
+            const data = await res.json().catch(() => ({ message: "Erro desconhecido" }));
+            console.error("Erro ao excluir chat:", data);
+            alert("Erro: " + (data.message || "Falha ao excluir o chat"));
+        }
+    } catch(err) {
+        console.error("Erro ao excluir chat:", err);
+        alert("Erro ao excluir: " + err.message);
+    }
+});
+
+// ==================== Inicialização ====================
+window.addEventListener("DOMContentLoaded", async () => {
+    console.log("Página de edição de chats carregada");
+    
+    // Buscar usuário logado primeiro
+    await buscarUsuarioLogado();
+    
+    // Adicionar estilo aos cards de chat
+    const style = document.createElement('style');
+    style.textContent = `
+        .chat-card {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .chat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Carregar chats
+    carregarChats();
+});
+</script>

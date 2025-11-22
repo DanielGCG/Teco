@@ -1,0 +1,148 @@
+<style>
+/* Card do usuário */
+.user-card {
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    color: white;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Avatar do usuário */
+.user-avatar {
+    width: 130px;
+    height: 130px;
+    border-radius: 10%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Nome e status */
+.user-name {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+/* Botões da barra lateral */
+.sidebar-buttons button {
+    width: 100%;
+}
+
+/* Número da versão no final da barra lateral */
+.version-text {
+    position: absolute;
+    bottom: 20px; /* distância do chão */
+    left: 0;
+    width: 100%;
+}
+</style>
+
+<div class="sidebar d-flex flex-column align-items-center">
+    <!-- Card do usuário -->
+    <div class="user-card text-center mb-3 w-100">
+        <img src="/images/placeholder.png" alt="Foto de Perfil" class="user-avatar mb-2">
+        <h5 class="user-name mb-0"></h5>
+    </div>
+
+    <!-- Links ou botões da barra lateral -->
+    <div class="sidebar-buttons d-flex flex-column align-items-center w-100">
+        <button class="btn btn-outline-primary mb-2 w-100" onclick="window.location.href='/perfil/editar'">Editar perfil</button>
+        <button class="btn btn-outline-danger mb-2 w-100" id="logoutBtn">Sair</button>
+    </div>
+
+    <!-- Número da versão -->
+    <div class="version-text text-center w-100">
+        <h5>Teco</h5>
+        <small><%= locals.version %></small>
+    </div>
+</div>
+
+<script>
+async function carregarPerfil() {
+    try {
+        const response = await fetch(`/api/users/me`, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            window.location.href = "/login";
+            return;
+        }
+
+        const user = await response.json();
+
+        const userCard = document.querySelector(".user-card");
+        const userAvatar = document.querySelector(".user-avatar");
+        const sidebarButtons = document.querySelector(".sidebar-buttons");
+
+        // Nome e status
+        document.querySelector(".user-name").textContent = user.username;
+
+        // Avatar
+        if (user.profile_image) {
+            userAvatar.src = user.profile_image;
+        }
+
+        // Bio
+        if (user.bio) {
+            const bioElement = document.createElement("small");
+            bioElement.textContent = user.bio;
+            bioElement.classList.add("d-block", "mt-1");
+            userCard.appendChild(bioElement);
+        }
+
+        // Background do card
+        if (user.background_image) {
+            userCard.style.backgroundImage = `url('${user.background_image}'), linear-gradient(135deg, #6c5ce7, #a29bfe)`;
+            userCard.style.backgroundSize = 'cover';
+            userCard.style.backgroundPosition = 'center';
+        } else {
+            userCard.style.backgroundImage = 'linear-gradient(135deg, #6c5ce7, #a29bfe)';
+        }
+
+        // Se o usuário for admin, adiciona botão de admin
+        if (user.role && user.role >= 1) { // ajuste conforme sua lógica de roles
+            const adminBtn = document.createElement("button");
+            adminBtn.classList.add("btn", "btn-outline-warning", "mb-2", "w-100");
+            adminBtn.textContent = "Painel Admin";
+            adminBtn.onclick = () => window.location.href = "/admin";
+            sidebarButtons.insertBefore(adminBtn, sidebarButtons.firstChild.nextSibling); 
+            // insere abaixo do botão "Editar perfil"
+        }
+
+    } catch (err) {
+        console.error("Erro ao carregar perfil:", err);
+        window.location.href = "/login";
+    }
+}
+
+// Logout
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+    try {
+        const response = await fetch(`/api/users/logout`, {
+            method: "POST",
+            credentials: "include"
+        });
+
+        const data = await response.json();
+
+        // Tenta remover cookie localmente (caso não seja HTTP Only)
+        document.cookie = "connect.sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        if (response.ok) {
+            console.log("Logout realizado:", data.message);
+            window.location.href = "/login";
+        } else {
+            mostrarAviso("Erro ao sair: " + data.message);
+        }
+    } catch (err) {
+        console.error("Erro no logout:", err);
+        mostrarAviso("Erro inesperado ao sair.");
+    }
+});
+
+// Carrega o perfil assim que a página abrir
+window.addEventListener("DOMContentLoaded", carregarPerfil);
+</script>

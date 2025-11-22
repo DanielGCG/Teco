@@ -1,0 +1,560 @@
+<style>
+    /* Popup de confirmação de exclusão */
+    #popup-confirmacao .popup-conteudo {
+        background: #fffbe6;
+        border: 2px solid #ffe58f;
+        max-width: 400px;
+    }
+    
+    #popup-confirmacao .popup-conteudo p {
+        color: #a67c00;
+    }
+    
+    .confirmacao-nome-filme {
+        color: #d48806;
+        background: #fffbe6;
+        border: 1px dashed #ffe58f;
+        user-select: all;
+    }
+    
+    /* Popup de filme/série */
+    #popup .popup-conteudo {
+        max-width: 800px;
+    }
+    
+    .popup-topo {
+        background-size: cover;
+        background-position: center;
+        border-radius: 12px 12px 0 0;
+        min-height: 300px;
+    }
+    
+    #imagem-popup {
+        width: 120px;
+        height: 180px;
+        object-fit: cover;
+        border: 3px solid #fff;
+    }
+    
+    .popup-title {
+        font-size: 2em;
+        color: #fff;
+        text-shadow: 1px 1px 8px #000;
+    }
+    
+    .popup-type {
+        font-size: 1.2em;
+        color: #ffd700;
+        text-shadow: 1px 1px 6px #000;
+    }
+    
+    .popup-inferior {
+        background: #fff;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    .movie-overview {
+        max-height: 300px;
+        min-height: 120px;
+        overflow-y: auto;
+        border-right: 1px solid #eee;
+    }
+    
+    /* Grid de obras */
+    .tabela {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+    }
+    
+    .conteudo {
+        height: 240px;
+    }
+    
+    .conteudo .capa {
+        max-height: 80%;
+        max-width: 90%;
+        object-fit: contain;
+        cursor: url('/img/cursor-mao.png'), auto;
+    }
+    
+    .conteudo h1 {
+        font-size: 13px;
+        text-transform: uppercase;
+    }
+    
+    /* Modal de Loading */
+    #loading-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+    }
+    
+    #loading-modal.show {
+        display: flex;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Popup base */
+    .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.288);
+        z-index: 1000;
+        backdrop-filter: blur(8px);
+        overflow: hidden;
+    }
+    
+    .popup-conteudo {
+        background-color: rgba(255, 255, 255, 0.212);
+        max-width: 800px;
+        max-height: 90vh;
+        overflow: auto;
+    }
+    
+    /* Busca de filmes */
+    #results {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        margin: 20px;
+    }
+    
+    .movie {
+        max-width: 120px;
+        cursor: url('/img/cursor-mao.png'), auto;
+    }
+    
+    .movie img {
+        width: 100%;
+    }
+</style>
+
+<main class="text-center">
+    <h2 class="mb-4">WatchList do Boteco</h2>
+    
+    <div class="alert alert-info mx-auto" style="max-width: 500px;">
+        <h5 class="mb-1">Quer sugerir filme/série?</h5>
+        <p class="mb-0">clique na aba com +</p>
+    </div>
+
+    <div class="container">
+        <div class="tabela">
+            <!-- Aqui serão inseridas as obras -->
+        </div>
+    </div>
+
+    <div id="popup" class="popup d-none">
+        <div id="popup-conteudo" class="popup-conteudo rounded shadow-lg overflow-hidden p-0"></div>
+    </div>
+
+    <div id="popup-pesquisa" class="popup d-none">
+        <div class="popup-conteudo bg-white rounded shadow-lg p-4">
+            <h2 class="mb-3">Buscar por título</h2>
+            <div class="mb-3">
+                <input type="text" id="search-input" class="form-control" placeholder="Digite o nome do título">
+            </div>
+            <div class="mb-3">
+                <button class="btn btn-secondary" onclick="fecharPopupPesquisa()">Fechar</button>
+            </div>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <!-- Popup de confirmação de exclusão -->
+    <div id="popup-confirmacao" class="popup d-none">
+        <div id="popup-confirmacao-conteudo" class="popup-conteudo rounded shadow-lg p-4 d-flex flex-column align-items-center">
+            <p class="fs-5 text-center mb-3">Tem certeza de que deseja excluir esta obra?</p>
+            <div id="confirmacao-nome-filme" class="confirmacao-nome-filme d-none rounded p-2 mb-3 fw-bold text-center"></div>
+            <div class="d-flex gap-2">
+                <button id="confirmarDelecaoBtn" class="btn btn-danger">Sim, excluir</button>
+                <button onclick="fecharConfirmacao()" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Loading -->
+    <div id="loading-modal">
+        <div class="loading-content bg-white rounded shadow-lg p-4 text-center">
+            <div class="spinner rounded-circle mx-auto mb-3"></div>
+            <div class="loading-text fs-5 fw-medium">Carregando...</div>
+        </div>
+    </div>
+</main>
+
+<script>
+
+// Vetor de obras locais
+let obrasWatchlist = [];
+
+// Funções de loading
+function OnLoadingScreen() {
+    document.getElementById('loading-modal').classList.add('show');
+}
+
+function OffLoadingScreen() {
+    document.getElementById('loading-modal').classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', () => carregarWatchlist());
+
+async function carregarWatchlist() {
+    OnLoadingScreen();
+    try {
+        const response = await fetch(`/api/watchlist/watchlistdownload-movies`);
+        const data = await response.json();
+
+        // Verifique se a resposta é um array antes de atribuir a obrasWatchlist
+        if (Array.isArray(data)) {
+            obrasWatchlist = data;
+            console.log('Obras carregadas com sucesso!');
+            listarObras();
+        } else {
+            console.error('Formato de dados inválido, esperado um array:', data);
+        }
+    } catch (error) {
+        console.error('Erro ao buscar obras do backend:', error);
+    } finally {
+        OffLoadingScreen();
+    }
+}
+
+async function removerObra(id) {
+    OnLoadingScreen();
+    try {
+        // Fazendo a requisição DELETE para o backend
+        const response = await fetch(`/api/watchlist/watchlistdelete-movie?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (data.success) {
+            // Remove a obra localmente
+            obrasWatchlist = obrasWatchlist.filter(obra => String(obra.id) !== String(id));
+            // Atualiza a interface
+            listarObras();
+        } else {
+            mostrarAviso(data.message || 'Erro ao excluir a obra.');
+        }
+    } catch (error) {
+        console.error('Erro ao deletar obra:', error);
+        mostrarAviso('Erro ao excluir a obra. Verifique a conexão.');
+    } finally {
+        OffLoadingScreen();
+    }
+}
+
+function listarObras() {
+    const tabela = document.querySelector('.tabela');
+    tabela.innerHTML = '';
+
+    const quadroInicial = document.createElement('div');
+    quadroInicial.className = 'conteudo card shadow-sm d-flex flex-column align-items-center justify-content-between p-2';
+    quadroInicial.innerHTML = `
+        <img src="pages/lista/+.png" class="capa rounded" alt="Adicionar" onclick="abrirPopupAdicionar()">
+        <h1 class="fw-bold text-dark">Adicionar</h1>
+    `;
+    tabela.appendChild(quadroInicial);
+
+    obrasWatchlist.forEach(obra => {
+        const conteudo = document.createElement('div');
+        conteudo.className = 'conteudo card shadow-sm d-flex flex-column align-items-center justify-content-between p-2';
+        const posterPath = obra.poster_path ? `https://image.tmdb.org/t/p/w500${obra.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Image';
+        const titulo = obra.title || obra.name;
+
+        conteudo.innerHTML = `
+            <img src="${posterPath}" class="capa rounded" alt="Capa de ${titulo}" onclick="abrirPopup('${posterPath}', '${titulo}')">
+            <h1 class="fw-bold text-dark">${titulo}</h1>
+        `;
+        tabela.appendChild(conteudo);
+    });
+}
+
+function abrirPopupAdicionar() {
+    const popup = document.getElementById('popup-pesquisa');
+    popup.classList.remove('d-none');
+    popup.classList.add('d-flex', 'justify-content-center', 'align-items-center');
+}
+
+function abrirPopup(url, nome) {
+    const popup = document.getElementById('popup');
+    const popupConteudo = document.getElementById('popup-conteudo');
+    const obra = obrasWatchlist.find(o => o.name === nome || o.title === nome);
+
+    if (!obra) {
+        popupConteudo.innerHTML = `<p class="p-4">Obra não encontrada!</p>`;
+        popup.classList.remove('d-none');
+        popup.classList.add('d-flex', 'justify-content-center', 'align-items-center');
+        return;
+    }
+
+    function renderStars(nota) {
+        const rating = Math.round(nota) / 2;
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 >= 0.5;
+        let stars = '';
+        for (let i = 0; i < fullStars; i++) stars += '★';
+        if (halfStar) stars += '⯨';
+        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+        for (let i = 0; i < emptyStars; i++) stars += '☆';
+        return `<span style='color: gold; font-size: 1.3em;'>${stars}</span> <span style='font-size: 1em; color: #444;'>(${(nota).toFixed(1)}/10)</span>`;
+    }
+
+    const tipo = obra.media_type === 'tv' ? 'Série' : 'Filme';
+    const backdropUrl = obra.backdrop_path ? `https://image.tmdb.org/t/p/original${obra.backdrop_path}` : '';
+    let dataFormatada = 'N/A';
+    if (obra.release_date) {
+        const match = obra.release_date.match(/^\d{4}-\d{2}-\d{2}/);
+        dataFormatada = match ? match[0] : obra.release_date;
+    }
+
+    popupConteudo.innerHTML = `
+        <div class="popup-novo-layout">
+            <div class="popup-topo d-flex align-items-center p-4 gap-4 placeholder-glow" style="background-color: #6c757d;">
+                <img id='imagem-popup' src='${url}' alt='Imagem da obra' class="rounded shadow">
+                <div>
+                    <div class="popup-title">${obra.title || obra.name}</div>
+                    <div class="popup-type mt-2">${tipo}</div>
+                </div>
+            </div>
+            <div class="popup-inferior d-flex gap-4 p-4">
+                <div class="movie-overview flex-fill pe-3 text-start">
+                    <strong>Sinopse:</strong><br>${obra.overview || 'Sem descrição disponível'}
+                </div>
+                <div class="popup-movie-info d-flex flex-column gap-2">
+                    <div class="text-dark">${dataFormatada}</div>
+                    <div class="star-rating">${renderStars(obra.vote_average)}</div>
+                    <div class="vote-count text-muted small">${obra.vote_count} votos</div>
+                    ${obra.original_title && obra.original_title !== obra.title ? `<div><strong>Título original:</strong> ${obra.original_title}</div>` : ''}
+                    ${obra.original_language ? `<div class="text-uppercase">${obra.original_language}</div>` : ''}
+                    <div class="d-flex gap-2 mt-3">
+                        <button class='btn btn-danger btn-sm' onclick="abrirConfirmacaoDelecao('${nome}')">Deletar</button>
+                        <button class='btn btn-secondary btn-sm' onclick='fecharPopup()'>Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    popup.classList.remove('d-none');
+    popup.classList.add('d-flex', 'justify-content-center', 'align-items-center');
+    
+    // Carregar backdrop com placeholder
+    if (backdropUrl) {
+        const popupTopo = popupConteudo.querySelector('.popup-topo');
+        const img = new Image();
+        img.onload = function() {
+            popupTopo.style.backgroundImage = `url('${backdropUrl}')`;
+            popupTopo.classList.remove('placeholder-glow');
+        };
+        img.src = backdropUrl;
+    }
+}
+
+function abrirConfirmacaoDelecao(nome) {
+    const popupConfirmacao = document.getElementById('popup-confirmacao');
+    const confirmarDelecaoBtn = document.getElementById('confirmarDelecaoBtn');
+    const obra = obrasWatchlist.find(o => o.name === nome || o.title === nome);
+
+    if (obra) {
+        confirmarDelecaoBtn.setAttribute('data-id-obra', obra.id);
+        confirmarDelecaoBtn.setAttribute('data-nome-obra', obra.title || obra.name);
+        
+        const confirmacaoConteudo = document.getElementById('popup-confirmacao-conteudo');
+        let inputConfirmacao = document.getElementById('input-confirmacao-nome');
+        
+        if (!inputConfirmacao) {
+            inputConfirmacao = document.createElement('input');
+            inputConfirmacao.type = 'text';
+            inputConfirmacao.id = 'input-confirmacao-nome';
+            inputConfirmacao.className = 'form-control mb-3';
+            inputConfirmacao.placeholder = `Digite o nome para confirmar: ${obra.title || obra.name}`;
+            confirmacaoConteudo.insertBefore(inputConfirmacao, confirmacaoConteudo.querySelector('.d-flex'));
+        } else {
+            inputConfirmacao.value = '';
+            inputConfirmacao.placeholder = `Digite o nome para confirmar: ${obra.title || obra.name}`;
+        }
+        
+        const nomeFilmeDiv = document.getElementById('confirmacao-nome-filme');
+        if (nomeFilmeDiv) {
+            nomeFilmeDiv.textContent = obra.title || obra.name;
+            nomeFilmeDiv.classList.remove('d-none');
+        }
+        
+        popupConfirmacao.classList.remove('d-none');
+        popupConfirmacao.classList.add('d-flex', 'justify-content-center', 'align-items-center');
+    } else {
+        mostrarAviso('Obra não encontrada!');
+    }
+}
+
+function fecharPopup(){
+    const popup = document.getElementById('popup');
+    popup.classList.add('d-none');
+    popup.classList.remove('d-flex');
+}
+
+function fecharPopupPesquisa(){
+    const popup = document.getElementById('popup-pesquisa');
+    popup.classList.add('d-none');
+    popup.classList.remove('d-flex');
+    document.getElementById("search-input").value = '';
+    document.getElementById("results").innerHTML = '';
+}
+
+// Confirmar a exclusão diretamente ao clicar no botão
+document.getElementById('confirmarDelecaoBtn').addEventListener('click', async function () {
+    const idObra = this.getAttribute('data-id-obra'); // Obter o ID da obra
+    const nomeObra = this.getAttribute('data-nome-obra');
+    const inputConfirmacao = document.getElementById('input-confirmacao-nome');
+    if (idObra && inputConfirmacao) {
+        if (inputConfirmacao.value.trim() === nomeObra) {
+            await removerObra(idObra);
+            fecharConfirmacao();
+            fecharPopup();
+        } else {
+            inputConfirmacao.style.border = '2px solid #ff4e50';
+            inputConfirmacao.value = '';
+            inputConfirmacao.placeholder = 'Nome incorreto, tente novamente.';
+        }
+    }
+});
+
+function fecharConfirmacao() {
+    const popupConfirmacao = document.getElementById('popup-confirmacao');
+    popupConfirmacao.classList.add('d-none');
+    popupConfirmacao.classList.remove('d-flex');
+    
+    const nomeFilmeDiv = document.getElementById('confirmacao-nome-filme');
+    if (nomeFilmeDiv) nomeFilmeDiv.classList.add('d-none');
+}
+
+let lastQuery = '';
+
+document.getElementById('search-input').addEventListener('input', function() {
+    
+    const query = this.value;
+    console.log('Buscando por:', query); // Adicionando log
+
+    if (query.length < 3) {
+        document.getElementById('results').innerHTML = '';
+        return;
+    }
+
+    if (query.length !== lastQuery.length) {
+        searchMovies(query);
+    }
+});
+
+async function searchMovies(query) {
+    console.log('Procurando por:', query); // Log de consulta
+    lastQuery = query;
+
+    try {
+        const response = await fetch(`/api/watchlist/watchlistsearch-movies?query=${encodeURIComponent(query)}&language='pt-BR'`);
+        const data = await response.json();
+
+        if (response.status !== 200) {
+            throw new Error(data.message || 'Erro ao buscar filmes.');
+        }
+
+        displayResults(data);
+    } catch (error) {
+        console.error('Error:', error);
+        // A função displayResults irá criar o elemento #results
+        const resultsContainer = document.getElementById('results');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `<p>${error.message}</p>`;
+        }
+    }
+}
+
+function displayResults(items) {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
+
+    items.forEach(item => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'movie text-center';
+
+        const posterPath = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Image';
+
+        itemElement.innerHTML = `
+            <img src="${posterPath}" alt="${item.title || item.name}" class="rounded">
+            <div class="movie-title mt-2">${item.title || item.name}</div>
+        `;
+
+        itemElement.addEventListener('click', () => {
+            const shouldSave = confirm(`Deseja adicionar "${item.title || item.name}" à Watchlist?`);
+            if (shouldSave) {
+                adicionarObra(item);
+            }
+        });
+
+        resultsContainer.appendChild(itemElement);
+    });
+}
+
+    async function adicionarObra(obra) {
+        OnLoadingScreen();
+        try {
+            // Enviando o filme/série para o backend
+            const response = await fetch('/api/watchlist/watchlistupload-movies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(obra),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // Encontrar a posição correta para inserir o filme/série na ordem alfabética
+                const index = obrasWatchlist.findIndex(item => {
+                    const itemTitle = item.title || item.name || '';
+                    const obraTitle = obra.title || obra.name || '';
+                    return itemTitle.localeCompare(obraTitle, undefined, { sensitivity: 'base' }) > 0;
+                });
+
+                // Adiciona o filme na posição correta
+                obrasWatchlist.splice(
+                    index === -1 ? obrasWatchlist.length : index,
+                    0,
+                    { ...obra, fileUrl: data.fileUrl }
+                );
+
+                // Atualiza a interface sem recarregar tudo
+                listarObras();
+                fecharPopupPesquisa();
+            } else {
+                mostrarAviso('Erro ao adicionar o filme/série.');
+            }
+        } catch (error) {
+            console.error('Erro ao adicionar filme/série:', error);
+            mostrarAviso('Erro ao adicionar o filme/série.');
+        } finally {
+            OffLoadingScreen();
+        }
+    }
+</script>

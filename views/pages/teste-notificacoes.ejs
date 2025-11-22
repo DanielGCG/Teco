@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Notificações</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .btn-notification {
+            margin: 5px;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 5px;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-time {
+            color: #6c757d;
+            font-size: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-connected {
+            background: #28a745;
+            color: white;
+        }
+        .status-disconnected {
+            background: #dc3545;
+            color: white;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center text-white mb-4">🔔 Teste de Notificações</h1>
+
+        <!-- Status da Conexão -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📡 Status da Conexão Socket.io</h5>
+            </div>
+            <div class="card-body">
+                <div id="connection-status">
+                    <span class="status-badge status-disconnected">Verificando...</span>
+                </div>
+                <small class="text-muted">Backend: <%= process.env.BACKEND_URL || 'http://localhost:3000' %></small>
+            </div>
+        </div>
+
+        <!-- Testes Rápidos -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">⚡ Testes Rápidos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button class="btn btn-primary btn-notification w-100" onclick="testeSimples()">
+                            📢 Notificação Simples
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-success btn-notification w-100" onclick="testeCartinha()">
+                            📬 Cartinha Recebida
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-warning btn-notification w-100" onclick="testeMensagem()">
+                            💬 Nova Mensagem
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-danger btn-notification w-100" onclick="testeUrgente()">
+                            🚨 Notificação Urgente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teste Personalizado -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">🎨 Notificação Personalizada</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Título</label>
+                    <input type="text" class="form-control" id="custom-title" placeholder="Digite o título">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mensagem</label>
+                    <textarea class="form-control" id="custom-body" rows="3" placeholder="Digite a mensagem"></textarea>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="custom-silent">
+                        <label class="form-check-label" for="custom-silent">
+                            Silencioso (sem som)
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="custom-flash">
+                        <label class="form-check-label" for="custom-flash">
+                            Piscar janela
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="testePersonalizado()">
+                    🚀 Enviar Notificação
+                </button>
+            </div>
+        </div>
+
+        <!-- Log de Notificações -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">📋 Log de Notificações</h5>
+                <button class="btn btn-sm btn-light" onclick="limparLog()">Limpar</button>
+            </div>
+            <div class="card-body">
+                <div class="log-area" id="notification-log">
+                    <div class="text-muted text-center">Aguardando notificações...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+
+        // Adicionar entrada no log
+        function adicionarLog(tipo, mensagem, dados = null) {
+            const logArea = document.getElementById('notification-log');
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            
+            if (logCount === 0) {
+                logArea.innerHTML = '';
+            }
+            logCount++;
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <div class="log-time">[${timestamp}]</div>
+                <div><strong>${tipo}:</strong> ${mensagem}</div>
+                ${dados ? `<div style="font-size: 11px; color: #666;"><pre style="margin: 5px 0;">${JSON.stringify(dados, null, 2)}</pre></div>` : ''}
+            `;
+            
+            logArea.insertBefore(entry, logArea.firstChild);
+        }
+
+        // Limpar log
+        function limparLog() {
+            document.getElementById('notification-log').innerHTML = '<div class="text-muted text-center">Aguardando notificações...</div>';
+            logCount = 0;
+        }
+
+        // Verificar se electronAPI está disponível
+        if (typeof window.electronAPI !== 'undefined') {
+            adicionarLog('✅ Sistema', 'Electron API carregada com sucesso');
+
+            // Escutar notificações do servidor
+            window.electronAPI.onNotification((data) => {
+                adicionarLog('📨 Recebida', 'Notificação do servidor via Socket.io', data);
+            });
+
+            // Verificar permissões
+            window.electronAPI.checkNotificationPermission().then(permission => {
+                adicionarLog('🔐 Permissão', `Status: ${permission}`);
+            });
+        } else {
+            adicionarLog('⚠️ Aviso', 'Electron API não disponível. Execute no Electron.');
+        }
+
+        // Testes rápidos
+        async function testeSimples() {
+            const notification = {
+                title: 'Teste Simples',
+                body: 'Esta é uma notificação de teste básica.',
+                silent: false
+            };
+            
+            try {
+                await window.electronAPI.showNotification(notification);
+                adicionarLog('✅ Enviada', 'Notificação simples', notification);
+            } catch (error) {
+                adicionarLog('❌ Erro', error.message);
+            }
+        }
+
+        async function testeCartinha() {
+            const notification = {
+                title: '📬 Nova Cartinha!',
+                body: 'De: João Silva\n"Pensando em você..."',
+                silent: false
+            };
+            
+            try {
+                await window.electronAPI.showNotification(notification);
+                adicionarLog('✅ Enviada', 'Notificação de cartinha', notification);
+            } catch (error) {
+                adicionarLog('❌ Erro', error.message);
+            }
+        }
+
+        async function testeMensagem() {
+            const notification = {
+                title: '💬 Nova Mensagem',
+                body: 'Maria: Oi! Como você está?',
+                silent: false
+            };
+            
+            try {
+                await window.electronAPI.showNotification(notification);
+                adicionarLog('✅ Enviada', 'Notificação de mensagem', notification);
+            } catch (error) {
+                adicionarLog('❌ Erro', error.message);
+            }
+        }
+
+        async function testeUrgente() {
+            const notification = {
+                title: '🚨 Urgente!',
+                body: 'Você tem uma mensagem importante esperando.',
+                silent: false
+            };
+            
+            try {
+                await window.electronAPI.showNotification(notification);
+                await window.electronAPI.flashWindow(true);
+                setTimeout(() => window.electronAPI.flashWindow(false), 2000);
+                adicionarLog('✅ Enviada', 'Notificação urgente com flash', notification);
+            } catch (error) {
+                adicionarLog('❌ Erro', error.message);
+            }
+        }
+
+        async function testePersonalizado() {
+            const title = document.getElementById('custom-title').value || 'Notificação';
+            const body = document.getElementById('custom-body').value || 'Mensagem de teste';
+            const silent = document.getElementById('custom-silent').checked;
+            const flash = document.getElementById('custom-flash').checked;
+
+            const notification = {
+                title: title,
+                body: body,
+                silent: silent
+            };
+            
+            try {
+                await window.electronAPI.showNotification(notification);
+                
+                if (flash) {
+                    await window.electronAPI.flashWindow(true);
+                    setTimeout(() => window.electronAPI.flashWindow(false), 2000);
+                }
+                
+                adicionarLog('✅ Enviada', 'Notificação personalizada', notification);
+            } catch (error) {
+                adicionarLog('❌ Erro', error.message);
+            }
+        }
+
+        // Simular status de conexão
+        setTimeout(() => {
+            document.getElementById('connection-status').innerHTML = `
+                <span class="status-badge status-connected">Conectado</span>
+            `;
+            adicionarLog('🔗 Socket.io', 'Conexão estabelecida');
+        }, 1000);
+    </script>
+</body>
+</html>

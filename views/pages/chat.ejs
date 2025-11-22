@@ -1,0 +1,325 @@
+<link rel="stylesheet" href="/styles/chat.css">
+
+<div class="container py-3">
+  <div class="card">
+    <div class="card-header text-center">
+      <span class="marca-texto-verde"><%= locals.title %></span>
+    </div>
+
+    <div id="chat-container" class="card-body position-relative" style="height:500px; overflow-y:auto; display:flex; flex-direction:column;">
+      <div id="loader" class="text-center my-2" style="display:none;">
+        <span class="spinner-border spinner-border-sm"></span> Carregando...
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <div class="input-group">
+        <textarea id="input-msg" class="form-control" placeholder="Digite sua mensagem..." rows="1" style="resize: none; overflow-y: auto; max-height: 120px;"></textarea>
+        <button id="send-btn" class="btn btn-primary">Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.IO client -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io('http://localhost:3000', { withCredentials: true });
+const chatName = "<%= chatName %>"; 
+console.log("Chat Name:", chatName);
+let allMessages = [];
+let loadedStart = 0;
+let loadedEnd = 0;
+const batchSize = 50;
+const bufferSize = 100;
+let currentPage = 1;
+let loading = false;
+
+const chatContainer = document.getElementById("chat-container");
+const loader = document.getElementById("loader");
+let currentUser = null;
+let chatId = null;
+
+// Log de conexão Socket.IO
+socket.on('connect', () => {
+    console.log('[Socket.IO] Conectado!', socket.id);
+});
+
+socket.on('connect_error', (err) => {
+    console.error('[Socket.IO] Erro de conexão:', err);
+});
+
+// ==================== Renderização de mensagens ====================
+function renderMessage(msgData, prepend = false) {
+  // Evita duplicação: se já existe pelo ID, não renderiza
+  if (msgData.id && chatContainer.querySelector(`[data-msg-id="${msgData.id}"]`)) return;
+
+  const msg = document.createElement("div");
+  msg.classList.add("mensagem");
+  if (msgData.tipo === "usuario") msg.classList.add("usuario");
+  else if (msgData.tipo === "outrousuario") msg.classList.add("outrousuario");
+  else msg.classList.add("bot");
+
+  // Armazena o ID da mensagem
+  if (msgData.id) msg.dataset.msgId = msgData.id;
+
+  const nomeEl = document.createElement("div");
+  nomeEl.style.fontSize = "0.75rem";
+  nomeEl.style.fontWeight = "bold";
+  nomeEl.style.marginBottom = "0.2rem";
+  nomeEl.textContent = msgData.nome;
+
+  const textoEl = document.createElement("div");
+  textoEl.style.whiteSpace = "pre-wrap";
+  textoEl.textContent = msgData.text;
+
+  msg.appendChild(nomeEl);
+  msg.appendChild(textoEl);
+
+  if (prepend) chatContainer.insertBefore(msg, chatContainer.firstChild);
+  else chatContainer.appendChild(msg);
+}
+
+function renderMessagesInitial(){
+    chatContainer.innerHTML = "";
+    if(loadedEnd === 0) return; // não há mensagens ainda
+
+    for(let i = loadedStart; i < loadedEnd; i++){
+        renderMessage(allMessages[i]);
+    }
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// ==================== Busca de mensagens ====================
+async function fetchMessages(page, isInitial = false){
+    if(loading) return;
+    loading = true;
+    loader.style.display = "block";
+
+    try {
+        const res = await fetch(`/api/chats/${chatName}/messages?page=${page}`, {
+            credentials: 'include' // importante para enviar cookies
+        });
+        if(!res.ok) throw new Error("Erro ao buscar mensagens");
+        const data = await res.json();
+
+        // Agora o backend define quem é "usuario" ou "outrousuario" baseado no cookie
+        const formatted = data.messages.map(msg => ({
+            id: msg.id,
+            text: msg.mensagem,
+            nome: msg.username,
+            tipo: msg.isMine ? "usuario" : "outrousuario" // backend já sinaliza
+        }));
+
+        if(isInitial) {
+            // Carregamento inicial: exibe as mensagens mais recentes
+            allMessages = formatted;
+            loadedStart = 0;
+            loadedEnd = allMessages.length;
+            renderMessagesInitial();
+            
+            // Busca chatId e entra na sala Socket.IO
+            const chatRes = await fetch(`/api/chats`, { credentials: 'include' });
+            const chats = await chatRes.json();
+            const currentChat = chats.find(c => c.nome === chatName);
+            if (currentChat) {
+                chatId = currentChat.id;
+                socket.emit('joinChat', chatId);
+                console.log('[Socket] Entrando no chat:', chatId);
+                
+                // Marca mensagens como lidas após carregar
+                socket.emit('markAsRead', { chatId });
+            }
+        } else {
+            // Carregando mensagens antigas (scroll para cima)
+            allMessages = [...formatted, ...allMessages];
+            loadedStart = 0;
+            loadedEnd = allMessages.length;
+            
+            // Guarda a posição de scroll atual
+            const oldScrollHeight = chatContainer.scrollHeight;
+            
+            // Re-renderiza tudo
+            chatContainer.innerHTML = "";
+            for(let i = 0; i < allMessages.length; i++){
+                renderMessage(allMessages[i]);
+            }
+            
+            // Mantém a posição de scroll (adiciona a diferença de altura)
+            chatContainer.scrollTop = chatContainer.scrollHeight - oldScrollHeight;
+        }
+    } catch(err){
+        console.error(err);
+    } finally {
+        loader.style.display = "none";
+        loading = false;
+    }
+}
+
+// ==================== Scroll para carregar mensagens antigas ====================
+let canLoadMore = true;
+
+async function loadOlderMessages() {
+    if(loading || !canLoadMore) return;
+    if(chatContainer.scrollTop > 50) return; // Só carrega se estiver bem no topo
+    
+    console.log('Carregando mensagens antigas, página:', currentPage + 1);
+    currentPage++;
+    await fetchMessages(currentPage);
+    
+    // Se retornou menos mensagens que o limite, não há mais para carregar
+    if(allMessages.length < currentPage * 50) {
+        canLoadMore = false;
+    }
+}
+
+chatContainer.addEventListener("scroll", () => {
+    if(chatContainer.scrollTop === 0){
+        loadOlderMessages();
+    }
+});
+
+// ==================== Enviar nova mensagem ====================
+const inputMsg = document.getElementById("input-msg");
+
+// Permite enviar com Enter, e pular linha com Shift+Enter
+inputMsg.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById("send-btn").click();
+  }
+});
+
+// Auto-ajusta altura do textarea
+inputMsg.addEventListener("input", () => {
+  inputMsg.style.height = "auto";
+  inputMsg.style.height = Math.min(inputMsg.scrollHeight, 120) + "px";
+});
+
+document.getElementById("send-btn").addEventListener("click", async () => {
+  const input = document.getElementById("input-msg");
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (!chatId) {
+    console.error('[Chat] Chat ID não encontrado');
+    return;
+  }
+
+  // Envia via Socket.IO
+  socket.emit('sendMessage', {
+    chatId: chatId,
+    mensagem: text
+  });
+
+  input.value = "";
+  input.style.height = "auto";
+});
+
+// ==================== Socket.IO Events ====================
+socket.on('joinedChat', ({ chatId, success }) => {
+    if (success) {
+        console.log('[Socket] Entrou no chat:', chatId);
+    }
+});
+
+socket.on('newMessage', async (data) => {
+    console.log('[Socket] Nova mensagem recebida:', data);
+    
+    const { chatId: msgChatId, message } = data;
+    
+    // Se é o chat atual, adiciona a mensagem
+    if (msgChatId === chatId && message) {
+        // Busca dados do usuário atual se ainda não tiver
+        if (!currentUser) {
+            const res = await fetch('/api/users/me', { credentials: 'include' });
+            currentUser = await res.json();
+        }
+
+        const newMsg = {
+            id: message.id,
+            text: message.text,
+            nome: message.username,
+            tipo: message.username === currentUser.username ? "usuario" : "outrousuario"
+        };
+        
+        allMessages.push(newMsg);
+        renderMessage(newMsg);
+        loadedEnd++;
+        
+        // Remove mensagens antigas se ultrapassar o buffer
+        if (chatContainer.children.length > bufferSize + 1) {
+            chatContainer.removeChild(chatContainer.firstChild);
+            loadedStart++;
+        }
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Marca como lida automaticamente quando recebe mensagem de outro usuário
+        // Isso garante que o contador seja zerado em tempo real
+        if (message.username !== currentUser.username) {
+            socket.emit('markAsRead', { chatId });
+        }
+    }
+});
+
+socket.on('messageRead', async (data) => {
+    console.log('[Socket] Mensagens visualizadas:', data);
+    
+    const { chatId: readChatId, userId, lastReadMessageId } = data;
+    
+    // Atualiza checks de visualização apenas no chat atual
+    if (readChatId === chatId) {
+        // Busca dados do usuário atual se ainda não tiver
+        if (!currentUser) {
+            const res = await fetch('/api/users/me', { credentials: 'include' });
+            currentUser = await res.json();
+        }
+        
+        // Se outro usuário leu nossas mensagens, atualiza os checks
+        if (userId !== currentUser.id) {
+            // Atualiza visualmente: adiciona check duplo nas mensagens próprias que foram lidas
+            const userMessages = chatContainer.querySelectorAll('.mensagem.usuario');
+            userMessages.forEach(msgEl => {
+                const msgId = parseInt(msgEl.dataset.msgId);
+                if (msgId && msgId <= lastReadMessageId) {
+                    // Remove check simples se existir e adiciona check duplo
+                    const checkEl = msgEl.querySelector('.check-mark');
+                    if (!checkEl) {
+                        const metaEl = msgEl.querySelector('.msg-meta') || document.createElement('div');
+                        if (!msgEl.querySelector('.msg-meta')) {
+                            metaEl.className = 'msg-meta';
+                            metaEl.style.fontSize = '0.65rem';
+                            metaEl.style.color = 'gray';
+                            metaEl.style.marginTop = '0.2rem';
+                            metaEl.style.display = 'flex';
+                            metaEl.style.alignItems = 'center';
+                            metaEl.style.gap = '0.3rem';
+                            msgEl.appendChild(metaEl);
+                        }
+                        const check = document.createElement('span');
+                        check.className = 'check-mark';
+                        check.innerHTML = '✔✔';
+                        check.style.fontSize = '0.8rem';
+                        check.style.color = '#4fc3f7';
+                        metaEl.appendChild(check);
+                    } else {
+                        checkEl.innerHTML = '✔✔';
+                        checkEl.style.color = '#4fc3f7';
+                    }
+                }
+            });
+        }
+    }
+});
+
+socket.on('error', (error) => {
+    console.error('[Socket] Erro:', error);
+    alert('Erro: ' + error.message);
+});
+
+// ==================== Inicialização ====================
+document.addEventListener("DOMContentLoaded", () => {
+    fetchMessages(currentPage, true); // true = carregamento inicial
+});
+</script>

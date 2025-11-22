@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="/styles/recebidas.css">
+<link rel="stylesheet" href="/styles/enviadas.css">
+<script src="/js/modal-cartinha.js"></script>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">  
+            <!-- Loading -->
+            <div id="loading" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando cartas...</span>
+                </div>
+            </div>
+
+            <!-- Container para as cartinhas -->
+            <div id="cartinhas-container" style="display: none;">    
+                <!-- Container das pilhas empilhadas -->
+                <div class="container-pilhas">
+                    <!-- As pilhas serão inseridas aqui -->
+                </div>
+            </div>
+            
+            <!-- Mensagem quando não há cartinhas -->
+            <div id="sem-cartinhas" class="sem-cartinhas" style="display: none;">
+                <div class="envelope-vazio">📬</div>
+                <h4>Nenhuma cartinha enviada</h4>
+                <p>Você ainda não enviou nenhuma cartinha.<br>Quando enviar uma carta para alguém, ela aparecerá aqui.</p>
+                <a href="/cartinhas/escrever" class="btn btn-primary mt-3">✏️ Escrever Cartinha</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar cartinha -->
+<div class="modal fade" id="editarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #BCA88D 0%, #7D8D86 100%); color: white;">
+                <h5 class="modal-title">✏️ Editar Cartinha</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-editar">
+                    <input type="hidden" id="edit-cartinha-id">
+                    
+                    <!-- Para quem -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">📨 Para:</label>
+                        <div id="edit-destinatario" class="d-flex align-items-center p-2" style="background: #f8f9fa; border-radius: 8px;">
+                            <img id="edit-destinatario-avatar" src="" alt="Avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                            <span id="edit-destinatario-nome" style="font-weight: 600; color: #3E3F29;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Assunto -->
+                    <div class="mb-3">
+                        <label for="edit-titulo" class="form-label fw-bold">📋 Assunto:</label>
+                        <input type="text" class="form-control" id="edit-titulo" maxlength="40" required>
+                        <div class="form-text">Máximo 40 caracteres. <span id="edit-contador-titulo">0/40</span></div>
+                    </div>
+
+                    <!-- Mensagem -->
+                    <div class="mb-3">
+                        <label for="edit-conteudo" class="form-label fw-bold">💌 Mensagem:</label>
+                        <textarea class="form-control" id="edit-conteudo" rows="10" maxlength="560" required style="resize: vertical;"></textarea>
+                        <div class="form-text">Máximo 560 caracteres. <span id="edit-contador-conteudo">0/560</span></div>
+                    </div>
+
+                    <!-- Mensagens de erro/sucesso -->
+                    <div id="edit-mensagem" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="salvar-edicao-btn">💾 Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/enviadas.js"></script>

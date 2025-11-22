@@ -1,0 +1,223 @@
+<link rel="stylesheet" href="/styles/escrever-cartinha.css">
+
+<div class="container-escrever">
+    <div class="card-cartinha">
+        <div class="header-cartinha">
+            <h5 class="mb-0">✉️ Nova Cartinha</h5>
+        </div>
+        
+        <div class="corpo-cartinha">
+            <form id="formCartinha">
+                <!-- Para -->
+                <div class="campo campo-destinatario mb-3">
+                    <label class="form-label fw-bold">📮 Para:</label>
+                    <div class="input-group">
+                        <input type="text" 
+                                class="form-control input-destinatario" 
+                                id="destinatario" 
+                                placeholder="Nome do destinatário"
+                                autocomplete="off">
+                        <button type="button" class="btn btn-outline-primary" id="btnBuscarUsuarios" title="Buscar usuários">
+                            🔍
+                        </button>
+                    </div>
+                    <div id="sugestoesUsuarios" class="sugestoes-usuarios"></div>
+                    <input type="hidden" id="destinatarioId" name="destinatarioId">
+                </div>
+
+                <!-- Assunto -->
+                <div class="campo campo-titulo mb-3">
+                    <label class="form-label fw-bold">✏️ Assunto:</label>
+                    <input type="text" 
+                            class="form-control" 
+                            id="titulo" 
+                            name="titulo"
+                            placeholder="Sobre o que você quer falar?"
+                            maxlength="40">
+                    <small class="text-muted contador-titulo">0/40 caracteres</small>
+                </div>
+
+                <!-- Mensagem -->
+                <div class="campo campo-mensagem mb-3">
+                    <label class="form-label fw-bold">💭 Mensagem:</label>
+                    <div class="papel-carta">
+                        <div class="linha-margem"></div>
+                        <textarea class="form-control textarea-cartinha" 
+                                    id="conteudo" 
+                                    name="conteudo"
+                                    placeholder="Escreva sua mensagem aqui...&#10;&#10;Conte sobre seu dia, compartilhe um pensamento, ou simplesmente diga olá! ✨"
+                                    maxlength="560"
+                                    rows="12"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <small class="text-muted contador-conteudo">0/560 caracteres</small>
+                        <div class="assinatura-preview">
+                            <small class="text-muted fst-italic">Com carinho, <strong id="nomeRemetente">Você</strong> 💕</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="acoes-cartinha">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-secondary" id="btnGerenciarRascunhos" title="Ver rascunhos salvos">
+                            📝 Rascunhos
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnSalvarRascunho" title="Salvar como rascunho (Ctrl+S)">
+                            💾 Salvar
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" id="btnLimparCartinha" title="Limpar tudo">
+                            🗑️ Limpar
+                        </button>
+                        <div class="ms-auto">
+                            <button type="button" class="btn btn-primary btn-lg" id="btnEnviarCartinha" title="Enviar cartinha (Ctrl+Enter)">
+                                ✉️ Enviar Cartinha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Envio -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-cartinha-confirmacao">
+            <div class="modal-header">
+                <h5 class="modal-title">📮 Confirmar Envio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="resumo-envio">
+                    <p><strong>Para:</strong> <span id="resumoDestinatario">-</span></p>
+                    <p><strong>Assunto:</strong> <span id="resumoTitulo">-</span></p>
+                    <p><strong>Mensagem:</strong></p>
+                    <div class="resumo-conteudo" id="resumoConteudo">-</div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <small>✨ Sua cartinha será entregue imediatamente e o destinatário receberá uma notificação!</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarEnvio">
+                    ✉️ Confirmar Envio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Sucesso -->
+<div class="modal fade" id="modalSucesso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-sucesso">
+            <div class="modal-body text-center py-4">
+                <div class="icone-sucesso mb-3">🎉</div>
+                <h4 class="titulo-sucesso">Cartinha Enviada!</h4>
+                <p class="texto-sucesso">Sua cartinha foi entregue com sucesso e está a caminho do destinatário! 💌</p>
+                <div class="botoes-sucesso mt-4">
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="window.location.reload()">
+                        ✉️ Escrever Outra
+                    </button>
+                    <button type="button" class="btn btn-outline-primary me-2" onclick="window.location.href='/cartinhas/enviadas'">
+                        📤 Ver Enviadas
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='/cartinhas/recebidas'">
+                        📬 Ver Recebidas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Salvar Rascunho -->
+<div class="modal fade" id="modalSalvarRascunho" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">💾 Salvar Rascunho</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="nomeRascunho" class="form-label">Nome do rascunho:</label>
+                    <input type="text" class="form-control" id="nomeRascunho" placeholder="Ex: Carta para João, Mensagem de aniversário...">
+                    <small class="text-muted">Se deixar em branco, será usado o título da cartinha ou "Rascunho sem título"</small>
+                </div>
+                <div class="resumo-rascunho">
+                    <p><strong>Para:</strong> <span id="resumoRascunhoDestinatario">-</span></p>
+                    <p><strong>Título:</strong> <span id="resumoRascunhoTitulo">-</span></p>
+                    <p><strong>Conteúdo:</strong> <span id="resumoRascunhoConteudo">-</span> caracteres</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarSalvarRascunho">
+                    💾 Salvar Rascunho
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Gerenciar Rascunhos -->
+<div class="modal fade" id="modalRascunhos" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📝 Meus Rascunhos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="listaRascunhos" class="lista-rascunhos">
+                    <!-- Rascunhos serão carregados aqui -->
+                </div>
+                <div id="semRascunhos" class="text-center py-4 text-muted" style="display: none;">
+                    📝 Nenhum rascunho salvo ainda.<br>
+                    <small>Comece a escrever e clique em "Salvar Rascunho" para guardar suas ideias!</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação para Limpar Cartinha -->
+<div class="modal fade" id="modalLimparCartinha" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🗑️ Limpar Cartinha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="display-1">⚠️</div>
+                </div>
+                <p class="text-center"><strong>Tem certeza que deseja limpar toda a cartinha?</strong></p>
+                <p class="text-muted text-center">
+                    Esta ação irá apagar:
+                </p>
+                <ul class="list-unstyled text-center">
+                    <li>📮 Destinatário selecionado</li>
+                    <li>📝 Título da cartinha</li>
+                    <li>💭 Conteúdo da mensagem</li>
+                </ul>
+                <div class="alert alert-warning text-center">
+                    <small>💡 <strong>Dica:</strong> Se quiser guardar o conteúdo atual, clique em "Cancelar" e salve um rascunho primeiro!</small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarLimpar">
+                    🗑️ Sim, Limpar Tudo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/escrever-cartinha.js"></script>

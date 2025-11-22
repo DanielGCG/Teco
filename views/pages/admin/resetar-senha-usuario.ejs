@@ -1,0 +1,88 @@
+<div class="container mt-5">
+    <h2 class="mb-4">Resetar Senha de Usuário</h2>
+
+    <div class="mb-3">
+        <label for="selectUser" class="form-label">Selecione o usuário</label>
+        <select id="selectUser" class="form-select"></select>
+    </div>
+
+    <button id="resetBtn" class="btn btn-warning w-100">Resetar senha para 12345</button>
+</div>
+
+<script>
+let usuariosLista = [];
+let currentLoggedUser = null;
+
+// ==================== Buscar usuário logado ====================
+async function buscarUsuarioLogado() {
+    try {
+        const res = await fetch('/api/users/me', { credentials: "include" });
+        if (res.ok) {
+            currentLoggedUser = await res.json();
+        }
+    } catch(err) {
+        console.error("Erro ao buscar usuário logado:", err);
+    }
+}
+
+// ==================== Carregar usuários ====================
+async function carregarUsuarios() {
+    try {
+        const res = await fetch('/api/admin/users', { credentials: "include" });
+        if (!res.ok) throw new Error("Erro ao carregar usuários");
+
+        usuariosLista = await res.json();
+
+        const select = document.getElementById("selectUser");
+        select.innerHTML = "";
+
+        usuariosLista.forEach(u => {
+            // Filtrar usuários: se não for Dono, não mostrar usuários de nível igual ou superior
+            if (currentLoggedUser && currentLoggedUser.role < 2 && u.role >= currentLoggedUser.role) {
+                return; // Pula este usuário
+            }
+
+            const option = document.createElement("option");
+            option.value = u.id;
+            const roleText = u.role === 2 ? 'Dono' : u.role === 1 ? 'Administrador' : 'Usuário';
+            option.textContent = `${u.username} (${roleText})`;
+            select.appendChild(option);
+        });
+    } catch(err) {
+        console.error(err);
+        alert("Erro ao carregar usuários");
+    }
+}
+
+// ==================== Resetar senha ====================
+document.getElementById("resetBtn").addEventListener("click", async () => {
+    const select = document.getElementById("selectUser");
+    const userId = select.value;
+    if(!userId) return alert("Selecione um usuário");
+
+    if(!confirm("Tem certeza que deseja resetar a senha para 12345?")) return;
+
+    try {
+        const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+            method: "PUT",
+            credentials: "include"
+        });
+
+        const data = await res.json();
+        if(res.ok){
+            alert("Senha resetada com sucesso!");
+        } else {
+            alert("Erro: " + data.message);
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Erro ao resetar senha");
+    }
+});
+
+// ==================== Inicialização ====================
+window.addEventListener("DOMContentLoaded", async () => {
+    await buscarUsuarioLogado();
+    carregarUsuarios();
+});
+</script>

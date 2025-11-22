@@ -1,0 +1,40 @@
+<!-- Imagem do Dia -->
+<div class="row">
+    <div class="col-md-6 d-flex flex-column">
+        <h3 class="mb-3"><span class="marca-texto-verde">Imagem do Dia</span></h3>
+        <div id="imagem-do-dia-container" class="align-items-center" style="margin:0 auto 1rem auto;">
+            <div style="position:relative;width:200px;height:200px;">
+                <img src=<%= imagemDoDia.border_url %> alt="Moldura" style="width:220px;height:220px;position:absolute;left:-10px;top:-10px;z-index:1;pointer-events:none;box-shadow:0 2px 12px #bbb;">
+                <img src=<%= imagemDoDia.url %> class="card-img-top" alt="Imagem do Dia" style="object-fit:cover; width: 100%; height:100%; ">
+            </div>   
+        </div>
+        <div class="text-center">
+            <a href="" class="text-dark text-decoration-none" id="imagem-do-dia-nome">
+                <p class="card-text"><span class="marca-texto-roxo"><%= imagemDoDia.texto %></span></p>
+            </a>
+        </div>
+        <h3 class="mb-3">📬<span class="marca-texto-verde">Correio</span></h3>
+        <div class="list-group">
+            <a href="/cartinhas/escrever" class="list-group-item list-group-item-action"><i class="bi bi-pencil"></i> Escrever Carta</a>
+            <a href="/cartinhas/enviadas" class="list-group-item list-group-item-action"><i class="bi bi-envelope-arrow-up"></i> Enviadas</a>
+            <a href="/cartinhas/recebidas" class="list-group-item list-group-item-action"><i class="bi bi-envelope-arrow-down"></i> Caixa de Entrada</a>
+            <a href="/cartinhas/favoritas" class="list-group-item list-group-item-action"><i class="bi bi-star"></i> Favoritas</a>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h3 class="mb-3">🔥<span class="marca-texto-verde">Hits</span></h3>
+        <div class="list-group">
+            <a href="/chat/geral" class="list-group-item list-group-item-action"><i class="bi bi-chat-left-dots"></i> Chat geral</a>
+        </div>
+        <h3 class="mb-3"><span class="marca-texto-verde">Amigos e DMs</span></h3>
+        <div class="list-group">
+            <a href="/conversas" class="list-group-item list-group-item-action"><i class="bi bi-chat-left-heart"></i> Conversas</a>
+        </div>
+        <h3 class="mb-3">🔨<span class="marca-texto-verde">Ferramentas</span></h3>
+        <div class="list-group">
+            <a href="/watchlist" class="list-group-item list-group-item-action"><i class="bi bi-film"></i> WatchList</a>
+            <a href="/galeria" class="list-group-item list-group-item-action"><i class="bi bi-image"></i> Galeria</a>
+            <a href="/cutucar" class="list-group-item list-group-item-action"><i class="bi bi-twitter"></i> Cutucar</a>
+        </div>
+    </div>
+</div>

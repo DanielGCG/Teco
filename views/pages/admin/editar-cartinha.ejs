@@ -1,0 +1,725 @@
+<div class="container mt-4">
+    <!-- Filtros e busca -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label for="userFilter" class="form-label">Filtrar por usuário</label>
+            <select id="userFilter" class="form-select">
+                <option value="">Todos os usuários</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="statusFilter" class="form-label">Status</label>
+            <select id="statusFilter" class="form-select">
+                <option value="">Todas</option>
+                <option value="nao_lida">Não lidas</option>
+                <option value="lida">Lidas</option>
+                <option value="favorita">Favoritas</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="searchInput" class="form-label">Buscar por título/conteúdo</label>
+            <input type="text" id="searchInput" class="form-control" placeholder="Digite para buscar...">
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 id="totalCartinhas">-</h5>
+                    <small>Total de Cartinhas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h5 id="naoLidas">-</h5>
+                    <small>Não Lidas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 id="lidas">-</h5>
+                    <small>Lidas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 id="favoritas">-</h5>
+                    <small>Favoritas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de usuários com cartinhas -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Usuários e suas Cartinhas</h5>
+            <div>
+                <button class="btn btn-outline-danger btn-sm" id="limpezaBtn" title="Executar limpeza automática">
+                    🧹 Limpeza Automática
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="refreshBtn">
+                    🔄 Atualizar
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Loading -->
+            <div id="loading" class="text-center py-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+
+            <!-- Lista de usuários -->
+            <div id="usuariosList"></div>
+            
+            <!-- Paginação -->
+            <nav aria-label="Paginação" class="mt-4">
+                <ul class="pagination justify-content-center" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualizar/gerenciar cartinhas do usuário -->
+<div class="modal fade" id="cartinhasModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Cartinhas do Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros da modal -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <select id="modalStatusFilter" class="form-select form-select-sm">
+                            <option value="">Todas as cartinhas</option>
+                            <option value="nao_lida">Não lidas</option>
+                            <option value="lida">Lidas</option>
+                            <option value="favorita">Favoritas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" id="modalSearch" class="form-control form-control-sm" placeholder="Buscar por título/conteúdo...">
+                    </div>
+                </div>
+
+                <!-- Lista de cartinhas -->
+                <div id="cartinhasList" style="max-height: 500px; overflow-y: auto;"></div>
+                
+                <!-- Paginação da modal -->
+                <nav aria-label="Paginação de cartinhas" class="mt-3">
+                    <ul class="pagination pagination-sm justify-content-center" id="modalPagination"></ul>
+                </nav>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="deleteSelectedBtn" disabled>
+                    🗑️ Remover Selecionadas
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body" id="confirmMessage">
+                <!-- Mensagem será inserida aqui -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.usuario-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.usuario-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.cartinha-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+
+.cartinha-item:hover {
+    border-color: #6c5ce7;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1);
+}
+
+.cartinha-item.selected {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.cartinha-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.cartinha-item:hover .cartinha-actions {
+    opacity: 1;
+}
+
+.search-highlight {
+    background-color: yellow;
+    font-weight: bold;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+</style>
+
+<script>
+// ==================== Variáveis Globais ====================
+let currentPage = 1;
+let currentModalPage = 1;
+let currentUserId = null;
+let selectedCartinhas = new Set();
+let searchTimeout = null;
+let usuarios = [];
+let estatisticas = {};
+
+const ITEMS_PER_PAGE = 20;
+const CARTINHAS_PER_PAGE = 15;
+
+// ==================== Inicialização ====================
+document.addEventListener('DOMContentLoaded', () => {
+    carregarUsuarios();
+    carregarEstatisticas();
+    
+    // Event listeners
+    document.getElementById('userFilter').addEventListener('change', aplicarFiltros);
+    document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
+    document.getElementById('searchInput').addEventListener('input', debounceSearch);
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+        carregarUsuarios();
+        carregarEstatisticas();
+    });
+    document.getElementById('limpezaBtn').addEventListener('click', executarLimpeza);
+    
+    // Modal event listeners
+    document.getElementById('modalStatusFilter').addEventListener('change', carregarCartinhasUsuario);
+    document.getElementById('modalSearch').addEventListener('input', debounceModalSearch);
+    document.getElementById('deleteSelectedBtn').addEventListener('click', confirmarRemocaoSelecionadas);
+});
+
+// ==================== Carregamento de Dados ====================
+async function carregarUsuarios() {
+    try {
+        mostrarLoading(true);
+        
+        const filtros = obterFiltros();
+        // API espera usuario (ID), status, search
+        const params = new URLSearchParams();
+        params.append('page', currentPage);
+        params.append('limit', ITEMS_PER_PAGE);
+        if (filtros.usuario) params.append('usuario', filtros.usuario);
+        if (filtros.status) params.append('status', filtros.status);
+        if (filtros.search) params.append('search', filtros.search);
+
+        const response = await fetch(`/api/admin/cartinhas/usuarios?${params.toString()}`, {
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Erro ao carregar usuários');
+        const data = await response.json();
+        const usuariosArr = Array.isArray(data.usuarios) ? data.usuarios : [];
+        usuarios = usuariosArr;
+        renderizarUsuarios(usuariosArr);
+        renderizarPaginacao(data.currentPage, data.totalPages, 'pagination');
+        
+    } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+        mostrarToast('Erro ao carregar usuários', 'error');
+    } finally {
+        mostrarLoading(false);
+    }
+}
+
+async function carregarEstatisticas() {
+    try {
+        const response = await fetch('/api/admin/cartinhas/estatisticas', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+        
+        estatisticas = await response.json();
+        renderizarEstatisticas(estatisticas);
+        
+    } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+    }
+}
+
+async function carregarCartinhasUsuario() {
+    if (!currentUserId) return;
+    
+    try {
+        // API espera status, search
+        const status = document.getElementById('modalStatusFilter').value;
+        const search = document.getElementById('modalSearch').value;
+        const params = new URLSearchParams();
+        params.append('page', currentModalPage);
+        params.append('limit', CARTINHAS_PER_PAGE);
+        if (status) params.append('status', status);
+        if (search) params.append('search', search);
+
+        const response = await fetch(`/api/admin/cartinhas/usuario/${currentUserId}?${params.toString()}`, {
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Erro ao carregar cartinhas');
+        const data = await response.json();
+        renderizarCartinhas(data.cartinhas);
+        renderizarPaginacao(data.currentPage, data.totalPages, 'modalPagination');
+        
+    } catch (error) {
+        console.error('Erro ao carregar cartinhas:', error);
+        mostrarToast('Erro ao carregar cartinhas', 'error');
+    }
+}
+
+// ==================== Renderização ====================
+function renderizarUsuarios(usuarios) {
+    const container = document.getElementById('usuariosList');
+    usuarios = Array.isArray(usuarios) ? usuarios : [];
+    if (usuarios.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>Nenhum usuário encontrado com os filtros aplicados</p>
+            </div>
+        `;
+        return;
+    }
+    const html = usuarios.map(usuario => `
+        <div class="usuario-card card mb-3" onclick="abrirCartinhasUsuario(${usuario.id}, '${usuario.username}')">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                        <img src="${usuario.profile_image || '/images/placeholder.png'}" 
+                             alt="${usuario.username}" 
+                             class="rounded-circle" 
+                             style="width: 50px; height: 50px; object-fit: cover;">
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="mb-1">${usuario.username}</h6>
+                        <small class="text-muted">ID: ${usuario.id}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <span class="badge bg-primary">${usuario.total_cartinhas}</span>
+                                <small class="d-block">Total</small>
+                            </div>
+                            <div class="col-3">
+                                <span class="badge bg-warning text-dark">${usuario.nao_lidas}</span>
+                                <small class="d-block">Não lidas</small>
+                            </div>
+                            <div class="col-3">
+                                <span class="badge bg-success">${usuario.lidas}</span>
+                                <small class="d-block">Lidas</small>
+                            </div>
+                            <div class="col-3">
+                                <span class="badge bg-info">${usuario.favoritas}</span>
+                                <small class="d-block">Favoritas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    container.innerHTML = html;
+}
+
+function renderizarCartinhas(cartinhas) {
+    const container = document.getElementById('cartinhasList');
+    
+    if (cartinhas.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <p>Nenhuma cartinha encontrada</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = cartinhas.map(cartinha => {
+        const statusClass = cartinha.favoritada ? 'info' : (cartinha.lida ? 'success' : 'warning');
+        const statusText = cartinha.favoritada ? 'Favorita' : (cartinha.lida ? 'Lida' : 'Não lida');
+        
+        return `
+            <div class="cartinha-item p-3 ${selectedCartinhas.has(cartinha.id) ? 'selected' : ''}" 
+                 data-cartinha-id="${cartinha.id}">
+                <div class="row align-items-center">
+                    <div class="col-1">
+                        <input type="checkbox" class="form-check-input cartinha-checkbox" 
+                               data-cartinha-id="${cartinha.id}"
+                               ${selectedCartinhas.has(cartinha.id) ? 'checked' : ''}>
+                    </div>
+                    <div class="col-7">
+                        <h6 class="mb-1">${highlightSearch(cartinha.titulo || 'Sem título')}</h6>
+                        <small class="text-muted">
+                            De: <strong>${cartinha.remetente_username}</strong> • 
+                            ${formatarData(cartinha.data_envio)}
+                        </small>
+                    </div>
+                    <div class="col-2 text-center">
+                        <span class="badge bg-${statusClass} status-badge">${statusText}</span>
+                    </div>
+                    <div class="col-2 text-end">
+                        <div class="cartinha-actions">
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="event.stopPropagation(); confirmarRemocaoUnica(${cartinha.id})"
+                                    title="Remover">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html;
+    
+    // Adicionar event listeners para checkboxes
+    document.querySelectorAll('.cartinha-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', toggleSelecaoCartinha);
+    });
+}
+
+function renderizarEstatisticas(stats) {
+    document.getElementById('totalCartinhas').textContent = stats.total || 0;
+    document.getElementById('naoLidas').textContent = stats.nao_lidas || 0;
+    document.getElementById('lidas').textContent = stats.lidas || 0;
+    document.getElementById('favoritas').textContent = stats.favoritas || 0;
+}
+
+function renderizarPaginacao(currentPage, totalPages, containerId) {
+    const container = document.getElementById(containerId);
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Botão anterior
+    html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="mudarPagina(${currentPage - 1}, '${containerId}')">
+                Anterior
+            </a>
+        </li>
+    `;
+    
+    // Páginas
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="mudarPagina(${i}, '${containerId}')">${i}</a>
+            </li>
+        `;
+    }
+    
+    // Botão próximo
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="mudarPagina(${currentPage + 1}, '${containerId}')">
+                Próximo
+            </a>
+        </li>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// ==================== Funcões de Ação ====================
+function abrirCartinhasUsuario(userId, username) {
+    currentUserId = userId;
+    currentModalPage = 1;
+    selectedCartinhas.clear();
+    
+    document.getElementById('modalTitle').textContent = `Cartinhas de ${username}`;
+    document.getElementById('modalStatusFilter').value = '';
+    document.getElementById('modalSearch').value = '';
+    
+    carregarCartinhasUsuario();
+    
+    const modal = new bootstrap.Modal(document.getElementById('cartinhasModal'));
+    modal.show();
+}
+
+function toggleSelecaoCartinha(event) {
+    const cartinhaId = parseInt(event.target.dataset.cartinhaId);
+    const cartinhaElement = event.target.closest('.cartinha-item');
+    
+    if (event.target.checked) {
+        selectedCartinhas.add(cartinhaId);
+        cartinhaElement.classList.add('selected');
+    } else {
+        selectedCartinhas.delete(cartinhaId);
+        cartinhaElement.classList.remove('selected');
+    }
+    
+    atualizarBotaoRemover();
+}
+
+function atualizarBotaoRemover() {
+    const btn = document.getElementById('deleteSelectedBtn');
+    btn.disabled = selectedCartinhas.size === 0;
+    btn.textContent = selectedCartinhas.size > 0 
+        ? `🗑️ Remover Selecionadas (${selectedCartinhas.size})` 
+        : '🗑️ Remover Selecionadas';
+}
+
+async function confirmarRemocaoUnica(cartinhaId) {
+    const cartinha = await obterDetalhesCartinha(cartinhaId);
+    if (!cartinha) return;
+    
+    mostrarConfirmacao(
+        `Tem certeza que deseja remover a cartinha "${cartinha.titulo}"?`,
+        () => removerCartinhas([cartinhaId])
+    );
+}
+
+function confirmarRemocaoSelecionadas() {
+    if (selectedCartinhas.size === 0) return;
+    
+    mostrarConfirmacao(
+        `Tem certeza que deseja remover ${selectedCartinhas.size} cartinha(s) selecionada(s)?`,
+        () => removerCartinhas(Array.from(selectedCartinhas))
+    );
+}
+
+async function removerCartinhas(cartinhaIds) {
+    try {
+        const response = await fetch('/api/admin/cartinhas/remover', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ cartinhaIds })
+        });
+        
+        if (!response.ok) throw new Error('Erro ao remover cartinhas');
+        
+        const result = await response.json();
+        mostrarToast(`${result.removidas} cartinha(s) removida(s) com sucesso`, 'success');
+        
+        selectedCartinhas.clear();
+        carregarCartinhasUsuario();
+        carregarUsuarios();
+        carregarEstatisticas();
+        
+    } catch (error) {
+        console.error('Erro ao remover cartinhas:', error);
+        mostrarToast('Erro ao remover cartinhas', 'error');
+    }
+}
+
+async function executarLimpeza() {
+    mostrarConfirmacao(
+        'Executar limpeza automática? Isso removerá cartinhas lidas há mais de 30 dias que não são favoritas.',
+        async () => {
+            try {
+                const response = await fetch('/api/admin/cartinhas/limpeza', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) throw new Error('Erro na limpeza');
+                
+                const result = await response.json();
+                mostrarToast(`Limpeza concluída: ${result.removidas} cartinha(s) removida(s)`, 'success');
+                
+                carregarUsuarios();
+                carregarEstatisticas();
+                
+            } catch (error) {
+                console.error('Erro na limpeza:', error);
+                mostrarToast('Erro ao executar limpeza', 'error');
+            }
+        }
+    );
+}
+
+// ==================== Utilitários ====================
+function obterFiltros() {
+    return {
+        usuario: document.getElementById('userFilter').value,
+        status: document.getElementById('statusFilter').value,
+        search: document.getElementById('searchInput').value.trim()
+    };
+}
+
+function aplicarFiltros() {
+    currentPage = 1;
+    carregarUsuarios();
+}
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(aplicarFiltros, 500);
+}
+
+function debounceModalSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        currentModalPage = 1;
+        carregarCartinhasUsuario();
+    }, 500);
+}
+
+function mudarPagina(page, containerId) {
+    if (containerId === 'pagination') {
+        currentPage = page;
+        carregarUsuarios();
+    } else {
+        currentModalPage = page;
+        carregarCartinhasUsuario();
+    }
+}
+
+function mostrarLoading(show) {
+    document.getElementById('loading').style.display = show ? 'block' : 'none';
+}
+
+function mostrarConfirmacao(mensagem, callback) {
+    document.getElementById('confirmMessage').textContent = mensagem;
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+    
+    document.getElementById('confirmBtn').onclick = () => {
+        callback();
+        modal.hide();
+    };
+}
+
+function mostrarToast(mensagem, tipo = 'info') {
+    // Implementar toast notification
+    const alertClass = tipo === 'success' ? 'alert-success' : 
+                      tipo === 'error' ? 'alert-danger' : 'alert-info';
+    
+    const toast = document.createElement('div');
+    toast.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${mensagem}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+    }, 5000);
+}
+
+function formatarData(dataISO) {
+    const data = new Date(dataISO);
+    return data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+function highlightSearch(text) {
+    const search = document.getElementById('modalSearch')?.value || 
+                   document.getElementById('searchInput')?.value || '';
+    if (!search.trim()) return text;
+    
+    const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<span class="search-highlight">$1</span>');
+}
+
+async function obterDetalhesCartinha(cartinhaId) {
+    try {
+        const response = await fetch(`/api/admin/cartinhas/${cartinhaId}`, {
+            credentials: 'include'
+        });
+        return response.ok ? await response.json() : null;
+    } catch (error) {
+        console.error('Erro ao obter detalhes da cartinha:', error);
+        return null;
+    }
+}
+
+// Carregar lista de usuários para o filtro
+async function carregarUsuariosFiltro() {
+    try {
+        const response = await fetch('/api/users', {
+            credentials: 'include'
+        });
+        if (response.ok) {
+            const usuarios = await response.json();
+            const select = document.getElementById('userFilter');
+            select.innerHTML = '<option value="">Todos os usuários</option>';
+            usuarios.forEach(usuario => {
+                const option = document.createElement('option');
+                option.value = usuario.id;
+                option.textContent = usuario.username;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar usuários para filtro:', error);
+    }
+}
+
+// Carregar usuários para filtro na inicialização
+carregarUsuariosFiltro();
+</script>

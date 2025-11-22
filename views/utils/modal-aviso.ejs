@@ -1,0 +1,27 @@
+<!-- Modal de aviso global -->
+<div class="modal fade" id="avisoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="avisoModalTitle">Aviso</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p id="avisoTexto" class="mb-0"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Função global para mostrar avisos
+function mostrarAviso(mensagem, titulo = 'Aviso') {
+    document.getElementById("avisoTexto").textContent = mensagem;
+    document.getElementById("avisoModalTitle").textContent = titulo;
+    const avisoModal = new bootstrap.Modal(document.getElementById('avisoModal'));
+    avisoModal.show();
+}
+</script>
