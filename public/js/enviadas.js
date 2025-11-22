@@ -1,4 +1,4 @@
-let cartinhasData = [];
+// ==================== Configuração específica de ENVIADAS ====================
 
 // ==================== Carregar cartinhas ====================
 async function carregarCartinhas() {
@@ -42,7 +42,7 @@ function renderizarCartinhas() {
 
     const usuariosComCartinhas = window.usuariosProcessados;
 
-    // Ordenar usuários por quantidade de cartas não lidas e depois pela carta mais recente
+    // Ordenar por não lidas e data
     usuariosComCartinhas.forEach(u => {
         u.naoLidas = u.cartinhas.filter(c => !c.lida).length;
     });
@@ -54,101 +54,15 @@ function renderizarCartinhas() {
         return dataB - dataA;
     });
 
-    const containerPilhas = container.querySelector('.container-pilhas');
-    let html = '';
-
-    usuariosComCartinhas.forEach((usuario, usuarioIndex) => {
-        const cartasNaoLidas = usuario.naoLidas;
-
-        let classPosicao = '';
-        if (usuarioIndex === 0) classPosicao = 'ativa';
-        else if (usuarioIndex === 1) classPosicao = 'segunda';
-        else if (usuarioIndex === 2) classPosicao = 'terceira';
-        else if (usuarioIndex === 3) classPosicao = 'quarta';
-        else classPosicao = 'fundo';
-
-        html += `
-            <div class="pilha-cartas ${classPosicao}" id="pilha-${usuario.userId}" data-usuario-index="${usuarioIndex}" data-carregada="false">
-                ${usuarioIndex === 0 ? `
-                    <div class="instrucoes-pilha">
-                        🎯 Pilha ativa • ←→: ciclar cartas • Enter: ver carta
-                    </div>
-                ` : ''}
-                ${cartasNaoLidas > 0 ? `<div class="contador-pilha">${cartasNaoLidas}</div>` : ''}
-            </div>
-        `;
-    });
-
-    containerPilhas.innerHTML = html;
+    // Usar função comum para renderizar pilhas
+    renderizarPilhasCartinhas(usuariosComCartinhas);
+    
     container.style.display = 'block';
     semCartinhas.style.display = 'none';
-
-    window.pilhaAtivaIndex = 0;
-    window.totalPilhas = usuariosComCartinhas.length;
-
-    renderizarPilhasVisiveis();
 }
 
-// ==================== Funções de controle das pilhas ====================
-function trocarPilhaAnterior() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex > 0 ? window.pilhaAtivaIndex - 1 : window.totalPilhas - 1;
-    trocarPilhaAtiva(novoIndex);
-}
-
-function trocarProximaPilha() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex < window.totalPilhas - 1 ? window.pilhaAtivaIndex + 1 : 0;
-    trocarPilhaAtiva(novoIndex);
-}
-
-function trocarPilhaAtiva(novoIndex) {
-    if (novoIndex === window.pilhaAtivaIndex) return;
-    
-    const pilhas = Array.from(document.querySelectorAll('.pilha-cartas'));
-    
-    pilhas.forEach(pilha => {
-        pilha.classList.remove('ativa', 'segunda', 'terceira', 'quarta', 'fundo');
-    });
-    
-    pilhas.forEach((pilha, index) => {
-        const posicaoRelativa = (index - novoIndex + window.totalPilhas) % window.totalPilhas;
-        
-        if (posicaoRelativa === 0) {
-            pilha.classList.add('ativa');
-            const instrucoes = pilha.querySelector('.instrucoes-pilha');
-            if (!instrucoes) {
-                pilha.insertAdjacentHTML('afterbegin', `
-                    <div class="instrucoes-pilha">
-                        🎯 Pilha ativa • ←→: ciclar cartas • Enter: ver carta
-                    </div>
-                `);
-            }
-        } else if (posicaoRelativa === 1) {
-            pilha.classList.add('segunda');
-        } else if (posicaoRelativa === 2) {
-            pilha.classList.add('terceira');
-        } else if (posicaoRelativa === 3) {
-            pilha.classList.add('quarta');
-        } else {
-            pilha.classList.add('fundo');
-        }
-        
-        if (posicaoRelativa !== 0) {
-            const instrucoes = pilha.querySelector('.instrucoes-pilha');
-            if (instrucoes) instrucoes.remove();
-        }
-    });
-    
-    window.pilhaAtivaIndex = novoIndex;
-    
-    renderizarPilhasVisiveis();
-    setTimeout(descarregarPilhasInvisiveis, 500);
-}
-
-function ciclarCartasPilhaAtiva() {
+// ==================== Callback para ciclar cartas (usa função comum) ====================
+window.ciclarCartasCallback = function() {
     const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
     if (!pilhaAtiva) return;
 
@@ -163,98 +77,47 @@ function ciclarCartasPilhaAtiva() {
     usuario.indiceCiclo = (usuario.indiceCiclo + 1) % usuario.cartinhas.length;
 
     usuario.cartinhas.push(usuario.cartinhas.shift());
-
     cartas.forEach(carta => carta.remove());
 
-    for (let i = 0; i < Math.min(3, usuario.cartinhas.length); i++) {
-        const cartinha = usuario.cartinhas[i];
-        const dataFormatada = formatarData(cartinha.dataEnvio);
-        const isLida = cartinha.lida;
-        let posicaoClasse = '';
-        if (i === 0) posicaoClasse = 'topo';
-        else if (i === 1) posicaoClasse = 'meio';
-        else posicaoClasse = 'fundo';
+    // Recarregar cartas da pilha
+    window.carregarCartasCallback(pilhaAtiva, usuarioIndex);
+};
 
-        const posicaoReal = (usuario.indiceCiclo + i) % usuario.cartinhas.length + 1;
-
-        const cartaHtml = document.createElement('div');
-        cartaHtml.className = `carta-empilhada carta-envelope ${posicaoClasse}`;
-        cartaHtml.id = `carta-${cartinha.id}`;
-        cartaHtml.dataset.cartinhaId = cartinha.id;
-        cartaHtml.dataset.usuarioId = usuario.userId;
-        cartaHtml.dataset.posicao = i;
-        cartaHtml.style.zIndex = 10 - i;
-        cartaHtml.innerHTML = `
-            <div class="badge-enviada ${isLida ? 'lida' : ''}">
-                Para: ${usuario.username}
-            </div>
-            <div class="envelope-flap"></div>
-            <div class="selo ${!isLida ? 'nova' : ''}">${isLida ? 'LIDA' : 'ENVIADA'}</div>
-            <div class="icone-enviada ${isLida ? 'lida' : ''}"></div>
-            <div class="envelope-header">
-                <div class="remetente-info">
-                    <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span class="contador-cartas">
-                                Carta ${posicaoReal} de ${usuario.cartinhas.length}
-                            </span>
-                            <small style="color: #7D8D86; font-weight: 500;">${dataFormatada}</small>
-                            ${isLida ? '<span class="indicador-lida">✓ Lida</span>' : '<span class="indicador-nao-lida">○ Não lida</span>'}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="cartinha-papel papel-linhas">
-                <h3 class="titulo-carta">${cartinha.titulo || ''}</h3>
-                <div class="conteudo-carta">${cortarTexto(cartinha.conteudo || '', 120)}</div>
-                <div class="data-carta">Enviada em ${dataFormatada}</div>
-            </div>
-            ${i === 0 ? `
-                <div class="acoes-carta">
-                    <button class="btn-acao btn-ler" onclick="abrirCartinha(${cartinha.id})" title="Ver carta">👁️</button>
-                </div>
-            ` : ''}
-        `;
-        pilhaAtiva.appendChild(cartaHtml);
-    }
-}
-
-function lerCartaAtiva() {
-    const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
-    if (!pilhaAtiva) return;
+// ==================== Callback para carregar cartas (específico de enviadas) ====================
+window.carregarCartasCallback = function(pilhaElement, usuarioIndex) {
+    const usuario = window.usuariosProcessados[usuarioIndex];
+    if (!usuario) return;
     
-    const cartaTopo = pilhaAtiva.querySelector('.carta-empilhada.topo');
-    if (cartaTopo) {
-        const cartinhaId = parseInt(cartaTopo.dataset.cartinhaId);
-        abrirCartinha(cartinhaId);
+    if (!usuario.indiceCiclo) usuario.indiceCiclo = 0;
+    
+    const totalCartas = usuario.cartinhas.length;
+    const cartasParaRenderizar = usuario.cartinhas.slice(0, Math.min(3, totalCartas));
+    let html = '';
+    
+    cartasParaRenderizar.forEach((cartinha, index) => {
+        html += construirHtmlCartinha(cartinha, usuario, index, totalCartas, 'enviadas');
+    });
+    
+    pilhaElement.insertAdjacentHTML('beforeend', html);
+    pilhaElement.dataset.carregada = 'true';
+    
+    // Event listener para carta do topo
+    const cartaTopo = pilhaElement.querySelector('.carta-empilhada.topo');
+    if (cartaTopo && usuarioIndex === window.pilhaAtivaIndex) {
+        cartaTopo.addEventListener('click', (e) => {
+            if (!e.target.closest('.btn-acao')) {
+                const cartinhaId = parseInt(cartaTopo.dataset.cartinhaId);
+                abrirCartinha(cartinhaId);
+            }
+        });
     }
-}
+};
 
-// ==================== Utilitários ====================
-function formatarData(dataISO) {
-    const data = new Date(dataISO);
-    const agora = new Date();
-    const diffMs = agora - data;
-    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+// ==================== Callback para abrir cartinha (específico de enviadas) ====================
+window.abrirCartinhaCallback = function(cartinhaId) {
+    abrirCartinha(cartinhaId);
+};
 
-    if (diffDias === 0) {
-        return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias === 1) {
-        return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias < 7) {
-        return `${diffDias} dias atrás`;
-    } else {
-        return data.toLocaleDateString('pt-BR');
-    }
-}
-
-function cortarTexto(texto, limite) {
-    if (texto.length <= limite) return texto;
-    return texto.substring(0, limite) + '...';
-}
-
-// ==================== Abrir cartinha no modal ====================
 function abrirCartinha(cartinhaId) {
     if (cartinhaId === null || cartinhaId === undefined || isNaN(cartinhaId)) {
         console.warn('abrirCartinha chamado com id inválido:', cartinhaId);
@@ -336,11 +199,6 @@ function abrirModalEdicao(cartinhaId) {
     
     if (!cartinha || !usuario) return;
     
-    // Fechar modal de visualização
-    const cartinhaModal = bootstrap.Modal.getInstance(document.getElementById('cartinhaModal'));
-    if (cartinhaModal) cartinhaModal.hide();
-    
-    // Preencher formulário
     document.getElementById('edit-cartinha-id').value = cartinhaId;
     document.getElementById('edit-destinatario-avatar').src = usuario.avatar;
     document.getElementById('edit-destinatario-nome').textContent = usuario.username;
@@ -349,7 +207,6 @@ function abrirModalEdicao(cartinhaId) {
     
     atualizarContadores();
     
-    // Abrir modal de edição
     const editarModal = new bootstrap.Modal(document.getElementById('editarModal'));
     editarModal.show();
 }
@@ -390,14 +247,12 @@ async function salvarEdicao() {
         const result = await response.json();
         
         if (response.ok) {
-            // Atualizar dados locais
             const cartinha = encontrarCartinha(parseInt(cartinhaId));
             if (cartinha) {
                 cartinha.titulo = titulo;
                 cartinha.conteudo = conteudo;
             }
             
-            // Atualizar UI
             const cartaElement = document.getElementById(`carta-${cartinhaId}`);
             if (cartaElement) {
                 const tituloElement = cartaElement.querySelector('.titulo-carta');
@@ -406,7 +261,6 @@ async function salvarEdicao() {
                 if (conteudoElement) conteudoElement.textContent = cortarTexto(conteudo, 120);
             }
             
-            // Fechar modal
             const editarModal = bootstrap.Modal.getInstance(document.getElementById('editarModal'));
             editarModal.hide();
             
@@ -435,141 +289,8 @@ function mostrarMensagem(texto, tipo) {
     }, 5000);
 }
 
-// ==================== Funções auxiliares ====================
-function encontrarCartinha(cartinhaId) {
-    if (!window.usuariosProcessados) return null;
-    for (const usuario of window.usuariosProcessados) {
-        const cartinha = usuario.cartinhas.find(c => c.id === cartinhaId);
-        if (cartinha) return cartinha;
-    }
-    return null;
-}
-
-function encontrarUsuarioPorCartinha(cartinhaId) {
-    if (!window.usuariosProcessados) return null;
-    return window.usuariosProcessados.find(usuario => 
-        usuario.cartinhas.some(c => c.id === cartinhaId)
-    );
-}
-
-// ==================== Funções de carregamento sob demanda ====================
-function renderizarPilhasVisiveis() {
-    const pilhasVisiveis = document.querySelectorAll('.pilha-cartas.ativa, .pilha-cartas.segunda, .pilha-cartas.terceira');
-    
-    pilhasVisiveis.forEach(pilha => {
-        const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
-        const carregada = pilha.dataset.carregada === 'true';
-        
-        if (!carregada && window.usuariosProcessados && window.usuariosProcessados[usuarioIndex]) {
-            carregarCartasParaPilha(pilha, usuarioIndex);
-        }
-    });
-}
-
-function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
-    const usuario = window.usuariosProcessados[usuarioIndex];
-    if (!usuario) return;
-    
-    if (!usuario.indiceCiclo) usuario.indiceCiclo = 0;
-    
-    const cartasDoUsuario = usuario.cartinhas;
-    const totalCartas = cartasDoUsuario.length;
-    let html = '';
-    
-    const cartasParaRenderizar = cartasDoUsuario.slice(0, Math.min(3, totalCartas));
-    
-    cartasParaRenderizar.forEach((cartinha, index) => {
-        const dataFormatada = formatarData(cartinha.dataEnvio);
-        const isLida = cartinha.lida;
-        
-        let posicaoClasse = '';
-        if (index === 0) posicaoClasse = 'topo';
-        else if (index === 1) posicaoClasse = 'meio';
-        else posicaoClasse = 'fundo';
-        
-        const posicaoReal = (usuario.indiceCiclo + index) % totalCartas + 1;
-        
-        html += `
-            <div class="carta-empilhada carta-envelope ${posicaoClasse}" 
-                id="carta-${cartinha.id}" 
-                data-cartinha-id="${cartinha.id}"
-                data-usuario-id="${usuario.userId}"
-                data-posicao="${index}"
-                style="z-index: ${10 - index}">
-                
-                <div class="badge-enviada ${isLida ? 'lida' : ''}">
-                    Para: ${usuario.username}
-                </div>
-                
-                <div class="envelope-flap"></div>
-                
-                <div class="selo ${!isLida ? 'nova' : ''}">
-                    ${isLida ? 'LIDA' : 'ENVIADA'}
-                </div>
-                
-                <div class="envelope-header">
-                    <div class="remetente-info">
-                        <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta">
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <span class="contador-cartas">
-                                    Carta ${posicaoReal} de ${totalCartas}
-                                </span>
-                                <small style="color: #7D8D86; font-weight: 500;">${dataFormatada}</small>
-                                ${isLida ? '<span class="indicador-lida">✓ Lida</span>' : '<span class="indicador-nao-lida">○ Não lida</span>'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="cartinha-papel papel-linhas">
-                    <h3 class="titulo-carta">${cartinha.titulo || ''}</h3>
-                    <div class="conteudo-carta">${cortarTexto(cartinha.conteudo || '', 120)}</div>
-                    <div class="data-carta">Enviada em ${dataFormatada}</div>
-                </div>
-
-                ${usuarioIndex === window.pilhaAtivaIndex && index === 0 ? `
-                    <div class="acoes-carta">
-                        <button class="btn-acao btn-ler" onclick="abrirCartinha(${cartinha.id})" title="Ver carta">
-                            👁️
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    });
-    
-    pilhaElement.insertAdjacentHTML('beforeend', html);
-    pilhaElement.dataset.carregada = 'true';
-    
-    const cartaTopo = pilhaElement.querySelector('.carta-empilhada.topo');
-    if (cartaTopo) {
-        cartaTopo.addEventListener('click', (e) => {
-            if (!e.target.closest('.btn-acao')) {
-                const cartinhaId = parseInt(cartaTopo.dataset.cartinhaId);
-                abrirCartinha(cartinhaId);
-            }
-        });
-    }
-}
-
-function descarregarPilhasInvisiveis() {
-    const pilhasNaoVisiveis = document.querySelectorAll('.pilha-cartas:not(.ativa):not(.segunda):not(.terceira):not(.quarta)');
-    
-    pilhasNaoVisiveis.forEach(pilha => {
-        if (pilha.dataset.carregada === 'true') {
-            const cartasParaRemover = pilha.querySelectorAll('.carta-empilhada');
-            cartasParaRemover.forEach(carta => carta.remove());
-            pilha.dataset.carregada = 'false';
-        }
-    });
-}
-
 // ==================== Função de exclusão ====================
 function confirmarExclusao(cartinhaId) {
-    const cartinhaModal = bootstrap.Modal.getInstance(document.getElementById('cartinhaModal'));
-    if (cartinhaModal) cartinhaModal.hide();
-    
     let confirmationModal = document.getElementById('confirmDeleteModal');
     
     if (!confirmationModal) {
@@ -681,55 +402,13 @@ async function excluirCartinha(cartinhaId) {
     }
 }
 
-// ==================== Feedback ====================
-function mostrarFeedback(mensagem, tipo = 'success') {
-    let container = document.querySelector('.feedback-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'feedback-container';
-        container.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${tipo} border-0 mb-2`;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                ${mensagem}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
-        </div>
-    `;
-    
-    container.appendChild(toast);
-    
-    const bsToast = new bootstrap.Toast(toast, {
-        autohide: true,
-        delay: 3000
-    });
-    bsToast.show();
-    
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
-
 // ==================== Inicialização ====================
 document.addEventListener('DOMContentLoaded', () => {
     carregarCartinhas();
     
-    // Eventos de teclado para navegação
-    document.addEventListener('keydown', (e) => {
-        if (window.totalPilhas === undefined || window.totalPilhas === 0) return;
-        
-        const modalAberto = document.querySelector('.modal.show');
-        if (modalAberto) {
-            // Atalhos no modal de visualização
+    // Usar função comum de navegação por teclado
+    inicializarNavegacaoTeclado({
+        modal: (e, modalAberto) => {
             if (modalAberto.id === 'cartinhaModal') {
                 if (e.key === 'e' || e.key === 'E') {
                     e.preventDefault();
@@ -742,28 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (excluirBtn && !excluirBtn.disabled) excluirBtn.click();
                 }
             }
-            return;
-        }
-        
-        switch(e.key) {
-            case 'ArrowUp':
-                e.preventDefault();
-                trocarPilhaAnterior();
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                trocarProximaPilha();
-                break;
-            case 'ArrowLeft':
-            case 'ArrowRight':
-                e.preventDefault();
-                ciclarCartasPilhaAtiva();
-                break;
-            case 'Enter':
-            case ' ':
-                e.preventDefault();
-                lerCartaAtiva();
-                break;
         }
     });
     

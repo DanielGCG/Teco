@@ -1,115 +1,39 @@
-/* Estilo de carta física */
-.carta-envelope {
-    background: linear-gradient(135deg, #fafaf5 0%, #e9e7da 100%);
-    border: 1px solid #d4d1bf;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(62, 63, 41, 0.1);
-    margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* ==================== RECEBIDAS - OVERRIDES ESPECÍFICOS ==================== */
+/* Este arquivo extende cartinhas-common.css com estilos específicos de recebidas */
+
+/* Tema roxo para recebidas */
+:root {
+    --cor-principal-recebidas: #6c5ce7;
+    --cor-secundaria-recebidas: #5849c7;
+    --cor-destaque-recebidas: #74b9ff;
 }
 
-.carta-envelope:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(188, 168, 141, 0.25);
-}
-
-/* Sistema de empilhamento de pilhas */
-.container-pilhas {
-    position: relative;
-    height: clamp(250px, 50vh, 450px);
-    perspective: 1000px;
-    margin-bottom: 1rem;
-    overflow: visible;
-}
-
-.pilha-cartas {
-    position: absolute;
-    width: min(100%, 600px);
-    left: 50%;
-    transform: translateX(-50%);
-    perspective: 1000px;
-    padding: clamp(5px, 2vw, 10px);
-    border-radius: 12px;
-    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* Posições das pilhas no empilhamento - Responsivas */
+/* Pilha ativa com tema roxo */
 .pilha-cartas.ativa {
     top: clamp(80px, 20vh, 120px);
     z-index: 10;
     transform: translateX(-50%) translateY(0) rotate(0deg) scale(1);
-    background: rgba(188, 168, 141, 0.08);
-    box-shadow: 0 0 0 2px rgba(188, 168, 141, 0.3);
+    background: rgba(108, 92, 231, 0.08);
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.3);
 }
 
-.pilha-cartas.segunda {
-    top: clamp(65px, 16vh, 100px);
-    z-index: 8;
-    transform: translateX(-50%) translateY(-10px) rotate(-1deg) scale(0.95);
-    opacity: 0.8;
+.pilha-cartas.ativa .instrucoes-pilha {
+    opacity: 1;
 }
 
-.pilha-cartas.terceira {
-    top: clamp(50px, 12vh, 80px);
-    z-index: 6;
-    transform: translateX(-50%) translateY(-20px) rotate(-2deg) scale(0.9);
-    opacity: 0.6;
-}
-
-.pilha-cartas.quarta {
-    top: clamp(35px, 8vh, 60px);
-    z-index: 4;
-    transform: translateX(-50%) translateY(-30px) rotate(-3deg) scale(0.85);
-    opacity: 0.4;
-}
-
-.pilha-cartas.fundo {
-    top: clamp(20px, 4vh, 40px);
-    z-index: 2;
-    transform: translateX(-50%) translateY(-40px) rotate(-4deg) scale(0.8);
-    opacity: 0.2;
-}
-
-.carta-empilhada {
+/* Envelope flap */
+.envelope-flap {
     position: absolute;
-    width: 100%;
-    cursor: pointer;
-    transform-origin: center center;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.carta-empilhada.topo {
-    z-index: 10;
-    transform: translateY(0) translateX(0) rotate(0deg) scale(1);
-}
-
-.carta-empilhada.meio {
-    z-index: 5;
-    transform: translateY(-8px) translateX(-3px) rotate(-1deg) scale(0.98);
-}
-
-.carta-empilhada.fundo {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(135deg, #BCA88D, #A39178);
+    clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
     z-index: 1;
-    transform: translateY(-16px) translateX(-6px) rotate(-2deg) scale(0.96);
 }
 
-.carta-empilhada.jogada-direita {
-    transform: translateX(400px) translateY(-20px) rotate(15deg) scale(0.9);
-    opacity: 0.7;
-    z-index: 0;
-    pointer-events: none;
-}
-
-.carta-empilhada.jogada-esquerda {
-    transform: translateX(-400px) translateY(-20px) rotate(-15deg) scale(0.9);
-    opacity: 0.7;
-    z-index: 0;
-    pointer-events: none;
-}
-
-/* Contador de cartas na pilha */
+/* Contador de cartas */
 .contador-pilha {
     position: absolute;
     top: -10px;
@@ -130,357 +54,52 @@
     animation: pulse 2s infinite;
 }
 
-/* Animação de pulsação para destacar cartas não lidas */
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-/* Ocultar contador nas pilhas distantes ou de fundo */
-.pilha-cartas.quarta .contador-pilha,
-.pilha-cartas.fundo .contador-pilha {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Botões de ação da carta */
-.acoes-carta {
-    position: absolute;
-    bottom: clamp(8px, 2vw, 10px);
-    right: clamp(8px, 2vw, 10px);
-    display: flex;
-    gap: clamp(0.3rem, 1vw, 0.5rem);
-    z-index: 12;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.carta-empilhada.topo:hover .acoes-carta {
-    opacity: 1;
-}
-
-.btn-acao {
-    width: clamp(32px, 7vw, 35px);
-    height: clamp(32px, 7vw, 35px);
-    border-radius: 50%;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-.btn-jogar-direita {
-    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
-    color: white;
-}
-
-.btn-jogar-esquerda {
-    background: linear-gradient(135deg, #dc3545, #c82333);
-    color: white;
-}
-
-.btn-ler {
-    background: linear-gradient(135deg, #198754, #157347);
-    color: white;
-}
-
-.btn-acao:hover {
-    transform: scale(1.1);
-}
-
-.envelope-flap {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(135deg, #BCA88D, #A39178);
-    clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
-    z-index: 1;
-}
-
-.envelope-header {
-    position: relative;
-    z-index: 2;
-    padding: clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) clamp(0.75rem, 2vw, 1rem);
-    margin-top: clamp(30px, 8vw, 40px);
-}
-
-.remetente-info {
-    display: flex;
-    align-items: center;
-    gap: clamp(0.5rem, 2vw, 1rem);
-    margin-bottom: 1rem;
-}
-
-.selo {
-    position: absolute;
-    top: 10px;
-    right: clamp(10px, 3vw, 15px);
-    width: clamp(35px, 8vw, 40px);
-    height: clamp(35px, 8vw, 40px);
-    background: #fff;
-    border: 2px solid #BCA88D;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(0.6rem, 1.5vw, 0.7rem);
-    font-weight: bold;
-    color: #BCA88D;
-    transform: rotate(-5deg);
-    z-index: 3;
-}
-
+/* Selo de nova cartinha */
 .selo.nova {
     background: #dc3545;
     border-color: #c82333;
     color: white;
 }
 
-.avatar-carta {
-    width: clamp(40px, 10vw, 45px);
-    height: clamp(40px, 10vw, 45px);
-    border-radius: 50%;
-    border: 3px solid #BCA88D;
-    object-fit: cover;
-}
-
-.cartinha-papel {
-    background: #fafaf5;
-    margin: 0 clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem);
-    padding: clamp(1rem, 3vw, 1.5rem);
-    border-radius: 6px;
-    box-shadow: inset 0 0 0 1px rgba(188, 168, 141, 0.1);
-    position: relative;
-    transition: all 0.2s ease;
-}
-
-.cartinha-papel::before {
-    content: '';
+/* Estilo para o selo de favorita */
+.selo-favorita {
     position: absolute;
-    left: clamp(1rem, 3vw, 1.5rem);
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(to bottom, #d4d1bf 0%, #BCA88D 50%, #d4d1bf 100%);
+    top: 10px;
+    right: 15px;
+    z-index: 4;
+    color: #f1c40f;
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
+    text-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+    animation: none;
+    transition: transform 0.2s ease;
 }
 
-.papel-linhas {
-    background-image: 
-        repeating-linear-gradient(
-            transparent,
-            transparent 1.4rem,
-            rgba(0,0,0,0.05) 1.4rem,
-            rgba(0,0,0,0.05) 1.5rem
-        );
-    min-height: 120px;
+.selo-favorita:hover {
+    transform: scale(1.2) rotate(10deg);
 }
 
-.titulo-carta {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-    font-weight: 600;
-    color: #3E3F29;
-    margin-bottom: 0.8rem;
-    padding-left: 1rem;
-}
-
-.conteudo-carta {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(0.85rem, 2vw, 0.95rem);
-    line-height: 1.6;
-    color: #636e72;
-    padding-left: 1rem;
-    margin-bottom: 1rem;
-}
-
-.data-carta {
-    font-size: clamp(0.75rem, 1.8vw, 0.8rem);
-    color: #7D8D86;
-    text-align: right;
-    font-style: italic;
-    margin-top: 1rem;
-    padding-right: 1rem;
-}
-
-.sem-cartinhas {
-    text-align: center;
-    padding: clamp(2rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem);
-    color: #7D8D86;
-}
-
-.sem-cartinhas .envelope-vazio {
-    font-size: clamp(3rem, 10vw, 4rem);
-    color: #ddd;
-    margin-bottom: 1.5rem;
-    opacity: 0.7;
-}
-
-.loading-spinner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: clamp(150px, 30vh, 200px);
-}
-
-.contador-cartas {
-    background: rgba(255,255,255,0.9);
-    color: #BCA88D;
-    padding: clamp(0.25rem, 1vw, 0.3rem) clamp(0.6rem, 2vw, 0.8rem);
-    border-radius: 20px;
-    font-size: clamp(0.75rem, 1.8vw, 0.8rem);
-    font-weight: 600;
-    border: 1px solid rgba(188, 168, 141, 0.3);
-}
-
-/* Modal com tema de carta */
-.modal-carta .modal-dialog {
-    max-width: min(90vw, 800px);
-    max-height: 90vh;
-    margin: clamp(0.5rem, 2vh, 1rem) auto;
-}
-
-.modal-carta .modal-content {
-    background: #fefefe;
-    border: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.modal-carta .modal-header {
-    background: linear-gradient(135deg, #BCA88D, #A39178);
-    color: #3E3F29;
-    border-bottom: none;
-    padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
-    flex-shrink: 0;
-}
-
-.modal-carta .modal-body {
-    padding: clamp(1rem, 3vw, 1.5rem);
-    background-image: 
-        repeating-linear-gradient(
-            transparent,
-            transparent 1.4rem,
-            rgba(0,0,0,0.03) 1.4rem,
-            rgba(0,0,0,0.03) 1.5rem
-        );
-    overflow-y: auto;
-    flex: 1;
-}
-
-.modal-carta .modal-footer {
-    border-top: 1px solid #e9ecef;
-    padding: clamp(0.5rem, 1.5vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
-    flex-shrink: 0;
-}
-
-.instrucoes-pilha {
-    position: absolute;
-    top: clamp(-35px, -8vw, -30px);
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: clamp(0.7rem, 1.8vw, 0.8rem);
-    color: #3E3F29;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.pilha-cartas.ativa .instrucoes-pilha {
-    opacity: 1;
-}
-
-/* Controles de navegação entre pilhas */
-.controles-navegacao {
-    position: absolute;
-    left: clamp(-45px, -10vw, -50px);
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 20;
-}
-
-.pilha-cartas:hover .controles-navegacao,
-.pilha-cartas.focada .controles-navegacao {
-    opacity: 1;
-}
-
-.btn-navegacao {
-    width: clamp(35px, 8vw, 40px);
-    height: clamp(35px, 8vw, 40px);
-    border-radius: 50%;
-    border: 2px solid #BCA88D;
-    background: white;
-    color: #BCA88D;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(0.85rem, 2vw, 1rem);
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(188, 168, 141, 0.2);
-    cursor: pointer;
-}
-
-.btn-navegacao:hover {
-    background: #BCA88D;
-    color: white;
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(188, 168, 141, 0.4);
-}
-
-.btn-navegacao:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-navegacao:disabled:hover {
-    background: white;
-    color: #BCA88D;
-    transform: none;
-}
-
-/* Responsividade para imagens e texto dentro do modal */
-.modal-carta img {
-    max-width: 100%;
-    height: auto;
-}
-
-.modal-carta * {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Avatar no modal da carta */
-.modal-carta .avatar-carta {
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-/* Animação de entrega de carta */
-@keyframes cartaChegando {
-    0% {
-        transform: translateY(-50px) rotate(-5deg);
+/* Animação de destaque para o selo favorito quando adicionado */
+@keyframes destacarEstrela {
+    0% { 
+        transform: scale(0.5) rotate(0deg);
         opacity: 0;
     }
-    100% {
-        transform: translateY(0) rotate(0deg);
+    50% {
+        transform: scale(1.3) rotate(180deg);
+    }
+    100% { 
+        transform: scale(1) rotate(360deg);
         opacity: 1;
     }
 }
 
-.pilha-cartas {
-    animation: cartaChegando 0.8s ease-out;
+.selo-favorita.adicionado {
+    animation: destacarEstrela 0.6s ease-out;
+}
+
+/* Efeito hover para o selo de favorita */
+.carta-envelope:hover .selo-favorita {
+    transform: scale(1.1);
+    text-shadow: 0 0 12px rgba(241, 196, 15, 0.9);
 }

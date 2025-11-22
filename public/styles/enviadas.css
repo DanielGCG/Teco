@@ -1,66 +1,43 @@
-/* Sobrescritas específicas para cartinhas enviadas */
+/* ==================== ENVIADAS - OVERRIDES MÍNIMOS ==================== */
+/* Este arquivo extende recebidas.css com apenas as diferenças visuais específicas */
 
-/* Cor diferente para a aba do envelope - tom de verde/azulado para "enviadas" */
-.envelope-flap {
-    background: linear-gradient(135deg, #7D8D86 0%, #5a6d68 100%) !important;
+/* Tema verde/azulado para enviadas */
+:root {
+    --cor-principal-enviadas: #7D8D86;
+    --cor-secundaria-enviadas: #5a6d68;
+    --cor-destaque-enviadas: #BCA88D;
 }
 
-/* Selo para indicar status (lida/não lida) */
+/* Aba do envelope - usa paleta bege/marrom padrão */
+.envelope-flap {
+    background: linear-gradient(135deg, #BCA88D, #A39178) !important;
+}
+
+/* Selo de status - usa paleta bege/marrom padrão */
 .selo {
-    background: linear-gradient(135deg, #7D8D86, #5a6d68) !important;
+    background: #fff !important;
+    border: 2px solid #BCA88D !important;
+    color: #BCA88D !important;
 }
 
 .selo.nova {
-    background: linear-gradient(135deg, #BCA88D, #a08d75) !important;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-/* Header do envelope com gradiente diferenciado */
-.envelope-header {
-    background: linear-gradient(135deg, rgba(125, 141, 134, 0.05) 0%, rgba(125, 141, 134, 0.15) 100%) !important;
-    border-bottom: 2px solid rgba(125, 141, 134, 0.2) !important;
-}
-
-/* Botões de ação com cores do projeto */
-.btn-acao {
-    background: linear-gradient(135deg, #7D8D86, #6a7a73) !important;
+    background: linear-gradient(135deg, #BCA88D, #A39178) !important;
+    border-color: #A39178 !important;
     color: white !important;
-    border: none !important;
 }
 
-.btn-acao:hover {
-    background: linear-gradient(135deg, #6a7a73, #5a6d68) !important;
-    transform: scale(1.1) !important;
-}
-
-.btn-acao.btn-editar {
-    background: linear-gradient(135deg, #BCA88D, #a08d75) !important;
-}
-
-.btn-acao.btn-editar:hover {
-    background: linear-gradient(135deg, #a08d75, #8b765f) !important;
-}
-
-.btn-acao.btn-excluir {
-    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-.btn-acao.btn-excluir:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226) !important;
-}
-
-/* Contador de pilha */
+/* Contador de cartas não lidas - usa paleta bege/marrom padrão */
 .contador-pilha {
-    background: linear-gradient(135deg, #7D8D86, #5a6d68) !important;
+    background: linear-gradient(135deg, #BCA88D, #A39178) !important;
 }
 
-/* Badge de status no topo da carta */
-.badge-enviada {
+/* Badge de status - usa paleta bege/marrom padrão */
+.badge-enviadas {
     position: absolute;
     top: 5px;
     left: 15px;
     z-index: 4;
-    background: rgba(125, 141, 134, 0.9);
+    background: linear-gradient(135deg, #BCA88D, #A39178);
     color: white;
     padding: 0.4rem 1rem;
     border-radius: 0 0 12px 0;
@@ -69,93 +46,16 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
-.badge-enviada.lida {
-    background: rgba(188, 168, 141, 0.9);
+.badge-enviadas.lida {
+    background: linear-gradient(135deg, #d4d1bf, #BCA88D);
 }
 
-/* Instruções com cor adaptada */
-.instrucoes-pilha {
-    color: #7D8D86 !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 2px solid #7D8D86 !important;
-}
-
-/* Modal header */
-.modal-carta .modal-header {
-    background: linear-gradient(135deg, #7D8D86 0%, #5a6d68 100%) !important;
-}
-
-/* Botão de editar no modal */
-#editar-btn {
-    border-color: #BCA88D !important;
-    color: #BCA88D !important;
-}
-
-#editar-btn:hover {
-    background-color: #BCA88D !important;
-    color: white !important;
-}
-
-/* Ícone especial para cartas enviadas */
-.icone-enviada {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    z-index: 5;
-    color: #7D8D86;
-    font-size: 1.2rem;
-    filter: drop-shadow(0 0 3px rgba(0,0,0,0.3));
-    background: rgba(255, 255, 255, 0.9);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-}
-
-.icone-enviada.lida {
-    color: #BCA88D;
-}
-
-/* Estilo para indicador de "lida" */
-.indicador-lida {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.6rem;
-    background: rgba(188, 168, 141, 0.15);
-    border: 1px solid rgba(188, 168, 141, 0.3);
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #BCA88D;
-}
-
-.indicador-nao-lida {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.6rem;
-    background: rgba(125, 141, 134, 0.15);
-    border: 1px solid rgba(125, 141, 134, 0.3);
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #7D8D86;
-}
-
-/* Sem cartinhas - mensagem personalizada */
-#sem-cartinhas {
-    color: #3E3F29;
-}
-
+/* Mensagem de nenhuma carta */
 #sem-cartinhas .envelope-vazio {
-    color: #7D8D86;
+    color: #BCA88D;
 }
 
-/* Animação personalizada para cartas enviadas */
+/* Animação personalizada para entrada */
 @keyframes cartaEnviando {
     0% {
         transform: translateX(50px) rotate(5deg);

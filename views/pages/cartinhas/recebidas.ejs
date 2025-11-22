@@ -1,5 +1,6 @@
+<link rel="stylesheet" href="/styles/cartinhas-common.css">
 <link rel="stylesheet" href="/styles/recebidas.css">
-<script src="/js/modal-cartinha.js"></script>
+<script src="/js/cartinhas-common.js"></script>
 
 <style>
     /* Estilo para o selo de favorita */
@@ -67,6 +68,32 @@
                 <div class="envelope-vazio">📭</div>
                 <h4>Caixa de entrada vazia</h4>
                 <p>Você ainda não recebeu nenhuma cartinha.<br>Quando alguém enviar uma carta para você, ela aparecerá aqui.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualizar cartinha completa -->
+<div class="modal fade modal-carta" id="cartinhaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📄 Lendo Cartinha</h5>
+                <div class="ms-auto me-2">
+                    <small class="text-muted">Atalhos: <kbd>F</kbd> Favoritar | <kbd>R</kbd> Responder | <kbd>D</kbd> Excluir</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-content">
+                    <!-- Conteúdo da cartinha será inserido aqui -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">📪 Fechar</button>
+                <button type="button" class="btn btn-outline-danger" id="excluir-btn">🗑️ Excluir</button>
+                <button type="button" class="btn btn-outline-warning" id="favoritar-btn">⭐ Favoritar</button>
+                <button type="button" class="btn btn-primary" id="responder-btn">✉️ Responder</button>
             </div>
         </div>
     </div>
@@ -169,73 +196,8 @@ function renderizarCartinhas() {
     renderizarPilhasVisiveis();
 }
 
-// ==================== Funções de controle das pilhas ====================
-function trocarPilhaAnterior() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex > 0 ? window.pilhaAtivaIndex - 1 : window.totalPilhas - 1;
-    trocarPilhaAtiva(novoIndex);
-}
-
-function trocarProximaPilha() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex < window.totalPilhas - 1 ? window.pilhaAtivaIndex + 1 : 0;
-    trocarPilhaAtiva(novoIndex);
-}
-
-function trocarPilhaAtiva(novoIndex) {
-    if (novoIndex === window.pilhaAtivaIndex) return;
-    
-    const pilhas = Array.from(document.querySelectorAll('.pilha-cartas'));
-    
-    // Remover classes antigas
-    pilhas.forEach(pilha => {
-        pilha.classList.remove('ativa', 'segunda', 'terceira', 'quarta', 'fundo');
-    });
-    
-    // Aplicar novas posições
-    pilhas.forEach((pilha, index) => {
-        const posicaoRelativa = (index - novoIndex + window.totalPilhas) % window.totalPilhas;
-        
-        if (posicaoRelativa === 0) {
-            pilha.classList.add('ativa');
-            // Adicionar instruções apenas na pilha ativa
-            const instrucoes = pilha.querySelector('.instrucoes-pilha');
-            if (!instrucoes) {
-                pilha.insertAdjacentHTML('afterbegin', `
-                    <div class="instrucoes-pilha">
-                        🎯 Pilha ativa • ←→: ciclar cartas • Enter: ler carta
-                    </div>
-                `);
-            }
-        } else if (posicaoRelativa === 1) {
-            pilha.classList.add('segunda');
-        } else if (posicaoRelativa === 2) {
-            pilha.classList.add('terceira');
-        } else if (posicaoRelativa === 3) {
-            pilha.classList.add('quarta');
-        } else {
-            pilha.classList.add('fundo');
-        }
-        
-        // Remover instruções das pilhas não ativas
-        if (posicaoRelativa !== 0) {
-            const instrucoes = pilha.querySelector('.instrucoes-pilha');
-            if (instrucoes) instrucoes.remove();
-        }
-    });
-    
-    window.pilhaAtivaIndex = novoIndex;
-    
-    // Renderizar pilhas visíveis após a troca
-    renderizarPilhasVisiveis();
-    
-    // Descarregar pilhas que não estão mais visíveis para economizar memória
-    setTimeout(descarregarPilhasInvisiveis, 500);
-}
-
-function ciclarCartasPilhaAtiva() {
+// ==================== Callbacks específicos de RECEBIDAS ====================
+window.ciclarCartasCallback = function() {
 
     const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
     if (!pilhaAtiva) return;
@@ -313,7 +275,7 @@ function ciclarCartasPilhaAtiva() {
         `;
         pilhaAtiva.appendChild(cartaHtml);
     }
-}
+};
 
 function lerCartaAtiva() {
     const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
@@ -476,29 +438,6 @@ function reorganizarPilha(pilha, cartinhaJogada) {
     }, 1000);
 }
 
-// ==================== Utilitários ====================
-function formatarData(dataISO) {
-    const data = new Date(dataISO);
-    const agora = new Date();
-    const diffMs = agora - data;
-    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDias === 0) {
-        return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias === 1) {
-        return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias < 7) {
-        return `${diffDias} dias atrás`;
-    } else {
-        return data.toLocaleDateString('pt-BR');
-    }
-}
-
-function cortarTexto(texto, limite) {
-    if (texto.length <= limite) return texto;
-    return texto.substring(0, limite) + '...';
-}
-
 // ==================== Abrir cartinha no modal ====================
 function abrirCartinha(cartinhaId) {
     if (cartinhaId === null || cartinhaId === undefined || isNaN(cartinhaId)) {
@@ -523,72 +462,101 @@ function abrirCartinha(cartinhaId) {
         carregarCartaEspecifica(usuario.userId, cartinhaId);
     }
 
+    const modalContent = document.getElementById('modal-content');
+    modalContent.innerHTML = `
+        <div class="mb-3">
+            <!-- Cabeçalho da carta -->
+            <div class="d-flex align-items-center mb-3 p-2" style="background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c5ce7;">
+                <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
+                <div>
+                    <strong style="font-size: 1rem; color: #2d3436;">${usuario.username}</strong>
+                    <div><small class="text-muted">📅 ${formatarData(cartinha.dataEnvio)}</small></div>
+                </div>
+                <div class="ms-auto">
+                    <span class="badge" style="background: #6c5ce7; color: white; font-size: 0.75rem;">✉️ Cartinha</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Papel da carta com linhas -->
+        <div style="background: #fefefe; padding: 1.5rem; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); position: relative; background-image: repeating-linear-gradient(transparent, transparent 1.4rem, rgba(0,0,0,0.03) 1.4rem, rgba(0,0,0,0.03) 1.5rem);">
+            <!-- Linha lateral do papel -->
+            <div style="position: absolute; left: 1.5rem; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #e9ecef 0%, #6c5ce7 50%, #e9ecef 100%);"></div>
+            
+            <!-- Título da carta -->
+            <h3 style="font-family: 'Montserrat', sans-serif; color: #2d3436; margin-bottom: 1rem; padding-left: 1rem; font-weight: 600; font-size: 1.1rem;">
+                ${cartinha.titulo}
+            </h3>
+            
+            <!-- Conteúdo da carta -->
+            <div style="font-family: 'Montserrat', sans-serif; font-size: 0.95rem; line-height: 1.6; color: #636e72; padding-left: 1rem; white-space: pre-wrap;">
+                ${cartinha.conteudo}
+            </div>
+            
+            <!-- Assinatura -->
+            <!-- Assinatura -->
+            <div style="text-align: right; margin-top: 1.5rem; padding-right: 1rem; font-style: italic; color: #74b9ff; font-size: 0.9rem;">
+                Com carinho,<br>
+                <strong>${usuario.username}</strong>
+            </div>
+        </div>
+    `;
+
+    // Configurar botão de responder
+    const responderBtn = document.getElementById('responder-btn');
+    responderBtn.onclick = () => responderCartinha(usuario.userId, usuario.username);
+
+    // Configurar botão de favoritar
+    const favoritarBtn = document.getElementById('favoritar-btn');
+    atualizarBotaoFavorito(favoritarBtn, cartinha);
+    favoritarBtn.onclick = () => toggleFavorito(cartinhaId);
+    
+    // Configurar botão de excluir
+    const excluirBtn = document.getElementById('excluir-btn');
+    excluirBtn.onclick = () => confirmarExclusao(cartinhaId);
+
     // Marcar como lida
     if (!cartinha.lida) {
         marcarComoLida(cartinhaId);
     }
 
-    // Usar o modal compartilhado
-    window.modalCartinha.abrir({
-        tipo: 'recebidas',
-        cartinha: cartinha,
-        usuario: usuario,
-        badges: [
-            cartinha.favoritada ? 
-                { icone: '⭐', texto: 'Favoritada', cor: '#f39c12', corTexto: 'white' } : null
-        ].filter(Boolean),
-        acoes: [
-            {
-                id: 'excluir',
-                icone: '🗑️',
-                texto: 'Excluir',
-                classe: 'btn-outline-danger',
-                callback: (carta, user) => {
-                    window.modalCartinha.fechar();
-                    setTimeout(() => confirmarExclusao(carta.id), 300);
-                }
-            },
-            {
-                id: 'favoritar',
-                icone: cartinha.favoritada ? '💔' : '⭐',
-                texto: cartinha.favoritada ? 'Desfavoritar' : 'Favoritar',
-                classe: cartinha.favoritada ? 'btn-outline-warning' : 'btn-warning',
-                callback: (carta, user) => {
-                    toggleFavorito(carta.id);
-                }
-            },
-            {
-                id: 'responder',
-                icone: '✉️',
-                texto: 'Responder',
-                classe: 'btn-primary',
-                callback: (carta, user) => {
-                    window.modalCartinha.fechar();
-                    setTimeout(() => responderCartinha(user.userId, user.username), 300);
-                }
-            }
-        ],
-        atalhosTeclado: {
-            'f': {
-                callback: (carta, user) => {
-                    toggleFavorito(carta.id);
-                }
-            },
-            'r': {
-                callback: (carta, user) => {
-                    window.modalCartinha.fechar();
-                    setTimeout(() => responderCartinha(user.userId, user.username), 300);
-                }
-            },
-            'd': {
-                callback: (carta, user) => {
-                    window.modalCartinha.fechar();
-                    setTimeout(() => confirmarExclusao(carta.id), 300);
-                }
-            }
-        }
-    });
+    // Abrir modal
+    const modal = new bootstrap.Modal(document.getElementById('cartinhaModal'));
+    modal.show();
 }
+
+// Atualiza o estilo e texto do botão favoritar
+function atualizarBotaoFavorito(botao, cartinha) {
+    if (cartinha.favoritada) {
+        botao.classList.remove('btn-outline-warning');
+        botao.classList.add('btn-warning');
+        botao.innerHTML = '⭐ Favoritada';
+        
+        // Adicionar efeito visual temporário
+        botao.classList.add('pulse');
+        setTimeout(() => {
+            botao.classList.remove('pulse');
+        }, 700);
+    } else {
+        botao.classList.remove('btn-warning');
+        botao.classList.add('btn-outline-warning');
+        botao.innerHTML = '⭐ Favoritar';
+    }
+}
+
+// Adicionar o estilo para o efeito pulse
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes btnPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .pulse {
+    animation: btnPulse 0.7s ease-in-out;
+  }
+`;
+document.head.appendChild(style);
 
 // Alterna o status de favorito da cartinha
 async function toggleFavorito(cartinhaId) {
@@ -609,9 +577,11 @@ async function toggleFavorito(cartinhaId) {
         if (cartinha) {
             cartinha.favoritada = result.favoritada;
             
-            // Fechar e reabrir modal para atualizar o visual
-            window.modalCartinha.fechar();
-            setTimeout(() => abrirCartinha(cartinhaId), 300);
+            // Atualizar UI
+            const favoritarBtn = document.getElementById('favoritar-btn');
+            if (favoritarBtn) {
+                atualizarBotaoFavorito(favoritarBtn, cartinha);
+            }
             
             // Atualizar o indicador visual na carta
             const cartaElement = document.getElementById(`carta-${cartinhaId}`);
@@ -741,23 +711,8 @@ function responderCartinha(userId, username) {
     window.location.href = `/cartinhas/escrever?para=${userId}&nome=${encodeURIComponent(username)}`;
 }
 
-// ==================== Funções de carregamento sob demanda ====================
-// Renderizar apenas as pilhas visíveis
-function renderizarPilhasVisiveis() {
-    const pilhasVisiveis = document.querySelectorAll('.pilha-cartas.ativa, .pilha-cartas.segunda, .pilha-cartas.terceira');
-    
-    pilhasVisiveis.forEach(pilha => {
-        const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
-        const carregada = pilha.dataset.carregada === 'true';
-        
-        if (!carregada && window.usuariosProcessados && window.usuariosProcessados[usuarioIndex]) {
-            carregarCartasParaPilha(pilha, usuarioIndex);
-        }
-    });
-}
-
-// Carregar cartas para uma pilha específica
-function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
+// ==================== Callback para carregar cartas (específico de RECEBIDAS) ====================
+window.carregarCartasCallback = function(pilhaElement, usuarioIndex) {
     const usuario = window.usuariosProcessados[usuarioIndex];
     if (!usuario) return;
     
@@ -861,107 +816,7 @@ function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
             }
         });
     }
-}
-
-// Descarregar pilhas não visíveis para economizar memória
-function descarregarPilhasInvisiveis() {
-    const pilhasNaoVisiveis = document.querySelectorAll('.pilha-cartas:not(.ativa):not(.segunda):not(.terceira):not(.quarta)');
-    
-    pilhasNaoVisiveis.forEach(pilha => {
-        // Se a pilha já foi carregada
-        if (pilha.dataset.carregada === 'true') {
-            // Remove todas as cartas, mas mantém a estrutura da pilha e o contador
-            const cartasParaRemover = pilha.querySelectorAll('.carta-empilhada');
-            cartasParaRemover.forEach(carta => carta.remove());
-            
-            // Marcar como não carregada
-            pilha.dataset.carregada = 'false';
-        }
-    });
-}
-
-// Carregar carta específica sob demanda (quando necessário)
-function carregarCartaEspecifica(usuarioId, cartinhaId) {
-    const usuario = window.usuariosProcessados.find(u => u.userId === usuarioId);
-    if (!usuario) return null;
-    
-    const cartinha = usuario.cartinhas.find(c => c.id === cartinhaId);
-    if (!cartinha) return null;
-    
-    // Já existe esta carta no DOM?
-    const cartaExistente = document.getElementById(`carta-${cartinhaId}`);
-    if (cartaExistente) return cartaExistente;
-    
-    // Encontrar pilha correspondente
-    const pilha = document.getElementById(`pilha-${usuarioId}`);
-    if (!pilha) return null;
-    
-    // Encontrar índice da cartinha
-    const index = usuario.cartinhas.findIndex(c => c.id === cartinhaId);
-    
-    // Inicializar o índice de ciclo se não existir
-    if (!usuario.indiceCiclo) usuario.indiceCiclo = 0;
-    
-    // Calcular a posição real da carta considerando o ciclo
-    const posicaoReal = (usuario.indiceCiclo + index) % usuario.cartinhas.length + 1;
-    
-    const dataFormatada = formatarData(cartinha.dataEnvio);
-    const isNaoLida = !cartinha.lida;
-    
-    // Criar elemento da carta
-    const cartaElement = document.createElement('div');
-    cartaElement.className = `carta-empilhada carta-envelope`;
-    cartaElement.id = `carta-${cartinha.id}`;
-    cartaElement.dataset.cartinhaId = cartinha.id;
-    cartaElement.dataset.usuarioId = usuario.userId;
-    cartaElement.dataset.posicao = index;
-    cartaElement.style.zIndex = 10 - index;
-    
-    cartaElement.innerHTML = `
-        <!-- Nome do usuário no topo -->
-        <div style="position: absolute; top: 5px; left: 15px; z-index: 4; background: rgba(108, 92, 231, 0.9); color: white; padding: 0.4rem 1rem; border-radius: 0 0 12px 0; font-weight: 600; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-            ${usuario.username}
-        </div>
-        
-        <!-- Aba do envelope -->
-        <div class="envelope-flap"></div>
-        
-        <!-- Selo -->
-        <div class="selo ${isNaoLida ? 'nova' : ''}">
-            ${isNaoLida ? 'NOVA' : '✓'}
-        </div>
-        
-        <!-- Indicador de favorito -->
-        ${cartinha.favoritada ? `
-        <div class="selo-favorita">⭐</div>
-        ` : ''}
-        
-        <!-- Cabeçalho com informações do remetente -->
-        <div class="envelope-header">
-            <div class="remetente-info">
-                <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span class="contador-cartas">
-                            Carta ${posicaoReal} de ${usuario.cartinhas.length}
-                        </span>
-                        <small style="color: #74b9ff; font-weight: 500;">${dataFormatada}</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Papel da cartinha -->
-        <div class="cartinha-papel papel-linhas">
-            <h3 class="titulo-carta ${isNaoLida ? 'text-primary' : ''}">${cartinha.titulo || ''}</h3>
-            <div class="conteudo-carta">${cortarTexto(cartinha.conteudo || '', 120)}</div>
-            <div class="data-carta">Recebida em ${dataFormatada}</div>
-        </div>
-    `;
-    
-    pilha.appendChild(cartaElement);
-    return cartaElement;
-}
+};
 
 // ==================== Inicialização ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1044,48 +899,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 });
-
-// ==================== Feedback e notificações ====================
-function mostrarFeedback(mensagem, tipo = 'success') {
-    // Verificar se o elemento já existe
-    let container = document.querySelector('.feedback-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'feedback-container';
-        container.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;';
-        document.body.appendChild(container);
-    }
-
-    // Criar elemento de toast
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${tipo} border-0 mb-2`;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                ${mensagem}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
-        </div>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Inicializar toast
-    const bsToast = new bootstrap.Toast(toast, {
-        autohide: true,
-        delay: 3000
-    });
-    bsToast.show();
-    
-    // Remover o toast depois de fechado
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
 
 // ==================== Navegação entre pilhas ====================
 function atualizarBotoesNavegacao() {

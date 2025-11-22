@@ -1,6 +1,6 @@
-<link rel="stylesheet" href="/styles/recebidas.css">
+<link rel="stylesheet" href="/styles/cartinhas-common.css">
 <link rel="stylesheet" href="/styles/favoritas.css">
-<script src="/js/modal-cartinha.js"></script>
+<script src="/js/cartinhas-common.js"></script>
 
 <div class="container mt-4">
     <div class="row">
@@ -25,6 +25,32 @@
                 <div class="envelope-vazio">⭐</div>
                 <h4>Nenhuma cartinha favoritada</h4>
                 <p>Você ainda não tem cartinhas favoritas.<br>Quando receber cartinhas especiais, favorite-as para guardá-las aqui!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualizar cartinha favorita completa -->
+<div class="modal fade modal-carta" id="cartinhaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">⭐ Cartinha Favorita</h5>
+                <div class="ms-auto me-2">
+                    <small class="text-muted">Atalhos: <kbd>D</kbd> Desfavoritar | <kbd>R</kbd> Responder | <kbd>X</kbd> Excluir</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-content">
+                    <!-- Conteúdo da cartinha será inserido aqui -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" id="excluir-btn">🗑️ Excluir</button>
+                <button type="button" class="btn btn-outline-warning" id="desfavoritar-btn">💔 Desfavoritar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">📪 Fechar</button>
+                <button type="button" class="btn btn-primary" id="responder-btn">✉️ Responder</button>
             </div>
         </div>
     </div>
@@ -181,7 +207,7 @@ function renderizarCartinhasFavoritas() {
                 
                 <!-- Instruções para a pilha ativa -->
                 <div class="instrucoes-pilha">
-                    <span>👆 Clique para ler • ⬅️➡️ Trocar carta • ⬆️⬇️ Trocar usuário</span>
+                    <span>👆 Clique para ler • ←→ Ciclar cartas • ⬆️⬇️ Trocar usuário</span>
                 </div>
                 
                 <!-- As cartas serão carregadas aqui sob demanda -->
@@ -217,58 +243,8 @@ function renderizarCartinhasFavoritas() {
     renderizarPilhasVisiveis();
 }
 
-// ==================== Funções de controle das pilhas ====================
-function trocarPilhaAnterior() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex > 0 ? window.pilhaAtivaIndex - 1 : window.totalPilhas - 1;
-    trocarPilhaAtiva(novoIndex);
-}
-
-function trocarProximaPilha() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex < window.totalPilhas - 1 ? window.pilhaAtivaIndex + 1 : 0;
-    trocarPilhaAtiva(novoIndex);
-}
-
-function trocarPilhaAtiva(novoIndex) {
-    if (novoIndex === window.pilhaAtivaIndex) return;
-    
-    const pilhas = Array.from(document.querySelectorAll('.pilha-cartas'));
-    
-    // Remover classes antigas
-    pilhas.forEach(pilha => {
-        pilha.classList.remove('ativa', 'segunda', 'terceira', 'quarta', 'fundo');
-    });
-    
-    // Aplicar novas posições
-    pilhas.forEach((pilha, index) => {
-        const offset = (index - novoIndex + pilhas.length) % pilhas.length;
-        
-        if (offset === 0) {
-            pilha.classList.add('ativa');
-        } else if (offset === 1) {
-            pilha.classList.add('segunda');
-        } else if (offset === 2) {
-            pilha.classList.add('terceira');
-        } else if (offset === 3) {
-            pilha.classList.add('quarta');
-        } else {
-            pilha.classList.add('fundo');
-        }
-    });
-    
-    window.pilhaAtivaIndex = novoIndex;
-    
-    // Renderizar pilhas visíveis após a troca
-    renderizarPilhasVisiveis();
-    
-    // Descarregar pilhas que não estão mais visíveis para economizar memória
-    setTimeout(descarregarPilhasInvisiveis, 500);
-}
-
-function ciclarCartasPilhaAtiva() {
+// ==================== Callbacks específicos de FAVORITAS ====================
+window.ciclarCartasCallback = function() {
     const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
     if (!pilhaAtiva) return;
 
@@ -338,14 +314,8 @@ function ciclarCartasPilhaAtiva() {
                 
                 <!-- Botões de ação -->
                 <div class="acoes-carta">
-                    <button class="btn-acao btn-jogar-esquerda" onclick="event.stopPropagation(); jogarCartaEsquerda(${cartinha.id})">
-                        ⬅️
-                    </button>
-                    <button class="btn-acao btn-ler" onclick="event.stopPropagation(); abrirCartinhaFavorita(${cartinha.id})">
+                    <button class="btn-acao btn-ler" onclick="event.stopPropagation(); abrirCartinhaFavorita(${cartinha.id})" title="Ver carta">
                         👁️
-                    </button>
-                    <button class="btn-acao btn-jogar-direita" onclick="event.stopPropagation(); jogarCartaDireita(${cartinha.id})">
-                        ➡️
                     </button>
                 </div>
             </div>
@@ -353,8 +323,9 @@ function ciclarCartasPilhaAtiva() {
         
         pilhaAtiva.insertAdjacentHTML('beforeend', novaCartaHTML);
     }
-}
+};
 
+// ==================== lerCartaAtiva (usa comum) ====================
 function lerCartaAtiva() {
     const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
     if (!pilhaAtiva) return;
@@ -364,98 +335,6 @@ function lerCartaAtiva() {
         const cartinhaId = cartaTopo.id.replace('carta-', '');
         abrirCartinhaFavorita(parseInt(cartinhaId));
     }
-}
-
-// ==================== Funções de manipulação de cartas ====================
-function jogarCartaDireita(cartinhaId) {
-    const carta = document.getElementById(`carta-${cartinhaId}`);
-    const pilha = carta.closest('.pilha-cartas');
-    
-    // Aplicar animação de jogar para direita
-    carta.classList.add('jogada-direita');
-    
-    // Após a animação, reorganizar a pilha
-    setTimeout(() => {
-        reorganizarPilha(pilha, cartinhaId);
-    }, 400);
-}
-
-function jogarCartaEsquerda(cartinhaId) {
-    const carta = document.getElementById(`carta-${cartinhaId}`);
-    const pilha = carta.closest('.pilha-cartas');
-    
-    // Aplicar animação de jogar para esquerda
-    carta.classList.add('jogada-esquerda');
-    
-    // Após a animação, reorganizar a pilha
-    setTimeout(() => {
-        reorganizarPilha(pilha, cartinhaId);
-    }, 400);
-}
-
-function reorganizarPilha(pilha, cartinhaJogada) {
-    const todasCartas = Array.from(pilha.querySelectorAll('.carta-empilhada'));
-    const cartaJogadaElement = document.getElementById(`carta-${cartinhaJogada}`);
-    const cartasRestantes = todasCartas.filter(carta => carta.id !== `carta-${cartinhaJogada}`);
-    
-    // Reorganizar posições das cartas restantes
-    cartasRestantes.forEach((carta, index) => {
-        carta.classList.remove('topo', 'meio', 'fundo');
-        
-        if (index === 0) {
-            carta.classList.add('topo');
-        } else if (index === 1) {
-            carta.classList.add('meio');
-        } else {
-            carta.classList.add('fundo');
-        }
-        
-        carta.style.zIndex = 10 - index;
-    });
-    
-    // Após 0.5 segundo, mover a carta jogada para o final da pilha
-    setTimeout(() => {
-        cartaJogadaElement.classList.remove('jogada-direita', 'jogada-esquerda');
-        cartaJogadaElement.classList.add('fundo');
-        cartaJogadaElement.style.zIndex = 1;
-        
-        // Reposicionar no DOM
-        pilha.appendChild(cartaJogadaElement);
-        
-        // Reorganizar dados do usuário também
-        const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
-        const usuario = window.usuariosProcessados[usuarioIndex];
-        if (usuario) {
-            const cartinhaIndex = usuario.cartinhas.findIndex(c => c.id == cartinhaJogada);
-            if (cartinhaIndex !== -1) {
-                const cartinha = usuario.cartinhas.splice(cartinhaIndex, 1)[0];
-                usuario.cartinhas.push(cartinha);
-            }
-        }
-    }, 500);
-}
-
-// ==================== Utilitários ====================
-function formatarData(dataISO) {
-    const data = new Date(dataISO);
-    const agora = new Date();
-    const diffMs = agora - data;
-    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDias === 0) {
-        return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias === 1) {
-        return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias < 7) {
-        return `${diffDias} dias atrás`;
-    } else {
-        return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear()}`;
-    }
-}
-
-function cortarTexto(texto, limite) {
-    if (texto.length <= limite) return texto;
-    return texto.substring(0, limite) + '...';
 }
 
 // ==================== Abrir cartinha favorita no modal ====================
@@ -984,60 +863,8 @@ function fecharModalCartinha() {
     }, 300);
 }
 
-function mostrarFeedback(mensagem, tipo = 'success') {
-    // Verificar se o elemento container já existe
-    let container = document.querySelector('.feedback-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'feedback-container';
-        container.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;';
-        document.body.appendChild(container);
-    }
-
-    // Criar elemento de toast
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${tipo} border-0 mb-2`;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                ${mensagem}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
-        </div>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Inicializar toast
-    const bsToast = new bootstrap.Toast(toast, {
-        autohide: true,
-        delay: 3000
-    });
-    bsToast.show();
-    
-    // Remover o toast depois de fechado
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
-
-// ==================== Funções de carregamento sob demanda ====================
-function renderizarPilhasVisiveis() {
-    const pilhasVisiveis = document.querySelectorAll('.pilha-cartas.ativa, .pilha-cartas.segunda, .pilha-cartas.terceira');
-    
-    pilhasVisiveis.forEach((pilha, index) => {
-        if (pilha.dataset.carregada === 'false') {
-            const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
-            carregarCartasParaPilha(pilha, usuarioIndex);
-        }
-    });
-}
-
-function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
+// ==================== Callback para carregar cartas (específico de FAVORITAS) ====================
+window.carregarCartasCallback = function(pilhaElement, usuarioIndex) {
     const usuario = window.usuariosProcessados[usuarioIndex];
     if (!usuario) {
         return;
@@ -1099,14 +926,8 @@ function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
                 
                 <!-- Botões de ação -->
                 <div class="acoes-carta">
-                    <button class="btn-acao btn-jogar-esquerda" onclick="event.stopPropagation(); jogarCartaEsquerda(${cartinha.id})">
-                        ⬅️
-                    </button>
-                    <button class="btn-acao btn-ler" onclick="event.stopPropagation(); abrirCartinhaFavorita(${cartinha.id})">
+                    <button class="btn-acao btn-ler" onclick="event.stopPropagation(); abrirCartinhaFavorita(${cartinha.id})" title="Ver carta">
                         👁️
-                    </button>
-                    <button class="btn-acao btn-jogar-direita" onclick="event.stopPropagation(); jogarCartaDireita(${cartinha.id})">
-                        ➡️
                     </button>
                 </div>
             </div>
@@ -1127,40 +948,7 @@ function carregarCartasParaPilha(pilhaElement, usuarioIndex) {
             abrirCartinhaFavorita(parseInt(cartinhaId));
         });
     }
-}
-
-function descarregarPilhasInvisiveis() {
-    const pilhasNaoVisiveis = document.querySelectorAll('.pilha-cartas:not(.ativa):not(.segunda):not(.terceira):not(.quarta)');
-    
-    pilhasNaoVisiveis.forEach(pilha => {
-        pilha.innerHTML = '';
-        pilha.dataset.carregada = 'false';
-    });
-}
-
-function carregarCartaEspecifica(usuarioId, cartinhaId) {
-    const usuario = window.usuariosProcessados.find(u => u.userId === usuarioId);
-    if (!usuario) return null;
-    
-    const cartinha = usuario.cartinhas.find(c => c.id === cartinhaId);
-    if (!cartinha) return null;
-    
-    // Já existe esta carta no DOM?
-    if (document.getElementById(`carta-${cartinhaId}`)) {
-        return cartinha;
-    }
-    
-    // Encontrar a pilha do usuário
-    const pilhaUsuario = document.querySelector(`.pilha-cartas[data-usuario-index="${window.usuariosProcessados.indexOf(usuario)}"]`);
-    if (!pilhaUsuario) return null;
-    
-    // Carregar todas as cartas da pilha se ainda não estiver carregada
-    if (pilhaUsuario.dataset.carregada === 'false') {
-        carregarCartasParaPilha(pilhaUsuario, window.usuariosProcessados.indexOf(usuario));
-    }
-    
-    return cartinha;
-}
+};
 
 // ==================== Inicialização ====================
 document.addEventListener('DOMContentLoaded', () => {
