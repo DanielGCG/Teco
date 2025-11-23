@@ -174,7 +174,7 @@ document.getElementById("saveUserBtn").addEventListener("click", async () => {
 // ==================== Excluir usuário ====================
 document.getElementById("deleteUserBtn").addEventListener("click", async () => {
     if (!currentUser) return;
-    if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
+    if (!await confirm("Tem certeza que deseja excluir este usuário?")) return;
 
     try {
         const res = await fetch(`/api/admin/users/${currentUser.id}`, {

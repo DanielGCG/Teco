@@ -21,6 +21,16 @@
 function mostrarAviso(mensagem, titulo = 'Aviso') {
     document.getElementById("avisoTexto").textContent = mensagem;
     document.getElementById("avisoModalTitle").textContent = titulo;
+    
+    // Reproduzir som de alerta
+    try {
+        const audio = new Audio('/sounds/alert.mp3');
+        audio.volume = 0.3;
+        audio.play().catch(err => console.log('Não foi possível reproduzir o som:', err));
+    } catch (err) {
+        console.log('Erro ao carregar som:', err);
+    }
+    
     const avisoModal = new bootstrap.Modal(document.getElementById('avisoModal'));
     avisoModal.show();
 }

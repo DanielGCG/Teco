@@ -1,0 +1,68 @@
+<!-- Modal de confirmação global -->
+<div class="modal fade" id="confirmacaoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmacaoModalTitle">Confirmação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p id="confirmacaoTexto" class="mb-0"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="confirmacaoCancelar">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="confirmacaoConfirmar">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Função global para mostrar confirmação
+function mostrarConfirmacao(mensagem, titulo = 'Confirmação') {
+    return new Promise((resolve) => {
+        document.getElementById("confirmacaoTexto").textContent = mensagem;
+        document.getElementById("confirmacaoModalTitle").textContent = titulo;
+        
+        // Reproduzir som de alerta
+        try {
+            const audio = new Audio('/sounds/alert.mp3');
+            audio.volume = 0.3;
+            audio.play().catch(err => console.log('Não foi possível reproduzir o som:', err));
+        } catch (err) {
+            console.log('Erro ao carregar som:', err);
+        }
+        
+        const modalElement = document.getElementById('confirmacaoModal');
+        const confirmacaoModal = new bootstrap.Modal(modalElement);
+        
+        const btnConfirmar = document.getElementById('confirmacaoConfirmar');
+        const btnCancelar = document.getElementById('confirmacaoCancelar');
+        
+        // Remove listeners antigos para evitar duplicação
+        const novoConfirmar = btnConfirmar.cloneNode(true);
+        btnConfirmar.parentNode.replaceChild(novoConfirmar, btnConfirmar);
+        
+        const novoCancelar = btnCancelar.cloneNode(true);
+        btnCancelar.parentNode.replaceChild(novoCancelar, btnCancelar);
+        
+        // Adiciona novos listeners
+        document.getElementById('confirmacaoConfirmar').addEventListener('click', () => {
+            confirmacaoModal.hide();
+            resolve(true);
+        }, { once: true });
+        
+        document.getElementById('confirmacaoCancelar').addEventListener('click', () => {
+            confirmacaoModal.hide();
+            resolve(false);
+        }, { once: true });
+        
+        // Se fechar o modal sem escolher, resolve como false
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            resolve(false);
+        }, { once: true });
+        
+        confirmacaoModal.show();
+    });
+}
+</script>

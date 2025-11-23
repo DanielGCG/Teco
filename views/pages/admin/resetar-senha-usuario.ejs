@@ -60,7 +60,7 @@ document.getElementById("resetBtn").addEventListener("click", async () => {
     const userId = select.value;
     if(!userId) return alert("Selecione um usuário");
 
-    if(!confirm("Tem certeza que deseja resetar a senha para 12345?")) return;
+    if(!await confirm("Tem certeza que deseja resetar a senha para 12345?")) return;
 
     try {
         const res = await fetch(`/api/admin/users/${userId}/reset-password`, {

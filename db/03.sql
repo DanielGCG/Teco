@@ -1,5 +1,4 @@
-CREATE DATABASE IF NOT EXISTS site_do_boteco;
-USE site_do_boteco;
+USE botecochat;
 
 CREATE TABLE wl_filme (
     id BIGINT PRIMARY KEY,

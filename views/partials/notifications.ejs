@@ -1,0 +1,317 @@
+<!-- Notifications Bell Icon -->
+<div class="position-relative ms-3">
+    <button class="btn btn-link position-relative p-0" type="button" id="notificationsDropdownBtn" 
+            data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none; color: #333;">
+        <i class="bi bi-bell-fill fs-4"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+              id="notificationsBadge" style="display: none; font-size: 0.65rem;">
+            0
+        </span>
+    </button>
+    
+    <div class="dropdown-menu dropdown-menu-end shadow" style="width: 380px; max-height: 500px;">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+            <h6 class="mb-0 fw-bold">Notificações</h6>
+            <button class="btn btn-sm btn-link text-decoration-none p-0" id="markAllReadBtn" style="font-size: 0.85rem;">
+                Marcar todas como lidas
+            </button>
+        </div>
+        
+        <div id="notificationsList" class="overflow-auto" style="max-height: 400px;">
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-bell-slash fs-1"></i>
+                <p class="mb-0 mt-2">Nenhuma notificação</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #notificationsList::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #notificationsList::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    #notificationsList::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+    
+    #notificationsList::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    .notification-item {
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .notification-item.unread {
+        background-color: #e7f3ff;
+    }
+    
+    .notification-item.unread:hover {
+        background-color: #d0e8ff;
+    }
+    /* Animação do sino quando chega nova notificação */
+    .bell-pulse {
+        animation: bell-pulse 1s ease-in-out 0s 4;
+    }
+
+    @keyframes bell-pulse {
+        0% { transform: translateY(0) scale(1); }
+        25% { transform: translateY(-4px) scale(1.05); }
+        50% { transform: translateY(0) scale(1); }
+        75% { transform: translateY(-2px) scale(1.02); }
+        100% { transform: translateY(0) scale(1); }
+    }
+</style>
+
+
+    <script>
+        // Conexão Socket.IO global reutilizável em todas as páginas
+        // IMPORTANTE: outras páginas devem usar 'notificationsSocket' em vez de criar novas conexões
+        const notificationsSocket = io();
+        window.appSocket = notificationsSocket; // Disponibiliza globalmente
+        
+        const notificationsBadge = document.getElementById('notificationsBadge');
+        const notificationsList = document.getElementById('notificationsList');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+        // Join user room
+        notificationsSocket.emit('joinUserRoom');
+
+        // Request initial count
+        notificationsSocket.emit('getNotificationsCount');
+
+        // ==================== Rastreamento de Atividade do Usuário ====================
+        let activityTimeout;
+        
+        // Função para enviar atividade ao servidor
+        function sendUserActivity() {
+            notificationsSocket.emit('userActivity');
+        }
+        
+        // Detecta atividade do usuário (movimento do mouse, teclado, cliques)
+        function handleUserActivity() {
+            // Limpa timeout anterior
+            if (activityTimeout) {
+                clearTimeout(activityTimeout);
+            }
+            
+            // Envia imediatamente
+            sendUserActivity();
+            
+            // Agenda próximo envio após 2 minutos de inatividade
+            activityTimeout = setTimeout(() => {
+                // Não faz nada, apenas para de enviar
+            }, 120000);
+        }
+        
+        // Event listeners para detectar atividade
+        document.addEventListener('mousemove', handleUserActivity);
+        document.addEventListener('keydown', handleUserActivity);
+        document.addEventListener('click', handleUserActivity);
+        document.addEventListener('scroll', handleUserActivity);
+        
+        // Envia atividade inicial
+        handleUserActivity();
+
+        // Update badge count
+        function updateNotificationsBadge(count) {
+            if (count > 0) {
+                notificationsBadge.textContent = count > 99 ? '99+' : count;
+                notificationsBadge.style.display = 'inline-block';
+            } else {
+                notificationsBadge.style.display = 'none';
+            }
+        }
+
+        // Listen for count updates
+        notificationsSocket.on('notificationsCount', (data) => {
+            updateNotificationsBadge(data.count);
+        });
+
+        // Load notifications when dropdown opens and stop bell animation
+        document.getElementById('notificationsDropdownBtn').addEventListener('click', async (e) => {
+            // remove pulse animation when user opens the dropdown
+            const btn = document.getElementById('notificationsDropdownBtn');
+            btn.classList.remove('bell-pulse');
+
+            if (!e.target.closest('.dropdown-menu')) {
+                await loadNotifications();
+            }
+        });
+
+        // Load notifications from API
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications?limit=20');
+                const data = await response.json();
+
+                if (data.success && data.notifications.length > 0) {
+                    // Cache para ícones e cores
+                    const iconMap = {
+                        'FRIEND_REQUEST': { icon: 'bi-person-plus', color: 'text-info' },
+                        'FRIEND_ACCEPTED': { icon: 'bi-person-check', color: 'text-success' },
+                        'NEW_DM': { icon: 'bi-chat-dots', color: 'text-primary' },
+                        'NEW_CARTINHA': { icon: 'bi-envelope-heart', color: 'text-danger' },
+                        'MENTION': { icon: 'bi-at', color: 'text-warning' },
+                        'SYSTEM': { icon: 'bi-info-circle', color: 'text-secondary' }
+                    };
+                    
+                    // Fragment para melhor performance
+                    const fragment = document.createDocumentFragment();
+                    const notifications = data.notifications.map(notification => {
+                        const isUnread = !notification.read_at;
+                        const timeAgo = getTimeAgo(notification.created_at);
+                        const { icon = 'bi-bell', color = 'text-primary' } = iconMap[notification.type] || {};
+
+                        return `
+                            <div class="notification-item ${isUnread ? 'unread' : ''} px-3 py-2" 
+                                 data-id="${notification.id}" 
+                                 data-link="${notification.link || '#'}"
+                                 style="cursor: pointer;">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi ${icon} ${color} fs-4 me-3 mt-1"></i>
+                                    <div class="flex-grow-1 min-width-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h6 class="mb-1 fw-bold text-truncate" style="font-size: 0.9rem;">
+                                                ${notification.title}
+                                            </h6>
+                                            ${isUnread ? '<span class="badge bg-primary rounded-circle" style="width: 8px; height: 8px; padding: 0;"></span>' : ''}
+                                        </div>
+                                        <p class="mb-1 text-muted small">${notification.body}</p>
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            <i class="bi bi-clock"></i> ${timeAgo}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Add click handlers com event delegation
+                    notificationsList.querySelectorAll('.notification-item').forEach(item => {
+                        item.addEventListener('click', () => handleNotificationClick(item));
+                    });
+                } else {
+                    notificationsList.innerHTML = `
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-bell-slash fs-1"></i>
+                            <p class="mb-0 mt-2">Nenhuma notificação</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error('Erro ao carregar notificações:', err);
+                notificationsList.innerHTML = `
+                    <div class="text-center py-4 text-danger">
+                        <i class="bi bi-exclamation-triangle fs-1"></i>
+                        <p class="mb-0 mt-2">Erro ao carregar notificações</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Handle notification click
+        async function handleNotificationClick(item) {
+            const id = item.dataset.id;
+            const link = item.dataset.link;
+            const isUnread = item.classList.contains('unread');
+
+            // Mark as read if unread
+            if (isUnread) {
+                try {
+                    await fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+                    item.classList.remove('unread');
+                    notificationsSocket.emit('getNotificationsCount');
+                } catch (err) {
+                    console.error('Erro ao marcar notificação como lida:', err);
+                }
+            }
+
+            // Navigate to link
+            if (link && link !== '#') {
+                window.location.href = link;
+            }
+        }
+
+        // Mark all as read
+        markAllReadBtn.addEventListener('click', async () => {
+            try {
+                await fetch('/api/notifications/read-all', { method: 'PUT' });
+                notificationsList.querySelectorAll('.notification-item.unread').forEach(item => {
+                    item.classList.remove('unread');
+                });
+                notificationsSocket.emit('getNotificationsCount');
+            } catch (err) {
+                console.error('Erro ao marcar todas como lidas:', err);
+            }
+        });
+
+        // Listen for new notifications
+        notificationsSocket.on('newNotification', async (data) => {
+            // Update count
+            notificationsSocket.emit('getNotificationsCount');
+
+            // Reload list if dropdown is open
+            const dropdown = document.querySelector('#notificationsDropdownBtn + .dropdown-menu');
+            if (dropdown && dropdown.classList.contains('show')) {
+                await loadNotifications();
+            } else {
+                // Indicate new notification on the bell (visual) and try to play sound
+                animateBell();
+                tryPlaySound(data?.type);
+            }
+        });
+
+        // Animate the bell icon with a pulse; stops automatically after animation.
+        function animateBell() {
+            const btn = document.getElementById('notificationsDropdownBtn');
+            if (!btn) return;
+            // add class to trigger CSS animation
+            btn.classList.remove('bell-pulse');
+            // trigger reflow to restart animation
+            void btn.offsetWidth;
+            btn.classList.add('bell-pulse');
+
+            // remove after animation cycles (4 iterations * 1s == 4s)
+            setTimeout(() => {
+                btn.classList.remove('bell-pulse');
+            }, 4200);
+        }
+
+        // Try to play a short notification sound using bundled public asset; ignores errors (autoplay blocked)
+        function tryPlaySound(type) {
+            try {
+                const soundFile = type === 'friend' ? '/sounds/friend.mp3' : '/sounds/notify.mp3';
+                const audio = new Audio(soundFile);
+                audio.preload = 'auto';
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        // Time ago helper
+        function getTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'Agora';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
+            return date.toLocaleDateString('pt-BR');
+        }
+    </script>

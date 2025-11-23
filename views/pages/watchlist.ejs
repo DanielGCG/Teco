@@ -505,8 +505,8 @@ function displayResults(items) {
             <div class="movie-title mt-2">${item.title || item.name}</div>
         `;
 
-        itemElement.addEventListener('click', () => {
-            const shouldSave = confirm(`Deseja adicionar "${item.title || item.name}" à Watchlist?`);
+        itemElement.addEventListener('click', async () => {
+            const shouldSave = await confirm(`Deseja adicionar "${item.title || item.name}" à Watchlist?`);
             if (shouldSave) {
                 adicionarObra(item);
             }

@@ -284,12 +284,7 @@ UsersRouter.get('/buscar', protect(0), async (req, res) => {
             SELECT 
                 id, 
                 username, 
-                profile_image as avatar,
-                CASE 
-                    WHEN TIMESTAMPDIFF(MINUTE, last_access, NOW()) < 5 THEN 'online'
-                    WHEN TIMESTAMPDIFF(HOUR, last_access, NOW()) < 1 THEN 'ausente'
-                    ELSE 'offline'
-                END as status
+                profile_image as avatar
             FROM users
             WHERE LOWER(username) LIKE ? AND id != ?
             ORDER BY 

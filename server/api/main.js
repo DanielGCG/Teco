@@ -8,6 +8,7 @@ const ConversasRouter = require("./conversas");
 const CartinhasRouter = require("./cartinhas");
 const AdminRouter = require("./admin/index");
 const WatchlistRouter = require("./watchlist");
+const NotificationsRouter = require("./notifications");
 
 // Rotas de usuários (tem rotas públicas e protegidas dentro)
 router.use("/users", UsersRouter);
@@ -17,6 +18,7 @@ router.use("/chats", authMiddleware(0), ChatsRouter);
 router.use("/conversas", authMiddleware(0), ConversasRouter);
 router.use("/cartinhas", authMiddleware(0), CartinhasRouter);
 router.use("/watchlist", authMiddleware(0), WatchlistRouter);
+router.use("/notifications", authMiddleware(0), NotificationsRouter);
 router.use("/admin", authMiddleware(1), AdminRouter);
 
 module.exports = router;

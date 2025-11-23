@@ -1,13 +1,6 @@
 const express = require("express");
 const InicialRouter = express.Router();
 
-async function getImagemDoDia () {
-    res = await fetch(`https://www.botecors.me/API/imagemdodia`);
-    const imagemDoDia = await res.json();
-
-    return imagemDoDia;
-}
-
 InicialRouter.get('/', async (req, res) => {
     const locals = {
         title: "Teco",
@@ -17,7 +10,6 @@ InicialRouter.get('/', async (req, res) => {
     res.render('pages/index', {
         layout: 'layouts/main',
         locals: locals,
-        imagemDoDia: await getImagemDoDia(),
         HOST: process.env.HOST
     });
 });

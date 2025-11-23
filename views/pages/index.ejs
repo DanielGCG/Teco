@@ -4,13 +4,13 @@
         <h3 class="mb-3"><span class="marca-texto-verde">Imagem do Dia</span></h3>
         <div id="imagem-do-dia-container" class="align-items-center" style="margin:0 auto 1rem auto;">
             <div style="position:relative;width:200px;height:200px;">
-                <img src=<%= imagemDoDia.border_url %> alt="Moldura" style="width:220px;height:220px;position:absolute;left:-10px;top:-10px;z-index:1;pointer-events:none;box-shadow:0 2px 12px #bbb;">
-                <img src=<%= imagemDoDia.url %> class="card-img-top" alt="Imagem do Dia" style="object-fit:cover; width: 100%; height:100%; ">
+                <img id="imagem-do-dia-moldura" src="" alt="Moldura" style="width:220px;height:220px;position:absolute;left:-10px;top:-10px;z-index:1;pointer-events:none;box-shadow:0 2px 12px #bbb;">
+                <img id="imagem-do-dia-imagem" src="" class="card-img-top" alt="Imagem do Dia" style="object-fit:cover; width: 100%; height:100%; ">
             </div>   
         </div>
         <div class="text-center">
             <a href="" class="text-dark text-decoration-none" id="imagem-do-dia-nome">
-                <p class="card-text"><span class="marca-texto-roxo"><%= imagemDoDia.texto %></span></p>
+                <p class="card-text"><span class="marca-texto-roxo" id="imagem-do-dia-texto"></span></p>
             </a>
         </div>
         <h3 class="mb-3">📬<span class="marca-texto-verde">Correio</span></h3>
@@ -28,7 +28,14 @@
         </div>
         <h3 class="mb-3"><span class="marca-texto-verde">Amigos e DMs</span></h3>
         <div class="list-group">
-            <a href="/conversas" class="list-group-item list-group-item-action"><i class="bi bi-chat-left-heart"></i> Conversas</a>
+            <a href="/amigos" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people"></i> Meus Amigos</span>
+                <span id="friend-requests-badge" class="badge bg-danger rounded-pill" style="display: none;">0</span>
+            </a>
+            <a href="/conversas" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-chat-left-heart"></i> Conversas</span>
+                <span id="unread-dms-badge" class="badge bg-primary rounded-pill" style="display: none;">0</span>
+            </a>
         </div>
         <h3 class="mb-3">🔨<span class="marca-texto-verde">Ferramentas</span></h3>
         <div class="list-group">
@@ -38,3 +45,88 @@
         </div>
     </div>
 </div>
+
+<!-- Friend requests badge logic (reuses notificationsSocket from notifications.ejs) -->
+<script>
+    // Aguarda o socket de notificações estar disponível
+    document.addEventListener('DOMContentLoaded', () => {
+        // ========== IMAGEM DO DIA ==========
+        // Busca a imagem do dia da API
+        fetch('https://www.botecors.me/API/imagemdodia')
+            .then(res => res.json())
+            .then(imagemDoDia => {
+                document.getElementById('imagem-do-dia-moldura').src = imagemDoDia.border_url;
+                document.getElementById('imagem-do-dia-imagem').src = imagemDoDia.url;
+                document.getElementById('imagem-do-dia-texto').textContent = imagemDoDia.texto;
+            })
+            .catch(err => {
+                console.error('[Index] Erro ao carregar imagem do dia:', err);
+            });
+
+        // Reutiliza a conexão Socket.IO existente do partial de notificações
+        if (typeof notificationsSocket !== 'undefined') {
+            // ========== PEDIDOS DE AMIZADE ==========
+            // Solicita contagem inicial de pedidos de amizade
+            notificationsSocket.emit('getFriendRequestsCount');
+
+            // Atualiza badge quando recebe contagem
+            notificationsSocket.on('friendRequestsCount', ({ count }) => {
+                console.log('[Socket] Pedidos de amizade:', count);
+                const badge = document.getElementById('friend-requests-badge');
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+
+            // Novo pedido recebido - atualiza instantaneamente
+            notificationsSocket.on('newFriendRequest', () => {
+                console.log('[Socket] Novo pedido de amizade recebido!');
+                notificationsSocket.emit('getFriendRequestsCount');
+            });
+
+            // Pedido aceito ou rejeitado - atualiza contagem
+            notificationsSocket.on('friendRequestsUpdated', () => {
+                console.log('[Socket] Pedidos atualizados');
+                notificationsSocket.emit('getFriendRequestsCount');
+            });
+
+            // Notificação quando seu pedido é aceito
+            notificationsSocket.on('friendRequestAccepted', () => {
+                console.log('[Socket] Seu pedido foi aceito!');
+            });
+
+            // ========== MENSAGENS NÃO LIDAS ==========
+            // Solicita contagem inicial de conversas com mensagens não lidas
+            notificationsSocket.emit('getUnreadDMsCount');
+
+            // Atualiza badge de mensagens não lidas
+            notificationsSocket.on('unreadDMsCount', ({ count }) => {
+                console.log('[Socket] Conversas não lidas:', count);
+                const badge = document.getElementById('unread-dms-badge');
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+
+            // Nova mensagem recebida - atualiza contagem
+            notificationsSocket.on('newMessage', () => {
+                console.log('[Socket] Nova mensagem recebida');
+                notificationsSocket.emit('getUnreadDMsCount');
+            });
+
+            // Mensagens lidas - atualiza contagem
+            notificationsSocket.on('messageRead', () => {
+                console.log('[Socket] Mensagens lidas');
+                notificationsSocket.emit('getUnreadDMsCount');
+            });
+        } else {
+            console.error('[Index] notificationsSocket não disponível');
+        }
+    });
+</script>

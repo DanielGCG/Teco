@@ -292,7 +292,7 @@ document.getElementById("saveChatBtn").addEventListener("click", async () => {
 // ==================== Excluir chat ====================
 document.getElementById("deleteChatBtn").addEventListener("click", async () => {
     if(!currentChat) return;
-    if(!confirm("Tem certeza que deseja excluir este chat?")) return;
+    if(!await confirm("Tem certeza que deseja excluir este chat?")) return;
 
     try {
         // Log para debug

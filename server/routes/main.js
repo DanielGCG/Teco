@@ -20,6 +20,9 @@ router.use("/cartinhas", require("./cartinhas"));
 // Rota de watchlist
 router.use("/watchlist", require("./watchlist"));
 
+// Rota de amigos
+router.use("/amigos", require("./friends"));
+
 // Rota de perfil
 router.use("/perfil", require("./perfil"));
 

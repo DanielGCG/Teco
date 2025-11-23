@@ -21,12 +21,11 @@
   </div>
 </div>
 
-<!-- Socket.IO client -->
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<!-- Reutiliza conexão Socket.IO global do partial de notificações -->
 <script>
-const socket = io('http://localhost:3000', { withCredentials: true });
+const socket = window.appSocket || notificationsSocket;
 const chatName = "<%= chatName %>"; 
-console.log("Chat Name:", chatName);
+console.log("[Chat] Reutilizando conexão Socket.IO existente para:", chatName);
 let allMessages = [];
 let loadedStart = 0;
 let loadedEnd = 0;
@@ -40,14 +39,9 @@ const loader = document.getElementById("loader");
 let currentUser = null;
 let chatId = null;
 
-// Log de conexão Socket.IO
-socket.on('connect', () => {
-    console.log('[Socket.IO] Conectado!', socket.id);
-});
-
-socket.on('connect_error', (err) => {
-    console.error('[Socket.IO] Erro de conexão:', err);
-});
+if (!socket) {
+    console.error('[Chat] Socket.IO não disponível!');
+}
 
 // ==================== Renderização de mensagens ====================
 function renderMessage(msgData, prepend = false) {

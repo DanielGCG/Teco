@@ -1,6 +1,7 @@
 const express = require("express");
 const CartinhasRouter = express.Router();
 const pool = require("../config/bd");
+const { createNotification } = require("./notifications");
 
 // ==================== Auxiliares ====================
 
@@ -308,7 +309,35 @@ CartinhasRouter.post('/', async (req, res) => {
             [req.user.id, destinatarioId, titulo, conteudo]
         );
 
+        // Busca username do remetente
+        const [remetente] = await connection.execute(
+            `SELECT username FROM users WHERE id = ?`,
+            [req.user.id]
+        );
+
         connection.release();
+
+        // Cria notificação persistente
+        await createNotification({
+            userId: destinatarioId,
+            type: 'NEW_CARTINHA',
+            title: 'Nova cartinha recebida!',
+            body: `${remetente[0].username} enviou uma cartinha: "${titulo}"`,
+            link: '/cartinhas/recebidas',
+            data: { cartinhaId: result.insertId, remetenteId: req.user.id }
+        });
+
+        // Notifica em tempo real via Socket.IO
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user_${destinatarioId}`).emit('newNotification');
+            io.to(`user_${destinatarioId}`).emit('newCartinha', {
+                id: result.insertId,
+                titulo,
+                remetente: remetente[0].username
+            });
+        }
+
         res.status(201).json({ 
             message: "Cartinha enviada com sucesso", 
             cartinhaId: result.insertId 

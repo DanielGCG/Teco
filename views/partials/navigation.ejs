@@ -22,7 +22,7 @@
     </button>
 
     <!-- Nome da página -->
-    <div class="page-title">
+    <div class="page-title flex-grow-1">
         <div class="d-flex align-items-center">
                 <div class="me-2" style="font-size: 1rem;"><%= locals.icon %></div>
                 <div>
@@ -33,12 +33,14 @@
                 </div>
             </div>
         </div>
+        
+    <!-- Bell Icon de Notificações -->
+    <%- include('./notifications') %>
 </div>
 
 <style>
 .navigation {
-    padding-left: 1rem;
-    padding-top: 0.5rem;
+    padding: 0.5rem 1rem;
     top: 0;
     left: 0;
     z-index: 1000;

@@ -1,6 +1,16 @@
 const express = require("express");
 const ConversasRouter = express.Router();
 const pool = require("../config/bd");
+const socketRouter = require("../routes/socket.router");
+
+// Usa a função getUserStatus do socketRouter que gerencia os 3 estados
+function getUserStatus(userId) {
+    if (socketRouter.getUserStatus) {
+        return socketRouter.getUserStatus(userId);
+    }
+    // Fallback se a função não estiver disponível
+    return 'offline';
+}
 
 // ==================== Endpoints de Conversas (DMs - 2 pessoas) ====================
 
@@ -23,15 +33,26 @@ ConversasRouter.get('/', async (req, res) => {
         for (const dm of dms) {
             // Participantes da conversa (deve ser exatamente 2)
             const [participants] = await connection.execute(
-                `SELECT u.id, u.username, u.profile_image
+                `SELECT u.id, u.username, u.profile_image,
+                    EXISTS(
+                        SELECT 1 FROM friendships f
+                        WHERE ((f.requester_id = ? AND f.addressee_id = u.id)
+                            OR (f.requester_id = u.id AND f.addressee_id = ?))
+                        AND f.status = 'accepted'
+                    ) as isFriend
                  FROM chat_participants cp
                  JOIN users u ON cp.user_id = u.id
                  WHERE cp.chat_id = ?`,
-                [dm.id]
+                [req.user.id, req.user.id, dm.id]
             );
 
             // O outro usuário (não o atual)
             const otherUser = participants.find(p => p.id !== req.user.id);
+            
+            // Determina status do outro usuário via Socket.IO
+            if (otherUser) {
+                otherUser.status = getUserStatus(otherUser.id);
+            }
 
             // Última mensagem
             const [lastMsgRows] = await connection.execute(
@@ -83,31 +104,151 @@ ConversasRouter.get('/', async (req, res) => {
     }
 });
 
-// GET /conversas/users - Lista usuários disponíveis para iniciar conversa
-ConversasRouter.get('/users', async (req, res) => {
+// GET /conversas/unread-count - Conta conversas com mensagens não lidas
+ConversasRouter.get('/unread-count', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+
+        // Conta quantas conversas têm mensagens não lidas
+        const [result] = await connection.execute(
+            `SELECT COUNT(DISTINCT c.id) as count
+             FROM chats c
+             JOIN chat_participants cp ON c.id = cp.chat_id
+             WHERE cp.user_id = ? 
+             AND c.tipo = 'dm'
+             AND EXISTS (
+                SELECT 1 
+                FROM chat_messages cm
+                WHERE cm.chat_id = c.id
+                AND cm.user_id != ?
+                AND cm.id > COALESCE((
+                    SELECT last_read_message_id
+                    FROM chat_reads
+                    WHERE chat_id = c.id AND user_id = ?
+                ), 0)
+             )`,
+            [req.user.id, req.user.id, req.user.id]
+        );
+
+        connection.release();
+        res.json({ count: result[0].count });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao contar mensagens não lidas" });
+    }
+});
+
+// GET /conversas/friends - Lista amigos disponíveis para conversa
+ConversasRouter.get('/friends', async (req, res) => {
     try {
         const connection = await pool.getConnection();
         const userId = req.user.id;
 
-        const [users] = await connection.execute(
-            `SELECT u.id, u.username, u.profile_image
-            FROM users u
-            WHERE u.id != ?
-            AND NOT EXISTS (
-                SELECT 1
-                FROM chats c
-                JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = u.id
-                JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = ?
-                WHERE c.tipo = 'dm'
-            )`,
-            [userId, userId]
+        // Busca amigos aceitos
+        const [friends] = await connection.execute(
+            `SELECT 
+                u.id,
+                u.username,
+                u.profile_image as avatar,
+                -- Verifica se já existe conversa
+                EXISTS(
+                    SELECT 1
+                    FROM chats c
+                    JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = u.id
+                    JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = ?
+                    WHERE c.tipo = 'dm'
+                ) as hasConversation
+            FROM friendships f
+            JOIN users u ON (
+                CASE 
+                    WHEN f.requester_id = ? THEN u.id = f.addressee_id
+                    WHEN f.addressee_id = ? THEN u.id = f.requester_id
+                END
+            )
+            WHERE (f.requester_id = ? OR f.addressee_id = ?)
+                AND f.status = 'accepted'
+            ORDER BY u.username`,
+            [userId, userId, userId, userId, userId]
         );
+        
+        // Determina status de cada amigo via Socket.IO
+        friends.forEach(friend => {
+            friend.status = getUserStatus(friend.id);
+        });
+        
+        // Reordena por status (online -> ausente -> offline)
+        friends.sort((a, b) => {
+            const statusOrder = { online: 0, ausente: 1, offline: 2 };
+            return statusOrder[a.status] - statusOrder[b.status];
+        });
 
         connection.release();
-        res.json(users);
+        res.json({ friends });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao carregar usuários" });
+        res.status(500).json({ message: "Erro ao carregar amigos" });
+    }
+});
+
+// GET /conversas/search - Buscar usuários para iniciar conversa
+ConversasRouter.get('/search', async (req, res) => {
+    const query = req.query.q || '';
+    
+    if (!query.trim()) {
+        return res.json({ users: [] });
+    }
+
+    try {
+        const connection = await pool.getConnection();
+        const userId = req.user.id;
+        const searchTerm = `%${query.toLowerCase()}%`;
+
+        // Busca usuários que não são o próprio usuário
+        const [users] = await connection.execute(
+            `SELECT 
+                u.id,
+                u.username,
+                u.profile_image as avatar,
+                -- Verifica se já existe conversa
+                EXISTS(
+                    SELECT 1
+                    FROM chats c
+                    JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = u.id
+                    JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = ?
+                    WHERE c.tipo = 'dm'
+                ) as hasConversation,
+                -- Verifica se são amigos
+                EXISTS(
+                    SELECT 1
+                    FROM friendships f
+                    WHERE ((f.requester_id = ? AND f.addressee_id = u.id)
+                        OR (f.requester_id = u.id AND f.addressee_id = ?))
+                    AND f.status = 'accepted'
+                ) as isFriend
+            FROM users u
+            WHERE LOWER(u.username) LIKE ?
+                AND u.id != ?
+            ORDER BY 
+                CASE WHEN LOWER(u.username) = ? THEN 0
+                     WHEN LOWER(u.username) LIKE ? THEN 1
+                     ELSE 2
+                END,
+                u.username
+            LIMIT 20`,
+            [userId, userId, userId, searchTerm, userId, query.toLowerCase(), `${query.toLowerCase()}%`]
+        );
+        
+        // Determina status de cada usuário via Socket.IO
+        users.forEach(user => {
+            user.status = getUserStatus(user.id);
+        });
+
+        connection.release();
+        res.json({ users });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao buscar usuários" });
     }
 });
 
@@ -224,19 +365,20 @@ ConversasRouter.get('/:conversaId/messages', async (req, res) => {
 
         // Marca mensagens como lidas
         if (messages.length > 0) {
-            const [lastMsg] = await connection.execute(
+            // Busca a última mensagem de TODOS (incluindo as próprias do usuário)
+            const [allLastMsg] = await connection.execute(
                 `SELECT id FROM chat_messages 
-                 WHERE chat_id = ? AND user_id != ? 
+                 WHERE chat_id = ? 
                  ORDER BY created_at DESC LIMIT 1`,
-                [conversaId, req.user.id]
+                [conversaId]
             );
 
-            if (lastMsg.length > 0) {
+            if (allLastMsg.length > 0) {
                 await connection.execute(
                     `INSERT INTO chat_reads (chat_id, user_id, last_read_message_id)
                      VALUES (?, ?, ?)
                      ON DUPLICATE KEY UPDATE last_read_message_id = GREATEST(last_read_message_id, ?)`,
-                    [conversaId, req.user.id, lastMsg[0].id, lastMsg[0].id]
+                    [conversaId, req.user.id, allLastMsg[0].id, allLastMsg[0].id]
                 );
             }
         }
