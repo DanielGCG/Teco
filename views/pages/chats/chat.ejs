@@ -1,0 +1,257 @@
+<link rel="stylesheet" href="/styles/chat.css">
+<link rel="stylesheet" href="/styles/global/chat-common.css">
+
+<div class="container-fluid h-100">
+  <div class="card h-100 d-flex flex-column" style="background-color: var(--verde);">
+    <div class="card-header text-center">
+      <h5 class="mb-0"><%= locals.title %></h5>
+    </div>
+
+    <div id="chat-area" class="card-body position-relative" style="height:500px; overflow-y:auto; display:flex; flex-direction:column;">
+      <div id="loader" class="text-center my-2" style="display:none;">
+        <span class="spinner-border spinner-border-sm"></span> Carregando...
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <div class="input-group">
+        <textarea id="input-msg" class="form-control" placeholder="Digite sua mensagem..." rows="1" style="resize: none; overflow-y: auto; max-height: 120px;"></textarea>
+        <button id="send-btn" class="btn btn-primary">Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Módulos globais -->
+<script src="/js/commons/ui-common.js"></script>
+<script src="/js/commons/chat-common.js"></script>
+
+<!-- Reutiliza conexão Socket.IO global do partial de notificações -->
+<script>
+const socket = window.appSocket || notificationsSocket;
+const chatName = "<%= chatName %>"; 
+console.log("[Chat] Reutilizando conexão Socket.IO existente para:", chatName);
+let allMessages = [];
+let loadedStart = 0;
+let loadedEnd = 0;
+const batchSize = 50;
+const bufferSize = 100;
+let currentPage = 1;
+let loading = false;
+
+const chatContainer = document.getElementById("chat-area");
+const loader = document.getElementById("loader");
+let currentUser = null;
+let chatId = null;
+
+if (!socket) {
+    console.error('[Chat] Socket.IO não disponível!');
+}
+
+// ==================== Renderização de mensagens ====================
+function renderMessage(msgData, prepend = false) {
+    ChatUtils.renderMessage(msgData, chatContainer, {
+        isMine: msgData.tipo === 'usuario',
+        showUsername: true,
+        showTime: false,
+        prepend
+    });
+}
+
+function renderMessagesInitial(){
+    chatContainer.innerHTML = "";
+    if(loadedEnd === 0) return; // não há mensagens ainda
+
+    for(let i = loadedStart; i < loadedEnd; i++){
+        renderMessage(allMessages[i]);
+    }
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// ==================== Busca de mensagens ====================
+async function fetchMessages(page, isInitial = false){
+    if(loading) return;
+    loading = true;
+    
+    const loadingIndicator = ChatUtils.createLoadingIndicator();
+    if (isInitial) {
+        chatContainer.innerHTML = '';
+        chatContainer.appendChild(loadingIndicator);
+    } else {
+        chatContainer.insertBefore(loadingIndicator, chatContainer.firstChild);
+    }
+
+    // Usa Socket.IO ao invés de fetch
+    // Na primeira vez, usa chatName; depois usa chatId
+    if (chatId) {
+        socket.emit('getMessages', { chatId, page });
+    } else {
+        socket.emit('getMessages', { chatName, page });
+    }
+}
+
+// Listener para receber mensagens do Socket.IO
+socket.on('messagesLoaded', (data) => {
+    const { chatId: loadedChatId, page, messages, hasMore } = data;
+    
+    // Armazena chatId na primeira vez
+    if (!chatId) {
+        chatId = loadedChatId;
+        console.log('[Socket] Chat ID recebido:', chatId);
+    }
+    
+    // Ignora se não é o chat atual
+    if (loadedChatId !== chatId) return;
+    
+    // Remove loading indicator
+    const loadingIndicator = chatContainer.querySelector('.text-center.my-2');
+    if (loadingIndicator) loadingIndicator.remove();
+
+    // Converte formato do backend para o frontend
+    const formatted = messages.map(msg => ({
+        id: msg.id,
+        text: msg.mensagem,
+        mensagem: msg.mensagem,
+        username: msg.User?.username || msg.username,
+        nome: msg.User?.username || msg.username,
+        tipo: msg.isMine ? "usuario" : "outrousuario"
+    }));
+
+    if(page === 1) {
+        // Carregamento inicial: exibe as mensagens mais recentes
+        allMessages = formatted;
+        loadedStart = 0;
+        loadedEnd = allMessages.length;
+        
+        chatContainer.innerHTML = '';
+        if (allMessages.length === 0) {
+            chatContainer.appendChild(ChatUtils.createEmptyMessage('Nenhuma mensagem ainda'));
+        } else {
+            renderMessagesInitial();
+            // Força scroll até o final após renderização
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 0);
+        }
+    } else {
+        // Carregando mensagens antigas (scroll para cima)
+        allMessages = [...formatted, ...allMessages];
+        loadedStart = 0;
+        loadedEnd = allMessages.length;
+        
+        // Guarda a posição de scroll atual
+        const oldScrollHeight = chatContainer.scrollHeight;
+        
+        // Re-renderiza tudo
+        chatContainer.innerHTML = "";
+        for(let i = 0; i < allMessages.length; i++){
+            renderMessage(allMessages[i]);
+        }
+        
+        // Mantém a posição de scroll (adiciona a diferença de altura)
+        chatContainer.scrollTop = chatContainer.scrollHeight - oldScrollHeight;
+    }
+    
+    // Atualiza estado de carregamento
+    if (!hasMore) {
+        canLoadMore = false;
+    }
+    loading = false;
+});
+
+// ==================== Scroll para carregar mensagens antigas ====================
+let canLoadMore = true;
+
+async function loadOlderMessages() {
+    if(loading || !canLoadMore) return;
+    if(chatContainer.scrollTop > 50) return; // Só carrega se estiver bem no topo
+    
+    console.log('Carregando mensagens antigas, página:', currentPage + 1);
+    currentPage++;
+    await fetchMessages(currentPage);
+    
+    // Se retornou menos mensagens que o limite, não há mais para carregar
+    if(allMessages.length < currentPage * 50) {
+        canLoadMore = false;
+    }
+}
+
+chatContainer.addEventListener("scroll", () => {
+    if(chatContainer.scrollTop === 0){
+        loadOlderMessages();
+    }
+});
+
+// ==================== Enviar nova mensagem ====================
+const inputMsg = document.getElementById("input-msg");
+const sendBtn = document.getElementById("send-btn");
+
+ChatUtils.setupMessageInput(inputMsg, sendBtn, (text) => {
+    if (!chatId) {
+        console.error('[Chat] Chat ID não encontrado');
+        return;
+    }
+
+    socket.emit('sendMessage', {
+        chatId: chatId,
+        mensagem: text
+    });
+});
+
+// ==================== Socket.IO Events ====================
+socket.on('joinedChat', ({ chatId, success }) => {
+    if (success) {
+        console.log('[Socket] Entrou no chat:', chatId);
+    }
+});
+
+socket.on('newMessage', async (data) => {
+    console.log('[Socket] Nova mensagem recebida:', data);
+    
+    const { chatId: msgChatId, message } = data;
+    
+    // Se é o chat atual, adiciona a mensagem
+    if (msgChatId === chatId && message) {
+        // Busca dados do usuário atual se ainda não tiver
+        if (!currentUser) {
+            const res = await fetch('/api/users/me', { credentials: 'include' });
+            currentUser = await res.json();
+        }
+
+        // Normaliza campos vindos do servidor (server usa `mensagem` e `created_at`)
+        const contentText = message.mensagem || message.text || '';
+        const author = message.username || (message.User && message.User.username) || '';
+        const newMsg = {
+            id: message.id,
+            text: contentText,
+            mensagem: contentText,
+            username: author,
+            nome: author,
+            tipo: (currentUser && author === currentUser.username) ? 'usuario' : 'outrousuario',
+            createdAt: message.created_at || message.createdAt
+        };
+        
+        allMessages.push(newMsg);
+        renderMessage(newMsg);
+        loadedEnd++;
+        
+        // Remove mensagens antigas se ultrapassar o buffer
+        if (chatContainer.children.length > bufferSize + 1) {
+            chatContainer.removeChild(chatContainer.firstChild);
+            loadedStart++;
+        }
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+});
+
+socket.on('error', (error) => {
+    console.error('[Socket] Erro:', error);
+    alert('Erro: ' + error.message);
+});
+
+// ==================== Inicialização ====================
+document.addEventListener("DOMContentLoaded", () => {
+    fetchMessages(currentPage, true); // true = carregamento inicial
+});
+</script>

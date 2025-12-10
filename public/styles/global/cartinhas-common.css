@@ -3,10 +3,10 @@
 
 /* Estilo de carta física */
 .carta-envelope {
-    background: linear-gradient(135deg, #fafaf5 0%, #e9e7da 100%);
-    border: 1px solid #d4d1bf;
+    background: linear-gradient(135deg, var(--bege-claro) 0%, var(--bege-medio) 100%);
+    border: 1px solid var(--bege-escuro);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(62, 63, 41, 0.1);
+    box-shadow: 0 4px 12px rgba(var(--texto-principal-rgb), 0.1);
     margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
@@ -15,7 +15,7 @@
 
 .carta-envelope:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(188, 168, 141, 0.25);
+    box-shadow: 0 8px 20px rgba(var(--marrom-rgb), 0.25);
 }
 
 /* Sistema de empilhamento de pilhas */
@@ -73,8 +73,8 @@
     top: clamp(80px, 20vh, 120px);
     z-index: 10;
     transform: translateX(-50%) translateY(0) rotate(0deg) scale(1);
-    background: rgba(108, 92, 231, 0.08);
-    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.3);
+    background: rgba(var(--roxo-escuro-rgb), 0.08);
+    box-shadow: 0 0 0 2px rgba(var(--roxo-escuro-rgb), 0.3);
 }
 
 .pilha-cartas.ativa .instrucoes-pilha {
@@ -156,12 +156,12 @@
 }
 
 .btn-jogar-direita {
-    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+    background: linear-gradient(135deg, var(--azul-info), var(--azul-info-escuro));
     color: white;
 }
 
 .btn-jogar-esquerda {
-    background: linear-gradient(135deg, #dc3545, #c82333);
+    background: linear-gradient(135deg, var(--vermelho), var(--vermelho-escuro));
     color: white;
 }
 
@@ -196,14 +196,14 @@
     width: clamp(35px, 8vw, 40px);
     height: clamp(35px, 8vw, 40px);
     background: #fff;
-    border: 2px solid #BCA88D;
+    border: 2px solid var(--marrom);
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: clamp(0.6rem, 1.5vw, 0.7rem);
     font-weight: bold;
-    color: #BCA88D;
+    color: var(--marrom);
     transform: rotate(-5deg);
     z-index: 3;
 }
@@ -215,7 +215,7 @@
     left: 0;
     right: 0;
     height: 60px;
-    background: linear-gradient(135deg, #BCA88D, #A39178);
+    background: linear-gradient(135deg, var(--marrom), #A39178);
     clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
     z-index: 1;
 }
@@ -245,7 +245,7 @@
     width: clamp(40px, 10vw, 45px);
     height: clamp(40px, 10vw, 45px);
     border-radius: 50%;
-    border: 3px solid #BCA88D;
+    border: 3px solid var(--marrom);
     object-fit: cover;
 }
 
@@ -267,7 +267,7 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: linear-gradient(to bottom, #d4d1bf 0%, #BCA88D 50%, #d4d1bf 100%);
+    background: linear-gradient(to bottom, #d4d1bf 0%, var(--marrom) 50%, #d4d1bf 100%);
 }
 
 .papel-linhas {
@@ -338,7 +338,7 @@
 
 .contador-cartas {
     background: rgba(255,255,255,0.9);
-    color: #BCA88D;
+    color: var(--marrom);
     padding: clamp(0.25rem, 1vw, 0.3rem) clamp(0.6rem, 2vw, 0.8rem);
     border-radius: 20px;
     font-size: clamp(0.75rem, 1.8vw, 0.8rem);
@@ -363,7 +363,7 @@
 }
 
 .modal-carta .modal-header {
-    background: linear-gradient(135deg, #BCA88D, #A39178);
+    background: linear-gradient(135deg, var(--marrom), #A39178);
     color: #3E3F29;
     border-bottom: none;
     padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
@@ -443,9 +443,9 @@
     width: clamp(35px, 8vw, 40px);
     height: clamp(35px, 8vw, 40px);
     border-radius: 50%;
-    border: 2px solid #BCA88D;
+    border: 2px solid var(--marrom);
     background: white;
-    color: #BCA88D;
+    color: var(--marrom);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -456,7 +456,7 @@
 }
 
 .btn-navegacao:hover {
-    background: #BCA88D;
+    background: var(--marrom);
     color: white;
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(188, 168, 141, 0.4);
@@ -470,7 +470,7 @@
 
 .btn-navegacao:disabled:hover {
     background: white;
-    color: #BCA88D;
+    color: var(--marrom);
     transform: none;
 }
 

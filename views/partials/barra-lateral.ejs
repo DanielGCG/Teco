@@ -5,7 +5,7 @@
     border-radius: 0.5rem;
     text-align: center;
     color: white;
-    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    background: linear-gradient(135deg, #6c5ce7, var(--roxo));
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
@@ -44,17 +44,16 @@
         <img src="/images/placeholder.png" alt="Foto de Perfil" class="user-avatar mb-2">
         <h5 class="user-name mb-0"></h5>
     </div>
-
+    <hr class="w-100">
     <!-- Links ou botões da barra lateral -->
     <div class="sidebar-buttons d-flex flex-column align-items-center w-100">
-        <button class="btn btn-outline-primary mb-2 w-100" onclick="window.location.href='/perfil/editar'">Editar perfil</button>
+        <button  style="background-color: var(--marrom);" class="btn btn-primary mb-2 w-100" onclick="window.location.href='/perfil/editar'" >Editar perfil</button>
         <button class="btn btn-outline-danger mb-2 w-100" id="logoutBtn">Sair</button>
     </div>
-
     <!-- Número da versão -->
     <div class="version-text text-center w-100">
-        <h5>Teco</h5>
-        <small><%= locals.version %></small>
+        <h5><a href="/credits">Teco</a></h5>
+        <small><a href="/changelog"><%= locals.version %></a></small>
     </div>
 </div>
 
@@ -95,18 +94,18 @@ async function carregarPerfil() {
 
         // Background do card
         if (user.background_image) {
-            userCard.style.backgroundImage = `url('${user.background_image}'), linear-gradient(135deg, #6c5ce7, #a29bfe)`;
+            userCard.style.backgroundImage = `url('${user.background_image}'), linear-gradient(135deg, #6c5ce7, var(--roxo))`;
             userCard.style.backgroundSize = 'cover';
             userCard.style.backgroundPosition = 'center';
         } else {
-            userCard.style.backgroundImage = 'linear-gradient(135deg, #6c5ce7, #a29bfe)';
+            userCard.style.backgroundImage = 'linear-gradient(135deg, #6c5ce7, var(--roxo))';
         }
 
         // Se o usuário for admin, adiciona botão de admin
         if (user.role && user.role >= 1) { // ajuste conforme sua lógica de roles
             const adminBtn = document.createElement("button");
-            adminBtn.classList.add("btn", "btn-outline-warning", "mb-2", "w-100");
-            adminBtn.textContent = "Painel Admin";
+            adminBtn.classList.add("btn", "btn-warning", "mb-2", "w-100");
+            adminBtn.textContent = "Painel admin";
             adminBtn.onclick = () => window.location.href = "/admin";
             sidebarButtons.insertBefore(adminBtn, sidebarButtons.firstChild.nextSibling); 
             // insere abaixo do botão "Editar perfil"

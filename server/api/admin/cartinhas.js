@@ -1,42 +1,24 @@
 const express = require("express");
 const AdminCartinhasRouter = express.Router();
-const pool = require("../../config/bd");
-
-// ==================== Utilitários ====================
-
-// Função para aplicar filtros de status nas queries
-function buildStatusFilter(status) {
-    switch (status) {
-        case 'nao_lida':
-            return 'AND c.lida = FALSE';
-        case 'lida':
-            return 'AND c.lida = TRUE';
-        case 'favorita':
-            return 'AND c.favoritada = TRUE';
-        default:
-            return '';
-    }
-}
+const { Cartinha, User } = require("../../models");
+const { Op, fn, col, literal } = require("sequelize");
 
 // ==================== Endpoints ====================
 
 // GET /admin/cartinhas/estatisticas - Estatísticas gerais
 AdminCartinhasRouter.get('/estatisticas', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
+        const total = await Cartinha.count();
+        const naoLidas = await Cartinha.count({ where: { lida: false } });
+        const lidas = await Cartinha.count({ where: { lida: true } });
+        const favoritas = await Cartinha.count({ where: { favoritada: true } });
 
-        const [stats] = await connection.execute(`
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN lida = FALSE THEN 1 ELSE 0 END) as nao_lidas,
-                SUM(CASE WHEN lida = TRUE THEN 1 ELSE 0 END) as lidas,
-                SUM(CASE WHEN favoritada = TRUE THEN 1 ELSE 0 END) as favoritas
-            FROM cartinhas
-        `);
-
-        connection.release();
-        res.json(stats[0]);
-
+        res.json({
+            total,
+            nao_lidas: naoLidas,
+            lidas,
+            favoritas
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar estatísticas" });
@@ -54,64 +36,72 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
     const offset = (page - 1) * limit;
 
     try {
-        const connection = await pool.getConnection();
-
-        // Construir filtros
-        let whereConditions = [];
-        let queryParams = [];
+        // Construir filtros para usuários
+        const userWhere = {};
 
         if (usuario) {
-            whereConditions.push('u.id = ?');
-            queryParams.push(usuario);
+            userWhere.id = usuario;
         }
 
         if (search && search.trim() !== '') {
-            whereConditions.push('u.username LIKE ?');
-            queryParams.push(`%${search}%`);
+            userWhere.username = { [Op.like]: `%${search}%` };
         }
 
-        const whereClause = whereConditions.length > 0 
-            ? 'WHERE ' + whereConditions.join(' AND ') 
-            : '';
+        // Construir filtros para cartinhas
+        const cartinhaWhere = {};
+        
+        if (status === 'nao_lida') {
+            cartinhaWhere.lida = false;
+        } else if (status === 'lida') {
+            cartinhaWhere.lida = true;
+        } else if (status === 'favorita') {
+            cartinhaWhere.favoritada = true;
+        }
 
-        // Monta filtro de status (deve retornar "" ou "AND c.lida = TRUE", etc.)
-        const statusFilter = buildStatusFilter(status);
+        // Query com agregações
+        const usuarios = await User.findAll({
+            where: userWhere,
+            attributes: [
+                'id',
+                'username',
+                'profile_image',
+                [fn('COUNT', col('cartinhas_recebidas.id')), 'total_cartinhas'],
+                [literal(`SUM(CASE WHEN cartinhas_recebidas.lida = FALSE THEN 1 ELSE 0 END)`), 'nao_lidas'],
+                [literal(`SUM(CASE WHEN cartinhas_recebidas.lida = TRUE THEN 1 ELSE 0 END)`), 'lidas'],
+                [literal(`SUM(CASE WHEN cartinhas_recebidas.favoritada = TRUE THEN 1 ELSE 0 END)`), 'favoritas']
+            ],
+            include: [{
+                model: Cartinha,
+                as: 'cartinhas_recebidas',
+                attributes: [],
+                where: cartinhaWhere,
+                required: false
+            }],
+            group: ['User.id'],
+            having: literal('total_cartinhas > 0'),
+            order: [[literal('total_cartinhas'), 'DESC']],
+            limit,
+            offset,
+            subQuery: false
+        });
 
-        // Query principal
-        const sqlQuery = `
-            SELECT 
-                u.id,
-                u.username,
-                u.profile_image,
-                COUNT(c.id) as total_cartinhas,
-                SUM(CASE WHEN c.lida = FALSE THEN 1 ELSE 0 END) as nao_lidas,
-                SUM(CASE WHEN c.lida = TRUE THEN 1 ELSE 0 END) as lidas,
-                SUM(CASE WHEN c.favoritada = TRUE THEN 1 ELSE 0 END) as favoritas
-            FROM users u
-            LEFT JOIN cartinhas c ON u.id = c.destinatario_id ${statusFilter}
-            ${whereClause}
-            GROUP BY u.id, u.username, u.profile_image
-            HAVING total_cartinhas > 0
-            ORDER BY total_cartinhas DESC
-            LIMIT ${limit} OFFSET ${offset}
-        `;
+        // Contar total para paginação
+        const countResult = await User.findAll({
+            where: userWhere,
+            attributes: [[fn('COUNT', fn('DISTINCT', col('User.id'))), 'total']],
+            include: [{
+                model: Cartinha,
+                as: 'cartinhas_recebidas',
+                attributes: [],
+                where: cartinhaWhere,
+                required: false
+            }],
+            having: literal('COUNT(cartinhas_recebidas.id) > 0'),
+            raw: true
+        });
 
-        const [usuarios] = await connection.execute(sqlQuery, queryParams);
-
-        // Query de contagem total
-        const countQuery = `
-            SELECT COUNT(DISTINCT u.id) as total
-            FROM users u
-            LEFT JOIN cartinhas c ON u.id = c.destinatario_id ${statusFilter}
-            ${whereClause}
-            HAVING COUNT(c.id) > 0
-        `;
-        const [countResult] = await connection.execute(countQuery, queryParams);
-
-        const totalItems = countResult[0]?.total || 0;
+        const totalItems = parseInt(countResult[0]?.total || 0);
         const totalPages = Math.ceil(totalItems / limit);
-
-        connection.release();
 
         res.json({
             usuarios: usuarios || [],
@@ -119,8 +109,8 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
             totalPages,
             totalItems
         });
-
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Erro ao carregar usuários e estatísticas" });
     }
 });
@@ -136,59 +126,50 @@ AdminCartinhasRouter.get('/usuario/:userId', async (req, res) => {
     const offset = (page - 1) * limit;
 
     try {
-        const connection = await pool.getConnection();
-
         // Construir filtros
-        let whereConditions = ['c.destinatario_id = ?'];
-        let queryParams = [userId];
+        const where = { destinatario_id: userId };
 
-        const statusFilter = buildStatusFilter(status);
-        if (statusFilter) {
-            whereConditions.push(statusFilter.replace('AND ', ''));
+        if (status === 'nao_lida') {
+            where.lida = false;
+        } else if (status === 'lida') {
+            where.lida = true;
+        } else if (status === 'favorita') {
+            where.favoritada = true;
         }
 
         if (search) {
-            whereConditions.push('c.titulo LIKE ?');
-            queryParams.push(`%${search}%`);
+            where.titulo = { [Op.like]: `%${search}%` };
         }
 
-        const whereClause = 'WHERE ' + whereConditions.join(' AND ');
-
-        // Buscar cartinhas com LIMIT/OFFSET interpolados
-        const [cartinhas] = await connection.execute(`
-            SELECT 
-                c.id,
-                c.titulo,
-                c.data_envio,
-                c.lida,
-                c.favoritada,
-                c.remetente_id,
-                r.username as remetente_username
-            FROM cartinhas c
-            JOIN users r ON c.remetente_id = r.id
-            ${whereClause}
-            ORDER BY c.data_envio DESC
-            LIMIT ${limit} OFFSET ${offset}
-        `, queryParams);
-
-        // Contar total para paginação
-        const [countResult] = await connection.execute(`
-            SELECT COUNT(*) as total
-            FROM cartinhas c
-            ${whereClause}
-        `, queryParams);
-
-        const totalItems = countResult[0].total;
-        const totalPages = Math.ceil(totalItems / limit);
-
-        connection.release();
-        res.json({
-            cartinhas,
-            currentPage: page,
-            totalPages,
-            totalItems
+        // Buscar cartinhas
+        const { count, rows: cartinhas } = await Cartinha.findAndCountAll({
+            where,
+            include: [{
+                model: User,
+                as: 'remetente',
+                attributes: ['username']
+            }],
+            order: [['data_envio', 'DESC']],
+            limit,
+            offset
         });
 
+        const totalPages = Math.ceil(count / limit);
+
+        res.json({
+            cartinhas: cartinhas.map(c => ({
+                id: c.id,
+                titulo: c.titulo,
+                data_envio: c.data_envio,
+                lida: c.lida,
+                favoritada: c.favoritada,
+                remetente_id: c.remetente_id,
+                remetente_username: c.remetente.username
+            })),
+            currentPage: page,
+            totalPages,
+            totalItems: count
+        });
     } catch (err) {
         console.error('[API] Erro ao carregar cartinhas do usuário:', err);
         res.status(500).json({ message: "Erro ao carregar cartinhas do usuário" });
@@ -200,34 +181,37 @@ AdminCartinhasRouter.get('/:cartinhaId', async (req, res) => {
     const cartinhaId = req.params.cartinhaId;
 
     try {
-        const connection = await pool.getConnection();
+        const cartinha = await Cartinha.findByPk(cartinhaId, {
+            include: [
+                {
+                    model: User,
+                    as: 'remetente',
+                    attributes: ['username']
+                },
+                {
+                    model: User,
+                    as: 'destinatario',
+                    attributes: ['username']
+                }
+            ]
+        });
 
-        const [cartinhas] = await connection.execute(`
-            SELECT 
-                c.id,
-                c.titulo,
-                c.data_envio,
-                c.data_lida as data_leitura,
-                c.lida,
-                c.favoritada,
-                c.remetente_id,
-                r.username as remetente_username,
-                c.destinatario_id,
-                d.username as destinatario_username
-            FROM cartinhas c
-            JOIN users r ON c.remetente_id = r.id
-            JOIN users d ON c.destinatario_id = d.id
-            WHERE c.id = ?
-        `, [cartinhaId]);
-
-        if (cartinhas.length === 0) {
-            connection.release();
+        if (!cartinha) {
             return res.status(404).json({ message: "Cartinha não encontrada" });
         }
 
-        connection.release();
-        res.json(cartinhas[0]);
-
+        res.json({
+            id: cartinha.id,
+            titulo: cartinha.titulo,
+            data_envio: cartinha.data_envio,
+            data_leitura: cartinha.data_lida,
+            lida: cartinha.lida,
+            favoritada: cartinha.favoritada,
+            remetente_id: cartinha.remetente_id,
+            remetente_username: cartinha.remetente.username,
+            destinatario_id: cartinha.destinatario_id,
+            destinatario_username: cartinha.destinatario.username
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar detalhes da cartinha" });
@@ -243,29 +227,23 @@ AdminCartinhasRouter.delete('/remover', async (req, res) => {
     }
 
     try {
-        const connection = await pool.getConnection();
-
         // Converter IDs para integers e filtrar valores válidos
         const validIds = cartinhaIds.filter(id => !isNaN(parseInt(id))).map(id => parseInt(id));
 
         if (validIds.length === 0) {
-            connection.release();
             return res.status(400).json({ message: "Nenhum ID válido fornecido" });
         }
 
-        // Criar placeholders para a query
-        const placeholders = validIds.map(() => '?').join(',');
-
-        const [result] = await connection.execute(`
-            DELETE FROM cartinhas WHERE id IN (${placeholders})
-        `, validIds);
-
-        connection.release();
-        res.json({
-            removidas: result.affectedRows,
-            message: "Cartinhas removidas com sucesso"
+        const deletedCount = await Cartinha.destroy({
+            where: {
+                id: { [Op.in]: validIds }
+            }
         });
 
+        res.json({
+            removidas: deletedCount,
+            message: "Cartinhas removidas com sucesso"
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao remover cartinhas" });
@@ -275,25 +253,51 @@ AdminCartinhasRouter.delete('/remover', async (req, res) => {
 // POST /admin/cartinhas/limpeza - Executar limpeza automática
 AdminCartinhasRouter.post('/limpeza', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         // Limpa apenas cartinhas lidas e não favoritadas com mais de 30 dias
-        const [result] = await connection.execute(`
-            DELETE FROM cartinhas 
-            WHERE lida = TRUE 
-            AND favoritada = FALSE 
-            AND data_lida < DATE_SUB(NOW(), INTERVAL 30 DAY)
-        `);
-
-        connection.release();
-        res.json({
-            removidas: result.affectedRows,
-            message: "Limpeza automática executada com sucesso"
+        const deletedCount = await Cartinha.destroy({
+            where: {
+                lida: true,
+                favoritada: false,
+                data_lida: { [Op.lt]: thirtyDaysAgo }
+            }
         });
 
+        res.json({
+            removidas: deletedCount,
+            message: "Limpeza automática executada com sucesso"
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao executar limpeza automática" });
+    }
+});
+
+// PUT /admin/cartinhas/:cartinhaId - Atualizar uma cartinha
+AdminCartinhasRouter.put('/:cartinhaId', async (req, res) => {
+    const cartinhaId = req.params.cartinhaId;
+    const { titulo, lida, favoritada } = req.body;
+
+    try {
+        const cartinha = await Cartinha.findByPk(cartinhaId);
+
+        if (!cartinha) {
+            return res.status(404).json({ message: "Cartinha não encontrada" });
+        }
+
+        const updates = {};
+        if (titulo !== undefined) updates.titulo = titulo;
+        if (lida !== undefined) updates.lida = lida;
+        if (favoritada !== undefined) updates.favoritada = favoritada;
+
+        await cartinha.update(updates);
+
+        res.json({ message: "Cartinha atualizada com sucesso", cartinha });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao atualizar cartinha" });
     }
 });
 

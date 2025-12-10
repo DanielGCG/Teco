@@ -1,0 +1,64 @@
+/* Estilos compartilhados para mensagens em DMs e Chats */
+
+.msg-group {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.8rem;
+}
+
+#chat-area { background-color: var(--verde); }
+#chat-messages { height: 0; }
+
+.msg-group.usuario {
+    align-items: flex-end;
+}
+
+.msg-group.outrousuario {
+    align-items: flex-start;
+}
+
+.mensagem {
+    padding: 0.5rem 0.8rem;
+    border-radius: 1rem;
+    max-width: 65%;
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.mensagem.usuario {
+    background: var(--mensagem-roxo);
+    color: white;
+}
+
+.mensagem.outrousuario {
+    background: #e5e7eb;
+    color: black;
+}
+
+.msg-meta {
+    font-size: 0.65rem;
+    color: gray;
+    margin-top: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.msg-check {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.msg-check.read {
+    color: #4fc3f7;
+}
+
+.unread-badge {
+    background: #7c3aed;
+    color: white;
+    border-radius: 50%;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+}

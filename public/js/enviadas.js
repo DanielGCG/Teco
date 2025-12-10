@@ -200,7 +200,7 @@ function abrirModalEdicao(cartinhaId) {
     if (!cartinha || !usuario) return;
     
     document.getElementById('edit-cartinha-id').value = cartinhaId;
-    document.getElementById('edit-destinatario-avatar').src = usuario.avatar;
+    document.getElementById('edit-destinatario-avatar').src = usuario.profile_image;
     document.getElementById('edit-destinatario-nome').textContent = usuario.username;
     document.getElementById('edit-titulo').value = cartinha.titulo;
     document.getElementById('edit-conteudo').value = cartinha.conteudo;

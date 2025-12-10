@@ -1,0 +1,500 @@
+<style>
+    .friends-container { height: 100%; }
+
+    .tab-content {
+        margin-top: 1.5rem;
+    }
+
+    .friend-card {
+        transition: all 0.2s;
+        border: 1px solid #dee2e6;
+        margin-bottom: 0.75rem;
+    }
+
+    .friend-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .search-box {
+        margin-bottom: 1.5rem;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container-fluid friends-container">
+    <div class="card h-100 d-flex flex-column" style="background-color: var(--verde);">
+        <!-- Tabs de navegação -->
+        <ul class="card-header nav nav-tabs" id="friendsTabs" role="tablist" style="padding: 0px;">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab">
+                        <i class="bi bi-people"></i> Amigos <span id="friends-count" class="badge bg-primary">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
+                        <i class="bi bi-inbox"></i> Pedidos Recebidos <span id="requests-count" class="badge bg-danger" style="display:none">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab">
+                        <i class="bi bi-send"></i> Pedidos Enviados <span id="sent-count" class="badge bg-warning text-dark" style="display:none">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button" role="tab">
+                        <i class="bi bi-search"></i> Buscar Usuários
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Conteúdo das tabs -->
+            <div class="tab-content px-2" id="friendsTabContent">
+                <!-- Lista de Amigos -->
+                <div class="tab-pane fade show active" id="friends" role="tabpanel">
+                    <div id="friends-list">
+                        <div class="text-center">
+                            <span class="spinner-border spinner-border-sm"></span> Carregando...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pedidos Recebidos -->
+                <div class="tab-pane fade" id="requests" role="tabpanel">
+                    <div id="requests-list">
+                        <div class="text-center">
+                            <span class="spinner-border spinner-border-sm"></span> Carregando...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pedidos Enviados -->
+                <div class="tab-pane fade" id="sent" role="tabpanel">
+                    <div id="sent-list">
+                        <div class="text-center">
+                            <span class="spinner-border spinner-border-sm"></span> Carregando...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buscar Usuários -->
+                <div class="tab-pane fade" id="search" role="tabpanel">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <input type="text" id="search-input" class="form-control" placeholder="Digite o nome de usuário...">
+                            <button class="btn btn-primary" id="search-btn">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="search-results"></div>
+                </div>
+            </div>
+        </div>
+</div>
+
+<!-- UI Utilities -->
+<script src="/js/commons/ui-common.js"></script>
+<script src="/js/commons/friendship-common.js"></script>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // Estado da aplicação
+    let friends = [];
+    let requests = [];
+    let sent = [];
+    
+    // Acesso ao socket global
+    const friendsSocket = window.appSocket || notificationsSocket;
+    
+    if (!friendsSocket) {
+        console.error('[Lista Amigos] Socket.IO não disponível!');
+    }
+
+    // ==================== Inicialização ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarAmigos();
+        carregarPedidosRecebidos();
+        carregarPedidosEnviados();
+
+        // Event listeners
+        document.getElementById('search-btn').addEventListener('click', buscarUsuarios);
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarUsuarios();
+        });
+        
+        // Escuta eventos customizados disparados pelo sistema de notificações
+        document.addEventListener('friendRequest:new', () => {
+            carregarPedidosRecebidos();
+        });
+        
+        document.addEventListener('friendRequest:accepted', () => {
+            carregarAmigos();
+        });
+        
+        document.addEventListener('friendRequest:updated', () => {
+            carregarPedidosRecebidos();
+            carregarPedidosEnviados();
+        });
+        
+        document.addEventListener('user:statusChanged', (e) => {
+            const { userId, status } = e.detail;
+            console.log('[Amigos] Status do usuário', userId, 'mudou para:', status);
+            atualizarStatusAmigo(userId, status);
+        });
+        
+        document.addEventListener('user:statusBatch', (e) => {
+            const { statusMap } = e.detail;
+            console.log('[Amigos] Status em lote recebidos:', statusMap);
+            Object.entries(statusMap).forEach(([userId, status]) => {
+                atualizarStatusAmigo(parseInt(userId), status);
+            });
+        });
+    });
+    
+    // Solicita status atualizados de todos os amigos
+    function requestAllFriendStatuses() {
+        const friendIds = friends.map(f => f.id).filter(id => id);
+        if (friendIds.length > 0 && friendsSocket) {
+            console.log('[Amigos] Solicitando status atualizados para:', friendIds);
+            friendsSocket.emit('requestUserStatus', { userIds: friendIds });
+        }
+    }
+    
+    // Função para atualizar status de um amigo em tempo real
+    function atualizarStatusAmigo(userId, status) {
+        const friend = friends.find(f => f.id === userId);
+        if (friend) friend.status = status;
+        
+        const friendCards = document.querySelectorAll(`[data-user-id="${userId}"]`);
+        friendCards.forEach(card => {
+            const indicator = card.querySelector('.position-absolute.rounded-circle');
+            if (indicator) {
+                indicator.style.background = UIUtils.getStatusColor(status);
+            }
+        });
+    }
+
+        // ==================== Funções de carregamento ====================
+        async function carregarAmigos() {
+            try {
+                const result = await FriendshipAPI.carregarAmigos();
+                if (!result.success) throw new Error('Erro ao carregar amigos');
+                
+                friends = result.friends;
+                document.getElementById('friends-count').textContent = friends.length;
+                renderizarAmigos();
+            } catch (err) {
+                console.error('Erro ao carregar amigos:', err);
+                document.getElementById('friends-list').innerHTML = 
+                    '<div class="alert alert-danger">Erro ao carregar amigos</div>';
+            }
+        }
+
+        async function carregarPedidosRecebidos() {
+            try {
+                const result = await FriendshipAPI.carregarPedidosRecebidos();
+                if (!result.success) throw new Error('Erro ao carregar pedidos');
+                
+                requests = result.requests;
+                
+                const badge = document.getElementById('requests-count');
+                badge.textContent = requests.length;
+                badge.style.display = requests.length !== 0 ? '' : 'none';
+                renderizarPedidosRecebidos();
+            } catch (err) {
+                console.error('Erro ao carregar pedidos:', err);
+                document.getElementById('requests-list').innerHTML = 
+                    '<div class="alert alert-danger">Erro ao carregar pedidos</div>';
+            }
+        }
+
+        async function carregarPedidosEnviados() {
+            try {
+                const result = await FriendshipAPI.carregarPedidosEnviados();
+                if (!result.success) throw new Error('Erro ao carregar pedidos enviados');
+                
+                sent = result.sent;
+                
+                const badge = document.getElementById('sent-count');
+                badge.textContent = sent.length;
+                badge.style.display = sent.length !== 0 ? '' : 'none';
+                renderizarPedidosEnviados();
+            } catch (err) {
+                console.error('Erro ao carregar pedidos enviados:', err);
+                document.getElementById('sent-list').innerHTML = 
+                    '<div class="alert alert-danger">Erro ao carregar pedidos enviados</div>';
+            }
+        }
+
+        // ==================== Funções de renderização ====================
+        function renderizarAmigos() {
+            const container = document.getElementById('friends-list');
+            
+            if (friends.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-people"></i>
+                        <p>Você ainda não tem amigos adicionados</p>
+                        <p class="text-muted">Use a aba "Buscar Usuários" para encontrar pessoas</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            friends.forEach(friend => {
+                const messageLink = UIUtils.createActionLink({
+                    text: 'Mensagem',
+                    icon: 'bi bi-chat-dots',
+                    href: `/dms?user=${friend.username}`,
+                    variant: 'primary'
+                });
+                
+                const removeBtn = UIUtils.createActionButton({
+                    text: 'Remover',
+                    icon: 'bi bi-person-dash',
+                    variant: 'outline-danger',
+                    onClick: () => removerAmigo(friend.id)
+                });
+                
+                const card = UIUtils.createUserCard(friend, {
+                    type: 'friend',
+                    avatarSize: 40,
+                    actions: [messageLink, removeBtn]
+                });
+                
+                card.setAttribute('data-user-id', friend.id);
+                container.appendChild(card);
+            });
+            
+            // Solicita status atualizados após renderizar
+            requestAllFriendStatuses();
+        }
+
+        function renderizarPedidosRecebidos() {
+            const container = document.getElementById('requests-list');
+            
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>Nenhum pedido de amizade pendente</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            requests.forEach(request => {
+                const acceptBtn = UIUtils.createActionButton({
+                    text: 'Aceitar',
+                    icon: 'bi bi-check-lg',
+                    variant: 'success',
+                    onClick: () => aceitarPedido(request.friendship_id)
+                });
+                
+                const rejectBtn = UIUtils.createActionButton({
+                    text: 'Rejeitar',
+                    icon: 'bi bi-x-lg',
+                    variant: 'danger',
+                    onClick: () => rejeitarPedido(request.friendship_id)
+                });
+                
+                const card = UIUtils.createUserCard(request, {
+                    type: 'friend',
+                    avatarSize: 40,
+                    actions: [acceptBtn, rejectBtn]
+                });
+                
+                container.appendChild(card);
+            });
+        }
+
+        function renderizarPedidosEnviados() {
+            const container = document.getElementById('sent-list');
+            
+            if (sent.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-send"></i>
+                        <p>Nenhum pedido pendente</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            sent.forEach(request => {
+                const cancelBtn = UIUtils.createActionButton({
+                    text: 'Cancelar',
+                    icon: 'bi bi-x-circle',
+                    variant: 'outline-danger',
+                    onClick: () => cancelarPedido(request.friendship_id)
+                });
+                
+                const card = UIUtils.createUserCard(request, {
+                    type: 'friend',
+                    avatarSize: 40,
+                    actions: [cancelBtn]
+                });
+                
+                container.appendChild(card);
+            });
+        }
+
+        // ==================== Buscar usuários ====================
+        async function buscarUsuarios() {
+            const query = document.getElementById('search-input').value.trim();
+            const resultsContainer = document.getElementById('search-results');
+            
+            if (!query) {
+                resultsContainer.innerHTML = '<div class="alert alert-warning">Digite algo para buscar</div>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Buscando...</div>';
+
+            try {
+                const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(query)}`, { credentials: 'include' });
+                if (!res.ok) throw new Error('Erro ao buscar usuários');
+                
+                const data = await res.json();
+                const usuarios = data.usuarios || [];
+
+                if (usuarios.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="no-results">
+                            <i class="bi bi-search" style="font-size: 2rem;"></i>
+                            <p>Nenhum usuário encontrado</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Para cada usuário, verificar status de amizade
+                const usuariosComStatus = await Promise.all(
+                    usuarios.map(async (user) => {
+                        const statusRes = await fetch(`/amigos/api/check/${user.id}`, { credentials: 'include' });
+                        const statusData = await statusRes.json();
+                        return { ...user, friendshipStatus: statusData.status };
+                    })
+                );
+
+                resultsContainer.innerHTML = '';
+                usuariosComStatus.forEach(user => {
+                    let actionElement;
+                    
+                    switch (user.friendshipStatus) {
+                        case 'friends':
+                            actionElement = document.createElement('span');
+                            actionElement.className = 'badge bg-success';
+                            actionElement.innerHTML = '<i class="bi bi-check-lg"></i> Amigos';
+                            break;
+                        case 'pending_sent':
+                            actionElement = document.createElement('span');
+                            actionElement.className = 'badge bg-warning text-dark';
+                            actionElement.innerHTML = '<i class="bi bi-clock"></i> Pendente';
+                            break;
+                        case 'pending_received':
+                            actionElement = document.createElement('span');
+                            actionElement.className = 'badge bg-info';
+                            actionElement.innerHTML = '<i class="bi bi-inbox"></i> Respondeu Você';
+                            break;
+                        case 'self':
+                            actionElement = document.createElement('span');
+                            actionElement.className = 'badge bg-secondary';
+                            actionElement.textContent = 'Você';
+                            break;
+                        default:
+                            actionElement = UIUtils.createActionButton({
+                                text: 'Adicionar',
+                                icon: 'bi bi-person-plus',
+                                variant: 'primary',
+                                size: 'sm',
+                                onClick: () => enviarPedido(user.id)
+                            });
+                    }
+
+                    const card = UIUtils.createUserCard(user, {
+                        type: 'search',
+                        avatarSize: 40,
+                        actions: [actionElement]
+                    });
+                    
+                    card.setAttribute('data-user-id', user.id);
+                    resultsContainer.appendChild(card);
+                });
+            } catch (err) {
+                console.error('Erro ao buscar:', err);
+                resultsContainer.innerHTML = '<div class="alert alert-danger">Erro ao buscar usuários</div>';
+            }
+        }
+
+        // ==================== Ações de amizade ====================
+        async function enviarPedido(userId) {
+            await FriendshipAPI.enviarPedido(userId, {
+                onSuccess: async () => {
+                    await carregarPedidosEnviados();
+                    buscarUsuarios();
+                }
+            });
+        }
+
+        async function aceitarPedido(friendshipId) {
+            await FriendshipAPI.aceitarPedido(friendshipId, {
+                onSuccess: async () => {
+                    await carregarAmigos();
+                    await carregarPedidosRecebidos();
+                }
+            });
+        }
+
+        async function rejeitarPedido(friendshipId) {
+            await FriendshipAPI.rejeitarPedido(friendshipId, {
+                onSuccess: () => carregarPedidosRecebidos()
+            });
+        }
+
+        async function cancelarPedido(friendshipId) {
+            await FriendshipAPI.cancelarPedido(friendshipId, {
+                onSuccess: () => carregarPedidosEnviados()
+            });
+        }
+
+        async function removerAmigo(userId) {
+            await FriendshipAPI.removerAmigo(userId, {
+                onSuccess: () => carregarAmigos()
+            });
+        }
+
+        // ==================== Utilitários ====================
+        function formatarData(dateStr) {
+            return UIUtils.formatarData(dateStr);
+        }
+    </script>
+
+<!-- Modais necessários -->
+<%- include('../../utils/modal-aviso') %>
+<%- include('../../utils/modal-confirmacao') %>

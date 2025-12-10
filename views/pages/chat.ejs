@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="/styles/chat.css">
+<link rel="stylesheet" href="/styles/global/chat-common.css">
 
 <div class="container py-3">
   <div class="card">
@@ -20,6 +21,10 @@
     </div>
   </div>
 </div>
+
+<!-- Módulos globais -->
+<script src="/js/global/ui-utils.js"></script>
+<script src="/js/global/chat-utils.js"></script>
 
 <!-- Reutiliza conexão Socket.IO global do partial de notificações -->
 <script>
@@ -45,33 +50,12 @@ if (!socket) {
 
 // ==================== Renderização de mensagens ====================
 function renderMessage(msgData, prepend = false) {
-  // Evita duplicação: se já existe pelo ID, não renderiza
-  if (msgData.id && chatContainer.querySelector(`[data-msg-id="${msgData.id}"]`)) return;
-
-  const msg = document.createElement("div");
-  msg.classList.add("mensagem");
-  if (msgData.tipo === "usuario") msg.classList.add("usuario");
-  else if (msgData.tipo === "outrousuario") msg.classList.add("outrousuario");
-  else msg.classList.add("bot");
-
-  // Armazena o ID da mensagem
-  if (msgData.id) msg.dataset.msgId = msgData.id;
-
-  const nomeEl = document.createElement("div");
-  nomeEl.style.fontSize = "0.75rem";
-  nomeEl.style.fontWeight = "bold";
-  nomeEl.style.marginBottom = "0.2rem";
-  nomeEl.textContent = msgData.nome;
-
-  const textoEl = document.createElement("div");
-  textoEl.style.whiteSpace = "pre-wrap";
-  textoEl.textContent = msgData.text;
-
-  msg.appendChild(nomeEl);
-  msg.appendChild(textoEl);
-
-  if (prepend) chatContainer.insertBefore(msg, chatContainer.firstChild);
-  else chatContainer.appendChild(msg);
+    ChatUtils.renderMessage(msgData, chatContainer, {
+        isMine: msgData.tipo === 'usuario',
+        showUsername: true,
+        showTime: false,
+        prepend
+    });
 }
 
 function renderMessagesInitial(){
@@ -88,7 +72,14 @@ function renderMessagesInitial(){
 async function fetchMessages(page, isInitial = false){
     if(loading) return;
     loading = true;
-    loader.style.display = "block";
+    
+    const loadingIndicator = ChatUtils.createLoadingIndicator();
+    if (isInitial) {
+        chatContainer.innerHTML = '';
+        chatContainer.appendChild(loadingIndicator);
+    } else {
+        chatContainer.insertBefore(loadingIndicator, chatContainer.firstChild);
+    }
 
     try {
         const res = await fetch(`/api/chats/${chatName}/messages?page=${page}`, {
@@ -97,12 +88,14 @@ async function fetchMessages(page, isInitial = false){
         if(!res.ok) throw new Error("Erro ao buscar mensagens");
         const data = await res.json();
 
-        // Agora o backend define quem é "usuario" ou "outrousuario" baseado no cookie
+        // Converte formato do backend para o frontend
         const formatted = data.messages.map(msg => ({
             id: msg.id,
             text: msg.mensagem,
+            mensagem: msg.mensagem,
+            username: msg.username,
             nome: msg.username,
-            tipo: msg.isMine ? "usuario" : "outrousuario" // backend já sinaliza
+            tipo: msg.isMine ? "usuario" : "outrousuario"
         }));
 
         if(isInitial) {
@@ -110,7 +103,13 @@ async function fetchMessages(page, isInitial = false){
             allMessages = formatted;
             loadedStart = 0;
             loadedEnd = allMessages.length;
-            renderMessagesInitial();
+            
+            chatContainer.innerHTML = '';
+            if (allMessages.length === 0) {
+                chatContainer.appendChild(ChatUtils.createEmptyMessage('Nenhuma mensagem ainda'));
+            } else {
+                renderMessagesInitial();
+            }
             
             // Busca chatId e entra na sala Socket.IO
             const chatRes = await fetch(`/api/chats`, { credentials: 'include' });
@@ -144,8 +143,14 @@ async function fetchMessages(page, isInitial = false){
         }
     } catch(err){
         console.error(err);
+        if(isInitial) {
+            chatContainer.innerHTML = '';
+            chatContainer.appendChild(ChatUtils.createErrorMessage());
+        } else {
+            const loadingIndicator = chatContainer.querySelector('.text-center.my-2');
+            if (loadingIndicator) loadingIndicator.remove();
+        }
     } finally {
-        loader.style.display = "none";
         loading = false;
     }
 }
@@ -175,39 +180,18 @@ chatContainer.addEventListener("scroll", () => {
 
 // ==================== Enviar nova mensagem ====================
 const inputMsg = document.getElementById("input-msg");
+const sendBtn = document.getElementById("send-btn");
 
-// Permite enviar com Enter, e pular linha com Shift+Enter
-inputMsg.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    document.getElementById("send-btn").click();
-  }
-});
+ChatUtils.setupMessageInput(inputMsg, sendBtn, (text) => {
+    if (!chatId) {
+        console.error('[Chat] Chat ID não encontrado');
+        return;
+    }
 
-// Auto-ajusta altura do textarea
-inputMsg.addEventListener("input", () => {
-  inputMsg.style.height = "auto";
-  inputMsg.style.height = Math.min(inputMsg.scrollHeight, 120) + "px";
-});
-
-document.getElementById("send-btn").addEventListener("click", async () => {
-  const input = document.getElementById("input-msg");
-  const text = input.value.trim();
-  if (!text) return;
-
-  if (!chatId) {
-    console.error('[Chat] Chat ID não encontrado');
-    return;
-  }
-
-  // Envia via Socket.IO
-  socket.emit('sendMessage', {
-    chatId: chatId,
-    mensagem: text
-  });
-
-  input.value = "";
-  input.style.height = "auto";
+    socket.emit('sendMessage', {
+        chatId: chatId,
+        mensagem: text
+    });
 });
 
 // ==================== Socket.IO Events ====================
@@ -233,6 +217,8 @@ socket.on('newMessage', async (data) => {
         const newMsg = {
             id: message.id,
             text: message.text,
+            mensagem: message.text,
+            username: message.username,
             nome: message.username,
             tipo: message.username === currentUser.username ? "usuario" : "outrousuario"
         };

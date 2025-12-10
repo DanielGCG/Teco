@@ -107,7 +107,7 @@ async function carregarChats() {
             }
             
             // Determinar os participantes
-            const participantes = chat.participantes || chat.participants || [];
+            const participantes = chat.participantes ?? [];
             const participantesStr = participantes.map(p => p.username).join(", ");
             
             card.innerHTML = `
@@ -431,3 +431,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 </script>
+
+<!-- Modais necessários -->
+<%- include('../../utils/modal-aviso') %>
+<%- include('../../utils/modal-confirmacao') %>

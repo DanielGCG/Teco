@@ -1,0 +1,97 @@
+:root {
+    /* Cores principais do projeto */
+    --marrom: #BCA88D;
+    --marrom-rgb: 188, 168, 141;
+    --marrom-escuro: #A39178;
+    --marrom-escuro-rgb: 163, 145, 120;
+    
+    --roxo: #a29bfe;
+    --roxo-rgb: 162, 155, 254;
+    --roxo-escuro: #6c5ce7;
+    --roxo-escuro-rgb: 108, 92, 231;
+    --roxo-muito-escuro: #5849c7;
+    
+    --verde: #b6c9ad;
+    --verde-rgb: 182, 201, 173;
+    --verde-claro: #51cf66;
+    --verde-claro-rgb: 81, 207, 102;
+    
+    --azul: #74b9ff;
+    --azul-rgb: 116, 185, 255;
+    --azul-info: #0dcaf0;
+    --azul-info-rgb: 13, 202, 240;
+    --azul-info-escuro: #0aa2c0;
+    
+    --amarelo: #ffc107;
+    --amarelo-rgb: 255, 193, 7;
+    --amarelo-claro: #ffeb3b;
+    --amarelo-destaque: #f1c40f;
+    --amarelo-destaque-rgb: 241, 196, 15;
+    
+    --rosa: #f8a5c2;
+    --rosa-rgb: 248, 165, 194;
+    
+    --vermelho: #dc3545;
+    --vermelho-rgb: 220, 53, 69;
+    --vermelho-escuro: #c82333;
+    --vermelho-claro: #ff6b6b;
+    --vermelho-claro-rgb: 255, 107, 107;
+    
+    --secundario: #7D8D86;
+    --secundario-rgb: 125, 141, 134;
+    --secundario-escuro: #5a6d68;
+    
+    /* Cinzas e neutros */
+    --texto-principal: #3E3F29;
+    --texto-principal-rgb: 62, 63, 41;
+    --texto-secundario: #2d3436;
+    --texto-terciario: #636e72;
+    --texto-cinza: #495057;
+    
+    --bege-claro: #fafaf5;
+    --bege-medio: #e9e7da;
+    --bege-escuro: #d4d1bf;
+    
+    --fundo-chat: #dfe6e9;
+    --fundo-global: #e2e1cf;
+    
+    /* Aliases para retrocompatibilidade */
+    --marca-texto-verde: var(--verde);
+    --marca-texto-amarelo: var(--amarelo-claro);
+    --marca-texto-rosa: var(--rosa);
+    --marca-texto-azul: var(--azul);
+    --marca-texto-roxo: #a29bfe70;
+    --mensagem-roxo: var(--roxo);
+    --mensagem-bot: var(--verde);
+}
+
+/* Bootstrap variables are set in the compiled source now; keep only project vars here. */
+
+.marca-texto-verde, .marca-texto-amarelo, .marca-texto-rosa, .marca-texto-azul, .marca-texto-roxo {
+    position: relative;
+}
+
+.marca-texto-verde::before, .marca-texto-amarelo::before, .marca-texto-rosa::before, .marca-texto-azul::before, .marca-texto-roxo::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0.15em;
+    width: 100%;
+    height: 0.5em;
+    z-index: -1;
+}
+.marca-texto-verde::before {
+    background-color: var(--marca-texto-verde);
+}
+.marca-texto-amarelo::before {
+    background-color: var(--marca-texto-amarelo);
+}
+.marca-texto-rosa::before {
+    background-color: var(--marca-texto-rosa);
+}
+.marca-texto-azul::before {
+    background-color: var(--marca-texto-azul);
+}
+.marca-texto-roxo::before {
+    background-color: var(--marca-texto-roxo);
+}

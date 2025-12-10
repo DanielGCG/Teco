@@ -1,6 +1,6 @@
-<link rel="stylesheet" href="/styles/cartinhas-common.css">
-<link rel="stylesheet" href="/styles/recebidas.css">
-<script src="/js/cartinhas-common.js"></script>
+<link rel="stylesheet" href="/styles/global/cartinhas-common.css">
+<link rel="stylesheet" href="/styles/cartinhas/recebidas.css">
+<script src="/js/commons/cartinhas-common.js"></script>
 
 <style>
     /* Estilo para o selo de favorita */
@@ -251,7 +251,7 @@ window.ciclarCartasCallback = function() {
             ` : ''}
             <div class="envelope-header">
                 <div class="remetente-info">
-                    <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta">
+                    <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta">
                     <div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <span class="contador-cartas">
@@ -467,7 +467,7 @@ function abrirCartinha(cartinhaId) {
         <div class="mb-3">
             <!-- Cabeçalho da carta -->
             <div class="d-flex align-items-center mb-3 p-2" style="background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c5ce7;">
-                <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
+                <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
                 <div>
                     <strong style="font-size: 1rem; color: #2d3436;">${usuario.username}</strong>
                     <div><small class="text-muted">📅 ${formatarData(cartinha.dataEnvio)}</small></div>
@@ -769,7 +769,7 @@ window.carregarCartasCallback = function(pilhaElement, usuarioIndex) {
                 <!-- Cabeçalho com informações do remetente -->
                 <div class="envelope-header">
                     <div class="remetente-info">
-                        <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta">
+                        <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta">
                         <div>
                             <div style="display: flex; align-items: center; gap: 1rem;">
                                 <span class="contador-cartas">
@@ -1086,3 +1086,5 @@ async function excluirCartinha(cartinhaId) {
     }
 }
 </script>
+
+

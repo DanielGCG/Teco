@@ -1,0 +1,291 @@
+<!-- Modal de Perfil do Usuário -->
+<div class="modal fade" id="userProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center pb-4">
+                <div class="row align-items-start mb-3">
+                    <div class="col d-flex flex-column align-items-center">
+                        <!-- Avatar com Status -->
+                        <div class="position-relative d-inline-block mb-3">
+                            <img id="profile-modal-avatar" src="" alt="Avatar" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #f8f9fa;">
+                            <span id="profile-modal-status-indicator" class="position-absolute bottom-0 end-0 border border-white rounded-circle" style="width: 30px; height: 30px; background: #6c757d;"></span>
+                        </div>
+                        <!-- Username -->
+                        <h4 id="profile-modal-username" class="fw-bold mb-1"></h4>
+                        <!-- Badge de Amigos (abaixo do username) -->
+                        <div id="profile-modal-friend-badge" class="mb-3"></div>
+                    </div>
+                    <div class="col d-flex align-items-center justify-content-center">
+                        <!-- Bio -->
+                        <div id="profile-modal-bio" class="text-muted" style="max-width: 300px;">
+                            <small><em>Sem biografia</em></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center gap-3">
+                    <!-- Ações de Amizade -->
+                    <div id="profile-modal-friendship-actions"></div>
+
+                    <!-- Botão de Conversa -->
+                    <div id="profile-modal-dm-button"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Importar módulos compartilhados -->
+<script src="/js/commons/ui-common.js"></script>
+<script src="/js/commons/friendship-common.js"></script>
+
+<style>
+#userProfileModal .modal-content {
+    border-radius: 1rem;
+}
+
+#userProfileModal .modal-body {
+    padding: 2rem 1.5rem;
+}
+
+#profile-modal-bio {
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+</style>
+
+<script>
+    // Objeto global para gerenciar o modal de perfil
+    window.UserProfileModal = (function() {
+        const modal = new bootstrap.Modal(document.getElementById('userProfileModal'));
+        let currentUserData = null;
+        let onDmClickCallback = null;
+
+        // Mapa consolidado de status
+        const statusMap = {
+            'online': { color: '#28a745', badgeClass: 'bg-success' },
+            'ausente': { color: '#ffc107', badgeClass: 'bg-warning text-dark' },
+            'offline': { color: '#6c757d', badgeClass: 'bg-secondary' }
+        };
+
+        // Mostra o modal com os dados do usuário
+        function show(userData, options = {}) {
+            currentUserData = userData;
+            onDmClickCallback = options.onDmClick ?? null;
+
+            // Avatar - com fallback automático
+            const avatarImg = document.getElementById('profile-modal-avatar');
+            avatarImg.src = userData.profile_image;
+            avatarImg.onerror = () => { avatarImg.src = '/images/placeholder.png'; };
+
+            // Username
+            document.getElementById('profile-modal-username').textContent = userData.username;
+
+            // Status
+            updateStatus(userData.status || 'offline');
+
+            // Bio
+            const bioContainer = document.getElementById('profile-modal-bio');
+            const bioSmall = document.createElement('small');
+            if (userData.bio && userData.bio.trim()) {
+                bioSmall.textContent = userData.bio;
+            } else {
+                const em = document.createElement('em');
+                em.textContent = 'Sem biografia';
+                bioSmall.appendChild(em);
+            }
+            bioContainer.innerHTML = '';
+            bioContainer.appendChild(bioSmall);
+
+            // Ações de amizade
+            renderFriendshipActions(userData);
+
+            // Botão de conversa
+            renderDmButton(userData);
+
+            modal.show();
+        }
+
+        // Atualiza o status do usuário
+        function updateStatus(status) {
+            const indicator = document.getElementById('profile-modal-status-indicator');
+            const statusInfo = statusMap[status] || statusMap.offline;
+            
+            if (indicator) {
+                indicator.style.background = statusInfo.color;
+            }
+
+            if (currentUserData) {
+                currentUserData.status = status;
+            }
+        }
+
+        // Renderiza as ações de amizade
+        function renderFriendshipActions(userData) {
+            const actionsContainer = document.getElementById('profile-modal-friendship-actions');
+            const badgeContainer = document.getElementById('profile-modal-friend-badge');
+            
+            // Limpa os containers
+            badgeContainer.innerHTML = '';
+            actionsContainer.innerHTML = '';
+            
+            if (userData.isFriend) {
+                // Badge de amigos abaixo do username
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-success';
+                badge.innerHTML = '<i class="bi bi-check-circle"></i> Amigos';
+                badgeContainer.appendChild(badge);
+                
+                // Botão de remover amizade
+                const btn = UIUtils.createActionButton({
+                    text: 'Remover Amizade',
+                    icon: 'bi bi-person-dash',
+                    variant: 'outline-danger',
+                    className: 'friendship-action-btn',
+                    onClick: () => UserProfileModal.removeFriend()
+                });
+                actionsContainer.appendChild(btn);
+            } else if (userData.friendRequestSent) {
+                // Pedido já enviado - fica abaixo da foto
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-info';
+                badge.innerHTML = '<i class="bi bi-clock"></i> Pedido Enviado';
+                badgeContainer.appendChild(badge);
+            } else if (userData.friendRequestReceived) {
+                // Pedido recebido (pode aceitar/rejeitar)
+                const acceptBtn = UIUtils.createActionButton({
+                    text: 'Aceitar',
+                    icon: 'bi bi-check-lg',
+                    variant: 'success',
+                    size: 'sm',
+                    onClick: () => UserProfileModal.acceptFriendRequest()
+                });
+                
+                const rejectBtn = UIUtils.createActionButton({
+                    text: 'Rejeitar',
+                    icon: 'bi bi-x-lg',
+                    variant: 'danger',
+                    size: 'sm',
+                    onClick: () => UserProfileModal.rejectFriendRequest()
+                });
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'd-flex gap-2 justify-content-center';
+                wrapper.appendChild(acceptBtn);
+                wrapper.appendChild(rejectBtn);
+                actionsContainer.appendChild(wrapper);
+            } else {
+                // Não é amigo, pode enviar pedido
+                const btn = UIUtils.createActionButton({
+                    text: 'Adicionar Amigo',
+                    icon: 'bi bi-person-plus',
+                    variant: 'primary',
+                    size: 'sm',
+                    className: 'friendship-action-btn',
+                    onClick: () => UserProfileModal.sendFriendRequest()
+                });
+                actionsContainer.appendChild(btn);
+            }
+        }
+
+        // Renderiza o botão de conversa
+        function renderDmButton(userData) {
+            const container = document.getElementById('profile-modal-dm-button');
+            container.innerHTML = '';
+            
+            if (onDmClickCallback) {
+                const btn = UIUtils.createActionButton({
+                    text: 'Enviar Mensagem',
+                    icon: 'bi bi-chat-dots',
+                    variant: 'outline-primary',
+                    className: 'friendship-action-btn',
+                    onClick: () => UserProfileModal.openDm()
+                });
+                container.appendChild(btn);
+            } else if (userData.username) {
+                const link = UIUtils.createActionLink({
+                    text: 'Enviar Mensagem',
+                    icon: 'bi bi-chat-dots',
+                    variant: 'primary',
+                    className: 'friendship-action-btn',
+                    href: `/dms?user=${encodeURIComponent(userData.username)}`
+                });
+                container.appendChild(link);
+            }
+        }
+
+        // Ações de amizade
+        async function sendFriendRequest() {
+            if (!currentUserData || !currentUserData.id) return;
+
+            await FriendshipAPI.enviarPedido(currentUserData.id, {
+                onSuccess: () => {
+                    currentUserData.friendRequestSent = true;
+                    renderFriendshipActions(currentUserData);
+                }
+            });
+        }
+
+        async function removeFriend() {
+            if (!currentUserData || !currentUserData.id) return;
+
+            await FriendshipAPI.removerAmigo(currentUserData.id, {
+                confirmMessage: `Tem certeza que deseja remover ${currentUserData.username} dos seus amigos?`,
+                onSuccess: () => {
+                    currentUserData.isFriend = false;
+                    renderFriendshipActions(currentUserData);
+                }
+            });
+        }
+
+        async function acceptFriendRequest() {
+            if (!currentUserData || !currentUserData.friendshipId) return;
+
+            await FriendshipAPI.aceitarPedido(currentUserData.friendshipId, {
+                onSuccess: () => {
+                    currentUserData.isFriend = true;
+                    currentUserData.friendRequestReceived = false;
+                    renderFriendshipActions(currentUserData);
+                }
+            });
+        }
+
+        async function rejectFriendRequest() {
+            if (!currentUserData || !currentUserData.friendshipId) return;
+
+            await FriendshipAPI.rejeitarPedido(currentUserData.friendshipId, {
+                confirmMessage: null,
+                onSuccess: () => {
+                    currentUserData.friendRequestReceived = false;
+                    renderFriendshipActions(currentUserData);
+                }
+            });
+        }
+
+        function openDm() {
+            if (onDmClickCallback && currentUserData) {
+                modal.hide();
+                onDmClickCallback(currentUserData);
+            }
+        }
+
+        function hide() {
+            modal.hide();
+        }
+
+        // API pública
+        return {
+            show,
+            updateStatus,
+            hide,
+            sendFriendRequest,
+            removeFriend,
+            acceptFriendRequest,
+            rejectFriendRequest,
+            openDm
+        };
+    })();
+</script>

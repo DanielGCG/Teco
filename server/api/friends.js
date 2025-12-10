@@ -1,9 +1,16 @@
 const express = require("express");
 const FriendsRouter = express.Router();
-const pool = require("../config/bd");
+const { Friendship, User } = require("../models");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { createNotification } = require("./notifications");
 const socketRouter = require("../routes/socket.router");
+const validate = require("../middlewares/validate");
+const { Op } = require("sequelize");
+const {
+    friendshipIdSchema,
+    userIdSchema,
+    sendFriendRequestSchema
+} = require("../validators/friends.validator");
 
 // Helper para proteger rotas
 const protect = (minRole = 0) => {
@@ -23,40 +30,48 @@ function getUserStatus(userId) {
 // GET /friends - Listar amigos aceitos
 FriendsRouter.get('/', protect(0), async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-        
         // Busca amizades onde o usuário é o requester OU o addressee e status é 'accepted'
-        const [friends] = await connection.execute(`
-            SELECT 
-                u.id,
-                u.username,
-                u.profile_image as avatar,
-                u.bio,
-                f.created_at as friend_since
-            FROM friendships f
-            JOIN users u ON (
-                CASE 
-                    WHEN f.requester_id = ? THEN u.id = f.addressee_id
-                    WHEN f.addressee_id = ? THEN u.id = f.requester_id
-                END
-            )
-            WHERE (f.requester_id = ? OR f.addressee_id = ?)
-                AND f.status = 'accepted'
-            ORDER BY u.username
-        `, [req.user.id, req.user.id, req.user.id, req.user.id]);
-
-        // Adiciona status de cada amigo
-        friends.forEach(friend => {
-            friend.status = getUserStatus(friend.id);
+        const friendships = await Friendship.findAll({
+            where: {
+                [Op.or]: [
+                    { requester_id: req.user.id },
+                    { addressee_id: req.user.id }
+                ],
+                status: 'accepted'
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'requester',
+                    attributes: ['id', 'username', 'profile_image', 'bio']
+                },
+                {
+                    model: User,
+                    as: 'addressee',
+                    attributes: ['id', 'username', 'profile_image', 'bio']
+                }
+            ]
         });
-        
+
+        // Extrai o amigo (o usuário que NÃO é req.user.id)
+        const friends = friendships.map(f => {
+            const friend = f.requester_id === req.user.id ? f.addressee : f.requester;
+            return {
+                id: friend.id,
+                username: friend.username,
+                profile_image: friend.profile_image,
+                bio: friend.bio,
+                friend_since: f.created_at,
+                status: getUserStatus(friend.id)
+            };
+        });
+
         // Ordena por status (online -> ausente -> offline)
         friends.sort((a, b) => {
-            const statusOrder = { online: 0, ausente: 1, offline: 2 };
-            return statusOrder[a.status] - statusOrder[b.status];
+            const order = { online: 0, ausente: 1, offline: 2 };
+            return (order[a.status] || 2) - (order[b.status] || 2);
         });
 
-        connection.release();
         res.json({ friends });
     } catch (err) {
         console.error(err);
@@ -67,24 +82,29 @@ FriendsRouter.get('/', protect(0), async (req, res) => {
 // GET /friends/requests - Listar pedidos de amizade recebidos
 FriendsRouter.get('/requests', protect(0), async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-        
-        const [requests] = await connection.execute(`
-            SELECT 
-                f.id as friendship_id,
-                u.id,
-                u.username,
-                u.profile_image as avatar,
-                u.bio,
-                f.created_at
-            FROM friendships f
-            JOIN users u ON u.id = f.requester_id
-            WHERE f.addressee_id = ? AND f.status = 'pending'
-            ORDER BY f.created_at DESC
-        `, [req.user.id]);
+        const requests = await Friendship.findAll({
+            where: {
+                addressee_id: req.user.id,
+                status: 'pending'
+            },
+            include: [{
+                model: User,
+                as: 'requester',
+                attributes: ['id', 'username', 'profile_image', 'bio']
+            }],
+            order: [['created_at', 'DESC']]
+        });
 
-        connection.release();
-        res.json({ requests });
+        const formatted = requests.map(r => ({
+            friendship_id: r.id,
+            id: r.requester.id,
+            username: r.requester.username,
+            profile_image: r.requester.profile_image,
+            bio: r.requester.bio,
+            created_at: r.created_at
+        }));
+
+        res.json({ requests: formatted });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao listar pedidos" });
@@ -94,25 +114,30 @@ FriendsRouter.get('/requests', protect(0), async (req, res) => {
 // GET /friends/sent - Listar pedidos de amizade enviados
 FriendsRouter.get('/sent', protect(0), async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-        
-        const [sent] = await connection.execute(`
-            SELECT 
-                f.id as friendship_id,
-                u.id,
-                u.username,
-                u.profile_image as avatar,
-                u.bio,
-                f.status,
-                f.created_at
-            FROM friendships f
-            JOIN users u ON u.id = f.addressee_id
-            WHERE f.requester_id = ? AND f.status = 'pending'
-            ORDER BY f.created_at DESC
-        `, [req.user.id]);
+        const sent = await Friendship.findAll({
+            where: {
+                requester_id: req.user.id,
+                status: 'pending'
+            },
+            include: [{
+                model: User,
+                as: 'addressee',
+                attributes: ['id', 'username', 'profile_image', 'bio']
+            }],
+            order: [['created_at', 'DESC']]
+        });
 
-        connection.release();
-        res.json({ sent });
+        const formatted = sent.map(s => ({
+            friendship_id: s.id,
+            id: s.addressee.id,
+            username: s.addressee.username,
+            profile_image: s.addressee.profile_image,
+            bio: s.addressee.bio,
+            status: s.status,
+            created_at: s.created_at
+        }));
+
+        res.json({ sent: formatted });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao listar pedidos enviados" });
@@ -120,7 +145,7 @@ FriendsRouter.get('/sent', protect(0), async (req, res) => {
 });
 
 // GET /friends/check/:userId - Verificar status de amizade com um usuário
-FriendsRouter.get('/check/:userId', protect(0), async (req, res) => {
+FriendsRouter.get('/check/:userId', protect(0), validate(userIdSchema, 'params'), async (req, res) => {
     const targetUserId = parseInt(req.params.userId);
 
     if (targetUserId === req.user.id) {
@@ -128,22 +153,19 @@ FriendsRouter.get('/check/:userId', protect(0), async (req, res) => {
     }
 
     try {
-        const connection = await pool.getConnection();
-        
-        const [result] = await connection.execute(`
-            SELECT status, requester_id, addressee_id
-            FROM friendships
-            WHERE (requester_id = ? AND addressee_id = ?)
-               OR (requester_id = ? AND addressee_id = ?)
-        `, [req.user.id, targetUserId, targetUserId, req.user.id]);
+        const friendship = await Friendship.findOne({
+            where: {
+                [Op.or]: [
+                    { requester_id: req.user.id, addressee_id: targetUserId },
+                    { requester_id: targetUserId, addressee_id: req.user.id }
+                ]
+            }
+        });
 
-        connection.release();
-
-        if (result.length === 0) {
+        if (!friendship) {
             return res.json({ status: 'none' });
         }
 
-        const friendship = result[0];
         if (friendship.status === 'accepted') {
             return res.json({ status: 'friends' });
         }
@@ -160,161 +182,123 @@ FriendsRouter.get('/check/:userId', protect(0), async (req, res) => {
 });
 
 // POST /friends/request - Enviar pedido de amizade
-FriendsRouter.post('/request', protect(0), async (req, res) => {
+FriendsRouter.post('/request', protect(0), validate(sendFriendRequestSchema), async (req, res) => {
     const { addressee_id } = req.body;
-
-    if (!addressee_id) {
-        return res.status(400).json({ message: "ID do destinatário é obrigatório" });
-    }
 
     if (addressee_id === req.user.id) {
         return res.status(400).json({ message: "Você não pode adicionar a si mesmo como amigo" });
     }
 
     try {
-        const connection = await pool.getConnection();
-
         // Verifica se o usuário de destino existe
-        const [targetUser] = await connection.execute(
-            "SELECT id FROM users WHERE id = ?",
-            [addressee_id]
-        );
+        const targetUser = await User.findByPk(addressee_id);
 
-        if (targetUser.length === 0) {
-            connection.release();
+        if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
         // Verifica se já existe um pedido ou amizade
-        const [existing] = await connection.execute(`
-            SELECT id, status, requester_id
-            FROM friendships
-            WHERE (requester_id = ? AND addressee_id = ?)
-               OR (requester_id = ? AND addressee_id = ?)
-        `, [req.user.id, addressee_id, addressee_id, req.user.id]);
-
-        if (existing.length > 0) {
-            connection.release();
-            const friendship = existing[0];
-            
-            if (friendship.status === 'accepted') {
-                return res.status(409).json({ message: "Vocês já são amigos" });
+        const existing = await Friendship.findOne({
+            where: {
+                [Op.or]: [
+                    { requester_id: req.user.id, addressee_id },
+                    { requester_id: addressee_id, addressee_id: req.user.id }
+                ]
             }
-            
-            if (friendship.requester_id === req.user.id) {
-                return res.status(409).json({ message: "Pedido já foi enviado" });
-            } else {
-                return res.status(409).json({ message: "Este usuário já enviou um pedido para você" });
+        });
+
+        if (existing) {
+            if (existing.status === 'accepted') {
+                return res.status(400).json({ message: "Vocês já são amigos" });
+            }
+            if (existing.status === 'pending') {
+                if (existing.requester_id === req.user.id) {
+                    return res.status(400).json({ message: "Você já enviou um pedido para este usuário" });
+                } else {
+                    return res.status(400).json({ message: "Este usuário já te enviou um pedido de amizade" });
+                }
             }
         }
 
         // Cria o pedido de amizade
-        await connection.execute(
-            "INSERT INTO friendships (requester_id, addressee_id, status) VALUES (?, ?, 'pending')",
-            [req.user.id, addressee_id]
-        );
+        const friendship = await Friendship.create({
+            requester_id: req.user.id,
+            addressee_id,
+            status: 'pending'
+        });
 
-        // Busca username do solicitante
-        const [requester] = await connection.execute(
-            "SELECT username FROM users WHERE id = ?",
-            [req.user.id]
-        );
-
-        // Cria notificação persistente
+        // Cria notificação para o destinatário
         await createNotification({
             userId: addressee_id,
             type: 'FRIEND_REQUEST',
             title: 'Novo pedido de amizade',
-            body: `${requester[0].username} enviou um pedido de amizade`,
+            body: `${req.user.username} te enviou um pedido de amizade`,
             link: '/amigos',
-            data: { requesterId: req.user.id }
+            data: { friendshipId: friendship.id, fromUserId: req.user.id }
         });
 
-        // Notifica o destinatário em tempo real via Socket.IO
+        // Emitir evento de socket
         const io = req.app.get('io');
         if (io) {
-            io.to(`user_${addressee_id}`).emit('newFriendRequest');
             io.to(`user_${addressee_id}`).emit('newNotification', { type: 'friend' });
+            io.to(`user_${addressee_id}`).emit('newFriendRequest');
         }
 
-        connection.release();
-        res.status(201).json({ message: "Pedido de amizade enviado" });
+        res.status(201).json({ 
+            message: "Pedido de amizade enviado", 
+            friendshipId: friendship.id 
+        });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao enviar pedido" });
+        res.status(500).json({ message: "Erro ao enviar pedido de amizade" });
     }
 });
 
 // PUT /friends/accept/:friendshipId - Aceitar pedido de amizade
-FriendsRouter.put('/accept/:friendshipId', protect(0), async (req, res) => {
+FriendsRouter.put('/accept/:friendshipId', protect(0), validate(friendshipIdSchema, 'params'), async (req, res) => {
     const friendshipId = parseInt(req.params.friendshipId);
 
     try {
-        const connection = await pool.getConnection();
+        const friendship = await Friendship.findByPk(friendshipId, {
+            include: [{
+                model: User,
+                as: 'requester',
+                attributes: ['username']
+            }]
+        });
 
-        // Verifica se o pedido existe e se o usuário é o destinatário
-        const [friendship] = await connection.execute(
-            "SELECT id, addressee_id, status FROM friendships WHERE id = ?",
-            [friendshipId]
-        );
-
-        if (friendship.length === 0) {
-            connection.release();
-            return res.status(404).json({ message: "Pedido não encontrado" });
+        if (!friendship) {
+            return res.status(404).json({ message: "Pedido de amizade não encontrado" });
         }
 
-        if (friendship[0].addressee_id !== req.user.id) {
-            connection.release();
+        // Verifica se é o destinatário
+        if (friendship.addressee_id !== req.user.id) {
             return res.status(403).json({ message: "Você não pode aceitar este pedido" });
         }
 
-        if (friendship[0].status !== 'pending') {
-            connection.release();
-            return res.status(400).json({ message: "Este pedido já foi processado" });
+        // Verifica se já foi aceito
+        if (friendship.status === 'accepted') {
+            return res.status(400).json({ message: "Pedido já foi aceito" });
         }
 
-        // Atualiza o status para 'accepted'
-        await connection.execute(
-            "UPDATE friendships SET status = 'accepted' WHERE id = ?",
-            [friendshipId]
-        );
+        // Aceita o pedido
+        await friendship.update({ status: 'accepted' });
 
-        // Busca o ID do solicitante para notificar
-        const [friendshipData] = await connection.execute(
-            "SELECT requester_id, addressee_id FROM friendships WHERE id = ?",
-            [friendshipId]
-        );
+        // Cria notificação para o solicitante
+        await createNotification({
+            userId: friendship.requester_id,
+            type: 'FRIEND_ACCEPTED',
+            title: 'Pedido de amizade aceito',
+            body: `${req.user.username} aceitou seu pedido de amizade`,
+            link: '/amigos',
+            data: { friendshipId: friendship.id, fromUserId: req.user.id }
+        });
 
-        // Busca username de quem aceitou
-        const [accepter] = await connection.execute(
-            "SELECT username FROM users WHERE id = ?",
-            [req.user.id]
-        );
-
-        connection.release();
-
-        if (friendshipData.length > 0) {
-            const requesterId = friendshipData[0].requester_id;
-            
-            // Cria notificação persistente
-            await createNotification({
-                userId: requesterId,
-                type: 'FRIEND_ACCEPTED',
-                title: 'Pedido aceito!',
-                body: `${accepter[0].username} aceitou seu pedido de amizade`,
-                link: '/amigos',
-                data: { friendId: req.user.id }
-            });
-
-            // Notifica ambos usuários via Socket.IO
-            const io = req.app.get('io');
-            if (io) {
-                // Notifica o solicitante que o pedido foi aceito
-                io.to(`user_${requesterId}`).emit('friendRequestAccepted');
-                io.to(`user_${requesterId}`).emit('newNotification', { type: 'friend' });
-                // Atualiza a contagem do destinatário
-                io.to(`user_${req.user.id}`).emit('friendRequestsUpdated');
-            }
+        // Emitir evento de socket
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user_${friendship.requester_id}`).emit('newNotification', { type: 'friend' });
+            io.to(`user_${friendship.requester_id}`).emit('friendRequestAccepted');
         }
 
         res.json({ message: "Pedido de amizade aceito" });
@@ -325,46 +309,23 @@ FriendsRouter.put('/accept/:friendshipId', protect(0), async (req, res) => {
 });
 
 // PUT /friends/reject/:friendshipId - Rejeitar pedido de amizade
-FriendsRouter.put('/reject/:friendshipId', protect(0), async (req, res) => {
+FriendsRouter.put('/reject/:friendshipId', protect(0), validate(friendshipIdSchema, 'params'), async (req, res) => {
     const friendshipId = parseInt(req.params.friendshipId);
 
     try {
-        const connection = await pool.getConnection();
+        const friendship = await Friendship.findByPk(friendshipId);
 
-        // Verifica se o pedido existe e se o usuário é o destinatário
-        const [friendship] = await connection.execute(
-            "SELECT id, addressee_id, status FROM friendships WHERE id = ?",
-            [friendshipId]
-        );
-
-        if (friendship.length === 0) {
-            connection.release();
-            return res.status(404).json({ message: "Pedido não encontrado" });
+        if (!friendship) {
+            return res.status(404).json({ message: "Pedido de amizade não encontrado" });
         }
 
-        if (friendship[0].addressee_id !== req.user.id) {
-            connection.release();
+        // Verifica se é o destinatário
+        if (friendship.addressee_id !== req.user.id) {
             return res.status(403).json({ message: "Você não pode rejeitar este pedido" });
         }
 
-        if (friendship[0].status !== 'pending') {
-            connection.release();
-            return res.status(400).json({ message: "Este pedido já foi processado" });
-        }
-
-        // Remove o pedido (ou poderia apenas atualizar status para 'rejected')
-        await connection.execute(
-            "DELETE FROM friendships WHERE id = ?",
-            [friendshipId]
-        );
-
-        connection.release();
-
-        // Notifica o destinatário que a contagem mudou
-        const io = req.app.get('io');
-        if (io) {
-            io.to(`user_${req.user.id}`).emit('friendRequestsUpdated');
-        }
+        // Remove o pedido
+        await friendship.destroy();
 
         res.json({ message: "Pedido de amizade rejeitado" });
     } catch (err) {
@@ -373,24 +334,22 @@ FriendsRouter.put('/reject/:friendshipId', protect(0), async (req, res) => {
     }
 });
 
-// DELETE /friends/:friendshipId - Remover amizade
-FriendsRouter.delete('/:userId', protect(0), async (req, res) => {
+// DELETE /friends/:userId - Remover amizade
+FriendsRouter.delete('/:userId', protect(0), validate(userIdSchema, 'params'), async (req, res) => {
     const targetUserId = parseInt(req.params.userId);
 
     try {
-        const connection = await pool.getConnection();
+        const result = await Friendship.destroy({
+            where: {
+                [Op.or]: [
+                    { requester_id: req.user.id, addressee_id: targetUserId },
+                    { requester_id: targetUserId, addressee_id: req.user.id }
+                ],
+                status: 'accepted'
+            }
+        });
 
-        // Remove a amizade onde o usuário está envolvido
-        const [result] = await connection.execute(`
-            DELETE FROM friendships
-            WHERE ((requester_id = ? AND addressee_id = ?)
-               OR (requester_id = ? AND addressee_id = ?))
-            AND status = 'accepted'
-        `, [req.user.id, targetUserId, targetUserId, req.user.id]);
-
-        connection.release();
-
-        if (result.affectedRows === 0) {
+        if (result === 0) {
             return res.status(404).json({ message: "Amizade não encontrada" });
         }
 
@@ -402,49 +361,28 @@ FriendsRouter.delete('/:userId', protect(0), async (req, res) => {
 });
 
 // DELETE /friends/cancel/:friendshipId - Cancelar pedido enviado
-FriendsRouter.delete('/cancel/:friendshipId', protect(0), async (req, res) => {
+FriendsRouter.delete('/cancel/:friendshipId', protect(0), validate(friendshipIdSchema, 'params'), async (req, res) => {
     const friendshipId = parseInt(req.params.friendshipId);
 
     try {
-        const connection = await pool.getConnection();
+        const friendship = await Friendship.findByPk(friendshipId);
 
-        // Verifica se o pedido existe e se o usuário é o remetente
-        const [friendship] = await connection.execute(
-            "SELECT id, requester_id, addressee_id, status FROM friendships WHERE id = ?",
-            [friendshipId]
-        );
-
-        if (friendship.length === 0) {
-            connection.release();
+        if (!friendship) {
             return res.status(404).json({ message: "Pedido não encontrado" });
         }
 
-        if (friendship[0].requester_id !== req.user.id) {
-            connection.release();
+        // Verifica se é o solicitante
+        if (friendship.requester_id !== req.user.id) {
             return res.status(403).json({ message: "Você não pode cancelar este pedido" });
         }
 
-        if (friendship[0].status !== 'pending') {
-            connection.release();
-            return res.status(400).json({ message: "Este pedido já foi processado" });
+        // Verifica se ainda está pendente
+        if (friendship.status !== 'pending') {
+            return res.status(400).json({ message: "Apenas pedidos pendentes podem ser cancelados" });
         }
 
         // Remove o pedido
-        await connection.execute(
-            "DELETE FROM friendships WHERE id = ?",
-            [friendshipId]
-        );
-
-        // Busca o ID do destinatário para notificar
-        const addresseeId = friendship[0].addressee_id;
-
-        connection.release();
-
-        // Notifica o destinatário que a contagem mudou
-        const io = req.app.get('io');
-        if (io) {
-            io.to(`user_${addresseeId}`).emit('friendRequestsUpdated');
-        }
+        await friendship.destroy();
 
         res.json({ message: "Pedido cancelado" });
     } catch (err) {

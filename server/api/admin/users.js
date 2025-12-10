@@ -1,19 +1,18 @@
 const express = require("express");
 const AdminUsersRouter = express.Router();
-const pool = require("../../config/bd");
+const { User } = require("../../models");
 const bcrypt = require("bcrypt");
+const { Op } = require("sequelize");
 
 // ==================== Endpoints Administrativos de Usuários ====================
 
 // GET /admin/users - Listar todos usuários (admin)
 AdminUsersRouter.get('/', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(
-            "SELECT id, username, role, profile_image, created_at, last_access FROM users"
-        );
-        connection.release();
-        res.json(rows);
+        const users = await User.findAll({
+            attributes: ['id', 'username', 'role', 'profile_image', 'created_at', 'last_access']
+        });
+        res.json(users);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao listar usuários" });
@@ -39,104 +38,112 @@ AdminUsersRouter.put('/:id', async (req, res) => {
     nomeUser = nomeUser.toLowerCase();
 
     try {
-        const connection = await pool.getConnection();
-
         // Busca o usuário alvo
-        const [targetUser] = await connection.execute(
-            "SELECT role FROM users WHERE id = ?",
-            [userId]
-        );
+        const targetUser = await User.findByPk(userId);
 
-        if (targetUser.length === 0) {
-            connection.release();
+        if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Impede editar usuário de nível igual ou superior (exceto se for o próprio Dono)
-        if (targetUser[0].role >= req.user.role && req.user.id != userId) {
-            connection.release();
-            return res.status(403).json({ message: "Você não pode editar usuários de nível igual ou superior" });
+        // Admin (1) só pode editar usuários comuns (0)
+        if (req.user.role === 1 && targetUser.role >= 1) {
+            return res.status(403).json({ message: "Você não pode editar administradores ou donos" });
         }
 
-        // Impede definir role igual ou superior ao próprio (exceto Dono editando a si mesmo)
-        if (role >= req.user.role && req.user.id != userId) {
-            connection.release();
-            return res.status(403).json({ message: "Você não pode atribuir um cargo igual ou superior ao seu" });
-        }
+        // Verifica se username já está em uso por outro usuário
+        const existing = await User.findOne({
+            where: {
+                username: nomeUser,
+                id: { [Op.ne]: userId }
+            }
+        });
 
-        // Verifica se já existe outro usuário com esse username
-        const [existing] = await connection.execute(
-            "SELECT id FROM users WHERE username = ? AND id != ?",
-            [nomeUser, userId]
-        );
-
-        if (existing.length > 0) {
-            connection.release();
+        if (existing) {
             return res.status(409).json({ message: "Username já está em uso" });
         }
 
-        await connection.execute(
-            "UPDATE users SET username = ?, role = ?, bio = ? WHERE id = ?",
-            [nomeUser, role, bio, userId]
-        );
+        // Atualiza o usuário
+        await targetUser.update({
+            username: nomeUser,
+            role: role !== undefined ? role : targetUser.role,
+            bio: bio !== undefined ? bio : targetUser.bio
+        });
 
-        connection.release();
-        res.json({ message: "Usuário atualizado com sucesso", username: nomeUser });
+        res.json({ message: "Usuário atualizado com sucesso" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao atualizar usuário" });
     }
 });
 
-// POST /admin/users - Criar usuário (admin)
-AdminUsersRouter.post('/', async (req, res) => {
-    const { username, password, role = 0 } = req.body;
-    if (!username || !password) return res.status(400).json({ message: "Username e senha obrigatórios" });
-
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const connection = await pool.getConnection();
-        await connection.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", 
-            [username, hashedPassword, role]);
-        connection.release();
-        res.status(201).json({ message: "Usuário criado com sucesso" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao criar usuário" });
-    }
-});
-
-// DELETE /admin/users/:id - Deletar usuário (admin)
-AdminUsersRouter.delete('/:id', async (req, res) => {
+// PUT /admin/users/:id/reset-password - Resetar senha de qualquer usuário (admin)
+AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
     const userId = req.params.id;
+    const { newPassword } = req.body;
 
-    // Impede que o usuário delete a si mesmo (incluindo Dono por segurança)
-    if (req.user.id == userId) {
-        return res.status(403).json({ message: "Você não pode deletar seu próprio usuário" });
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Nova senha deve ter no mínimo 6 caracteres" });
+    }
+
+    // Impede que o usuário resete sua própria senha por aqui (exceto Dono)
+    if (req.user.id == userId && req.user.role < 2) {
+        return res.status(403).json({ message: "Use a rota de perfil para alterar sua própria senha" });
     }
 
     try {
-        const connection = await pool.getConnection();
+        const targetUser = await User.findByPk(userId);
 
-        // Busca o usuário alvo
-        const [targetUser] = await connection.execute(
-            "SELECT role FROM users WHERE id = ?",
-            [userId]
-        );
-
-        if (targetUser.length === 0) {
-            connection.release();
+        if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Impede deletar usuário de nível igual ou superior
-        if (targetUser[0].role >= req.user.role) {
-            connection.release();
-            return res.status(403).json({ message: "Você não pode deletar usuários de nível igual ou superior" });
+        // Admin (1) só pode resetar senha de usuários comuns (0)
+        if (req.user.role === 1 && targetUser.role >= 1) {
+            return res.status(403).json({ message: "Você não pode resetar senha de administradores ou donos" });
         }
 
-        await connection.execute("DELETE FROM users WHERE id = ?", [userId]);
-        connection.release();
+        // Atualiza a senha
+        const hash = await bcrypt.hash(newPassword, 10);
+        await targetUser.update({ password_hash: hash });
+
+        res.json({ message: "Senha resetada com sucesso" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao resetar senha" });
+    }
+});
+
+// DELETE /admin/users/:id - Deletar qualquer usuário (admin)
+AdminUsersRouter.delete('/:id', async (req, res) => {
+    const userId = req.params.id;
+
+    // Impede que o usuário delete a si mesmo
+    if (req.user.id == userId) {
+        return res.status(403).json({ message: "Você não pode deletar sua própria conta" });
+    }
+
+    try {
+        const targetUser = await User.findByPk(userId);
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        // Admin (1) só pode deletar usuários comuns (0)
+        if (req.user.role === 1 && targetUser.role >= 1) {
+            return res.status(403).json({ message: "Você não pode deletar administradores ou donos" });
+        }
+
+        // Verifica se é o último dono
+        if (targetUser.role === 2) {
+            const ownerCount = await User.count({ where: { role: 2 } });
+            if (ownerCount <= 1) {
+                return res.status(403).json({ message: "Não é possível deletar o último dono do sistema" });
+            }
+        }
+
+        await targetUser.destroy();
+
         res.json({ message: "Usuário deletado com sucesso" });
     } catch (err) {
         console.error(err);
@@ -144,43 +151,23 @@ AdminUsersRouter.delete('/:id', async (req, res) => {
     }
 });
 
-// PUT /admin/users/:id/reset-password - Reset de senha para 12345 (admin)
-AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
+// GET /admin/users/:id - Buscar usuário específico (admin)
+AdminUsersRouter.get('/:id', async (req, res) => {
     const userId = req.params.id;
 
     try {
-        const connection = await pool.getConnection();
+        const user = await User.findByPk(userId, {
+            attributes: ['id', 'username', 'role', 'background_image', 'profile_image', 'bio', 'created_at', 'last_access']
+        });
 
-        // Busca o usuário alvo
-        const [targetUser] = await connection.execute(
-            "SELECT role FROM users WHERE id = ?",
-            [userId]
-        );
-
-        if (targetUser.length === 0) {
-            connection.release();
+        if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Impede resetar senha de usuário de nível igual ou superior (exceto Dono)
-        if (targetUser[0].role >= req.user.role && req.user.role < 2) {
-            connection.release();
-            return res.status(403).json({ message: "Você não pode resetar senha de usuários de nível igual ou superior" });
-        }
-
-        const senhaPadrao = "12345";
-        const hash = await bcrypt.hash(senhaPadrao, 10);
-
-        await connection.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
-            [hash, userId]
-        );
-        connection.release();
-
-        res.json({ message: "Senha resetada para 12345" });
-    } catch(err) {
+        res.json(user);
+    } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao resetar senha" });
+        res.status(500).json({ message: "Erro ao buscar usuário" });
     }
 });
 

@@ -1,25 +1,30 @@
 const express = require("express");
 const CartinhasRouter = express.Router();
-const pool = require("../config/bd");
+const { Cartinha, User, sequelize } = require("../models");
 const { createNotification } = require("./notifications");
+const validate = require("../middlewares/validate");
+const { Op } = require("sequelize");
+const {
+    createCartinhaSchema,
+    updateCartinhaSchema,
+    cartinhaIdSchema
+} = require("../validators/cartinhas.validator");
 
 // ==================== Auxiliares ====================
 
 // Verifica se o usuário tem acesso à cartinha (remetente, destinatário ou admin)
-async function verifyCartinhaAccess(connection, cartinhaId, userId, userRole) {
-    const [cartinha] = await connection.execute(
-        `SELECT remetente_id, destinatario_id FROM cartinhas WHERE id = ?`,
-        [cartinhaId]
-    );
+async function verifyCartinhaAccess(cartinhaId, userId, userRole) {
+    const cartinha = await Cartinha.findByPk(cartinhaId, {
+        attributes: ['remetente_id', 'destinatario_id']
+    });
 
-    if (cartinha.length === 0) return false;
+    if (!cartinha) return false;
 
     // Admin sempre tem acesso
     if (userRole >= 1) return true;
 
     // Usuário deve ser remetente ou destinatário
-    const { remetente_id, destinatario_id } = cartinha[0];
-    return remetente_id === userId || destinatario_id === userId;
+    return cartinha.remetente_id === userId || cartinha.destinatario_id === userId;
 }
 
 // ==================== Rotas ====================
@@ -27,38 +32,34 @@ async function verifyCartinhaAccess(connection, cartinhaId, userId, userRole) {
 // GET /cartinhas/enviadas - Carregar cartinhas enviadas pelo usuário
 CartinhasRouter.get('/enviadas', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-
         // Buscar cartinhas enviadas pelo usuário (remetente), aplicando a mesma regra de data
-        const [cartinhas] = await connection.execute(
-            `SELECT 
-                c.id,
-                c.titulo,
-                c.conteudo,
-                c.data_envio,
-                c.lida,
-                d.id as destinatario_id,
-                d.username as destinatario_username,
-                d.profile_image as destinatario_avatar
-            FROM cartinhas c
-            JOIN users d ON c.destinatario_id = d.id
-            WHERE c.remetente_id = ?
-              AND (
-                  c.lida = FALSE
-                  OR (c.lida = TRUE AND c.data_envio >= NOW() - INTERVAL 3 DAY)
-              )
-            ORDER BY c.data_envio DESC`,
-            [req.user.id]
-        );
+        const cartinhas = await Cartinha.findAll({
+            where: {
+                remetente_id: req.user.id,
+                [Op.or]: [
+                    { lida: false },
+                    {
+                        lida: true,
+                        data_envio: { [Op.gte]: sequelize.literal('NOW() - INTERVAL 3 DAY') }
+                    }
+                ]
+            },
+            include: [{
+                model: User,
+                as: 'destinatario',
+                attributes: ['id', 'username', 'profile_image']
+            }],
+            order: [['data_envio', 'DESC']]
+        });
 
         // Agrupar cartinhas por destinatário
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
-            const destinatarioId = carta.destinatario_id;
+            const destinatarioId = carta.destinatario.id;
             if (!acc[destinatarioId]) {
                 acc[destinatarioId] = {
                     userId: destinatarioId,
-                    username: carta.destinatario_username,
-                    avatar: carta.destinatario_avatar,
+                    username: carta.destinatario.username,
+                    profile_image: carta.destinatario.profile_image,
                     cartinhas: []
                 };
             }
@@ -73,9 +74,6 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
         }, {});
 
         const resultado = Object.values(cartinhasPorUsuario);
-
-        connection.release();
-
         res.json(resultado);
 
     } catch (err) {
@@ -87,39 +85,34 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
 // GET /cartinhas/recebidas - Carregar cartinhas agrupadas por remetente
 CartinhasRouter.get('/recebidas', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-
         // Buscar todas as cartinhas recebidas do usuário, aplicando a regra de data para lidas
-        const [cartinhas] = await connection.execute(
-            `SELECT 
-                c.id,
-                c.titulo,
-                c.conteudo,
-                c.data_envio,
-                c.lida,
-                c.favoritada,
-                r.id as remetente_id,
-                r.username as remetente_username,
-                r.profile_image as remetente_avatar
-            FROM cartinhas c
-            JOIN users r ON c.remetente_id = r.id
-            WHERE c.destinatario_id = ?
-              AND (
-                  c.lida = FALSE
-                  OR (c.lida = TRUE AND c.data_envio >= NOW() - INTERVAL 3 DAY)
-              )
-            ORDER BY c.data_envio DESC`,
-            [req.user.id]
-        );
+        const cartinhas = await Cartinha.findAll({
+            where: {
+                destinatario_id: req.user.id,
+                [Op.or]: [
+                    { lida: false },
+                    {
+                        lida: true,
+                        data_envio: { [Op.gte]: sequelize.literal('NOW() - INTERVAL 3 DAY') }
+                    }
+                ]
+            },
+            include: [{
+                model: User,
+                as: 'remetente',
+                attributes: ['id', 'username', 'profile_image']
+            }],
+            order: [['data_envio', 'DESC']]
+        });
 
         // Agrupar cartinhas por remetente
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
-            const remetenteId = carta.remetente_id;
+            const remetenteId = carta.remetente.id;
             if (!acc[remetenteId]) {
                 acc[remetenteId] = {
                     userId: remetenteId,
-                    username: carta.remetente_username,
-                    avatar: carta.remetente_avatar,
+                    username: carta.remetente.username,
+                    profile_image: carta.remetente.profile_image,
                     cartinhas: []
                 };
             }
@@ -135,9 +128,6 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
         }, {});
 
         const resultado = Object.values(cartinhasPorUsuario);
-
-        connection.release();
-
         res.json(resultado);
 
     } catch (err) {
@@ -149,27 +139,34 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
 // GET /cartinhas/favoritas - Carregar cartinhas favoritas
 CartinhasRouter.get('/favoritas', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
+        const cartinhas = await Cartinha.findAll({
+            where: {
+                destinatario_id: req.user.id,
+                favoritada: true
+            },
+            include: [{
+                model: User,
+                as: 'remetente',
+                attributes: ['username', 'profile_image']
+            }],
+            order: [['data_favoritada', 'DESC']],
+            raw: true,
+            nest: true
+        });
 
-        const [cartinhas] = await connection.execute(
-            `SELECT 
-                c.id,
-                c.titulo,
-                c.conteudo,
-                c.data_envio,
-                c.data_lida,
-                c.data_favoritada,
-                r.username as remetente_username,
-                r.profile_image as remetente_avatar
-             FROM cartinhas c
-             JOIN users r ON c.remetente_id = r.id
-             WHERE c.destinatario_id = ? AND c.favoritada = TRUE
-             ORDER BY c.data_favoritada DESC`,
-            [req.user.id]
-        );
+        // Formata o resultado
+        const resultado = cartinhas.map(c => ({
+            id: c.id,
+            titulo: c.titulo,
+            conteudo: c.conteudo,
+            data_envio: c.data_envio,
+            data_lida: c.data_lida,
+            data_favoritada: c.data_favoritada,
+            remetente_username: c.remetente.username,
+            remetente_profile_image: c.remetente.profile_image
+        }));
 
-        connection.release();
-        res.json(cartinhas);
+        res.json(resultado);
 
     } catch (err) {
         console.error(err);
@@ -178,40 +175,52 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
 });
 
 // GET /cartinhas/:cartinhaId - Carregar conteúdo de uma cartinha específica
-CartinhasRouter.get('/:cartinhaId', async (req, res) => {
+CartinhasRouter.get('/:cartinhaId', validate(cartinhaIdSchema, 'params'), async (req, res) => {
     const cartinhaId = req.params.cartinhaId;
 
     try {
-        const connection = await pool.getConnection();
-
         // Verifica se o usuário tem acesso à cartinha
-        const hasAccess = await verifyCartinhaAccess(connection, cartinhaId, req.user.id, req.user.role);
+        const hasAccess = await verifyCartinhaAccess(cartinhaId, req.user.id, req.user.role);
         if (!hasAccess) {
-            connection.release();
-            return res.status(403).json({ message: "Você não tem permissão para acessar esta cartinha" });
+            return res.status(403).json({ message: "Acesso negado" });
         }
 
-        const [cartinhas] = await connection.execute(
-            `SELECT 
-                c.*,
-                r.username as remetente_username,
-                r.profile_image as remetente_avatar,
-                d.username as destinatario_username,
-                d.profile_image as destinatario_avatar
-             FROM cartinhas c
-             JOIN users r ON c.remetente_id = r.id
-             JOIN users d ON c.destinatario_id = d.id
-             WHERE c.id = ?`,
-            [cartinhaId]
-        );
+        const cartinha = await Cartinha.findByPk(cartinhaId, {
+            include: [
+                {
+                    model: User,
+                    as: 'remetente',
+                    attributes: ['id', 'username', 'profile_image']
+                },
+                {
+                    model: User,
+                    as: 'destinatario',
+                    attributes: ['id', 'username']
+                }
+            ]
+        });
 
-        if (cartinhas.length === 0) {
-            connection.release();
+        if (!cartinha) {
             return res.status(404).json({ message: "Cartinha não encontrada" });
         }
 
-        connection.release();
-        res.json(cartinhas[0]);
+        res.json({
+            id: cartinha.id,
+            titulo: cartinha.titulo,
+            conteudo: cartinha.conteudo,
+            data_envio: cartinha.data_envio,
+            lida: cartinha.lida,
+            favoritada: cartinha.favoritada,
+            remetente: {
+                id: cartinha.remetente.id,
+                username: cartinha.remetente.username,
+                profile_image: cartinha.remetente.profile_image
+            },
+            destinatario: {
+                id: cartinha.destinatario.id,
+                username: cartinha.destinatario.username
+            }
+        });
 
     } catch (err) {
         console.error(err);
@@ -220,43 +229,30 @@ CartinhasRouter.get('/:cartinhaId', async (req, res) => {
 });
 
 // PUT /cartinhas/:cartinhaId/lida - Marcar cartinha como lida
-CartinhasRouter.put('/:cartinhaId/lida', async (req, res) => {
+CartinhasRouter.put('/:cartinhaId/lida', validate(cartinhaIdSchema, 'params'), async (req, res) => {
     const cartinhaId = req.params.cartinhaId;
 
     try {
-        const connection = await pool.getConnection();
+        const cartinha = await Cartinha.findByPk(cartinhaId);
 
-        // Verifica se a cartinha existe e se o usuário é o destinatário
-        const [cartinha] = await connection.execute(
-            `SELECT destinatario_id, lida FROM cartinhas WHERE id = ?`,
-            [cartinhaId]
-        );
-
-        if (cartinha.length === 0) {
-            connection.release();
+        if (!cartinha) {
             return res.status(404).json({ message: "Cartinha não encontrada" });
         }
 
-        // Apenas o destinatário pode marcar como lida (admin não faz sentido aqui)
-        if (cartinha[0].destinatario_id !== req.user.id) {
-            connection.release();
-            return res.status(403).json({ message: "Apenas o destinatário pode marcar a cartinha como lida" });
+        // Apenas o destinatário pode marcar como lida
+        if (cartinha.destinatario_id !== req.user.id) {
+            return res.status(403).json({ message: "Apenas o destinatário pode marcar como lida" });
         }
 
-        // Se já está lida, não faz nada
-        if (cartinha[0].lida) {
-            connection.release();
+        // Se já estava lida, não faz nada
+        if (cartinha.lida) {
             return res.json({ message: "Cartinha já estava marcada como lida" });
         }
 
-        // Marca como lida (o trigger vai atualizar a data_lida automaticamente)
-        await connection.execute(
-            `UPDATE cartinhas SET lida = TRUE WHERE id = ?`,
-            [cartinhaId]
-        );
+        // Marca como lida (o hook do modelo cuida da data_lida)
+        await cartinha.update({ lida: true });
 
-        connection.release();
-        res.json({ message: "Cartinha marcada como lida com sucesso" });
+        res.json({ message: "Cartinha marcada como lida" });
 
     } catch (err) {
         console.error(err);
@@ -265,82 +261,52 @@ CartinhasRouter.put('/:cartinhaId/lida', async (req, res) => {
 });
 
 // POST /cartinhas - Enviar uma nova cartinha
-CartinhasRouter.post('/', async (req, res) => {
+CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
     const { destinatario_username, titulo, conteudo } = req.body;
 
-    if (!destinatario_username || !titulo || !conteudo) {
-        return res.status(400).json({ message: "Destinatário, título e conteúdo são obrigatórios" });
-    }
-
-    // Validação de limites de caracteres
-    if (titulo.length > 40) {
-        return res.status(400).json({ message: "O título deve ter no máximo 40 caracteres" });
-    }
-
-    if (conteudo.length > 560) {
-        return res.status(400).json({ message: "O conteúdo deve ter no máximo 560 caracteres" });
-    }
-
     try {
-        const connection = await pool.getConnection();
+        // Busca o destinatário
+        const destinatario = await User.findOne({
+            where: { username: destinatario_username },
+            attributes: ['id']
+        });
 
-        // Busca o ID do destinatário
-        const [destinatario] = await connection.execute(
-            `SELECT id FROM users WHERE username = ?`,
-            [destinatario_username]
-        );
-
-        if (destinatario.length === 0) {
-            connection.release();
-            return res.status(404).json({ message: "Destinatário não encontrado" });
+        if (!destinatario) {
+            return res.status(404).json({ message: "Usuário destinatário não encontrado" });
         }
 
-        const destinatarioId = destinatario[0].id;
-
-        // Não pode enviar cartinha para si mesmo
-        if (destinatarioId === req.user.id) {
-            connection.release();
+        // Não pode enviar para si mesmo
+        if (destinatario.id === req.user.id) {
             return res.status(400).json({ message: "Você não pode enviar uma cartinha para si mesmo" });
         }
 
-        // Insere a cartinha
-        const [result] = await connection.execute(
-            `INSERT INTO cartinhas (remetente_id, destinatario_id, titulo, conteudo) VALUES (?, ?, ?, ?)`,
-            [req.user.id, destinatarioId, titulo, conteudo]
-        );
-
-        // Busca username do remetente
-        const [remetente] = await connection.execute(
-            `SELECT username FROM users WHERE id = ?`,
-            [req.user.id]
-        );
-
-        connection.release();
-
-        // Cria notificação persistente
-        await createNotification({
-            userId: destinatarioId,
-            type: 'NEW_CARTINHA',
-            title: 'Nova cartinha recebida!',
-            body: `${remetente[0].username} enviou uma cartinha: "${titulo}"`,
-            link: '/cartinhas/recebidas',
-            data: { cartinhaId: result.insertId, remetenteId: req.user.id }
+        // Cria a cartinha
+        const cartinha = await Cartinha.create({
+            remetente_id: req.user.id,
+            destinatario_id: destinatario.id,
+            titulo,
+            conteudo
         });
 
-        // Notifica em tempo real via Socket.IO
+        // Cria notificação
+        await createNotification({
+            userId: destinatario.id,
+            type: 'NEW_CARTINHA',
+            title: 'Nova cartinha',
+            body: `${req.user.username} te enviou uma cartinha`,
+            link: `/cartinhas/recebidas`,
+            data: { cartinhaId: cartinha.id }
+        });
+
+        // Emitir evento de socket
         const io = req.app.get('io');
         if (io) {
-            io.to(`user_${destinatarioId}`).emit('newNotification');
-            io.to(`user_${destinatarioId}`).emit('newCartinha', {
-                id: result.insertId,
-                titulo,
-                remetente: remetente[0].username
-            });
+            io.to(`user_${destinatario.id}`).emit('newNotification', { type: 'cartinha' });
         }
 
         res.status(201).json({ 
             message: "Cartinha enviada com sucesso", 
-            cartinhaId: result.insertId 
+            cartinhaId: cartinha.id 
         });
 
     } catch (err) {
@@ -350,174 +316,94 @@ CartinhasRouter.post('/', async (req, res) => {
 });
 
 // POST /cartinhas/:cartinhaId/toggle-favorito - Alterna o status de favorito
-CartinhasRouter.post('/:cartinhaId/toggle-favorito', async (req, res) => {
+CartinhasRouter.post('/:cartinhaId/toggle-favorito', validate(cartinhaIdSchema, 'params'), async (req, res) => {
     const cartinhaId = req.params.cartinhaId;
 
     try {
-        const connection = await pool.getConnection();
+        const cartinha = await Cartinha.findByPk(cartinhaId);
 
-        // Verifica se a cartinha existe e se o usuário é o destinatário
-        const [cartinha] = await connection.execute(
-            `SELECT destinatario_id, favoritada FROM cartinhas WHERE id = ?`,
-            [cartinhaId]
-        );
-
-        if (cartinha.length === 0) {
-            connection.release();
+        if (!cartinha) {
             return res.status(404).json({ message: "Cartinha não encontrada" });
         }
 
-        // Apenas o destinatário pode alternar o status de favorito
-        if (cartinha[0].destinatario_id !== req.user.id) {
-            connection.release();
-            return res.status(403).json({ message: "Apenas o destinatário pode favoritar/desfavoritar a cartinha" });
+        // Apenas o destinatário pode favoritar
+        if (cartinha.destinatario_id !== req.user.id) {
+            return res.status(403).json({ message: "Apenas o destinatário pode favoritar" });
         }
 
-        // Determina o novo status (inverte o valor atual)
-        const novoStatus = !cartinha[0].favoritada;
+        // Alterna o status de favoritada (o hook do modelo cuida das datas)
+        const novoStatus = !cartinha.favoritada;
+        await cartinha.update({ favoritada: novoStatus });
 
-        // Atualiza o status (o trigger vai cuidar da data_favoritada)
-        await connection.execute(
-            `UPDATE cartinhas SET favoritada = ? WHERE id = ?`,
-            [novoStatus, cartinhaId]
-        );
-
-        // Se favoritou, recupera a data para enviar ao frontend
-        let dataFavoritada = null;
-        if (novoStatus) {
-            const [updatedCartinha] = await connection.execute(
-                `SELECT data_favoritada FROM cartinhas WHERE id = ?`,
-                [cartinhaId]
-            );
-            dataFavoritada = updatedCartinha[0].data_favoritada;
-        }
-
-        connection.release();
-        
-        // Retorna o novo status e mensagem apropriada
         res.json({ 
-            message: novoStatus ? "Cartinha favoritada com sucesso" : "Cartinha desfavoritada com sucesso", 
-            status: "success",
-            favoritada: novoStatus,
-            data_favoritada: dataFavoritada
+            message: novoStatus ? "Cartinha favoritada" : "Cartinha removida dos favoritos",
+            favoritada: novoStatus
         });
 
     } catch (err) {
-        console.error('[API] Erro ao alternar favorito da cartinha:', err);
-        res.status(500).json({ message: "Erro ao processar a operação" });
+        console.error(err);
+        res.status(500).json({ message: "Erro ao alterar favorito" });
     }
 });
 
 // PUT /cartinhas/:cartinhaId - Editar uma cartinha
-CartinhasRouter.put('/:cartinhaId', async (req, res) => {
+CartinhasRouter.put('/:cartinhaId', validate(cartinhaIdSchema, 'params'), validate(updateCartinhaSchema), async (req, res) => {
     const cartinhaId = req.params.cartinhaId;
     const { titulo, conteudo } = req.body;
 
-    if (!titulo || !conteudo) {
-        return res.status(400).json({ message: "Título e conteúdo são obrigatórios" });
-    }
-
-    // Validação de limites de caracteres
-    if (titulo.length > 40) {
-        return res.status(400).json({ message: "O título deve ter no máximo 40 caracteres" });
-    }
-
-    if (conteudo.length > 560) {
-        return res.status(400).json({ message: "O conteúdo deve ter no máximo 560 caracteres" });
-    }
-
     try {
-        const connection = await pool.getConnection();
+        const cartinha = await Cartinha.findByPk(cartinhaId);
 
-        // Verifica se a cartinha existe e se o usuário é o remetente
-        const [cartinha] = await connection.execute(
-            `SELECT remetente_id, lida FROM cartinhas WHERE id = ?`,
-            [cartinhaId]
-        );
-
-        if (cartinha.length === 0) {
-            connection.release();
+        if (!cartinha) {
             return res.status(404).json({ message: "Cartinha não encontrada" });
         }
 
-        // Somente o remetente pode editar
-        if (cartinha[0].remetente_id !== req.user.id) {
-            connection.release();
+        // Apenas o remetente ou admin pode editar
+        if (cartinha.remetente_id !== req.user.id && req.user.role < 1) {
             return res.status(403).json({ message: "Você não tem permissão para editar esta cartinha" });
         }
 
-        // Se a cartinha já foi lida, não pode ser editada
-        if (cartinha[0].lida) {
-            connection.release();
-            return res.status(400).json({ 
-                message: "Não é possível editar cartinhas que já foram lidas pelo destinatário" 
-            });
+        // Se já foi lida, não pode editar (a não ser que seja admin)
+        if (cartinha.lida && req.user.role < 1) {
+            return res.status(403).json({ message: "Não é possível editar cartinhas já lidas" });
         }
 
-        // Atualiza a cartinha
-        await connection.execute(
-            `UPDATE cartinhas SET titulo = ?, conteudo = ? WHERE id = ?`,
-            [titulo, conteudo, cartinhaId]
-        );
+        await cartinha.update({ titulo, conteudo });
 
-        connection.release();
-        res.json({ 
-            message: "Cartinha editada com sucesso",
-            status: "success"
-        });
+        res.json({ message: "Cartinha editada com sucesso" });
 
     } catch (err) {
-        console.error('[API] Erro ao editar cartinha:', err);
+        console.error(err);
         res.status(500).json({ message: "Erro ao editar cartinha" });
     }
 });
 
 // DELETE /cartinhas/:cartinhaId - Excluir uma cartinha
-CartinhasRouter.delete('/:cartinhaId', async (req, res) => {
+CartinhasRouter.delete('/:cartinhaId', validate(cartinhaIdSchema, 'params'), async (req, res) => {
     const cartinhaId = req.params.cartinhaId;
 
     try {
-        const connection = await pool.getConnection();
+        const cartinha = await Cartinha.findByPk(cartinhaId);
 
-        // Verifica se a cartinha existe e se o usuário é o remetente
-        const [cartinha] = await connection.execute(
-            `SELECT remetente_id, destinatario_id, lida FROM cartinhas WHERE id = ?`,
-            [cartinhaId]
-        );
-
-        if (cartinha.length === 0) {
-            connection.release();
+        if (!cartinha) {
             return res.status(404).json({ message: "Cartinha não encontrada" });
         }
 
-        // Somente o remetente pode excluir a cartinha, a menos que seja admin
-        if (cartinha[0].remetente_id !== req.user.id && req.user.role < 1) {
-            connection.release();
+        // Apenas o remetente, destinatário ou admin pode excluir
+        const isRemetente = cartinha.remetente_id === req.user.id;
+        const isDestinatario = cartinha.destinatario_id === req.user.id;
+        const isAdmin = req.user.role >= 1;
+
+        if (!isRemetente && !isDestinatario && !isAdmin) {
             return res.status(403).json({ message: "Você não tem permissão para excluir esta cartinha" });
         }
 
-        // Se a cartinha já foi lida, não pode ser excluída (a menos que seja admin)
-        if (cartinha[0].lida && req.user.role < 1) {
-            connection.release();
-            return res.status(400).json({ 
-                message: "Não é possível excluir cartinhas que já foram lidas pelo destinatário" 
-            });
-        }
+        await cartinha.destroy();
 
-        // Exclui a cartinha
-        await connection.execute(
-            `DELETE FROM cartinhas WHERE id = ?`,
-            [cartinhaId]
-        );
-
-        connection.release();
-        res.json({ 
-            message: "Cartinha excluída com sucesso",
-            status: "success"
-        });
+        res.json({ message: "Cartinha excluída com sucesso" });
 
     } catch (err) {
-        console.error('[API] Erro ao excluir cartinha:', err);
+        console.error(err);
         res.status(500).json({ message: "Erro ao excluir cartinha" });
     }
 });

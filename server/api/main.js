@@ -4,7 +4,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 const UsersRouter = require("./users");
 const ChatsRouter = require("./chats");
-const ConversasRouter = require("./conversas");
+const DMsRouter = require("./dms");
 const CartinhasRouter = require("./cartinhas");
 const AdminRouter = require("./admin/index");
 const WatchlistRouter = require("./watchlist");
@@ -15,7 +15,7 @@ router.use("/users", UsersRouter);
 
 // Rotas protegidas (requer autenticação)
 router.use("/chats", authMiddleware(0), ChatsRouter);
-router.use("/conversas", authMiddleware(0), ConversasRouter);
+router.use("/dms", authMiddleware(0), DMsRouter);
 router.use("/cartinhas", authMiddleware(0), CartinhasRouter);
 router.use("/watchlist", authMiddleware(0), WatchlistRouter);
 router.use("/notifications", authMiddleware(0), NotificationsRouter);

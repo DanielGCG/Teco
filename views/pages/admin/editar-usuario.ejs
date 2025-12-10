@@ -122,8 +122,8 @@ function abrirModalEdicao(userId) {
 
     document.getElementById("editUsername").value = user.username;
     document.getElementById("editRole").value = user.role;
-    document.getElementById("editBio").value = user.bio || '';
-    document.getElementById("editUserProfile").src = user.profile_image || "/images/placeholder.png";
+    document.getElementById("editBio").value = user.bio;
+    document.getElementById("editUserProfile").src = user.profile_image;
 
     // Desabilita opções de role iguais ou superiores ao usuário logado
     const roleSelect = document.getElementById("editRole");
@@ -203,3 +203,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     carregarUsuarios();
 });
 </script>
+
+<!-- Modais necessários -->
+<%- include('../../utils/modal-aviso') %>
+<%- include('../../utils/modal-confirmacao') %>

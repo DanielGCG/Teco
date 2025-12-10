@@ -1,27 +1,26 @@
 const express = require("express");
 const AdminChatsRouter = express.Router();
-const pool = require("../../config/bd");
+const { Chat, ChatMessage, ChatParticipant, User } = require("../../models");
+const { Op, fn, col, literal } = require("sequelize");
 
 // ==================== Endpoints Administrativos de Chats ====================
 
 // GET /admin/chats/estatisticas - Estatísticas gerais de chats
 AdminChatsRouter.get('/estatisticas', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
+        const totalChats = await Chat.count();
+        const totalDms = await Chat.count({ where: { tipo: 'dm' } });
+        const totalPublicos = await Chat.count({ where: { tipo: 'public' } });
+        const totalMensagens = await ChatMessage.count();
+        const usuariosAtivos = await ChatParticipant.count({ distinct: true, col: 'user_id' });
 
-        const [stats] = await connection.execute(`
-            SELECT 
-                COUNT(*) as total_chats,
-                SUM(CASE WHEN tipo = 'dm' THEN 1 ELSE 0 END) as total_dms,
-                SUM(CASE WHEN tipo = 'public' THEN 1 ELSE 0 END) as total_publicos,
-                (SELECT COUNT(*) FROM chat_messages) as total_mensagens,
-                (SELECT COUNT(DISTINCT user_id) FROM chat_participants) as usuarios_ativos
-            FROM chats
-        `);
-
-        connection.release();
-        res.json(stats[0]);
-
+        res.json({
+            total_chats: totalChats,
+            total_dms: totalDms,
+            total_publicos: totalPublicos,
+            total_mensagens: totalMensagens,
+            usuarios_ativos: usuariosAtivos
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar estatísticas de chats" });
@@ -38,87 +37,75 @@ AdminChatsRouter.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
 
     try {
-        const connection = await pool.getConnection();
-
         // Construir filtros
-        let whereConditions = [];
-        let queryParams = [];
-
+        const where = {};
+        
         if (tipo) {
-            whereConditions.push('c.tipo = ?');
-            queryParams.push(tipo);
+            where.tipo = tipo;
         }
 
         if (search && search.trim() !== '') {
-            whereConditions.push(`(
-                c.nome LIKE ? 
-                OR EXISTS (
-                    SELECT 1 
-                    FROM chat_participants cp 
-                    JOIN users u ON cp.user_id = u.id 
-                    WHERE cp.chat_id = c.id 
-                    AND u.username LIKE ?
-                )
-            )`);
-            queryParams.push(`%${search}%`, `%${search}%`);
+            where.nome = { [Op.like]: `%${search}%` };
         }
 
-        const whereClause = whereConditions.length > 0 
-            ? 'WHERE ' + whereConditions.join(' AND ') 
-            : '';
+        // Query simplificada - buscar chats básicos primeiro
+        const { count, rows: chats } = await Chat.findAndCountAll({
+            where,
+            include: [{
+                model: User,
+                as: 'criador',
+                attributes: ['username']
+            }],
+            order: [['created_at', 'DESC']],
+            limit,
+            offset
+        });
 
-        // Query principal
-        const sqlQuery = `
-            SELECT 
-                c.id,
-                c.nome,
-                c.tipo,
-                c.created_at,
-                uc.username as criado_por_username,
-                (SELECT COUNT(*) FROM chat_participants WHERE chat_id = c.id) as total_participantes,
-                (SELECT COUNT(*) FROM chat_messages WHERE chat_id = c.id) as total_mensagens,
-                (SELECT created_at FROM chat_messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) as ultima_mensagem
-            FROM chats c
-            JOIN users uc ON c.criado_por = uc.id
-            ${whereClause}
-            ORDER BY c.created_at DESC
-            LIMIT ${limit} OFFSET ${offset}
-        `;
-
-        const [chats] = await connection.execute(sqlQuery, queryParams);
-
-        // Buscar participantes para cada chat
+        // Buscar estatísticas para cada chat
         for (let chat of chats) {
-            const [participantes] = await connection.execute(`
-                SELECT u.id, u.username
-                FROM chat_participants cp
-                JOIN users u ON cp.user_id = u.id
-                WHERE cp.chat_id = ?
-            `, [chat.id]);
+            // Contar participantes
+            const participantCount = await ChatParticipant.count({
+                where: { chat_id: chat.id }
+            });
             
-            chat.participantes = participantes;
+            // Contar mensagens
+            const messageCount = await ChatMessage.count({
+                where: { chat_id: chat.id }
+            });
+            
+            // Última mensagem
+            const lastMessage = await ChatMessage.findOne({
+                where: { chat_id: chat.id },
+                order: [['created_at', 'DESC']],
+                attributes: ['created_at']
+            });
+
+            // Buscar participantes
+            const participantes = await User.findAll({
+                include: [{
+                    model: ChatParticipant,
+                    where: { chat_id: chat.id },
+                    attributes: []
+                }],
+                attributes: ['id', 'username'],
+                raw: true
+            });
+            
+            chat.dataValues.total_participantes = participantCount;
+            chat.dataValues.total_mensagens = messageCount;
+            chat.dataValues.ultima_mensagem = lastMessage?.created_at || null;
+            chat.dataValues.participantes = participantes;
+            chat.dataValues.criado_por_username = chat.criador.username;
         }
 
-        // Contar total para paginação
-        const countQuery = `
-            SELECT COUNT(*) as total
-            FROM chats c
-            ${whereClause}
-        `;
-        const [countResult] = await connection.execute(countQuery, queryParams);
-
-        const totalItems = countResult[0].total;
-        const totalPages = Math.ceil(totalItems / limit);
-
-        connection.release();
+        const totalPages = Math.ceil(count / limit);
 
         res.json({
             chats,
             currentPage: page,
             totalPages,
-            totalItems
+            totalItems: count
         });
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar chats" });
@@ -130,49 +117,47 @@ AdminChatsRouter.get('/:chatId', async (req, res) => {
     const chatId = req.params.chatId;
 
     try {
-        const connection = await pool.getConnection();
-
         // Buscar informações do chat
-        const [chatInfo] = await connection.execute(`
-            SELECT 
-                c.*,
-                uc.username as criado_por_username
-            FROM chats c
-            JOIN users uc ON c.criado_por = uc.id
-            WHERE c.id = ?
-        `, [chatId]);
+        const chat = await Chat.findByPk(chatId, {
+            include: [{
+                model: User,
+                as: 'criador',
+                attributes: ['username']
+            }]
+        });
 
-        if (chatInfo.length === 0) {
-            connection.release();
+        if (!chat) {
             return res.status(404).json({ message: "Chat não encontrado" });
         }
 
         // Buscar participantes
-        const [participantes] = await connection.execute(`
-            SELECT u.id, u.username, u.profile_image
-            FROM chat_participants cp
-            JOIN users u ON cp.user_id = u.id
-            WHERE cp.chat_id = ?
-        `, [chatId]);
-
-        // Buscar estatísticas de mensagens
-        const [msgStats] = await connection.execute(`
-            SELECT 
-                COUNT(*) as total_mensagens,
-                MIN(created_at) as primeira_mensagem,
-                MAX(created_at) as ultima_mensagem
-            FROM chat_messages
-            WHERE chat_id = ?
-        `, [chatId]);
-
-        connection.release();
-
-        res.json({
-            ...chatInfo[0],
-            participantes,
-            estatisticas_mensagens: msgStats[0]
+        const participantes = await ChatParticipant.findAll({
+            where: { chat_id: chatId },
+            include: [{
+                model: User,
+                attributes: ['id', 'username', 'profile_image']
+            }]
         });
 
+        // Buscar estatísticas de mensagens
+        const msgStats = await ChatMessage.findOne({
+            where: { chat_id: chatId },
+            attributes: [
+                [fn('COUNT', col('id')), 'total_mensagens'],
+                [fn('MIN', col('created_at')), 'primeira_mensagem'],
+                [fn('MAX', col('created_at')), 'ultima_mensagem']
+            ],
+            raw: true
+        });
+
+        const response = {
+            ...chat.toJSON(),
+            criado_por_username: chat.criador.username,
+            participantes: participantes.map(p => p.User),
+            estatisticas_mensagens: msgStats
+        };
+
+        res.json(response);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar detalhes do chat" });
@@ -184,22 +169,16 @@ AdminChatsRouter.delete('/:chatId', async (req, res) => {
     const chatId = req.params.chatId;
 
     try {
-        const connection = await pool.getConnection();
-
-        // Verificar se o chat existe
-        const [chatExists] = await connection.execute('SELECT id FROM chats WHERE id = ?', [chatId]);
+        const chat = await Chat.findByPk(chatId);
         
-        if (chatExists.length === 0) {
-            connection.release();
+        if (!chat) {
             return res.status(404).json({ message: "Chat não encontrado" });
         }
 
-        // Deletar chat (CASCADE vai deletar mensagens e participantes)
-        await connection.execute('DELETE FROM chats WHERE id = ?', [chatId]);
+        // Deletar chat (CASCADE via modelo vai deletar mensagens e participantes)
+        await chat.destroy();
 
-        connection.release();
         res.json({ message: "Chat deletado com sucesso" });
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao deletar chat" });
@@ -216,60 +195,46 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
     const offset = (page - 1) * limit;
 
     try {
-        const connection = await pool.getConnection();
-
         // Verificar se o chat existe
-        const [chatExists] = await connection.execute('SELECT id FROM chats WHERE id = ?', [chatId]);
+        const chat = await Chat.findByPk(chatId);
         
-        if (chatExists.length === 0) {
-            connection.release();
+        if (!chat) {
             return res.status(404).json({ message: "Chat não encontrado" });
         }
 
         // Construir filtros
-        let whereConditions = ['cm.chat_id = ?'];
-        let queryParams = [chatId];
+        const where = { chat_id: chatId };
 
         if (search) {
-            whereConditions.push('cm.mensagem LIKE ?');
-            queryParams.push(`%${search}%`);
+            where.mensagem = { [Op.like]: `%${search}%` };
         }
 
-        const whereClause = 'WHERE ' + whereConditions.join(' AND ');
-
         // Buscar mensagens
-        const [mensagens] = await connection.execute(`
-            SELECT 
-                cm.id,
-                cm.mensagem,
-                cm.created_at,
-                u.id as user_id,
-                u.username
-            FROM chat_messages cm
-            JOIN users u ON cm.user_id = u.id
-            ${whereClause}
-            ORDER BY cm.created_at DESC
-            LIMIT ? OFFSET ?
-        `, [...queryParams, limit, offset]);
-
-        // Contar total para paginação
-        const [countResult] = await connection.execute(`
-            SELECT COUNT(*) as total
-            FROM chat_messages cm
-            ${whereClause}
-        `, queryParams);
-
-        const totalItems = countResult[0].total;
-        const totalPages = Math.ceil(totalItems / limit);
-
-        connection.release();
-        res.json({
-            mensagens,
-            currentPage: page,
-            totalPages,
-            totalItems
+        const { count, rows: mensagens } = await ChatMessage.findAndCountAll({
+            where,
+            include: [{
+                model: User,
+                attributes: ['id', 'username']
+            }],
+            order: [['created_at', 'DESC']],
+            limit,
+            offset
         });
 
+        const totalPages = Math.ceil(count / limit);
+
+        res.json({
+            mensagens: mensagens.map(m => ({
+                id: m.id,
+                mensagem: m.mensagem,
+                created_at: m.created_at,
+                user_id: m.User.id,
+                username: m.User.username
+            })),
+            currentPage: page,
+            totalPages,
+            totalItems: count
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar mensagens" });
@@ -285,233 +250,111 @@ AdminChatsRouter.delete('/mensagens/remover', async (req, res) => {
     }
 
     try {
-        const connection = await pool.getConnection();
-
         // Converter IDs para integers e filtrar valores válidos
         const validIds = mensagemIds.filter(id => !isNaN(parseInt(id))).map(id => parseInt(id));
 
         if (validIds.length === 0) {
-            connection.release();
             return res.status(400).json({ message: "Nenhum ID válido fornecido" });
         }
 
-        // Criar placeholders para a query
-        const placeholders = validIds.map(() => '?').join(',');
-
-        const [result] = await connection.execute(`
-            DELETE FROM chat_messages WHERE id IN (${placeholders})
-        `, validIds);
-
-        connection.release();
-        res.json({
-            removidas: result.affectedRows,
-            message: "Mensagens removidas com sucesso"
+        const deletedCount = await ChatMessage.destroy({
+            where: {
+                id: { [Op.in]: validIds }
+            }
         });
 
+        res.json({
+            removidas: deletedCount,
+            message: "Mensagens removidas com sucesso"
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao remover mensagens" });
     }
 });
 
-// POST /admin/chats/public - Criar chat público (apenas admin)
-AdminChatsRouter.post('/public', async (req, res) => {
-    const { nome } = req.body;
-
-    if (!nome || typeof nome !== "string" || nome.length < 3 || nome.length > 50) {
-        return res.status(400).json({ message: "Nome do chat público deve ter entre 3 e 50 caracteres." });
-    }
-
-    try {
-        const connection = await pool.getConnection();
-
-        // Verifica se já existe um chat público com esse nome
-        const [exists] = await connection.execute(
-            "SELECT id FROM chats WHERE nome = ? AND tipo = 'public'",
-            [nome]
-        );
-        if (exists.length > 0) {
-            connection.release();
-            return res.status(409).json({ message: "Já existe um chat público com esse nome." });
-        }
-
-        // Cria o chat público
-        await connection.execute(
-            "INSERT INTO chats (nome, tipo, criado_por, created_at) VALUES (?, 'public', ?, NOW())",
-            [nome, req.user.id]
-        );
-
-        connection.release();
-        res.status(201).json({ message: "Chat público criado com sucesso." });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao criar chat público." });
-    }
-});
-
-// POST /admin/chats/dm - Criar DM entre dois usuários (apenas admin)
-AdminChatsRouter.post('/dm', async (req, res) => {
-    const { user1Id, user2Id } = req.body;
-
-    if (!user1Id || !user2Id || user1Id === user2Id) {
-        return res.status(400).json({ message: "IDs de usuários válidos e diferentes são obrigatórios." });
-    }
-
-    try {
-        const connection = await pool.getConnection();
-
-        // Verifica se ambos os usuários existem
-        const [users] = await connection.execute(
-            "SELECT id FROM users WHERE id IN (?, ?)",
-            [user1Id, user2Id]
-        );
-        if (users.length !== 2) {
-            connection.release();
-            return res.status(404).json({ message: "Um ou ambos os usuários não existem." });
-        }
-
-        // Verifica se já existe uma DM entre esses usuários
-        const [dmExists] = await connection.execute(`
-            SELECT c.id
-            FROM chats c
-            JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = ?
-            JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = ?
-            WHERE c.tipo = 'dm'
-        `, [user1Id, user2Id]);
-        if (dmExists.length > 0) {
-            connection.release();
-            return res.status(409).json({ message: "Já existe uma DM entre esses usuários." });
-        }
-
-        // Cria o chat DM
-        const [chatResult] = await connection.execute(
-            "INSERT INTO chats (nome, tipo, criado_por, created_at) VALUES (?, 'dm', ?, NOW())",
-            [`DM: ${user1Id} & ${user2Id}`, req.user.id]
-        );
-        const chatId = chatResult.insertId;
-
-        // Adiciona participantes
-        await connection.execute(
-            "INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?), (?, ?)",
-            [chatId, user1Id, chatId, user2Id]
-        );
-
-        connection.release();
-        res.status(201).json({ message: "DM criada com sucesso!", chatId });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao criar DM." });
-    }
-});
-
-// PUT /admin/chats/:chatId - Editar DM (nome e participantes, apenas admin)
+// PUT /admin/chats/:chatId - Atualizar informações do chat
 AdminChatsRouter.put('/:chatId', async (req, res) => {
     const chatId = req.params.chatId;
-    const { nome, participants } = req.body;
-
-    // Apenas Dono pode editar DMs
-    if (req.user.role < 2) {
-        return res.status(403).json({ message: "Apenas o Dono pode editar DMs." });
-    }
-
-    if (!nome || typeof nome !== "string" || nome.length < 3 || nome.length > 50) {
-        return res.status(400).json({ message: "Nome do chat deve ter entre 3 e 50 caracteres." });
-    }
+    const { nome, tipo } = req.body;
 
     try {
-        const connection = await pool.getConnection();
+        const chat = await Chat.findByPk(chatId);
 
-        // Verifica se o chat existe e é DM
-        const [chatInfo] = await connection.execute(
-            "SELECT tipo FROM chats WHERE id = ?",
-            [chatId]
-        );
-        if (chatInfo.length === 0) {
-            connection.release();
-            return res.status(404).json({ message: "Chat não encontrado." });
-        }
-        if (chatInfo[0].tipo !== 'dm') {
-            connection.release();
-            return res.status(400).json({ message: "Só é possível editar DMs por este endpoint." });
+        if (!chat) {
+            return res.status(404).json({ message: "Chat não encontrado" });
         }
 
-        // Atualiza nome
-        await connection.execute(
-            "UPDATE chats SET nome = ? WHERE id = ?",
-            [nome, chatId]
-        );
+        const updates = {};
+        if (nome !== undefined) updates.nome = nome;
+        if (tipo !== undefined) updates.tipo = tipo;
 
-        // Atualiza participantes se fornecido (apenas para Dono)
-        if (Array.isArray(participants) && participants.length === 2) {
-            // Apenas Dono pode alterar participantes
-            if (req.user.role < 2) {
-                connection.release();
-                return res.status(403).json({ message: "Apenas o Dono pode alterar os participantes de uma DM." });
-            }
+        await chat.update(updates);
 
-            const [user1, user2] = participants;
-            if (user1 === user2) {
-                connection.release();
-                return res.status(400).json({ message: "Participantes devem ser diferentes." });
-            }
-
-            // Verifica se ambos os usuários existem
-            const [users] = await connection.execute(
-                "SELECT id FROM users WHERE id IN (?, ?)",
-                [user1, user2]
-            );
-            if (users.length !== 2) {
-                connection.release();
-                return res.status(404).json({ message: "Um ou ambos os usuários não existem." });
-            }
-
-            // Remove participantes antigos
-            await connection.execute(
-                "DELETE FROM chat_participants WHERE chat_id = ?",
-                [chatId]
-            );
-
-            // Adiciona novos participantes
-            await connection.execute(
-                "INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?), (?, ?)",
-                [chatId, user1, chatId, user2]
-            );
-        }
-
-        connection.release();
-        res.json({ message: "DM atualizada com sucesso." });
+        res.json({ message: "Chat atualizado com sucesso", chat });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao atualizar DM." });
+        res.status(500).json({ message: "Erro ao atualizar chat" });
     }
 });
 
-// POST /admin/chats/limpeza - Limpeza automática de chats inativos
-AdminChatsRouter.post('/limpeza', async (req, res) => {
+// POST /admin/chats/:chatId/participantes - Adicionar participante ao chat
+AdminChatsRouter.post('/:chatId/participantes', async (req, res) => {
+    const chatId = req.params.chatId;
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ message: "userId é obrigatório" });
+    }
+
     try {
-        const connection = await pool.getConnection();
+        const chat = await Chat.findByPk(chatId);
+        if (!chat) {
+            return res.status(404).json({ message: "Chat não encontrado" });
+        }
 
-        // Estratégia: remover chats DM sem mensagens há mais de 30 dias
-        const [result] = await connection.execute(`
-            DELETE FROM chats 
-            WHERE tipo = 'dm' 
-            AND id NOT IN (
-                SELECT DISTINCT chat_id 
-                FROM chat_messages 
-                WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
-            )
-            AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
-        `);
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
 
-        connection.release();
-        res.json({
-            removidos: result.affectedRows,
-            message: "Limpeza automática de chats executada com sucesso"
+        // Verificar se já é participante
+        const existing = await ChatParticipant.findOne({
+            where: { chat_id: chatId, user_id: userId }
         });
 
+        if (existing) {
+            return res.status(409).json({ message: "Usuário já é participante" });
+        }
+
+        await ChatParticipant.create({ chat_id: chatId, user_id: userId });
+
+        res.json({ message: "Participante adicionado com sucesso" });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao executar limpeza automática" });
+        res.status(500).json({ message: "Erro ao adicionar participante" });
+    }
+});
+
+// DELETE /admin/chats/:chatId/participantes/:userId - Remover participante do chat
+AdminChatsRouter.delete('/:chatId/participantes/:userId', async (req, res) => {
+    const { chatId, userId } = req.params;
+
+    try {
+        const participant = await ChatParticipant.findOne({
+            where: { chat_id: chatId, user_id: userId }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: "Participante não encontrado" });
+        }
+
+        await participant.destroy();
+
+        res.json({ message: "Participante removido com sucesso" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao remover participante" });
     }
 });
 

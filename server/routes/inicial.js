@@ -20,7 +20,7 @@ InicialRouter.get('/register', async (req, res) => {
         description: "Crie sua conta no Teco",
         version: process.env.VERSION,
     }
-    res.render('pages/register', {
+    res.render('pages/auth/register', {
         layout: 'layouts/main-sem-barra',
         locals: locals,
         HOST: process.env.HOST
@@ -33,7 +33,7 @@ InicialRouter.get('/login', async (req, res) => {
         description: "Faça login na sua conta do Teco",
         version: process.env.VERSION,
     }
-    res.render('pages/login', {
+    res.render('pages/auth/login', {
         layout: 'layouts/main-sem-barra',
         locals: locals,
         HOST: process.env.HOST

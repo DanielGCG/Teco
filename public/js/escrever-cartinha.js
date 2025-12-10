@@ -34,7 +34,7 @@ class EscreverCartinha {
             this.usuarioAtual = {
                 id: null,
                 username: 'Você',
-                avatar: '/images/placeholder.png'
+                profile_image: '/images/placeholder.png'
             };
         }
     }
@@ -135,7 +135,7 @@ class EscreverCartinha {
             this.destinatarioSelecionado = {
                 id: parseInt(paraUserId),
                 username: decodeURIComponent(paraUsername),
-                avatar: '/images/placeholder.png',
+                profile_image: '/images/placeholder.png',
                 status: 'online'
             };
             
@@ -188,7 +188,7 @@ class EscreverCartinha {
         // Adiciona o usuário atual flutuando no topo, se estiver na lista
         let usuariosFiltrados = this.usuarios.map(usuario => ({
             ...usuario,
-            avatar: usuario.avatar ? usuario.avatar : '/images/placeholder.png'
+            profile_image: usuario.profile_image ?? '/images/placeholder.png'
         }));
 
         let usuarioAtual = this.usuarioAtual;
@@ -199,7 +199,7 @@ class EscreverCartinha {
             if (existe) {
                 html += `
                 <div class="sugestao-usuario sugestao-atual" data-usuario-id="${usuarioAtual.id}" style="position:sticky;top:0;z-index:2;background:#f8f9fa;border-bottom:1px solid #eee;">
-                    <img src="${usuarioAtual.avatar ? usuarioAtual.avatar : '/images/placeholder.png'}" alt="${usuarioAtual.username}" class="avatar-sugestao">
+                    <img src="${usuarioAtual.profile_image ?? '/images/placeholder.png'}" alt="${usuarioAtual.username}" class="avatar-sugestao">
                     <div class="info-usuario">
                         <div class="nome-usuario">${usuarioAtual.username} <span class="badge bg-primary ms-1">Você</span></div>
                         <div class="status-usuario">${this.formatarStatus(usuarioAtual.status || 'online')}</div>
@@ -213,7 +213,7 @@ class EscreverCartinha {
 
         html += usuariosFiltrados.map(usuario => `
             <div class="sugestao-usuario" data-usuario-id="${usuario.id}">
-                <img src="${usuario.avatar}" alt="${usuario.username}" class="avatar-sugestao">
+                <img src="${usuario.profile_image}" alt="${usuario.username}" class="avatar-sugestao">
                 <div class="info-usuario">
                     <div class="nome-usuario">${usuario.username}</div>
                     <div class="status-usuario">${this.formatarStatus(usuario.status)}</div>

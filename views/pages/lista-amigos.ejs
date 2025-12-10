@@ -1,7 +1,5 @@
 <style>
-    .friends-container {
-        padding: 2rem 0;
-    }
+    .friends-container { height: 100%; }
 
     .tab-content {
         margin-top: 1.5rem;
@@ -13,154 +11,156 @@
         margin-bottom: 0.75rem;
     }
 
-        .friend-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
+    .friend-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
 
-        .friend-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: #6c757d;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
+    .friend-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
 
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-left: 0.5rem;
-            border: 2px solid white;
-        }
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 0.5rem;
+        border: 2px solid white;
+    }
 
-        .status-indicator.online {
-            background-color: #28a745;
-        }
+    .status-indicator.online {
+        background-color: #28a745;
+    }
 
-        .status-indicator.ausente {
-            background-color: #ffc107;
-        }
+    .status-indicator.ausente {
+        background-color: #ffc107;
+    }
 
-        .status-indicator.offline {
-            background-color: #6c757d;
-        }
+    .status-indicator.offline {
+        background-color: #6c757d;
+    }
 
-        .search-box {
-            margin-bottom: 1.5rem;
-        }
+    .search-box {
+        margin-bottom: 1.5rem;
+    }
 
-        .no-results {
-            text-align: center;
-            padding: 2rem;
-            color: #6c757d;
-        }
+    .no-results {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
 
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
 
-        .request-card {
-            background-color: #f8f9fa;
-            border-left: 4px solid var(--mensagem-roxo, #7c4dff);
-        }
+    .request-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid var(--mensagem-roxo, #7c4dff);
+    }
 
-        .badge-pending {
-            background-color: #ffc107;
-            color: #000;
-        }
+    .badge-pending {
+        background-color: #ffc107;
+        color: #000;
+    }
 
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #6c757d;
-        }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
 
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
 </style>
 
-<div class="container friends-container">
-    <div class="row">
-        <div class="col-12">
-            <!-- Tabs de navegação -->
-            <ul class="nav nav-tabs" id="friendsTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab">
-                            <i class="bi bi-people"></i> Amigos <span id="friends-count" class="badge bg-primary">0</span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
-                            <i class="bi bi-inbox"></i> Pedidos Recebidos <span id="requests-count" class="badge bg-danger">0</span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab">
-                            <i class="bi bi-send"></i> Pedidos Enviados <span id="sent-count" class="badge bg-warning text-dark">0</span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button" role="tab">
-                            <i class="bi bi-search"></i> Buscar Usuários
-                        </button>
-                    </li>
-                </ul>
+<div class="container-fluid friends-container">
+    <div class="card h-100 d-flex flex-column" style="background-color: var(--verde);">
+        <!-- Tabs de navegação -->
+        <ul class="card-header nav nav-tabs" id="friendsTabs" role="tablist" style="padding: 0px;">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab">
+                        <i class="bi bi-people"></i> Amigos <span id="friends-count" class="badge bg-primary">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
+                        <i class="bi bi-inbox"></i> Pedidos Recebidos <span id="requests-count" class="badge bg-danger" style="display:none">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab">
+                        <i class="bi bi-send"></i> Pedidos Enviados <span id="sent-count" class="badge bg-warning text-dark" style="display:none">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button" role="tab">
+                        <i class="bi bi-search"></i> Buscar Usuários
+                    </button>
+                </li>
+            </ul>
 
-                <!-- Conteúdo das tabs -->
-                <div class="tab-content" id="friendsTabContent">
-                    <!-- Lista de Amigos -->
-                    <div class="tab-pane fade show active" id="friends" role="tabpanel">
-                        <div id="friends-list">
-                            <div class="text-center">
-                                <span class="spinner-border spinner-border-sm"></span> Carregando...
-                            </div>
+            <!-- Conteúdo das tabs -->
+            <div class="tab-content px-2" id="friendsTabContent">
+                <!-- Lista de Amigos -->
+                <div class="tab-pane fade show active" id="friends" role="tabpanel">
+                    <div id="friends-list">
+                        <div class="text-center">
+                            <span class="spinner-border spinner-border-sm"></span> Carregando...
                         </div>
-                    </div>
-
-                    <!-- Pedidos Recebidos -->
-                    <div class="tab-pane fade" id="requests" role="tabpanel">
-                        <div id="requests-list">
-                            <div class="text-center">
-                                <span class="spinner-border spinner-border-sm"></span> Carregando...
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pedidos Enviados -->
-                    <div class="tab-pane fade" id="sent" role="tabpanel">
-                        <div id="sent-list">
-                            <div class="text-center">
-                                <span class="spinner-border spinner-border-sm"></span> Carregando...
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Buscar Usuários -->
-                    <div class="tab-pane fade" id="search" role="tabpanel">
-                        <div class="search-box">
-                            <div class="input-group">
-                                <input type="text" id="search-input" class="form-control" placeholder="Digite o nome de usuário...">
-                                <button class="btn btn-primary" id="search-btn">
-                                    <i class="bi bi-search"></i> Buscar
-                                </button>
-                            </div>
-                        </div>
-                        <div id="search-results"></div>
                     </div>
                 </div>
+
+                <!-- Pedidos Recebidos -->
+                <div class="tab-pane fade" id="requests" role="tabpanel">
+                    <div id="requests-list">
+                        <div class="text-center">
+                            <span class="spinner-border spinner-border-sm"></span> Carregando...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pedidos Enviados -->
+                <div class="tab-pane fade" id="sent" role="tabpanel">
+                    <div id="sent-list">
+                        <div class="text-center">
+                            <span class="spinner-border spinner-border-sm"></span> Carregando...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buscar Usuários -->
+                <div class="tab-pane fade" id="search" role="tabpanel">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <input type="text" id="search-input" class="form-control" placeholder="Digite o nome de usuário...">
+                            <button class="btn btn-primary" id="search-btn">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="search-results"></div>
+                </div>
             </div>
-    </div>
+        </div>
 </div>
+
+<!-- UI Utilities -->
+<script src="/js/global/user-utils.js"></script>
+<script src="/js/global/friendship-utils.js"></script>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -169,13 +169,11 @@
     let requests = [];
     let sent = [];
     
-    // Reutiliza conexão Socket.IO global
+    // Acesso ao socket global
     const friendsSocket = window.appSocket || notificationsSocket;
     
     if (!friendsSocket) {
         console.error('[Lista Amigos] Socket.IO não disponível!');
-    } else {
-        console.log('[Lista Amigos] Reutilizando conexão Socket.IO existente');
     }
 
     // ==================== Inicialização ====================
@@ -190,27 +188,28 @@
             if (e.key === 'Enter') buscarUsuarios();
         });
         
-        // Socket.IO listeners
-        friendsSocket.on('newFriendRequest', () => {
+        // Escuta eventos customizados disparados pelo sistema de notificações
+        document.addEventListener('friendRequest:new', () => {
             carregarPedidosRecebidos();
         });
         
-        friendsSocket.on('friendRequestAccepted', () => {
+        document.addEventListener('friendRequest:accepted', () => {
             carregarAmigos();
         });
         
-        friendsSocket.on('friendRequestsUpdated', () => {
+        document.addEventListener('friendRequest:updated', () => {
             carregarPedidosRecebidos();
             carregarPedidosEnviados();
         });
         
-        // Socket.IO listeners para status online em tempo real (consolidados)
-        friendsSocket.on('userStatusChanged', ({ userId, status }) => {
+        document.addEventListener('user:statusChanged', (e) => {
+            const { userId, status } = e.detail;
             console.log('[Amigos] Status do usuário', userId, 'mudou para:', status);
             atualizarStatusAmigo(userId, status);
         });
         
-        friendsSocket.on('userStatusBatch', (statusMap) => {
+        document.addEventListener('user:statusBatch', (e) => {
+            const { statusMap } = e.detail;
             console.log('[Amigos] Status em lote recebidos:', statusMap);
             Object.entries(statusMap).forEach(([userId, status]) => {
                 atualizarStatusAmigo(parseInt(userId), status);
@@ -221,7 +220,7 @@
     // Solicita status atualizados de todos os amigos
     function requestAllFriendStatuses() {
         const friendIds = friends.map(f => f.id).filter(id => id);
-        if (friendIds.length > 0) {
+        if (friendIds.length > 0 && friendsSocket) {
             console.log('[Amigos] Solicitando status atualizados para:', friendIds);
             friendsSocket.emit('requestUserStatus', { userIds: friendIds });
         }
@@ -242,12 +241,10 @@
         // ==================== Funções de carregamento ====================
         async function carregarAmigos() {
             try {
-                const res = await fetch('/amigos/api/', { credentials: 'include' });
-                if (!res.ok) throw new Error('Erro ao carregar amigos');
+                const result = await FriendshipAPI.carregarAmigos();
+                if (!result.success) throw new Error('Erro ao carregar amigos');
                 
-                const data = await res.json();
-                friends = data.friends || [];
-                
+                friends = result.friends;
                 document.getElementById('friends-count').textContent = friends.length;
                 renderizarAmigos();
                 
@@ -262,13 +259,14 @@
 
         async function carregarPedidosRecebidos() {
             try {
-                const res = await fetch('/amigos/api/requests', { credentials: 'include' });
-                if (!res.ok) throw new Error('Erro ao carregar pedidos');
+                const result = await FriendshipAPI.carregarPedidosRecebidos();
+                if (!result.success) throw new Error('Erro ao carregar pedidos');
                 
-                const data = await res.json();
-                requests = data.requests || [];
+                requests = result.requests;
                 
-                document.getElementById('requests-count').textContent = requests.length;
+                const badge = document.getElementById('requests-count');
+                badge.textContent = requests.length;
+                badge.style.display = requests.length !== 0 ? '' : 'none';
                 renderizarPedidosRecebidos();
             } catch (err) {
                 console.error('Erro ao carregar pedidos:', err);
@@ -279,13 +277,14 @@
 
         async function carregarPedidosEnviados() {
             try {
-                const res = await fetch('/amigos/api/sent', { credentials: 'include' });
-                if (!res.ok) throw new Error('Erro ao carregar pedidos enviados');
+                const result = await FriendshipAPI.carregarPedidosEnviados();
+                if (!result.success) throw new Error('Erro ao carregar pedidos enviados');
                 
-                const data = await res.json();
-                sent = data.sent || [];
+                sent = result.sent;
                 
-                document.getElementById('sent-count').textContent = sent.length;
+                const badge = document.getElementById('sent-count');
+                badge.textContent = sent.length;
+                badge.style.display = sent.length !== 0 ? '' : 'none';
                 renderizarPedidosEnviados();
             } catch (err) {
                 console.error('Erro ao carregar pedidos enviados:', err);
@@ -309,37 +308,31 @@
                 return;
             }
 
-            container.innerHTML = friends.map(friend => `
-                <div class="card friend-card" data-user-id="${friend.id}">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="friend-avatar">
-                                ${friend.avatar ? 
-                                    `<img src="${friend.avatar}" alt="${friend.username}" style="width:100%;height:100%;border-radius:50%;">` :
-                                    friend.username.charAt(1).toUpperCase()
-                                }
-                            </div>
-                            <div>
-                                <h6 class="mb-0">
-                                    ${friend.username}
-                                    <span class="status-indicator ${friend.status || 'offline'}"></span>
-                                </h6>
-                                ${friend.bio ? `<small class="text-muted">${friend.bio}</small>` : ''}
-                                <br>
-                                <small class="text-muted">Amigos desde ${formatarData(friend.friend_since)}</small>
-                            </div>
-                        </div>
-                        <div class="action-buttons">
-                            <a href="/conversas?user=${friend.username}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-chat-dots"></i> Mensagem
-                            </a>
-                            <button class="btn btn-sm btn-outline-danger" onclick="removerAmigo(${friend.id})">
-                                <i class="bi bi-person-dash"></i> Remover
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = '';
+            friends.forEach(friend => {
+                const messageLink = UIUtils.createActionLink({
+                    text: 'Mensagem',
+                    icon: 'bi bi-chat-dots',
+                    href: `/dms?user=${friend.username}`,
+                    variant: 'primary'
+                });
+                
+                const removeBtn = UIUtils.createActionButton({
+                    text: 'Remover',
+                    icon: 'bi bi-person-dash',
+                    variant: 'outline-danger',
+                    onClick: () => removerAmigo(friend.id)
+                });
+                
+                const card = UIUtils.createUserCard(friend, {
+                    type: 'friend',
+                    avatarSize: 40,
+                    actions: [messageLink, removeBtn]
+                });
+                
+                card.setAttribute('data-user-id', friend.id);
+                container.appendChild(card);
+            });
         }
 
         function renderizarPedidosRecebidos() {
@@ -355,34 +348,34 @@
                 return;
             }
 
-            container.innerHTML = requests.map(request => `
-                <div class="card friend-card request-card">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="friend-avatar">
-                                ${request.avatar ? 
-                                    `<img src="${request.avatar}" alt="${request.username}" style="width:100%;height:100%;border-radius:50%;">` :
-                                    request.username.charAt(1).toUpperCase()
-                                }
-                            </div>
-                            <div>
-                                <h6 class="mb-0">${request.username}</h6>
-                                ${request.bio ? `<small class="text-muted">${request.bio}</small>` : ''}
-                                <br>
-                                <small class="text-muted">Recebido ${formatarData(request.created_at)}</small>
-                            </div>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-sm btn-success" onclick="aceitarPedido(${request.friendship_id})">
-                                <i class="bi bi-check-lg"></i> Aceitar
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="rejeitarPedido(${request.friendship_id})">
-                                <i class="bi bi-x-lg"></i> Rejeitar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = '';
+            requests.forEach(request => {
+                const acceptBtn = UIUtils.createActionButton({
+                    text: 'Aceitar',
+                    icon: 'bi bi-check-lg',
+                    variant: 'success',
+                    onClick: () => aceitarPedido(request.friendship_id)
+                });
+                
+                const rejectBtn = UIUtils.createActionButton({
+                    text: 'Rejeitar',
+                    icon: 'bi bi-x-lg',
+                    variant: 'danger',
+                    onClick: () => rejeitarPedido(request.friendship_id)
+                });
+                
+                // Adiciona info de data recebida
+                request.friend_since = request.created_at;
+                
+                const card = UIUtils.createUserCard(request, {
+                    type: 'friend',
+                    avatarSize: 40,
+                    actions: [acceptBtn, rejectBtn]
+                });
+                
+                card.classList.add('request-card');
+                container.appendChild(card);
+            });
         }
 
         function renderizarPedidosEnviados() {
@@ -398,34 +391,35 @@
                 return;
             }
 
-            container.innerHTML = sent.map(request => `
-                <div class="card friend-card">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="friend-avatar">
-                                ${request.avatar ? 
-                                    `<img src="${request.avatar}" alt="${request.username}" style="width:100%;height:100%;border-radius:50%;">` :
-                                    request.username.charAt(1).toUpperCase()
-                                }
-                            </div>
-                            <div>
-                                <h6 class="mb-0">
-                                    ${request.username}
-                                    <span class="badge badge-pending">Pendente</span>
-                                </h6>
-                                ${request.bio ? `<small class="text-muted">${request.bio}</small>` : ''}
-                                <br>
-                                <small class="text-muted">Enviado ${formatarData(request.created_at)}</small>
-                            </div>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-sm btn-outline-danger" onclick="cancelarPedido(${request.friendship_id})">
-                                <i class="bi bi-x-circle"></i> Cancelar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = '';
+            sent.forEach(request => {
+                const cancelBtn = UIUtils.createActionButton({
+                    text: 'Cancelar',
+                    icon: 'bi bi-x-circle',
+                    variant: 'outline-danger',
+                    onClick: () => cancelarPedido(request.friendship_id)
+                });
+                
+                // Adiciona badge pendente e info de data
+                request.friend_since = request.created_at;
+                
+                const card = UIUtils.createUserCard(request, {
+                    type: 'friend',
+                    avatarSize: 40,
+                    actions: [cancelBtn]
+                });
+                
+                // Adiciona badge pendente
+                const nameEl = card.querySelector('h6');
+                if (nameEl) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-pending ms-2';
+                    badge.textContent = 'Pendente';
+                    nameEl.appendChild(badge);
+                }
+                
+                container.appendChild(card);
+            });
         }
 
         // ==================== Buscar usuários ====================
@@ -493,9 +487,9 @@
                             <div class="card-body d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="friend-avatar">
-                                        ${user.avatar ? 
-                                            `<img src="${user.avatar}" alt="${user.username}" style="width:100%;height:100%;border-radius:50%;">` :
-                                            user.username.charAt(1).toUpperCase()
+                                        ${user.profile_image ? 
+                                            `<img src="${user.profile_image}" alt="${user.username}" style="width:100%;height:100%;border-radius:50%;">` :
+                                            user.username.charAt(0).toUpperCase()
                                         }
                                     </div>
                                     <div>
@@ -520,132 +514,47 @@
 
         // ==================== Ações de amizade ====================
         async function enviarPedido(userId) {
-            try {
-                const res = await fetch('/amigos/api/request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ addressee_id: userId })
-                });
-
-                const data = await res.json();
-                
-                if (res.ok) {
-                    alert('Pedido de amizade enviado!');
+            await FriendshipAPI.enviarPedido(userId, {
+                onSuccess: async () => {
                     await carregarPedidosEnviados();
-                    buscarUsuarios(); // Atualiza a busca
-                } else {
-                    alert(data.message);
+                    buscarUsuarios();
                 }
-            } catch (err) {
-                console.error('Erro ao enviar pedido:', err);
-                alert('Erro ao enviar pedido de amizade');
-            }
+            });
         }
 
         async function aceitarPedido(friendshipId) {
-            try {
-                const res = await fetch(`/amigos/api/accept/${friendshipId}`, {
-                    method: 'PUT',
-                    credentials: 'include'
-                });
-
-                const data = await res.json();
-                
-                if (res.ok) {
-                    alert('Pedido aceito!');
+            await FriendshipAPI.aceitarPedido(friendshipId, {
+                onSuccess: async () => {
                     await carregarAmigos();
                     await carregarPedidosRecebidos();
-                } else {
-                    alert(data.message);
                 }
-            } catch (err) {
-                console.error('Erro ao aceitar pedido:', err);
-                alert('Erro ao aceitar pedido');
-            }
+            });
         }
 
         async function rejeitarPedido(friendshipId) {
-            if (!await confirm('Tem certeza que deseja rejeitar este pedido?')) return;
-
-            try {
-                const res = await fetch(`/amigos/api/reject/${friendshipId}`, {
-                    method: 'PUT',
-                    credentials: 'include'
-                });
-
-                const data = await res.json();
-                
-                if (res.ok) {
-                    alert('Pedido rejeitado');
-                    await carregarPedidosRecebidos();
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                console.error('Erro ao rejeitar pedido:', err);
-                alert('Erro ao rejeitar pedido');
-            }
+            await FriendshipAPI.rejeitarPedido(friendshipId, {
+                onSuccess: () => carregarPedidosRecebidos()
+            });
         }
 
         async function cancelarPedido(friendshipId) {
-            if (!await confirm('Tem certeza que deseja cancelar este pedido?')) return;
-
-            try {
-                const res = await fetch(`/amigos/api/cancel/${friendshipId}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-
-                const data = await res.json();
-                
-                if (res.ok) {
-                    alert('Pedido cancelado');
-                    await carregarPedidosEnviados();
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                console.error('Erro ao cancelar pedido:', err);
-                alert('Erro ao cancelar pedido');
-            }
+            await FriendshipAPI.cancelarPedido(friendshipId, {
+                onSuccess: () => carregarPedidosEnviados()
+            });
         }
 
         async function removerAmigo(userId) {
-            if (!await confirm('Tem certeza que deseja remover este amigo?')) return;
-
-            try {
-                const res = await fetch(`/amigos/api/${userId}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-
-                const data = await res.json();
-                
-                if (res.ok) {
-                    alert('Amigo removido');
-                    await carregarAmigos();
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                console.error('Erro ao remover amigo:', err);
-                alert('Erro ao remover amigo');
-            }
+            await FriendshipAPI.removerAmigo(userId, {
+                onSuccess: () => carregarAmigos()
+            });
         }
 
         // ==================== Utilitários ====================
         function formatarData(dateStr) {
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diff = now - date;
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-            if (days === 0) return 'hoje';
-            if (days === 1) return 'ontem';
-            if (days < 7) return `há ${days} dias`;
-            if (days < 30) return `há ${Math.floor(days / 7)} semanas`;
-            if (days < 365) return `há ${Math.floor(days / 30)} meses`;
-            return `há ${Math.floor(days / 365)} anos`;
+            return UIUtils.formatarData(dateStr);
         }
     </script>
+
+<!-- Modais necessários -->
+<%- include('../utils/modal-aviso') %>
+<%- include('../utils/modal-confirmacao') %>

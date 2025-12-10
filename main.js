@@ -40,6 +40,20 @@ servidor.use('/api', require('./server/api/main'));
 // Rotas principais - Nivel de acesso 0
 servidor.use('/', authMiddleware(0), require('./server/routes/main'));
 
+// Fallback 404 handler (deve ficar após todas as rotas)
+servidor.use((req, res) => {
+    const locals = {
+        title: '404',
+        description: 'Página não encontrada',
+        version: process.env.VERSION
+    };
+    res.status(404).render('utils/404', {
+        layout: 'layouts/main',
+        locals,
+        HOST: process.env.HOST
+    });
+});
+
 // ==================== Socket.IO ====================
 require('./server/routes/socket.router')(io);
 

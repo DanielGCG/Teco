@@ -1,4 +1,5 @@
-const pool = require("../config/bd");
+const { User, UserSession } = require("../models");
+const { Op } = require("sequelize");
 
 const PUBLIC_ROUTES = ['/register', '/login', '/logout', '/validate-session']; // rotas públicas
 
@@ -26,19 +27,19 @@ const authMiddleware = (minRole = 0, refresh = true) => {
                 }
             }
 
-            const connection = await pool.getConnection();
-
             // Busca sessão válida
-            const [sessions] = await connection.execute(
-                `SELECT us.id AS session_id, us.user_id, u.username, u.role
-                 FROM user_sessions us
-                 JOIN users u ON u.id = us.user_id
-                 WHERE us.cookie_value = ? AND us.expires_at > NOW()`,
-                [cookieValue]
-            );
+            const session = await UserSession.findOne({
+                where: {
+                    cookie_value: cookieValue,
+                    expires_at: { [Op.gt]: new Date() }
+                },
+                include: [{
+                    model: User,
+                    attributes: ['id', 'username', 'role']
+                }]
+            });
 
-            if (sessions.length === 0) {
-                connection.release();
+            if (!session) {
                 if (res && res.status) {
                     // Se for uma requisição de página (HTML), redireciona para login
                     if (req.accepts('html')) {
@@ -50,11 +51,10 @@ const authMiddleware = (minRole = 0, refresh = true) => {
                 }
             }
 
-            const session = sessions[0];
+            const user = session.User;
 
             // Verifica role mínima
-            if (session.role < minRole) {
-                connection.release();
+            if (user.role < minRole) {
                 if (res && res.status) {
                     return res.status(403).json({ message: "Acesso negado" });
                 } else {
@@ -65,20 +65,16 @@ const authMiddleware = (minRole = 0, refresh = true) => {
             // Atualiza expires_at se refresh ativado
             if (refresh) {
                 const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
-                await connection.execute(
-                    "UPDATE user_sessions SET expires_at = ? WHERE id = ?",
-                    [newExpires, session.session_id]
-                );
+                await session.update({ expires_at: newExpires });
             }
 
             // Anexa informações do usuário
             req.user = {
-                id: session.user_id,
-                username: session.username,
-                role: session.role
+                id: user.id,
+                username: user.username,
+                role: user.role
             };
 
-            connection.release();
             next();
         } catch (err) {
             console.error(err);
@@ -93,14 +89,13 @@ const authMiddleware = (minRole = 0, refresh = true) => {
 
 const limparSessoesExpiradas = async () => {
     try {
-        const connection = await pool.getConnection();
+        const result = await UserSession.destroy({
+            where: {
+                expires_at: { [Op.lt]: new Date() }
+            }
+        });
 
-        const [result] = await connection.execute(
-            "DELETE FROM user_sessions WHERE expires_at < NOW()"
-        );
-
-        connection.release();
-        console.log(`[Sessoes] ${result.affectedRows} sessão(ões) expiradas removida(s)`);
+        console.log(`[Sessoes] ${result} sessão(ões) expiradas removida(s)`);
     } catch (err) {
         console.error("Erro ao limpar sessões expiradas:", err);
     }

@@ -1,4 +1,4 @@
-const pool = require('../config/bd');
+const { User, UserSession } = require('../models');
 const { createNotification } = require('../api/notifications');
 
 // ==================== Socket.IO Event Handlers ====================
@@ -101,18 +101,20 @@ module.exports = (io) => {
             if (!sessionCookie) return null;
 
             const cookieValue = sessionCookie.split('=')[1];
-            const connection = await pool.getConnection();
 
             try {
-                const [sessions] = await connection.execute(
-                    `SELECT user_id FROM user_sessions WHERE cookie_value = ? AND expires_at > NOW()`,
-                    [cookieValue]
-                );
+                const { Op } = require('sequelize');
+                const session = await UserSession.findOne({
+                    where: {
+                        cookie_value: cookieValue,
+                        expires_at: { [Op.gt]: new Date() }
+                    },
+                    attributes: ['user_id']
+                });
 
-                if (sessions.length === 0) return null;
-                return { userId: sessions[0].user_id, connection };
+                if (!session) return null;
+                return { userId: session.user_id };
             } catch (err) {
-                connection.release();
                 throw err;
             }
         }
@@ -149,121 +151,126 @@ module.exports = (io) => {
                     return;
                 }
 
-                const { userId, connection } = auth;
+                const { userId } = auth;
+                const { Chat, ChatMessage, ChatParticipant } = require('../models');
+                const { Op } = require('sequelize');
 
                 // Atualiza atividade do usuário
                 updateUserActivity(userId);
 
                 // Insere mensagem no banco
-                const [result] = await connection.execute(
-                    `INSERT INTO chat_messages (chat_id, user_id, mensagem) VALUES (?, ?, ?)`,
-                    [chatId, userId, mensagem]
-                );
+                const newMessage = await ChatMessage.create({
+                    chat_id: chatId,
+                    user_id: userId,
+                    mensagem: mensagem
+                });
 
-                // Busca mensagem completa
-                const [msgs] = await connection.execute(
-                    `SELECT cm.id, cm.mensagem, u.username, cm.user_id, cm.created_at
-                     FROM chat_messages cm 
-                     JOIN users u ON cm.user_id = u.id 
-                     WHERE cm.id = ?`,
-                    [result.insertId]
-                );
+                // Busca mensagem completa com usuário
+                const messageWithUser = await ChatMessage.findByPk(newMessage.id, {
+                    include: [{
+                        model: User,
+                        attributes: ['username']
+                    }],
+                    attributes: ['id', 'mensagem', 'user_id', 'created_at']
+                });
 
                 // Busca participantes do chat para notificar
-                const [participants] = await connection.execute(
-                    `SELECT user_id FROM chat_participants WHERE chat_id = ? AND user_id != ?`,
-                    [chatId, userId]
-                );
+                const participants = await ChatParticipant.findAll({
+                    where: {
+                        chat_id: chatId,
+                        user_id: { [Op.ne]: userId }
+                    },
+                    attributes: ['user_id']
+                });
 
                 // Busca info do chat
-                const [chatInfo] = await connection.execute(
-                    `SELECT tipo FROM chats WHERE id = ?`,
-                    [chatId]
-                );
-
-                connection.release();
+                const chat = await Chat.findByPk(chatId, {
+                    attributes: ['tipo']
+                });
 
                 // Emite para todos no chat
                 io.to(`chat_${chatId}`).emit('newMessage', {
                     chatId,
                     message: {
-                        id: msgs[0].id,
-                        text: msgs[0].mensagem,
-                        username: msgs[0].username,
-                        user_id: msgs[0].user_id,
-                        created_at: msgs[0].created_at
+                        id: messageWithUser.id,
+                        mensagem: messageWithUser.mensagem,
+                        username: messageWithUser.User.username,
+                        user_id: messageWithUser.user_id,
+                        created_at: messageWithUser.created_at
                     }
                 });
 
                 // Se é DM, cria notificação para usuários que não estão no chat
-                if (chatInfo.length > 0 && chatInfo[0].tipo === 'dm') {
-                    for (const participant of participants) {
-                        const otherUserId = participant.user_id;
-                        
-                        // Pula se for o próprio remetente
-                        if (otherUserId === userId) continue;
-                        
-                        // Verifica se o usuário está na sala do chat (online no chat)
-                        const socketsInRoom = await io.in(`chat_${chatId}`).fetchSockets();
-                        const userInChat = socketsInRoom.some(s => {
-                            const cookies = s.handshake.headers.cookie;
-                            // Simplificação: assume que se está na sala, está vendo
-                            return true; // Melhorar depois
-                        });
-                        
-                        // Se não está no chat, cria ou atualiza notificação
-                        if (!userInChat || socketsInRoom.length <= 1) {
-                            const conn = await pool.getConnection();
+                if (chat && chat.tipo === 'dm') {
+                    try {
+                        for (const participant of participants) {
+                            const otherUserId = participant.user_id;
                             
-                            // Verifica se já existe notificação não lida deste chat
-                            const [existingNotif] = await conn.execute(`
-                                SELECT id, body FROM notifications 
-                                WHERE user_id = ? 
-                                AND type = 'NEW_DM' 
-                                AND read_at IS NULL 
-                                AND JSON_EXTRACT(data, '$.chatId') = ?
-                                ORDER BY created_at DESC
-                                LIMIT 1
-                            `, [otherUserId, chatId]);
-
-                            if (existingNotif.length > 0) {
-                                // Atualiza a notificação existente
-                                const currentBody = existingNotif[0].body;
-                                const match = currentBody.match(/\((\d+) mensagens?\)/);
-                                const currentCount = match ? parseInt(match[1]) : 1;
-                                const newCount = currentCount + 1;
+                            // Pula se for o próprio remetente
+                            if (otherUserId === userId) continue;
+                            
+                            // Verifica se o usuário está na sala do chat (online no chat)
+                            const socketsInRoom = await io.in(`chat_${chatId}`).fetchSockets();
+                            
+                            // Se não está no chat, cria ou atualiza notificação
+                            if (socketsInRoom.length <= 1) {
+                                const { Notification, sequelize } = require('../models');
                                 
-                                await conn.execute(`
-                                    UPDATE notifications 
-                                    SET body = ?, created_at = NOW()
-                                    WHERE id = ?
-                                `, [
-                                    `${msgs[0].username} (${newCount} mensagens)`,
-                                    existingNotif[0].id
-                                ]);
-                            } else {
-                                // Cria nova notificação
-                                await conn.execute(
-                                    `INSERT INTO notifications (user_id, type, title, body, link, data) VALUES (?, ?, ?, ?, ?, ?)`,
-                                    [
-                                        otherUserId,
-                                        'NEW_DM',
-                                        `Nova mensagem de ${msgs[0].username}`,
-                                        mensagem.substring(0, 100) + (mensagem.length > 100 ? '...' : ''),
-                                        '/conversas',
-                                        JSON.stringify({ chatId, senderId: userId })
-                                    ]
-                                );
+                                // Busca notificação existente de forma mais simples
+                                const existingNotif = await Notification.findOne({
+                                    where: {
+                                        user_id: otherUserId,
+                                        type: 'NEW_DM',
+                                        read_at: null
+                                    },
+                                    order: [['created_at', 'DESC']]
+                                });
+
+                                // Verifica se a notificação existente é do mesmo chat
+                                let isFromSameChat = false;
+                                if (existingNotif && existingNotif.data) {
+                                    try {
+                                        const notifData = JSON.parse(existingNotif.data);
+                                        isFromSameChat = notifData.chatId === chatId;
+                                    } catch (e) {
+                                        // Se der erro ao parsear, não é do mesmo chat
+                                        isFromSameChat = false;
+                                    }
+                                }
+
+                                if (existingNotif && isFromSameChat) {
+                                    // Atualiza a notificação existente
+                                    const currentBody = existingNotif.body;
+                                    const match = currentBody.match(/\((\d+) mensagens?\)/);
+                                    const currentCount = match ? parseInt(match[1]) : 1;
+                                    const newCount = currentCount + 1;
+                                    
+                                    await existingNotif.update({
+                                        body: `${messageWithUser.User.username} (${newCount} mensagens)`,
+                                        created_at: new Date()
+                                    });
+                                } else {
+                                    // Cria nova notificação
+                                    await Notification.create({
+                                        user_id: otherUserId,
+                                        type: 'NEW_DM',
+                                        title: `Nova mensagem de ${messageWithUser.User.username}`,
+                                        body: mensagem.substring(0, 100) + (mensagem.length > 100 ? '...' : ''),
+                                        link: '/dms',
+                                        data: JSON.stringify({ chatId, senderId: userId })
+                                    });
+                                }
+                                
+                                // Notifica em tempo real
+                                io.to(`user_${otherUserId}`).emit('newNotification', { type: 'message' });
+                                
+                                // Atualiza contagem de DMs não lidas para o destinatário
+                                io.to(`user_${otherUserId}`).emit('newMessage');
                             }
-                            
-                            conn.release();
-                            
-                            // Notifica em tempo real
-                            io.to(`user_${otherUserId}`).emit('newNotification', { type: 'message' });
-                            
-                            // Atualiza contagem de DMs não lidas para o destinatário
-                            io.to(`user_${otherUserId}`).emit('newMessage');
                         }
+                    } catch (notifErr) {
+                        // Erro ao criar notificação não deve impedir o envio da mensagem
+                        console.error('[Socket] Erro ao criar notificação (não crítico):', notifErr);
                     }
                 }
 
@@ -283,29 +290,48 @@ module.exports = (io) => {
                     return;
                 }
 
-                const { userId, connection } = auth;
+                const { userId } = auth;
+                const { ChatMessage, ChatRead, Chat } = require('../models');
+                const { Op } = require('sequelize');
 
                 // Atualiza atividade do usuário
                 updateUserActivity(userId);
 
-                // Busca última mensagem de outros usuários no chat
-                const [lastMsg] = await connection.execute(
-                    `SELECT id FROM chat_messages 
-                     WHERE chat_id = ? AND user_id != ? 
-                     ORDER BY created_at DESC LIMIT 1`,
-                    [chatId, userId]
-                );
+                // Apenas DMs devem suportar marcação de mensagens como lidas
+                const chat = await Chat.findByPk(chatId, { attributes: ['tipo'] });
+                if (!chat || chat.tipo !== 'dm') {
+                    // Ignora marcação de leitura para chats públicos
+                    return;
+                }
 
-                if (lastMsg.length > 0) {
-                    const lastMessageId = lastMsg[0].id;
+                // Busca última mensagem de outros usuários no chat
+                const lastMsg = await ChatMessage.findOne({
+                    where: {
+                        chat_id: chatId,
+                        user_id: { [Op.ne]: userId }
+                    },
+                    order: [['created_at', 'DESC']],
+                    attributes: ['id']
+                });
+
+                if (lastMsg) {
+                    const lastMessageId = lastMsg.id;
                     
-                    // Marca como lida
-                    await connection.execute(
-                        `INSERT INTO chat_reads (chat_id, user_id, last_read_message_id)
-                         VALUES (?, ?, ?)
-                         ON DUPLICATE KEY UPDATE last_read_message_id = GREATEST(last_read_message_id, ?)`,
-                        [chatId, userId, lastMessageId, lastMessageId]
-                    );
+                    // Marca como lida (upsert)
+                    const [chatRead, created] = await ChatRead.findOrCreate({
+                        where: {
+                            chat_id: chatId,
+                            user_id: userId
+                        },
+                        defaults: {
+                            last_read_message_id: lastMessageId
+                        }
+                    });
+
+                    // Se já existia, atualiza com o maior ID
+                    if (!created && chatRead.last_read_message_id < lastMessageId) {
+                        await chatRead.update({ last_read_message_id: lastMessageId });
+                    }
 
                     // Notifica todos no chat sobre a atualização de leitura
                     io.to(`chat_${chatId}`).emit('messageRead', {
@@ -317,8 +343,6 @@ module.exports = (io) => {
                     // Atualiza contagem de DMs não lidas para o usuário que leu
                     socket.emit('messageRead');
                 }
-
-                connection.release();
             } catch (err) {
                 console.error('[Socket] Erro ao marcar mensagens como lidas:', err);
                 socket.emit('error', { message: 'Erro ao marcar mensagens' });
@@ -334,20 +358,19 @@ module.exports = (io) => {
                     return;
                 }
 
-                const { userId, connection } = auth;
+                const { userId } = auth;
+                const { Friendship } = require('../models');
 
                 // Busca contagem de pedidos de amizade pendentes
-                const [result] = await connection.execute(
-                    `SELECT COUNT(*) as count
-                     FROM friendships
-                     WHERE addressee_id = ? AND status = 'pending'`,
-                    [userId]
-                );
+                const count = await Friendship.count({
+                    where: {
+                        addressee_id: userId,
+                        status: 'pending'
+                    }
+                });
 
-                connection.release();
-
-                socket.emit('friendRequestsCount', { count: result[0].count });
-                console.log('[Socket] Contagem de pedidos enviada:', result[0].count);
+                socket.emit('friendRequestsCount', { count });
+                console.log('[Socket] Contagem de pedidos enviada:', count);
             } catch (err) {
                 console.error('[Socket] Erro ao buscar pedidos:', err);
                 socket.emit('error', { message: 'Erro ao buscar pedidos' });
@@ -360,15 +383,13 @@ module.exports = (io) => {
                 const auth = await authenticateSocket(socket);
                 if (!auth) return;
 
-                const { userId, connection } = auth;
+                const { userId } = auth;
                 
                 // Atualiza last_access no banco
-                await connection.execute(
-                    `UPDATE users SET last_access = NOW() WHERE id = ?`,
-                    [userId]
+                await User.update(
+                    { last_access: new Date() },
+                    { where: { id: userId } }
                 );
-                
-                connection.release();
 
                 socket.join(`user_${userId}`);
                 
@@ -440,30 +461,45 @@ module.exports = (io) => {
                 const auth = await authenticateSocket(socket);
                 if (!auth) return;
 
-                const { userId, connection } = auth;
+                const { userId } = auth;
+                const { Chat, ChatParticipant, ChatMessage, ChatRead } = require('../models');
+                const { Op } = require('sequelize');
 
-                const [result] = await connection.execute(
-                    `SELECT COUNT(DISTINCT c.id) as count
-                     FROM chats c
-                     JOIN chat_participants cp ON c.id = cp.chat_id
-                     WHERE cp.user_id = ? 
-                     AND c.tipo = 'dm'
-                     AND EXISTS (
-                        SELECT 1 
-                        FROM chat_messages cm
-                        WHERE cm.chat_id = c.id
-                        AND cm.user_id != ?
-                        AND cm.id > COALESCE((
-                            SELECT last_read_message_id
-                            FROM chat_reads
-                            WHERE chat_id = c.id AND user_id = ?
-                        ), 0)
-                     )`,
-                    [userId, userId, userId]
-                );
+                // Buscar chats DM do usuário
+                const userChats = await ChatParticipant.findAll({
+                    where: { user_id: userId },
+                    include: [{
+                        model: Chat,
+                        where: { tipo: 'dm' },
+                        attributes: ['id']
+                    }],
+                    attributes: ['chat_id']
+                });
 
-                connection.release();
-                socket.emit('unreadDMsCount', { count: result[0].count });
+                const chatIds = userChats.map(cp => cp.chat_id);
+                let unreadCount = 0;
+
+                // Verificar mensagens não lidas em cada chat
+                for (const chatId of chatIds) {
+                    const chatRead = await ChatRead.findOne({
+                        where: { chat_id: chatId, user_id: userId },
+                        attributes: ['last_read_message_id']
+                    });
+
+                    const lastReadId = chatRead?.last_read_message_id || 0;
+
+                    const hasUnread = await ChatMessage.count({
+                        where: {
+                            chat_id: chatId,
+                            user_id: { [Op.ne]: userId },
+                            id: { [Op.gt]: lastReadId }
+                        }
+                    });
+
+                    if (hasUnread > 0) unreadCount++;
+                }
+
+                socket.emit('unreadDMsCount', { count: unreadCount });
             } catch (err) {
                 console.error('[Socket] Erro ao buscar DMs não lidas:', err);
             }
@@ -475,18 +511,151 @@ module.exports = (io) => {
                 const auth = await authenticateSocket(socket);
                 if (!auth) return;
 
-                const { userId, connection } = auth;
+                const { userId } = auth;
+                const { Notification } = require('../models');
 
-                const [result] = await connection.execute(
-                    `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read_at IS NULL`,
-                    [userId]
-                );
+                const count = await Notification.count({
+                    where: {
+                        user_id: userId,
+                        read_at: null
+                    }
+                });
 
-                connection.release();
-
-                socket.emit('notificationsCount', { count: result[0].count });
+                socket.emit('notificationsCount', { count });
             } catch (err) {
                 console.error('[Socket] Erro ao buscar notificações:', err);
+            }
+        });
+
+        // ==================== Get Messages ====================
+        socket.on('getMessages', async ({ chatId, chatName, page = 1 }) => {
+            try {
+                const auth = await authenticateSocket(socket);
+                if (!auth) return socket.emit('error', { message: 'Não autenticado' });
+
+                const { userId } = auth;
+                const { Chat, ChatMessage, ChatParticipant, ChatRead } = require('../models');
+                const { Op } = require('sequelize');
+
+                const limit = 50;
+                const offset = (page - 1) * limit;
+
+                // Busca o chat por ID ou nome
+                let chat;
+                if (chatId) {
+                    chat = await Chat.findByPk(chatId);
+                } else if (chatName) {
+                    chat = await Chat.findOne({
+                        where: { nome: chatName, tipo: 'public' }
+                    });
+                }
+
+                if (!chat) {
+                    return socket.emit('error', { message: 'Chat não encontrado' });
+                }
+
+                const resolvedChatId = chat.id;
+
+                // Para chats públicos, qualquer usuário pode acessar
+                // Para DMs, verifica se é participante
+                if (chat.tipo === 'dm') {
+                    const isParticipant = await ChatParticipant.findOne({
+                        where: { chat_id: resolvedChatId, user_id: userId }
+                    });
+                    if (!isParticipant) {
+                        return socket.emit('error', { message: 'Acesso negado' });
+                    }
+                }
+
+                // Busca mensagens
+                const messages = await ChatMessage.findAll({
+                    where: { chat_id: resolvedChatId },
+                    include: [{
+                        model: User,
+                        attributes: ['username']
+                    }],
+                    order: [['created_at', 'DESC']],
+                    limit,
+                    offset
+                });
+
+                messages.reverse();
+
+                // Para DMs, adiciona status de leitura
+                let messagesWithReadStatus = messages;
+                if (chat.tipo === 'dm') {
+                    // Busca o outro participante
+                    const participants = await ChatParticipant.findAll({
+                        where: {
+                            chat_id: resolvedChatId,
+                            user_id: { [Op.ne]: userId }
+                        }
+                    });
+
+                    const otherUserId = participants[0]?.user_id;
+
+                    if (otherUserId) {
+                        const otherUserRead = await ChatRead.findOne({
+                            where: { chat_id: resolvedChatId, user_id: otherUserId }
+                        });
+
+                        messagesWithReadStatus = await Promise.all(messages.map(async (m) => {
+                            const msg = m.toJSON();
+                            msg.isMine = m.user_id === userId;
+                            
+                            if (m.user_id === userId && otherUserRead) {
+                                msg.isRead = m.id <= otherUserRead.last_read_message_id;
+                            }
+                            
+                            return msg;
+                        }));
+                    }
+                } else {
+                    // Para chats públicos
+                    messagesWithReadStatus = messages.map(m => {
+                        const msg = m.toJSON();
+                        msg.isMine = m.user_id === userId;
+                        return msg;
+                    });
+                }
+
+                // Marca mensagens como lidas (APENAS para DMs)
+                if (chat.tipo === 'dm' && messages.length > 0) {
+                    const lastMessage = messages[messages.length - 1];
+                    if (lastMessage.user_id !== userId) {
+                        const [chatRead, created] = await ChatRead.findOrCreate({
+                            where: { chat_id: resolvedChatId, user_id: userId },
+                            defaults: { last_read_message_id: lastMessage.id }
+                        });
+
+                        if (!created && chatRead.last_read_message_id < lastMessage.id) {
+                            await chatRead.update({ last_read_message_id: lastMessage.id });
+                        }
+
+                        // Notifica outros usuários que as mensagens foram lidas (APENAS DMs)
+                        io.to(`chat_${resolvedChatId}`).emit('messageRead', {
+                            chatId: resolvedChatId,
+                            userId,
+                            lastReadMessageId: lastMessage.id
+                        });
+                    }
+                }
+
+                // Entra na sala do chat se ainda não entrou (para chats públicos)
+                if (chat.tipo === 'public') {
+                    socket.join(`chat_${resolvedChatId}`);
+                }
+
+                socket.emit('messagesLoaded', {
+                    chatId: resolvedChatId,
+                    page,
+                    messages: messagesWithReadStatus,
+                    hasMore: messages.length >= limit
+                });
+
+            } catch (err) {
+                console.error('[Socket] Erro ao buscar mensagens:', err);
+                socket.emit('error', { message: 'Erro ao carregar mensagens' });
             }
         });
 
@@ -515,12 +684,10 @@ module.exports = (io) => {
                                 onlineUsers.delete(userId);
                                 
                                 try {
-                                    const connection = await pool.getConnection();
-                                    await connection.execute(
-                                        `UPDATE users SET last_access = NOW() WHERE id = ?`,
-                                        [userId]
+                                    await User.update(
+                                        { last_access: new Date() },
+                                        { where: { id: userId } }
                                     );
-                                    connection.release();
                                     
                                     console.log('[Socket] Usuário', userId, 'ficou offline. Online:', onlineUsers.size);
                                     

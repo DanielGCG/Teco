@@ -76,8 +76,8 @@
 
 
     <script>
-        // Conexão Socket.IO global reutilizável em todas as páginas
-        // IMPORTANTE: outras páginas devem usar 'notificationsSocket' em vez de criar novas conexões
+        // Conexão Socket.IO global - carregada uma vez no layout principal
+        // IMPORTANTE: todas as páginas devem usar 'notificationsSocket' ou 'window.appSocket'
         const notificationsSocket = io();
         window.appSocket = notificationsSocket; // Disponibiliza globalmente
         
@@ -167,41 +167,85 @@
                         'SYSTEM': { icon: 'bi-info-circle', color: 'text-secondary' }
                     };
                     
+                    // Limpa a lista
+                    notificationsList.innerHTML = '';
+                    
                     // Fragment para melhor performance
                     const fragment = document.createDocumentFragment();
-                    const notifications = data.notifications.map(notification => {
+                    
+                    data.notifications.forEach(notification => {
                         const isUnread = !notification.read_at;
                         const timeAgo = getTimeAgo(notification.created_at);
                         const { icon = 'bi-bell', color = 'text-primary' } = iconMap[notification.type] || {};
 
-                        return `
-                            <div class="notification-item ${isUnread ? 'unread' : ''} px-3 py-2" 
-                                 data-id="${notification.id}" 
-                                 data-link="${notification.link || '#'}"
-                                 style="cursor: pointer;">
-                                <div class="d-flex align-items-start">
-                                    <i class="bi ${icon} ${color} fs-4 me-3 mt-1"></i>
-                                    <div class="flex-grow-1 min-width-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <h6 class="mb-1 fw-bold text-truncate" style="font-size: 0.9rem;">
-                                                ${notification.title}
-                                            </h6>
-                                            ${isUnread ? '<span class="badge bg-primary rounded-circle" style="width: 8px; height: 8px; padding: 0;"></span>' : ''}
-                                        </div>
-                                        <p class="mb-1 text-muted small">${notification.body}</p>
-                                        <small class="text-muted" style="font-size: 0.75rem;">
-                                            <i class="bi bi-clock"></i> ${timeAgo}
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    // Add click handlers com event delegation
-                    notificationsList.querySelectorAll('.notification-item').forEach(item => {
-                        item.addEventListener('click', () => handleNotificationClick(item));
+                        // Container principal
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = `notification-item ${isUnread ? 'unread' : ''} px-3 py-2`;
+                        itemDiv.dataset.id = notification.id;
+                        itemDiv.dataset.link = notification.link || '#';
+                        itemDiv.style.cursor = 'pointer';
+                        
+                        // Flex container
+                        const flexDiv = document.createElement('div');
+                        flexDiv.className = 'd-flex align-items-start';
+                        
+                        // Ícone
+                        const iconI = document.createElement('i');
+                        iconI.className = `bi ${icon} ${color} fs-4 me-3 mt-1`;
+                        flexDiv.appendChild(iconI);
+                        
+                        // Conteúdo
+                        const contentDiv = document.createElement('div');
+                        contentDiv.className = 'flex-grow-1 min-width-0';
+                        
+                        // Header (Título + Badge)
+                        const headerDiv = document.createElement('div');
+                        headerDiv.className = 'd-flex justify-content-between align-items-start';
+                        
+                        const titleH6 = document.createElement('h6');
+                        titleH6.className = 'mb-1 fw-bold text-truncate';
+                        titleH6.style.fontSize = '0.9rem';
+                        titleH6.textContent = notification.title; // Safe textContent
+                        headerDiv.appendChild(titleH6);
+                        
+                        if (isUnread) {
+                            const badgeSpan = document.createElement('span');
+                            badgeSpan.className = 'badge bg-primary rounded-circle';
+                            badgeSpan.style.width = '8px';
+                            badgeSpan.style.height = '8px';
+                            badgeSpan.style.padding = '0';
+                            headerDiv.appendChild(badgeSpan);
+                        }
+                        contentDiv.appendChild(headerDiv);
+                        
+                        // Body
+                        const bodyP = document.createElement('p');
+                        bodyP.className = 'mb-1 text-muted small';
+                        bodyP.textContent = notification.body; // Safe textContent
+                        contentDiv.appendChild(bodyP);
+                        
+                        // Footer (Time)
+                        const timeSmall = document.createElement('small');
+                        timeSmall.className = 'text-muted';
+                        timeSmall.style.fontSize = '0.75rem';
+                        
+                        const clockIcon = document.createElement('i');
+                        clockIcon.className = 'bi bi-clock';
+                        timeSmall.appendChild(clockIcon);
+                        timeSmall.appendChild(document.createTextNode(' ' + timeAgo));
+                        
+                        contentDiv.appendChild(timeSmall);
+                        
+                        flexDiv.appendChild(contentDiv);
+                        itemDiv.appendChild(flexDiv);
+                        
+                        // Event Listener
+                        itemDiv.addEventListener('click', () => handleNotificationClick(itemDiv));
+                        
+                        fragment.appendChild(itemDiv);
                     });
+
+                    notificationsList.appendChild(fragment);
                 } else {
                     notificationsList.innerHTML = `
                         <div class="text-center py-4 text-muted">
@@ -314,4 +358,75 @@
             if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
             return date.toLocaleDateString('pt-BR');
         }
+
+        // ==================== PEDIDOS DE AMIZADE ====================
+        notificationsSocket.emit('getFriendRequestsCount');
+
+        notificationsSocket.on('friendRequestsCount', ({ count }) => {
+            const badge = document.getElementById('friend-requests-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        });
+
+        notificationsSocket.on('newFriendRequest', () => {
+            notificationsSocket.emit('getFriendRequestsCount');
+            // Dispara evento customizado para páginas que precisam reagir
+            document.dispatchEvent(new CustomEvent('friendRequest:new'));
+        });
+
+        notificationsSocket.on('friendRequestsUpdated', () => {
+            notificationsSocket.emit('getFriendRequestsCount');
+            // Dispara evento customizado para páginas que precisam reagir
+            document.dispatchEvent(new CustomEvent('friendRequest:updated'));
+        });
+
+        notificationsSocket.on('friendRequestAccepted', () => {
+            notificationsSocket.emit('getFriendRequestsCount');
+            // Dispara evento customizado para páginas que precisam reagir
+            document.dispatchEvent(new CustomEvent('friendRequest:accepted'));
+        });
+        
+        // ==================== STATUS DE USUÁRIOS (para página de amigos) ====================
+        notificationsSocket.on('userStatusChanged', ({ userId, status }) => {
+            // Dispara evento customizado com os dados
+            document.dispatchEvent(new CustomEvent('user:statusChanged', { 
+                detail: { userId, status } 
+            }));
+        });
+        
+        notificationsSocket.on('userStatusBatch', (statusMap) => {
+            // Dispara evento customizado com os dados
+            document.dispatchEvent(new CustomEvent('user:statusBatch', { 
+                detail: { statusMap } 
+            }));
+        });
+
+        // ==================== MENSAGENS NÃO LIDAS ====================
+        notificationsSocket.emit('getUnreadDMsCount');
+
+        notificationsSocket.on('unreadDMsCount', ({ count }) => {
+            const badge = document.getElementById('unread-dms-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        });
+
+        notificationsSocket.on('newMessage', () => {
+            notificationsSocket.emit('getUnreadDMsCount');
+        });
+
+        notificationsSocket.on('messageRead', () => {
+            notificationsSocket.emit('getUnreadDMsCount');
+        });
     </script>

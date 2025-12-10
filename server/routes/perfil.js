@@ -7,7 +7,7 @@ PerfilRouter.get('/editar', async (req, res) => {
         description: "Edite seu perfil!",
         version: process.env.VERSION,
     }
-    res.render('pages/profile-edit', {
+    res.render('pages/social/profile-edit', {
         layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST

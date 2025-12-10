@@ -8,7 +8,7 @@ ChatsRouter.get('/:id', async (req, res) => {
         description: "Converse em tempo real!",
         version: process.env.VERSION,
     }
-    res.render('pages/chat', {
+    res.render('pages/chats/chat', {
         layout: 'layouts/main',
         locals: locals,
         chatName: chatName,

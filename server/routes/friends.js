@@ -8,7 +8,7 @@ router.use(authMiddleware(0));
 
 // Página de lista de amigos
 router.get('/', async (req, res) => {
-    res.render('pages/lista-amigos', {
+    res.render('pages/social/lista-amigos', {
         layout: 'layouts/main',
         user: req.user,
         title: 'Meus Amigos',

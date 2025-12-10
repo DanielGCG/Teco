@@ -104,17 +104,17 @@ class ModalCartinha {
         const configs = {
             recebidas: {
                 titulo: '📬 Lendo Cartinha',
-                cor: 'linear-gradient(135deg, #BCA88D 0%, #A39178 100%)',
+                cor: 'linear-gradient(135deg, var(--marrom) 0%, #A39178 100%)',
                 atalhos: '<small class="text-muted">Atalhos: <kbd>F</kbd> Favoritar | <kbd>R</kbd> Responder | <kbd>D</kbd> Excluir</small>'
             },
             enviadas: {
                 titulo: '📤 Cartinha Enviada',
-                cor: 'linear-gradient(135deg, #BCA88D 0%, #A39178 100%)',
+                cor: 'linear-gradient(135deg, var(--marrom) 0%, #A39178 100%)',
                 atalhos: '<small class="text-muted">Atalhos: <kbd>E</kbd> Editar | <kbd>D</kbd> Excluir</small>'
             },
             favoritas: {
                 titulo: '⭐ Cartinha Favorita',
-                cor: 'linear-gradient(135deg, #BCA88D 0%, #A39178 100%)',
+                cor: 'linear-gradient(135deg, var(--marrom) 0%, #A39178 100%)',
                 atalhos: '<small class="text-muted">Atalhos: <kbd>D</kbd> Desfavoritar | <kbd>R</kbd> Responder | <kbd>X</kbd> Excluir</small>'
             }
         };
@@ -136,18 +136,18 @@ class ModalCartinha {
         // Definir cores baseadas no tipo - todas usam paleta bege/marrom
         const coresTipo = {
             recebidas: {
-                badge: '#BCA88D',
-                linha: '#BCA88D',
+                badge: 'var(--marrom)',
+                linha: 'var(--marrom)',
                 assinatura: '#7D8D86'
             },
             enviadas: {
-                badge: '#BCA88D',
-                linha: '#BCA88D',
+                badge: 'var(--marrom)',
+                linha: 'var(--marrom)',
                 assinatura: '#7D8D86'
             },
             favoritas: {
-                badge: '#BCA88D',
-                linha: '#BCA88D',
+                badge: 'var(--marrom)',
+                linha: 'var(--marrom)',
                 assinatura: '#7D8D86'
             }
         };
@@ -184,7 +184,7 @@ class ModalCartinha {
             <div class="mb-3">
                 <!-- Cabeçalho da carta -->
                 <div class="d-flex align-items-center mb-3 p-2" style="background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${cores.badge};">
-                    <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
+                    <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
                     <div>
                         <strong style="font-size: 1rem; color: #2d3436;">${labelNome}${nomeExibido}</strong>
                         <div><small class="text-muted">📅 ${formatarData(cartinha.dataEnvio)}</small></div>
@@ -647,7 +647,7 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig) {
             
             <div class="envelope-header">
                 <div class="remetente-info">
-                    <img src="${usuario.avatar}" alt="Avatar" class="avatar-carta">
+                    <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta">
                     <div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <span class="contador-cartas">

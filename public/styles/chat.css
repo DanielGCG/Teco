@@ -35,7 +35,7 @@
 }
 
 .mensagem.outrousuario {
-    background-color: #dfe6e9;
+    background-color: var(--fundo-chat);
     align-self: flex-start;
     color: black;
 }

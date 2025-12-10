@@ -1,68 +1,69 @@
 const express = require("express");
 const NotificationsRouter = express.Router();
-const pool = require("../config/bd");
+const { Notification } = require("../models");
+const validate = require("../middlewares/validate");
+const { Op } = require("sequelize");
+const {
+    getNotificationsSchema,
+    notificationIdSchema
+} = require("../validators/notifications.validator");
 
 // ==================== Endpoints de Notificações ====================
 
 // GET /notifications - Listar notificações do usuário
-NotificationsRouter.get('/', async (req, res) => {
-    const limit = parseInt(req.query.limit) || 20;
-    const page = parseInt(req.query.page) || 1;
+NotificationsRouter.get('/', validate(getNotificationsSchema, 'query'), async (req, res) => {
+    const { limit = 20, page = 1, unread } = req.query;
     const offset = (page - 1) * limit;
-    const unreadOnly = req.query.unread === 'true';
+    const unreadOnly = unread === 'true';
 
     try {
-        const connection = await pool.getConnection();
-
-        let query;
-        let queryParams = [req.user.id];
-
+        let whereClause = { user_id: req.user.id };
+        
         if (unreadOnly) {
-            // Apenas não lidas
-            query = `
-                SELECT id, type, title, body, link, data, read_at, created_at
-                FROM notifications
-                WHERE user_id = ? AND read_at IS NULL
-                ORDER BY created_at DESC
-                LIMIT ${limit} OFFSET ${offset}
-            `;
-        } else {
-            // Todas não lidas + até 5 lidas mais recentes
-            query = `
-                (
-                    SELECT id, type, title, body, link, data, read_at, created_at
-                    FROM notifications
-                    WHERE user_id = ? AND read_at IS NULL
-                    ORDER BY created_at DESC
-                )
-                UNION ALL
-                (
-                    SELECT id, type, title, body, link, data, read_at, created_at
-                    FROM notifications
-                    WHERE user_id = ? AND read_at IS NOT NULL
-                    ORDER BY created_at DESC
-                    LIMIT 5
-                )
-                ORDER BY read_at IS NULL DESC, created_at DESC
-                LIMIT ${limit}
-            `;
-            queryParams.push(req.user.id);
+            whereClause.read_at = null;
         }
 
-        const [notifications] = await connection.execute(query, queryParams);
+        // Busca notificações
+        const { count, rows: notifications } = await Notification.findAndCountAll({
+            where: whereClause,
+            order: [
+                [Notification.sequelize.literal('read_at IS NULL'), 'DESC'],
+                ['created_at', 'DESC']
+            ],
+            limit: unreadOnly ? limit : undefined,
+            offset: unreadOnly ? offset : undefined
+        });
 
-        // Contagem total
-        let countQuery = `SELECT COUNT(*) as total FROM notifications WHERE user_id = ?`;
-        if (unreadOnly) countQuery += ` AND read_at IS NULL`;
+        // Se não for apenas não lidas, aplicar lógica especial
+        let finalNotifications = notifications;
+        if (!unreadOnly) {
+            // Pega todas não lidas
+            const unreadNotifs = await Notification.findAll({
+                where: {
+                    user_id: req.user.id,
+                    read_at: null
+                },
+                order: [['created_at', 'DESC']]
+            });
 
-        const [countResult] = await connection.execute(countQuery, [req.user.id]);
+            // Pega até 5 lidas mais recentes
+            const readNotifs = await Notification.findAll({
+                where: {
+                    user_id: req.user.id,
+                    read_at: { [Op.ne]: null }
+                },
+                order: [['created_at', 'DESC']],
+                limit: 5
+            });
 
-        connection.release();
+            // Combina e limita
+            finalNotifications = [...unreadNotifs, ...readNotifs].slice(0, limit);
+        }
 
         res.json({
             success: true,
-            notifications,
-            total: countResult[0].total,
+            notifications: finalNotifications,
+            total: count,
             page,
             limit
         });
@@ -75,16 +76,14 @@ NotificationsRouter.get('/', async (req, res) => {
 // GET /notifications/count - Contagem de notificações não lidas
 NotificationsRouter.get('/count', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
+        const count = await Notification.count({
+            where: {
+                user_id: req.user.id,
+                read_at: null
+            }
+        });
 
-        const [result] = await connection.execute(
-            `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read_at IS NULL`,
-            [req.user.id]
-        );
-
-        connection.release();
-
-        res.json({ success: true, count: result[0].count });
+        res.json({ success: true, count });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao buscar contagem" });
@@ -92,30 +91,23 @@ NotificationsRouter.get('/count', async (req, res) => {
 });
 
 // PUT /notifications/:id/read - Marcar notificação como lida
-NotificationsRouter.put('/:id/read', async (req, res) => {
-    const notificationId = parseInt(req.params.id);
+NotificationsRouter.put('/:id/read', validate(notificationIdSchema, 'params'), async (req, res) => {
+    const notificationId = req.params.id;
 
     try {
-        const connection = await pool.getConnection();
+        const notification = await Notification.findOne({
+            where: {
+                id: notificationId,
+                user_id: req.user.id
+            }
+        });
 
-        // Verifica se a notificação pertence ao usuário
-        const [notification] = await connection.execute(
-            `SELECT id FROM notifications WHERE id = ? AND user_id = ?`,
-            [notificationId, req.user.id]
-        );
-
-        if (notification.length === 0) {
-            connection.release();
+        if (!notification) {
             return res.status(404).json({ message: "Notificação não encontrada" });
         }
 
-        // Marca como lida
-        await connection.execute(
-            `UPDATE notifications SET read_at = NOW() WHERE id = ?`,
-            [notificationId]
-        );
+        await notification.update({ read_at: new Date() });
 
-        connection.release();
         res.json({ success: true, message: "Notificação marcada como lida" });
     } catch (err) {
         console.error(err);
@@ -126,14 +118,16 @@ NotificationsRouter.put('/:id/read', async (req, res) => {
 // PUT /notifications/read-all - Marcar todas como lidas
 NotificationsRouter.put('/read-all', async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-
-        await connection.execute(
-            `UPDATE notifications SET read_at = NOW() WHERE user_id = ? AND read_at IS NULL`,
-            [req.user.id]
+        await Notification.update(
+            { read_at: new Date() },
+            {
+                where: {
+                    user_id: req.user.id,
+                    read_at: null
+                }
+            }
         );
 
-        connection.release();
         res.json({ success: true, message: "Todas as notificações foram marcadas como lidas" });
     } catch (err) {
         console.error(err);
@@ -142,20 +136,18 @@ NotificationsRouter.put('/read-all', async (req, res) => {
 });
 
 // DELETE /notifications/:id - Deletar notificação
-NotificationsRouter.delete('/:id', async (req, res) => {
-    const notificationId = parseInt(req.params.id);
+NotificationsRouter.delete('/:id', validate(notificationIdSchema, 'params'), async (req, res) => {
+    const notificationId = req.params.id;
 
     try {
-        const connection = await pool.getConnection();
+        const result = await Notification.destroy({
+            where: {
+                id: notificationId,
+                user_id: req.user.id
+            }
+        });
 
-        const [result] = await connection.execute(
-            `DELETE FROM notifications WHERE id = ? AND user_id = ?`,
-            [notificationId, req.user.id]
-        );
-
-        connection.release();
-
-        if (result.affectedRows === 0) {
+        if (result === 0) {
             return res.status(404).json({ success: false, message: "Notificação não encontrada" });
         }
 
@@ -169,15 +161,16 @@ NotificationsRouter.delete('/:id', async (req, res) => {
 // ==================== Função helper para criar notificações ====================
 async function createNotification({ userId, type, title, body, link = null, data = null }) {
     try {
-        const connection = await pool.getConnection();
+        const notification = await Notification.create({
+            user_id: userId,
+            type,
+            title,
+            body,
+            link,
+            data: data ? JSON.stringify(data) : null
+        });
 
-        const [result] = await connection.execute(
-            `INSERT INTO notifications (user_id, type, title, body, link, data) VALUES (?, ?, ?, ?, ?, ?)`,
-            [userId, type, title, body, link, data ? JSON.stringify(data) : null]
-        );
-
-        connection.release();
-        return result.insertId;
+        return notification.id;
     } catch (err) {
         console.error('[createNotification] Erro:', err);
         return null;
