@@ -74,22 +74,24 @@
     }
 </style>
 
+<script src="/js/global/socket-connector.js"></script>
+<script>
+    // Inicializa conexão Socket.IO global
+    const notificationsSocket = SocketConnector.init();
+    window.appSocket = notificationsSocket;
+    
+    const notificationsBadge = document.getElementById('notificationsBadge');
+    const notificationsList = document.getElementById('notificationsList');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
 
-    <script>
-        // Conexão Socket.IO global - carregada uma vez no layout principal
-        // IMPORTANTE: todas as páginas devem usar 'notificationsSocket' ou 'window.appSocket'
-        const notificationsSocket = io();
-        window.appSocket = notificationsSocket; // Disponibiliza globalmente
-        
-        const notificationsBadge = document.getElementById('notificationsBadge');
-        const notificationsList = document.getElementById('notificationsList');
-        const markAllReadBtn = document.getElementById('markAllReadBtn');
-
-        // Join user room
+    // Função de reconexão - executada ao conectar/reconectar
+    function onSocketConnect() {
         notificationsSocket.emit('joinUserRoom');
-
-        // Request initial count
         notificationsSocket.emit('getNotificationsCount');
+    }
+
+    // Registra handler de reconexão
+    SocketConnector.onReconnect(onSocketConnect);
 
         // ==================== Rastreamento de Atividade do Usuário ====================
         let activityTimeout;

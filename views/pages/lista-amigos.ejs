@@ -162,7 +162,6 @@
 <script src="/js/global/user-utils.js"></script>
 <script src="/js/global/friendship-utils.js"></script>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
     // Estado da aplicação
     let friends = [];
@@ -170,7 +169,7 @@
     let sent = [];
     
     // Acesso ao socket global
-    const friendsSocket = window.appSocket || notificationsSocket;
+    const friendsSocket = window.appSocket;
     
     if (!friendsSocket) {
         console.error('[Lista Amigos] Socket.IO não disponível!');
