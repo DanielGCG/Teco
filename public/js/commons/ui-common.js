@@ -3,7 +3,10 @@
  * Reutilizável em DMs, Lista de Amigos, etc.
  */
 
-const UIUtils = (() => {
+if (typeof window.UIUtils !== 'undefined') {
+    console.warn('[UIUtils] Já foi carregado anteriormente');
+} else {
+    window.UIUtils = (() => {
     // Retorna a cor do status do usuário ('online', 'ausente', 'offline')
     function getStatusColor(status) {
         switch(status) {
@@ -278,9 +281,5 @@ const UIUtils = (() => {
         createActionButton,
         createActionLink
     };
-})();
-
-// Exporta para uso global
-if (typeof window !== 'undefined') {
-    window.UIUtils = UIUtils;
+    })();
 }

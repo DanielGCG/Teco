@@ -139,6 +139,13 @@ DMsRouter.get('/', async (req, res) => {
             });
         }
 
+        // Ordena conversas por data da última mensagem (mais recentes primeiro)
+        dmList.sort((a, b) => {
+            const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+            const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+            return tb - ta;
+        });
+
         res.json(dmList);
 
     } catch (err) {

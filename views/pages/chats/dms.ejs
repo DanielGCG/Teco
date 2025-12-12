@@ -63,7 +63,7 @@
                 
                 <div class="card-footer border-top" id="chat-input-footer" style="display: none;">
                     <div class="input-group flex-nowrap" style="align-items: stretch;">
-                        <textarea id="dm-input-msg" class="form-control" placeholder="Digite sua mensagem... (Shift+Enter para quebra de linha)" disabled style="resize: none; max-height: 170px; min-height: 40px; line-height: 1.25; overflow-y: auto;"></textarea>
+                        <textarea id="dm-input-msg" class="form-control" placeholder="Digite sua mensagem..." disabled style="resize: none; max-height: 170px; min-height: 40px; line-height: 1.25; overflow-y: auto;"></textarea>
                         <button id="dm-send-btn" class="btn btn-primary" disabled>Enviar</button>
                     </div>
                 </div>
@@ -142,8 +142,9 @@
             if (selectedChatId === conversa.id) card.classList.add('active');
             card.setAttribute('data-chat-id', conversa.id);
             card.setAttribute('data-user-id', conversa.otherUser?.id);
+            card.setAttribute('data-last-message-at', conversa.lastMessageAt || '0');
             card.addEventListener('click', () => abrirDM(conversa.id, conversa.otherUser?.username, conversa.otherUser));
-            dmList.prepend(card);
+            dmList.appendChild(card);
         });
 
         setTimeout(() => {
@@ -175,11 +176,27 @@
             if (selectedChatId === conversa.id) newCard.classList.add('active');
             newCard.setAttribute('data-chat-id', conversa.id);
             newCard.setAttribute('data-user-id', conversa.otherUser?.id);
+            newCard.setAttribute('data-last-message-at', conversa.lastMessageAt || '0');
             newCard.addEventListener('click', () => abrirDM(conversa.id, conversa.otherUser?.username, conversa.otherUser));
             
-            // Remove card antigo e adiciona novo no topo
+            // Remove card antigo
             if (existingCard) existingCard.remove();
-            dmList.prepend(newCard);
+            
+            // Insere na posição correta baseado em lastMessageAt
+            const allCards = [...dmList.querySelectorAll('[data-chat-id]')];
+            const newTime = new Date(conversa.lastMessageAt || 0).getTime();
+            let inserted = false;
+            
+            for (const card of allCards) {
+                const cardTime = new Date(card.getAttribute('data-last-message-at') || 0).getTime();
+                if (newTime > cardTime) {
+                    dmList.insertBefore(newCard, card);
+                    inserted = true;
+                    break;
+                }
+            }
+            
+            if (!inserted) dmList.appendChild(newCard);
             
             // Atualiza status do usuário
             if (conversa.otherUser?.id) {
@@ -266,15 +283,16 @@
     });
 
     // ---------------- Socket.IO Events ----------------
-    socket.on('joinedChat', ({ chatId, success }) => {
-        if (success) {
-            console.log('[Socket] Entrou no chat:', chatId);
+    socket.on('joinedChat', (data) => {
+        if (data && data.success) {
+            console.log('[Socket] Entrou no chat:', data.chatId);
         }
     });
 
-    socket.on('messagesLoaded', ({ chatId, page, messages, hasMore }) => {
-        if (chatId !== selectedChatId) return;
+    socket.on('messagesLoaded', (data) => {
+        if (!data || data.chatId !== selectedChatId) return;
         
+        const { chatId, messages } = data;
         const msgs = messages.map(msg => ({
             id: msg.id,
             username: msg.User?.username || 'Usuário',
@@ -297,9 +315,11 @@
         setTimeout(() => atualizarCardDM(chatId), 300);
     });
 
-    socket.on('newMessage', ({ chatId, message } = {}) => {
+    socket.on('newMessage', (data) => {
         // Ignora eventos sem dados (usado apenas para atualizar contagem de notificações)
-        if (!chatId || !message?.mensagem) return;
+        if (!data || !data.chatId || !data.message?.mensagem) return;
+        
+        const { chatId, message } = data;
         
         if (chatId === selectedChatId) {
             // Adiciona mensagem ao chat atual
@@ -327,7 +347,11 @@
         atualizarCardDM(chatId);
     });
 
-    socket.on('messageRead', ({ chatId, userId, lastReadMessageId }) => {
+    socket.on('messageRead', (data) => {
+        if (!data) return;
+        
+        const { chatId, userId, lastReadMessageId } = data;
+        
         if (userId !== currentUser.id && chatId === selectedChatId) {
             // Atualiza status de leitura das mensagens no chat aberto
             allMessages.forEach(msg => {
@@ -340,7 +364,11 @@
         atualizarCardDM(chatId);
     });
 
-    socket.on('userStatusChanged', ({ userId, status }) => {
+    socket.on('userStatusChanged', (data) => {
+        if (!data) return;
+        
+        const { userId, status } = data;
+        
         document.querySelectorAll('[data-chat-id]').forEach(card => {
             if (card.getAttribute('data-user-id') == userId) {
                 const indicator = card.querySelector('.position-absolute.rounded-circle');
