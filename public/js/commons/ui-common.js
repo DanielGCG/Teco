@@ -210,12 +210,6 @@ if (typeof window.UIUtils !== 'undefined') {
         return `há ${Math.floor(days / 365)} anos`;
     }
 
-    // Formata tempo (HH:MM)
-    function formatTime(dateStr) {
-        const date = new Date(dateStr);
-        return `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
-    }
-
     // Cria botão de ação
     function createActionButton(config) {
         const {
@@ -277,7 +271,6 @@ if (typeof window.UIUtils !== 'undefined') {
         createUserCard,
         updateUserStatus,
         formatarData,
-        formatTime,
         createActionButton,
         createActionLink
     };

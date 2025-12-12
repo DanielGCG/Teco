@@ -13,7 +13,7 @@ const FriendshipAPI = (() => {
         } = options;
 
         try {
-            const res = await fetch('/amigos/api/request', {
+            const res = await fetch('/api/friends/request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -48,7 +48,7 @@ const FriendshipAPI = (() => {
         } = options;
 
         try {
-            const res = await fetch(`/amigos/api/accept/${friendshipId}`, {
+            const res = await fetch(`/api/friends/accept/${friendshipId}`, {
                 method: 'PUT',
                 credentials: 'include'
             });
@@ -86,7 +86,7 @@ const FriendshipAPI = (() => {
         }
 
         try {
-            const res = await fetch(`/amigos/api/reject/${friendshipId}`, {
+            const res = await fetch(`/api/friends/reject/${friendshipId}`, {
                 method: 'PUT',
                 credentials: 'include'
             });
@@ -124,7 +124,7 @@ const FriendshipAPI = (() => {
         }
 
         try {
-            const res = await fetch(`/amigos/api/cancel/${friendshipId}`, {
+            const res = await fetch(`/api/friends/cancel/${friendshipId}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
@@ -162,7 +162,7 @@ const FriendshipAPI = (() => {
         }
 
         try {
-            const res = await fetch(`/amigos/api/${userId}`, {
+            const res = await fetch(`/api/friends/${userId}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
@@ -189,7 +189,7 @@ const FriendshipAPI = (() => {
     // Verifica o status de amizade com um usuário
     async function verificarStatus(userId) {
         try {
-            const res = await fetch(`/amigos/api/check/${userId}`, { 
+            const res = await fetch(`/api/friends/check/${userId}`, { 
                 credentials: 'include' 
             });
             const data = await res.json();
@@ -203,7 +203,7 @@ const FriendshipAPI = (() => {
     // Carrega lista de amigos
     async function carregarAmigos() {
         try {
-            const res = await fetch('/amigos/api/', { credentials: 'include' });
+            const res = await fetch('/api/friends/', { credentials: 'include' });
             if (!res.ok) throw new Error('Erro ao carregar amigos');
             const data = await res.json();
             return { success: true, friends: data.friends || [] };
@@ -216,7 +216,7 @@ const FriendshipAPI = (() => {
     // Carrega pedidos recebidos
     async function carregarPedidosRecebidos() {
         try {
-            const res = await fetch('/amigos/api/requests', { credentials: 'include' });
+            const res = await fetch('/api/friends/requests', { credentials: 'include' });
             if (!res.ok) throw new Error('Erro ao carregar pedidos');
             const data = await res.json();
             return { success: true, requests: data.requests || [] };
@@ -229,7 +229,7 @@ const FriendshipAPI = (() => {
     // Carrega pedidos enviados
     async function carregarPedidosEnviados() {
         try {
-            const res = await fetch('/amigos/api/sent', { credentials: 'include' });
+            const res = await fetch('/api/friends/sent', { credentials: 'include' });
             if (!res.ok) throw new Error('Erro ao carregar pedidos enviados');
             const data = await res.json();
             return { success: true, sent: data.sent || [] };

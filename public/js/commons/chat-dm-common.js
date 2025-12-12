@@ -4,6 +4,12 @@
  */
 
 const ChatUtils = (() => {
+    // Formata tempo (HH:MM)
+    function formatTime(dateStr) {
+        const date = new Date(dateStr);
+        return `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+    }
+
     // Renderiza uma única mensagem no container
     function renderMessage(message, container, options = {}) {
         const {
@@ -36,11 +42,20 @@ const ChatUtils = (() => {
         contentEl.textContent = message.mensagem || message.text;
         msgDiv.appendChild(contentEl);
 
-        // Tempo
+        // Tempo e checks de visualização
         if (showTime && message.createdAt) {
             const metaEl = document.createElement('div');
             metaEl.className = 'msg-meta';
-            metaEl.textContent = UIUtils.formatTime(message.createdAt);
+            metaEl.textContent = formatTime(message.createdAt);
+            
+            // Adiciona check de visualização para mensagens próprias em DMs
+            if (isMine && message.seen !== undefined) {
+                const checkEl = document.createElement('span');
+                checkEl.className = `msg-check ${message.seen ? 'read' : ''}`;
+                checkEl.textContent = message.seen ? '✓✓' : '✓';
+                metaEl.appendChild(checkEl);
+            }
+            
             msgDiv.appendChild(metaEl);
         }
 
@@ -77,8 +92,11 @@ const ChatUtils = (() => {
         messages.forEach(msgEl => {
             const msgId = parseInt(msgEl.dataset.msgId);
             if (msgId <= lastReadMessageId) {
-                const metaEl = msgEl.querySelector('.msg-meta');
-                if (metaEl) metaEl.textContent = metaEl.textContent.replace('✔', '✔✔');
+                const checkEl = msgEl.querySelector('.msg-check');
+                if (checkEl) {
+                    checkEl.textContent = '✓✓';
+                    checkEl.classList.add('read');
+                }
             }
         });
     }
@@ -225,6 +243,7 @@ const ChatUtils = (() => {
 
     // API pública
     return {
+        formatTime,
         renderMessage,
         renderMessages,
         updateReadStatus,

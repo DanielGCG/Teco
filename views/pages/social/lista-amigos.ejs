@@ -396,7 +396,7 @@
                 // Para cada usuário, verificar status de amizade
                 const usuariosComStatus = await Promise.all(
                     usuarios.map(async (user) => {
-                        const statusRes = await fetch(`/amigos/api/check/${user.id}`, { credentials: 'include' });
+                        const statusRes = await fetch(`/api/friends/check/${user.id}`, { credentials: 'include' });
                         const statusData = await statusRes.json();
                         return { ...user, friendshipStatus: statusData.status };
                     })
@@ -484,7 +484,13 @@
         }
 
         async function removerAmigo(userId) {
+            const confirmado = await confirm('Tem certeza que deseja remover este amigo?');
+            if (!confirmado) {
+                return;
+            }
+            
             await FriendshipAPI.removerAmigo(userId, {
+                confirmMessage: null, // Desativa confirmação na API já que fizemos aqui
                 onSuccess: () => carregarAmigos()
             });
         }
