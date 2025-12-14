@@ -56,15 +56,6 @@ class ModalCartinha {
         this.modalElement = modal;
     }
 
-    /**
-     * Abre o modal com a configuração especificada
-     * @param {Object} config - Configuração do modal
-     * @param {Object} config.cartinha - Dados da cartinha
-     * @param {Object} config.usuario - Dados do usuário (remetente ou destinatário)
-     * @param {string} config.tipo - Tipo de página: 'recebidas', 'enviadas', 'favoritas'
-     * @param {Object} config.acoes - Ações disponíveis no modal
-     * @param {Object} config.estilos - Estilos personalizados (cores, etc)
-     */
     abrir(config) {
         this.currentConfig = config;
         this.currentCartinha = config.cartinha;
@@ -232,19 +223,21 @@ class ModalCartinha {
         }
 
         let botoesHTML = '';
-        
         acoes.forEach(acao => {
             const disabled = acao.desabilitado ? 'disabled' : '';
-            const title = acao.titulo || '';
             const classe = acao.classe || 'btn-primary';
-            
+            const texto = acao.label || acao.texto || '';
+            const icone = acao.icone || '';
+
+            const btnTitle = acao.title || acao.label || acao.texto || '';
             botoesHTML += `
                 <button type="button" 
                         class="btn ${classe}" 
-                        id="modal-btn-${acao.id}"
+                        id="acao-${acao.id}"
+                        data-acao-id="${acao.id}"
                         ${disabled}
-                        title="${title}">
-                    ${acao.icone} ${acao.texto}
+                        title="${btnTitle}">
+                    ${icone} ${texto}
                 </button>
             `;
         });
@@ -257,7 +250,7 @@ class ModalCartinha {
 
         // Adicionar event listeners nos botões
         acoes.forEach(acao => {
-            const btn = document.getElementById(`modal-btn-${acao.id}`);
+            const btn = document.getElementById(`acao-${acao.id}`);
             if (btn && acao.callback) {
                 btn.addEventListener('click', () => {
                     acao.callback(this.currentCartinha, this.currentUsuario);
@@ -320,11 +313,16 @@ class ModalCartinha {
     }
 }
 
-// Instância global do modal
+// Instância global do modal (mantemos no window para compatibilidade modal)
 window.modalCartinha = new ModalCartinha();
 
+// Hooks e estado do módulo (evita uso de múltiplos globals na página)
+let cartinhasHooks = {};
+let pilhaAtivaIndex = 0;
+let totalPilhas = 0;
+
 // ==================== FUNÇÕES DE RENDERIZAÇÃO DE PILHAS ====================
-function renderizarPilhasCartinhas(usuariosProcessados, containerSelector = '.container-pilhas') {
+function renderizarPilhasCartinhas(usuariosProcessados, containerSelector = '.container-pilhas', hooks = {}) {
     const containerPilhas = document.querySelector(containerSelector);
     if (!containerPilhas) return;
 
@@ -354,31 +352,32 @@ function renderizarPilhasCartinhas(usuariosProcessados, containerSelector = '.co
 
     containerPilhas.innerHTML = html;
     
-    // Definir pilha ativa global
-    window.pilhaAtivaIndex = 0;
-    window.totalPilhas = usuariosProcessados.length;
-    
+    // salvar hooks e estado local
+    cartinhasHooks = hooks || {};
+    pilhaAtivaIndex = 0;
+    totalPilhas = usuariosProcessados.length;
+
     // Renderizar apenas as pilhas visíveis inicialmente
-    renderizarPilhasVisiveis();
+    renderizarPilhasVisiveis(usuariosProcessados);
 }
 
 // ==================== Controle de pilhas ====================
-function trocarPilhaAnterior() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex > 0 ? window.pilhaAtivaIndex - 1 : window.totalPilhas - 1;
-    trocarPilhaAtiva(novoIndex);
+function trocarPilhaAnterior(usuarios) {
+    if (totalPilhas <= 1) return;
+
+    const novoIndex = pilhaAtivaIndex > 0 ? pilhaAtivaIndex - 1 : totalPilhas - 1;
+    trocarPilhaAtiva(novoIndex, usuarios);
 }
 
-function trocarProximaPilha() {
-    if (window.totalPilhas <= 1) return;
-    
-    const novoIndex = window.pilhaAtivaIndex < window.totalPilhas - 1 ? window.pilhaAtivaIndex + 1 : 0;
-    trocarPilhaAtiva(novoIndex);
+function trocarProximaPilha(usuarios) {
+    if (totalPilhas <= 1) return;
+
+    const novoIndex = pilhaAtivaIndex < totalPilhas - 1 ? pilhaAtivaIndex + 1 : 0;
+    trocarPilhaAtiva(novoIndex, usuarios);
 }
 
-function trocarPilhaAtiva(novoIndex) {
-    if (novoIndex === window.pilhaAtivaIndex) return;
+function trocarPilhaAtiva(novoIndex, usuarios) {
+    if (novoIndex === pilhaAtivaIndex) return;
     
     const pilhas = Array.from(document.querySelectorAll('.pilha-cartas'));
     
@@ -389,7 +388,7 @@ function trocarPilhaAtiva(novoIndex) {
     
     // Aplicar novas posições
     pilhas.forEach((pilha, index) => {
-        const posicaoRelativa = (index - novoIndex + window.totalPilhas) % window.totalPilhas;
+        const posicaoRelativa = (index - novoIndex + totalPilhas) % totalPilhas;
         
         if (posicaoRelativa === 0) {
             pilha.classList.add('ativa');
@@ -417,42 +416,222 @@ function trocarPilhaAtiva(novoIndex) {
         }
     });
     
-    window.pilhaAtivaIndex = novoIndex;
-    
+    pilhaAtivaIndex = novoIndex;
+
     // Renderizar pilhas visíveis após a troca
-    renderizarPilhasVisiveis();
-    
+    renderizarPilhasVisiveis(usuarios);
+
     // Descarregar pilhas que não estão mais visíveis para economizar memória
     setTimeout(descarregarPilhasInvisiveis, 500);
 }
 
-function lerCartaAtiva() {
+function lerCartaAtiva(usuarios) {
     const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
     if (!pilhaAtiva) return;
-    
+
     const cartaTopo = pilhaAtiva.querySelector('.carta-empilhada.topo');
     if (cartaTopo) {
         const cartinhaId = parseInt(cartaTopo.dataset.cartinhaId);
-        // Chamar função global definida pela página
-        if (typeof window.abrirCartinhaCallback === 'function') {
-            window.abrirCartinhaCallback(cartinhaId);
+        if (cartinhasHooks && typeof cartinhasHooks.abrirCartinha === 'function') {
+            cartinhasHooks.abrirCartinha(cartinhaId, usuarios);
+            return;
+        }
+
+        // fallback: abrir modal básico
+        const cartinha = encontrarCartinha(cartinhaId, usuarios);
+        const usuario = encontrarUsuarioPorCartinha(cartinhaId, usuarios);
+        if (cartinha && usuario) {
+            window.modalCartinha.abrir({ cartinha, usuario, tipo: window.tipoCartinhas || 'recebidas' });
+        } else {
+            console.warn('lerCartaAtiva: sem hook e não foi possível localizar cartinha/usuario');
         }
     }
 }
 
+// ==================== CICLO DE CARTAS (GENÉRICO) ====================
+// Navega cartas dentro da pilha ativa: dir = +1 (próxima) ou -1 (anterior)
+function navegarCarta(dir, usuarios) {
+    const pilhaAtiva = document.querySelector('.pilha-cartas.ativa');
+    if (!pilhaAtiva) return;
+    const usuarioIndex = parseInt(pilhaAtiva.dataset.usuarioIndex, 10);
+    const usuario = Array.isArray(usuarios) ? usuarios[usuarioIndex] : null;
+    if (!usuario || !Array.isArray(usuario.cartinhas) || usuario.cartinhas.length <= 1) return;
+
+    const total = usuario.cartinhas.length;
+    if (!Number.isInteger(usuario.indiceCiclo)) usuario.indiceCiclo = 0;
+
+    usuario.indiceCiclo = (usuario.indiceCiclo + dir + total) % total;
+
+    // Re-render da pilha ativa
+    pilhaAtiva.querySelectorAll('.carta-empilhada').forEach(n => n.remove());
+    carregarCartas(pilhaAtiva, usuarioIndex, usuarios);
+}
+
+// ==================== CARREGAR CARTAS (GENÉRICO) ====================
+function carregarCartas(pilhaElement, usuarioIndex, usuarios) {
+    const usuario = Array.isArray(usuarios) ? usuarios[usuarioIndex] : null;
+    if (!usuario) return;
+
+    const cartasDoUsuario = usuario.cartinhas || [];
+    const totalCartas = cartasDoUsuario.length;
+    if (totalCartas === 0) return;
+
+    if (!Number.isInteger(usuario.indiceCiclo)) usuario.indiceCiclo = 0;
+
+    const tipoConfig = window.tipoCartinhas || 'recebidas';
+    const renderCount = Math.min(3, totalCartas);
+
+    let html = '';
+    for (let i = 0; i < renderCount; i++) {
+        const realIndex = (usuario.indiceCiclo + i) % totalCartas;
+        const cartinha = cartasDoUsuario[realIndex];
+        html += construirHtmlCartinha(cartinha, usuario, i, totalCartas, tipoConfig, realIndex);
+    }
+
+    pilhaElement.insertAdjacentHTML('beforeend', html);
+    pilhaElement.dataset.carregada = 'true';
+
+    // conectar handlers: abrir ao clicar na carta topo ou no botão específico
+    const cartaTopo = pilhaElement.querySelector('.carta-empilhada.topo');
+    if (cartaTopo) {
+        const id = parseInt(cartaTopo.dataset.cartinhaId, 10);
+        cartaTopo.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-acao')) return; // ignore clicks on action buttons
+            if (cartinhasHooks && typeof cartinhasHooks.abrirCartinha === 'function') {
+                cartinhasHooks.abrirCartinha(id, usuarios);
+                return;
+            }
+
+            // fallback: abrir modal básico
+            const cartinha = encontrarCartinha(id, usuarios);
+            const usuarioLocal = encontrarUsuarioPorCartinha(id, usuarios);
+            if (cartinha && usuarioLocal) window.modalCartinha.abrir({ cartinha, usuario: usuarioLocal, tipo: tipoConfig });
+        });
+
+        const abrirBtn = cartaTopo.querySelector('[data-action="abrir"]');
+        if (abrirBtn) abrirBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            if (cartinhasHooks && typeof cartinhasHooks.abrirCartinha === 'function') {
+                cartinhasHooks.abrirCartinha(id, usuarios);
+                return;
+            }
+            const cartinha = encontrarCartinha(id, usuarios);
+            const usuarioLocal = encontrarUsuarioPorCartinha(id, usuarios);
+            if (cartinha && usuarioLocal) window.modalCartinha.abrir({ cartinha, usuario: usuarioLocal, tipo: tipoConfig });
+        });
+    }
+}
+
+// ==================== RENDERIZAR CARTINHAS (GENÉRICO) ====================
+function renderizarCartinhas(usuariosProcessados, hooks = {}) {
+    const container = document.getElementById('cartinhas-container');
+    const semCartinhas = document.getElementById('sem-cartinhas');
+
+    if (!usuariosProcessados || usuariosProcessados.length === 0) {
+        if (container) container.style.display = 'none';
+        if (semCartinhas) semCartinhas.style.display = 'block';
+        return;
+    }
+
+    usuariosProcessados.forEach(u => {
+        u.naoLidas = u.cartinhas.filter(c => !c.lida).length;
+    });
+
+    usuariosProcessados.sort((a, b) => {
+        if (a.naoLidas !== b.naoLidas) return b.naoLidas - a.naoLidas;
+        const dataA = new Date(a.cartinhas[0]?.dataEnvio || 0);
+        const dataB = new Date(b.cartinhas[0]?.dataEnvio || 0);
+        return dataB - dataA;
+    });
+
+    const containerPilhas = container.querySelector('.container-pilhas');
+    let html = '';
+
+    usuariosProcessados.forEach((usuario, usuarioIndex) => {
+        const cartasNaoLidas = usuario.naoLidas;
+        let classPosicao = '';
+        
+        if (usuarioIndex === 0) classPosicao = 'ativa';
+        else if (usuarioIndex === 1) classPosicao = 'segunda';
+        else if (usuarioIndex === 2) classPosicao = 'terceira';
+        else if (usuarioIndex === 3) classPosicao = 'quarta';
+        else classPosicao = 'fundo';
+
+        html += `
+            <div class="pilha-cartas ${classPosicao}" 
+                 id="pilha-${usuario.userId}" 
+                 data-usuario-index="${usuarioIndex}" 
+                 data-carregada="false">
+                ${usuarioIndex === 0 ? `
+                    <div class="instrucoes-pilha">
+                        🎯 Pilha ativa • ←→ ciclar • Enter: ver
+                    </div>
+                ` : ''}
+                ${cartasNaoLidas > 0 ? `<div class="contador-pilha">${cartasNaoLidas}</div>` : ''}
+            </div>
+        `;
+    });
+
+    containerPilhas.innerHTML = html;
+    if (container) container.style.display = 'block';
+    if (semCartinhas) semCartinhas.style.display = 'none';
+
+    // salvar hooks e estado local
+    cartinhasHooks = hooks || {};
+    pilhaAtivaIndex = 0;
+    totalPilhas = usuariosProcessados.length;
+    renderizarPilhasVisiveis(usuariosProcessados);
+}
+
+// ==================== INICIALIZAÇÃO DE NAVEGAÇÃO ====================
+function inicializarNavegacaoCartinhas(usuarios, hooks = {}) {
+    if (!Array.isArray(usuarios) || usuarios.length === 0) return;
+    cartinhasHooks = hooks || {};
+
+    document.addEventListener('keydown', (e) => {
+        const modalAberto = document.querySelector('.modal.show');
+        if (modalAberto) return;
+
+        switch(e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                // esquerda: carta anterior
+                navegarCarta(-1, usuarios);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                // direita: próxima carta
+                navegarCarta(1, usuarios);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                // cima: trocar usuário (pilha anterior)
+                trocarPilhaAnterior(usuarios);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                // baixo: trocar usuário (próxima pilha)
+                trocarProximaPilha(usuarios);
+                break;
+            case 'Enter':
+            case ' ':
+                e.preventDefault();
+                lerCartaAtiva(usuarios);
+                break;
+        }
+    });
+}
+
 // ==================== Carregamento sob demanda ====================
-function renderizarPilhasVisiveis() {
+function renderizarPilhasVisiveis(usuarios) {
     const pilhasVisiveis = document.querySelectorAll('.pilha-cartas.ativa, .pilha-cartas.segunda, .pilha-cartas.terceira');
     
     pilhasVisiveis.forEach(pilha => {
         const usuarioIndex = parseInt(pilha.dataset.usuarioIndex);
         const carregada = pilha.dataset.carregada === 'true';
         
-        if (!carregada && window.usuariosProcessados && window.usuariosProcessados[usuarioIndex]) {
-            // Chamar função de carregamento específica da página
-            if (typeof window.carregarCartasCallback === 'function') {
-                window.carregarCartasCallback(pilha, usuarioIndex);
-            }
+        if (!carregada && Array.isArray(usuarios) && usuarios[usuarioIndex]) {
+            carregarCartas(pilha, usuarioIndex, usuarios);
         }
     });
 }
@@ -492,20 +671,63 @@ function cortarTexto(texto, limite) {
     return texto.substring(0, limite) + '...';
 }
 
-function encontrarCartinha(cartinhaId) {
-    if (!window.usuariosProcessados) return null;
-    for (const usuario of window.usuariosProcessados) {
-        const cartinha = usuario.cartinhas.find(c => c.id === cartinhaId);
+function encontrarCartinha(cartinhaId, usuarios) {
+    if (!Array.isArray(usuarios)) return null;
+    const id = Number(cartinhaId);
+    for (const usuario of usuarios) {
+        const cartinha = usuario.cartinhas.find(c => Number(c.id) === id);
         if (cartinha) return cartinha;
     }
     return null;
 }
 
-function encontrarUsuarioPorCartinha(cartinhaId) {
-    if (!window.usuariosProcessados) return null;
-    return window.usuariosProcessados.find(usuario => 
-        usuario.cartinhas.some(c => c.id === cartinhaId)
+function encontrarUsuarioPorCartinha(cartinhaId, usuarios) {
+    if (!Array.isArray(usuarios)) return null;
+    const id = Number(cartinhaId);
+    return usuarios.find(usuario => 
+        Array.isArray(usuario.cartinhas) && usuario.cartinhas.some(c => Number(c.id) === id)
     );
+}
+
+// ==================== Ações comuns: Favoritar ====================
+async function toggleFavoritoCommon(cartinhaId, usuarios = []) {
+    try {
+        const response = await fetch(`/api/cartinhas/${cartinhaId}/toggle-favorito`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        if (!response.ok) throw new Error('Erro ao favoritar');
+
+        const result = await response.json();
+
+        // atualizar dados locais se fornecidos
+        const cartinha = encontrarCartinha(cartinhaId, usuarios);
+        if (cartinha) cartinha.favoritada = result.favoritada;
+
+        // atualizar botão no modal se presente
+        const favoritarBtn = document.getElementById('acao-favoritar');
+        if (favoritarBtn) {
+            favoritarBtn.textContent = result.favoritada ? '⭐ Favoritada' : '⭐ Favoritar';
+            favoritarBtn.className = result.favoritada ? 'btn btn-warning' : 'btn btn-outline-warning';
+        }
+
+        // atualizar selo/estado visual na carta se existe no DOM
+        const cartaEl = document.getElementById(`carta-${cartinhaId}`);
+        if (cartaEl) {
+            const selo = cartaEl.querySelector('.selo');
+            if (selo) {
+                if (result.favoritada) selo.classList.add('favorita'); else selo.classList.remove('favorita');
+            }
+        }
+
+        mostrarFeedback(result.favoritada ? '⭐ Cartinha favoritada!' : '👀 Cartinha desfavoritada', 'success');
+        return result;
+    } catch (error) {
+        console.error('Erro ao alterar status de favorito (common):', error);
+        mostrarFeedback('Não foi possível alterar o status de favorito.', 'danger');
+        throw error;
+    }
 }
 
 // ==================== Feedback visual ====================
@@ -548,49 +770,23 @@ function mostrarFeedback(mensagem, tipo = 'success') {
 
 // ==================== Navegação por teclado ====================
 function inicializarNavegacaoTeclado(atalhosPagina = {}) {
+    // Apenas trata atalhos quando modal estiver aberto; navegação entre pilhas
+    // é feita por `inicializarNavegacaoCartinhas(usuarios, hooks)`.
     document.addEventListener('keydown', (e) => {
-        if (window.totalPilhas === undefined || window.totalPilhas === 0) return;
-        
         const modalAberto = document.querySelector('.modal.show');
         if (modalAberto) {
-            // Atalhos específicos da página no modal
             if (atalhosPagina.modal && typeof atalhosPagina.modal === 'function') {
                 atalhosPagina.modal(e, modalAberto);
             }
-            return;
-        }
-        
-        // Navegação global nas pilhas
-        switch(e.key) {
-            case 'ArrowUp':
-                e.preventDefault();
-                trocarPilhaAnterior();
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                trocarProximaPilha();
-                break;
-            case 'ArrowLeft':
-            case 'ArrowRight':
-                e.preventDefault();
-                // Chamar callback de ciclar específico da página
-                if (typeof window.ciclarCartasCallback === 'function') {
-                    window.ciclarCartasCallback();
-                }
-                break;
-            case 'Enter':
-            case ' ':
-                e.preventDefault();
-                lerCartaAtiva();
-                break;
         }
     });
 }
 
 // ==================== Construtor de HTML de cartinha ====================
-function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig) {
+function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, realIndex) {
     const dataFormatada = formatarData(cartinha.dataEnvio);
-    const posicaoReal = posicao + 1;
+    if (!Number.isInteger(realIndex)) realIndex = posicao;
+    const posicaoReal = realIndex + 1;
     const posicaoClasse = posicao === 0 ? 'topo' : posicao === 1 ? 'meio' : 'fundo';
     
     // Configurações por tipo de página
@@ -600,9 +796,7 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig) {
             badgeClass: '',
             seloTexto: cartinha.lida ? 'LIDA' : 'NOVA',
             seloClass: !cartinha.lida ? 'nova' : '',
-            indicadorHTML: cartinha.lida ? 
-                '<span class="indicador-lida">✓ Lida</span>' : 
-                '<span class="indicador-nao-lida">○ Não lida</span>',
+            indicadorHTML: '',
             dataLabel: 'Recebida em'
         },
         enviadas: {
@@ -616,7 +810,7 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig) {
         favoritas: {
             badgeTexto: `De: ${usuario.username}`,
             badgeClass: '',
-            seloTexto: '⭐ FAVORITA',
+            seloTexto: '⭐',
             seloClass: 'favorita',
             indicadorHTML: '',
             dataLabel: 'Favoritada em'
@@ -668,7 +862,7 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig) {
 
             ${posicao === 0 ? `
                 <div class="acoes-carta">
-                    <button class="btn-acao btn-ler" onclick="window.abrirCartinhaCallback(${cartinha.id})" title="Ver carta">
+                    <button class="btn-acao btn-ler" data-action="abrir" title="Ver carta">
                         👁️
                     </button>
                 </div>
