@@ -19,6 +19,20 @@ const {
     searchUsersSchema
 } = require("../validators/users.validator");
 
+// Helper para deletar arquivo do servidor de arquivos por URL
+async function deleteFileFromServer(fileUrl) {
+    if (!fileUrl) return;
+    try {
+        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
+            data: { url: fileUrl },
+            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+        });
+    } catch (err) {
+        console.error('Erro ao deletar arquivo do servidor:', err.message);
+        // Não falha a requisição se a deleção remota falhar
+    }
+}
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper para proteger rotas específicas dentro deste router
@@ -220,6 +234,12 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         if (req.files && req.files['profile_file']) {
             const file = req.files['profile_file'][0];
             
+            // Deletar foto de perfil antiga se existir
+            const user = await User.findByPk(req.user.id, { attributes: ['profile_image'] });
+            if (user && user.profile_image) {
+                await deleteFileFromServer(user.profile_image);
+            }
+            
             // Converte para PNG usando sharp
             const pngBuffer = await sharp(file.buffer).png().toBuffer();
             
@@ -236,6 +256,12 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         // Upload de imagem de fundo se houver arquivo
         if (req.files && req.files['background_file']) {
             const file = req.files['background_file'][0];
+            
+            // Deletar imagem de fundo antiga se existir
+            const user = await User.findByPk(req.user.id, { attributes: ['background_image'] });
+            if (user && user.background_image) {
+                await deleteFileFromServer(user.background_image);
+            }
             
             // Converte para PNG usando sharp
             const pngBuffer = await sharp(file.buffer).png().toBuffer();

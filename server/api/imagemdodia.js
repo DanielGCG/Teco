@@ -9,6 +9,20 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Helper para deletar arquivo do servidor de arquivos por URL
+async function deleteFileFromServer(fileUrl) {
+    if (!fileUrl) return;
+    try {
+        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
+            data: { url: fileUrl },
+            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+        });
+    } catch (err) {
+        console.error('Erro ao deletar arquivo do servidor:', err.message);
+        // Não falha a requisição se a deleção remota falhar
+    }
+}
+
 // Busca a imagem do dia ativa
 router.get('/', async (req, res) => {
     try {

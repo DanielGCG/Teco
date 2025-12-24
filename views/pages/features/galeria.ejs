@@ -1,6 +1,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
-<main class="container py-4">
+<main class="container py-3">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/galerias">Galerias</a></li>
@@ -37,7 +37,7 @@
                     <form id="formUpload">
                         <div class="mb-3">
                             <label class="form-label">Imagem</label>
-                            <input type="file" class="form-control" name="imagem" accept="image/*" required>
+                            <input type="file" class="form-control" name="imagem" accept="image/*,video/*" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Nome/Legenda (opcional)</label>
@@ -89,12 +89,18 @@
                         <h6>Personalização</h6>
                         <div class="mb-3">
                             <label class="form-label">Imagem de Fundo</label>
-                            <input type="file" class="form-control" name="background" accept="image/*">
+                            <input type="file" class="form-control" name="background" accept="image/*,.gif">
                             <small class="text-muted">Deixe vazio para manter a atual.</small>
+                        </div>
+                        <div class="mb-3 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-danger w-100" onclick="removerBackground()" id="btn-remover-bg" style="display: none;">Remover Imagem de Fundo</button>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cor de Fundo</label>
-                            <input type="color" class="form-control form-control-color w-100" name="background_color" id="config-bg-color" title="Escolha a cor de fundo">
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" name="background_color" id="config-bg-color" title="Escolha a cor de fundo" style="flex: 1;">
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="resetarCorPadrao()" title="Voltar à cor padrão">↺</button>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Fonte da Página</label>
@@ -123,6 +129,27 @@
     let galeriaData = null;
     let colaboradoresSelecionados = [];
 
+    // Detectar se URL é um vídeo
+    function isVideoUrl(url) {
+        if (!url) return false;
+        const videoExtensions = ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v'];
+        const lowerUrl = url.toLowerCase();
+        return videoExtensions.some(ext => lowerUrl.includes(ext));
+    }
+
+    // Validar tamanho do arquivo antes de upload
+    function validateFileSize(file) {
+        const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|m4v|mkv|avi|mpg|mpeg)$/i.test(file.name);
+        const limit = isVideo ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB vídeo, 50MB imagem
+        const typeLabel = isVideo ? 'vídeo' : 'imagem';
+        
+        if (file.size > limit) {
+            mostrarAviso(`Arquivo muito grande para o tipo ${typeLabel}. Limite: ${limit / (1024 * 1024)}MB`, 'Arquivo muito grande');
+            return false;
+        }
+        return true;
+    }
+
     document.addEventListener('DOMContentLoaded', carregarGaleria);
 
     async function carregarGaleria() {
@@ -148,19 +175,25 @@
         document.getElementById('galeria-descricao').textContent = galeriaData.descricao || 'Sem descrição.';
         document.getElementById('galeria-autor').textContent = galeriaData.owner.username;
 
-        // Aplicar estilos personalizados (seguro)
+        // Aplicar estilos personalizados apenas no elemento conteudo-principal (seguro)
         try {
-            if (galeriaData.background_url) {
-                document.body.style.backgroundImage = `url('${galeriaData.background_url}')`;
-                document.body.style.backgroundSize = 'cover';
-                document.body.style.backgroundAttachment = 'fixed';
-                document.body.style.backgroundPosition = 'center';
-            }
-            if (galeriaData.background_color) {
-                document.body.style.backgroundColor = galeriaData.background_color;
-            }
-            if (galeriaData.font_family) {
-                document.body.style.fontFamily = galeriaData.font_family;
+            const container = document.getElementById('conteudo-principal');
+            if (container) {
+                // Adicionar transição suave à cor de fundo
+                container.style.transition = 'background-color 2s ease-in-out';
+                
+                if (galeriaData.background_url) {
+                    container.style.backgroundImage = `url('${galeriaData.background_url}')`;
+                    container.style.backgroundSize = 'cover';
+                    container.style.backgroundAttachment = 'fixed';
+                    container.style.backgroundPosition = 'center';
+                }
+                if (galeriaData.background_color) {
+                    container.style.backgroundColor = galeriaData.background_color;
+                }
+                if (galeriaData.font_family) {
+                    container.style.fontFamily = galeriaData.font_family;
+                }
             }
         } catch (err) {
             console.warn('Erro aplicando estilos da galeria:', err);
@@ -174,12 +207,21 @@
         acoes.innerHTML += `<button class="btn btn-outline-secondary" onclick="abrirModalConfig()"><i class="bi bi-gear"></i></button>`;
 
         const container = document.getElementById('lista-imagens');
-        container.innerHTML = galeriaData.imagens.map(img => `
+        container.innerHTML = galeriaData.imagens.map(img => {
+            const isVideo = isVideoUrl(img.url);
+            return `
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card h-100 shadow-sm image-card">
-                    <a href="${img.url}" target="_blank">
-                        <img src="${img.url}" class="card-img-top" alt="${img.nome}">
-                    </a>
+                    ${isVideo ? 
+                        `<video class="card-img-top" controls style="height: 200px; object-fit: cover;">
+                            <source src="${img.url}" type="video/mp4">
+                            Seu navegador não suporta a tag de vídeo.
+                        </video>` 
+                        : 
+                        `<a href="${img.url}" target="_blank">
+                            <img src="${img.url}" class="card-img-top" alt="${img.nome}">
+                        </a>`
+                    }
                     <div class="card-body p-2 d-flex justify-content-between align-items-center">
                         <small class="text-truncate" title="${img.nome}">${img.nome || 'Sem nome'}</small>
                         <button class="btn btn-sm btn-link text-danger p-0" onclick="excluirImagem(${img.id})">
@@ -188,7 +230,7 @@
                     </div>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     function abrirModalUpload() {
@@ -201,8 +243,109 @@
         document.getElementById('config-is-public').checked = galeriaData.is_public;
         document.getElementById('config-bg-color').value = galeriaData.background_color || '#e2e1cf';
         document.getElementById('config-font').value = galeriaData.font_family || 'Inter';
+        
+        // Mostrar botão de remover background apenas se houver background
+        const btnRemoverBg = document.getElementById('btn-remover-bg');
+        if (galeriaData.background_url) {
+            btnRemoverBg.style.display = 'block';
+        } else {
+            btnRemoverBg.style.display = 'none';
+        }
+        
         renderColaboradores();
+        atualizarVisibilidadeColaboradores();
         new bootstrap.Modal(document.getElementById('modalConfig')).show();
+    }
+
+    // Função para mostrar/ocultar colaboradores baseado no checkbox de público
+    function atualizarVisibilidadeColaboradores() {
+        const isPublic = document.getElementById('config-is-public').checked;
+        const colaboradoresSection = document.querySelector('.mb-3:has(#search-user-input)');
+        
+        if (isPublic) {
+            // Se público, ocultar seção de colaboradores
+            colaboradoresSection.style.display = 'none';
+            // Limpar colaboradores selecionados
+            colaboradoresSelecionados = [];
+            renderColaboradores();
+        } else {
+            // Se privado, mostrar seção de colaboradores
+            colaboradoresSection.style.display = 'block';
+        }
+    }
+
+    // Adicionar listener ao checkbox de público para mostrar/ocultar colaboradores
+    document.addEventListener('DOMContentLoaded', () => {
+        const checkboxPublico = document.getElementById('config-is-public');
+        checkboxPublico?.addEventListener('change', atualizarVisibilidadeColaboradores);
+        
+        // Adicionar listener ao seletor de cor para transição em tempo real
+        const colorPicker = document.getElementById('config-bg-color');
+        colorPicker?.addEventListener('change', () => {
+            const novaCor = colorPicker.value;
+            const container = document.getElementById('conteudo-principal');
+            if (container) {
+                container.style.transition = 'background-color 2s ease-in-out';
+                container.style.backgroundColor = novaCor;
+            }
+        });
+        
+        // Também atualizar enquanto o usuário arrasta o slider de cor (input event)
+        colorPicker?.addEventListener('input', () => {
+            const novaCor = colorPicker.value;
+            const container = document.getElementById('conteudo-principal');
+            if (container) {
+                container.style.transition = 'background-color 2s ease-in-out';
+                container.style.backgroundColor = novaCor;
+            }
+        });
+    });
+
+    async function removerBackground() {
+        const confirmado = await mostrarConfirmacao('Deseja remover a imagem de fundo?', 'Remover Background');
+        if (!confirmado) return;
+        
+        const formData = new FormData();
+        formData.append('remove_background', 'true');
+        
+        try {
+            const res = await fetch(`/api/galeria/${galeriaId}`, {
+                method: 'PATCH',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Atualizar dados locais
+                galeriaData.background_url = null;
+                
+                // Renderizar novamente
+                renderizarGaleria();
+                
+                // Fechar modal se estiver aberto (caso tenha sido chamado de lá)
+                const modalConfig = bootstrap.Modal.getInstance(document.getElementById('modalConfig'));
+                if (modalConfig) modalConfig.hide();
+
+                mostrarAviso('Imagem de fundo removida com sucesso!', 'Sucesso');
+            } else {
+                await mostrarConfirmacao(data.message, 'Erro');
+            }
+        } catch (err) {
+            await mostrarConfirmacao('Erro ao remover background.', 'Erro');
+        }
+    }
+
+    // Função para resetar a cor para o padrão
+    function resetarCorPadrao() {
+        const corPadrao = '#e2e1cf';
+        const colorPicker = document.getElementById('config-bg-color');
+        const container = document.getElementById('conteudo-principal');
+        
+        colorPicker.value = corPadrao;
+        
+        if (container) {
+            container.style.transition = 'background-color 5s ease-in-out';
+            container.style.backgroundColor = corPadrao;
+        }
     }
 
     // Adicionar listener para busca ao apertar Enter
@@ -257,20 +400,48 @@
 
     document.getElementById('formUpload').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const fileInput = e.target.querySelector('input[name="imagem"]');
+        
+        // Validar tamanho do arquivo antes de enviar
+        if (fileInput.files.length > 0) {
+            if (!validateFileSize(fileInput.files[0])) {
+                return;
+            }
+        }
+        
         const formData = new FormData(e.target);
         try {
             const res = await fetch(`/api/galeria/${galeriaId}/upload`, {
                 method: 'POST',
                 body: formData
             });
+            
             const data = await res.json();
+            
             if (data.success) {
-                location.reload();
+                // Adicionar nova imagem à lista local
+                if (data.imagem) {
+                    galeriaData.imagens.push(data.imagem);
+                }
+                
+                // Fechar modal
+                bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
+                
+                // Limpar input
+                e.target.reset();
+                
+                // Renderizar novamente
+                renderizarGaleria();
+                
+                // Mostrar mensagem de sucesso
+                mostrarAviso('Imagem adicionada com sucesso!', 'Sucesso');
             } else {
-                alert(data.message);
+                console.error('Erro no upload (servidor):', data);
+                await mostrarConfirmacao(data.message || 'Erro desconhecido no servidor.', 'Erro');
             }
         } catch (err) {
-            alert('Erro ao enviar imagem.');
+            console.error('Erro no upload (rede/json):', err);
+            await mostrarConfirmacao('Erro ao enviar imagem. Verifique sua conexão ou o tamanho do arquivo.', 'Erro');
         }
     });
 
@@ -291,42 +462,67 @@
             });
             const data = await res.json();
             if (data.success) {
-                location.reload();
+                // Atualizar dados locais com a resposta
+                if (data.galeria) {
+                    galeriaData.nome = data.galeria.nome;
+                    galeriaData.descricao = data.galeria.descricao;
+                    galeriaData.is_public = data.galeria.is_public;
+                    galeriaData.background_color = data.galeria.background_color;
+                    galeriaData.background_url = data.galeria.background_url;
+                    galeriaData.font_family = data.galeria.font_family;
+                }
+                
+                // Fechar modal
+                bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
+                
+                // Renderizar novamente
+                renderizarGaleria();
+                
+                // Mostrar mensagem de sucesso
+                mostrarAviso('Configurações salvas com sucesso!', 'Sucesso');
             } else {
-                alert(data.message);
+                await mostrarConfirmacao(data.message, 'Erro');
             }
         } catch (err) {
-            alert('Erro ao salvar configurações.');
+            await mostrarConfirmacao('Erro ao salvar configurações.', 'Erro');
         }
     });
 
     async function excluirImagem(imagemId) {
-        if (!confirm('Deseja remover esta imagem?')) return;
+        const confirmado = await mostrarConfirmacao('Deseja remover esta imagem?', 'Remover Imagem');
+        if (!confirmado) return;
         try {
             const res = await fetch(`/api/galeria/${galeriaId}/imagem/${imagemId}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) {
-                location.reload();
+                // Remover da lista local
+                galeriaData.imagens = galeriaData.imagens.filter(img => img.id !== imagemId);
+                
+                // Renderizar novamente
+                renderizarGaleria();
+                
+                mostrarAviso('Imagem removida com sucesso!', 'Sucesso');
             } else {
-                alert(data.message);
+                await mostrarConfirmacao(data.message, 'Erro');
             }
         } catch (err) {
-            alert('Erro ao excluir imagem.');
+            await mostrarConfirmacao('Erro ao excluir imagem.', 'Erro');
         }
     }
 
     async function excluirGaleria() {
-        if (!confirm('TEM CERTEZA? Isso excluirá o álbum e todas as fotos permanentemente!')) return;
+        const confirmado = await mostrarConfirmacao('TEM CERTEZA? Isso excluirá o álbum e todas as fotos permanentemente!', 'Excluir Álbum');
+        if (!confirmado) return;
         try {
             const res = await fetch(`/api/galeria/${galeriaId}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) {
                 window.location.href = '/galerias';
             } else {
-                alert(data.message);
+                await mostrarConfirmacao(data.message, 'Erro');
             }
         } catch (err) {
-            alert('Erro ao excluir galeria.');
+            await mostrarConfirmacao('Erro ao excluir galeria.', 'Erro');
         }
     }
 </script>
@@ -357,6 +553,12 @@
         transform: scale(1.02);
     }
     .image-card img {
+        height: 200px;
+        object-fit: cover;
+    }
+    .image-card video {
+        display: block;
+        width: 100%;
         height: 200px;
         object-fit: cover;
     }

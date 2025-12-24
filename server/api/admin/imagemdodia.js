@@ -9,6 +9,20 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Helper para deletar arquivo do servidor de arquivos por URL
+async function deleteFileFromServer(fileUrl) {
+    if (!fileUrl) return;
+    try {
+        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
+            data: { url: fileUrl },
+            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+        });
+    } catch (err) {
+        console.error('Erro ao deletar arquivo do servidor:', err.message);
+        // Não falha a requisição se a deleção remota falhar
+    }
+}
+
 // Fila de Imagens
 router.get('/fila', async (req, res) => {
     try {
@@ -51,6 +65,12 @@ router.delete('/fila/:id', async (req, res) => {
     try {
         const imagem = await ImagemDoDia.findByPk(req.params.id);
         if (!imagem) return res.status(404).json({ message: 'Imagem não encontrada.' });
+        
+        // Deleta apenas a imagem do servidor (moldura é reutilizável, não deletar)
+        if (imagem.url) {
+            await deleteFileFromServer(imagem.url);
+        }
+        
         await imagem.destroy();
         res.json({ message: 'Removida com sucesso.' });
     } catch (error) {
@@ -96,6 +116,12 @@ router.delete('/borders/:id', async (req, res) => {
     try {
         const border = await ImagemDoDiaBorder.findByPk(req.params.id);
         if (!border) return res.status(404).json({ message: 'Moldura não encontrada.' });
+        
+        // Deleta do servidor de arquivos antes de remover do BD
+        if (border.url) {
+            await deleteFileFromServer(border.url);
+        }
+        
         await border.destroy();
         res.json({ message: 'Moldura removida com sucesso.' });
     } catch (error) {

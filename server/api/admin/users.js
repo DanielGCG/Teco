@@ -3,6 +3,21 @@ const AdminUsersRouter = express.Router();
 const { User } = require("../../models");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
+const axios = require("axios");
+
+// Helper para deletar arquivo do servidor de arquivos por URL
+async function deleteFileFromServer(fileUrl) {
+    if (!fileUrl) return;
+    try {
+        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
+            data: { url: fileUrl },
+            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+        });
+    } catch (err) {
+        console.error('Erro ao deletar arquivo do servidor:', err.message);
+        // Não falha a requisição se a deleção remota falhar
+    }
+}
 
 // ==================== Endpoints Administrativos de Usuários ====================
 
@@ -145,6 +160,14 @@ AdminUsersRouter.delete('/:id', async (req, res) => {
             if (ownerCount <= 1) {
                 return res.status(403).json({ message: "Não é possível deletar o último dono do sistema" });
             }
+        }
+
+        // Deleta do servidor de arquivos antes de remover do BD
+        if (targetUser.profile_image) {
+            await deleteFileFromServer(targetUser.profile_image);
+        }
+        if (targetUser.background_image) {
+            await deleteFileFromServer(targetUser.background_image);
         }
 
         await targetUser.destroy();
