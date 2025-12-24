@@ -1,0 +1,366 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+<main class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/galerias">Galerias</a></li>
+            <li class="breadcrumb-item active" id="breadcrumb-nome">Carregando...</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 id="galeria-titulo">Carregando...</h2>
+            <p id="galeria-descricao" class="text-muted"></p>
+            <small class="text-muted">Criado por <strong id="galeria-autor">...</strong></small>
+        </div>
+        <div class="d-flex gap-2" id="acoes-galeria">
+            <!-- Botões de ação serão inseridos aqui -->
+        </div>
+    </div>
+
+    <div class="row g-3" id="lista-imagens">
+        <!-- Imagens serão carregadas aqui -->
+    </div>
+
+    </main>
+
+    <!-- Modal Upload (fora do main) -->
+    <div class="modal fade" id="modalUpload" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adicionar Foto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formUpload">
+                        <div class="mb-3">
+                            <label class="form-label">Imagem</label>
+                            <input type="file" class="form-control" name="imagem" accept="image/*" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nome/Legenda (opcional)</label>
+                            <input type="text" class="form-control" name="nome">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Enviar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurações (fora do main) -->
+    <div class="modal fade" id="modalConfig" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configurações do Álbum</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formConfig">
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <input type="text" class="form-control" name="nome" id="config-nome">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" name="descricao" id="config-descricao" rows="2"></textarea>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="is_public" id="config-is-public">
+                            <label class="form-check-label" for="config-is-public">Público (todos podem adicionar fotos)</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Colaboradores Específicos</label>
+                            <div class="input-group mb-2">
+                                <input type="text" id="search-user-input" class="form-control" placeholder="Buscar usuário...">
+                                <button class="btn btn-outline-primary" type="button" onclick="buscarUsuarios()">Buscar</button>
+                            </div>
+                            <div id="search-results" class="list-group mb-2" style="max-height: 150px; overflow-y: auto;"></div>
+                            <div id="colaboradores-selecionados" class="d-flex flex-wrap gap-2">
+                                <!-- Badges de usuários selecionados -->
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h6>Personalização</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Imagem de Fundo</label>
+                            <input type="file" class="form-control" name="background" accept="image/*">
+                            <small class="text-muted">Deixe vazio para manter a atual.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cor de Fundo</label>
+                            <input type="color" class="form-control form-control-color w-100" name="background_color" id="config-bg-color" title="Escolha a cor de fundo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fonte da Página</label>
+                            <select class="form-select" name="font_family" id="config-font">
+                                <option value="Inter">Inter (Padrão)</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Open Sans', sans-serif">Open Sans</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Playfair Display', serif">Playfair Display</option>
+                                <option value="'Courier New', Courier, monospace">Courier New</option>
+                                <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Salvar Alterações</button>
+                    </form>
+                    <hr>
+                    <button class="btn btn-danger w-100" onclick="excluirGaleria()">Excluir Álbum Permanentemente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const galeriaId = '<%= galeriaId %>';
+    let galeriaData = null;
+    let colaboradoresSelecionados = [];
+
+    document.addEventListener('DOMContentLoaded', carregarGaleria);
+
+    async function carregarGaleria() {
+        try {
+            const res = await fetch(`/api/galeria/${galeriaId}`);
+            const data = await res.json();
+            if (data.success) {
+                galeriaData = data.galeria;
+                colaboradoresSelecionados = (galeriaData.colaboradores || []).map(c => ({ id: c.id, username: c.username }));
+                renderizarGaleria();
+            } else {
+                alert(data.message);
+                window.location.href = '/galerias';
+            }
+        } catch (err) {
+            console.error('Erro ao carregar galeria:', err);
+        }
+    }
+
+    function renderizarGaleria() {
+        document.getElementById('breadcrumb-nome').textContent = galeriaData.nome;
+        document.getElementById('galeria-titulo').textContent = galeriaData.nome;
+        document.getElementById('galeria-descricao').textContent = galeriaData.descricao || 'Sem descrição.';
+        document.getElementById('galeria-autor').textContent = galeriaData.owner.username;
+
+        // Aplicar estilos personalizados (seguro)
+        try {
+            if (galeriaData.background_url) {
+                document.body.style.backgroundImage = `url('${galeriaData.background_url}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.body.style.backgroundPosition = 'center';
+            }
+            if (galeriaData.background_color) {
+                document.body.style.backgroundColor = galeriaData.background_color;
+            }
+            if (galeriaData.font_family) {
+                document.body.style.fontFamily = galeriaData.font_family;
+            }
+        } catch (err) {
+            console.warn('Erro aplicando estilos da galeria:', err);
+        }
+
+        const acoes = document.getElementById('acoes-galeria');
+        acoes.innerHTML = '';
+
+        // Verificar permissão (simplificado no front, o back garante)
+        acoes.innerHTML += `<button class="btn btn-success" onclick="abrirModalUpload()">+ Adicionar Foto</button>`;
+        acoes.innerHTML += `<button class="btn btn-outline-secondary" onclick="abrirModalConfig()"><i class="bi bi-gear"></i></button>`;
+
+        const container = document.getElementById('lista-imagens');
+        container.innerHTML = galeriaData.imagens.map(img => `
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm image-card">
+                    <a href="${img.url}" target="_blank">
+                        <img src="${img.url}" class="card-img-top" alt="${img.nome}">
+                    </a>
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                        <small class="text-truncate" title="${img.nome}">${img.nome || 'Sem nome'}</small>
+                        <button class="btn btn-sm btn-link text-danger p-0" onclick="excluirImagem(${img.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function abrirModalUpload() {
+        new bootstrap.Modal(document.getElementById('modalUpload')).show();
+    }
+
+    function abrirModalConfig() {
+        document.getElementById('config-nome').value = galeriaData.nome;
+        document.getElementById('config-descricao').value = galeriaData.descricao || '';
+        document.getElementById('config-is-public').checked = galeriaData.is_public;
+        document.getElementById('config-bg-color').value = galeriaData.background_color || '#e2e1cf';
+        document.getElementById('config-font').value = galeriaData.font_family || 'Inter';
+        renderColaboradores();
+        new bootstrap.Modal(document.getElementById('modalConfig')).show();
+    }
+
+    // Adicionar listener para busca ao apertar Enter
+    document.getElementById('search-user-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            buscarUsuarios();
+        }
+    });
+
+    async function buscarUsuarios() {
+        const q = document.getElementById('search-user-input').value;
+        if (q.length < 2) return;
+
+        try {
+            const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            const results = document.getElementById('search-results');
+            results.innerHTML = data.usuarios.map(u => `
+                <button type="button" class="list-group-item list-group-item-action" onclick="selecionarUsuario(${u.id}, '${u.username}')">
+                    ${u.username}
+                </button>
+            `).join('');
+        } catch (err) {
+            console.error('Erro ao buscar usuários:', err);
+        }
+    }
+
+    function selecionarUsuario(id, username) {
+        if (!colaboradoresSelecionados.find(c => c.id === id)) {
+            colaboradoresSelecionados.push({ id, username });
+            renderColaboradores();
+        }
+        document.getElementById('search-results').innerHTML = '';
+        document.getElementById('search-user-input').value = '';
+    }
+
+    function removerColaborador(id) {
+        colaboradoresSelecionados = colaboradoresSelecionados.filter(c => c.id !== id);
+        renderColaboradores();
+    }
+
+    function renderColaboradores() {
+        const container = document.getElementById('colaboradores-selecionados');
+        container.innerHTML = colaboradoresSelecionados.map(c => `
+            <span class="badge bg-info text-dark d-flex align-items-center gap-1">
+                ${c.username}
+                <i class="bi bi-x-circle cursor-pointer" onclick="removerColaborador(${c.id})"></i>
+            </span>
+        `).join('');
+    }
+
+    document.getElementById('formUpload').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        try {
+            const res = await fetch(`/api/galeria/${galeriaId}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert('Erro ao enviar imagem.');
+        }
+    });
+
+    document.getElementById('formConfig').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        // Adicionar colaboradores manualmente pois é um array
+        formData.append('colaboradores', JSON.stringify(colaboradoresSelecionados.map(c => c.id)));
+        
+        // Ajustar o checkbox is_public
+        formData.set('is_public', document.getElementById('config-is-public').checked);
+
+        try {
+            const res = await fetch(`/api/galeria/${galeriaId}`, {
+                method: 'PATCH',
+                body: formData // Envia como multipart/form-data
+            });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert('Erro ao salvar configurações.');
+        }
+    });
+
+    async function excluirImagem(imagemId) {
+        if (!confirm('Deseja remover esta imagem?')) return;
+        try {
+            const res = await fetch(`/api/galeria/${galeriaId}/imagem/${imagemId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert('Erro ao excluir imagem.');
+        }
+    }
+
+    async function excluirGaleria() {
+        if (!confirm('TEM CERTEZA? Isso excluirá o álbum e todas as fotos permanentemente!')) return;
+        try {
+            const res = await fetch(`/api/galeria/${galeriaId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/galerias';
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert('Erro ao excluir galeria.');
+        }
+    }
+</script>
+
+<style>
+    body {
+        transition: background-color 0.5s ease, background-image 0.5s ease;
+    }
+    
+    main.container {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+
+    .image-card {
+        transition: transform 0.2s;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+    }
+    
+    .image-card:hover {
+        transform: scale(1.02);
+    }
+    .image-card img {
+        height: 200px;
+        object-fit: cover;
+    }
+    .cursor-pointer {
+        cursor: pointer;
+    }
+</style>

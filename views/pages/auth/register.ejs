@@ -13,7 +13,18 @@
 
                         <div class="mb-3">
                             <label for="password" class="form-label">Senha</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">Ver</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="passwordConfirm" class="form-label">Confirme a Senha</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="passwordConfirm" name="passwordConfirm" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePasswordConfirm">Ver</button>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -53,12 +64,20 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+    const passwordConfirm = document.getElementById('passwordConfirm').value;
     const bio = document.getElementById('bio').value.trim();
 
     const messageDiv = document.getElementById('message');
     messageDiv.textContent = '';
     
     try {
+        // Validação local: checar confirmação de senha
+        if (password !== passwordConfirm) {
+            messageDiv.className = 'text-danger';
+            messageDiv.textContent = 'As senhas não conferem.';
+            return;
+        }
+
         const response = await fetch('/api/users/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -101,5 +120,19 @@ usernameInput.addEventListener('keydown', (e) => {
     if (usernameInput.selectionStart === 0 && (e.key === 'Backspace' || e.key === 'Delete')) {
         e.preventDefault();
     }
+});
+
+// Toggle show/hide password
+const togglePassword = document.getElementById('togglePassword');
+const togglePasswordConfirm = document.getElementById('togglePasswordConfirm');
+togglePassword.addEventListener('click', () => {
+    const pwd = document.getElementById('password');
+    if (pwd.type === 'password') { pwd.type = 'text'; togglePassword.textContent = 'Ocultar'; }
+    else { pwd.type = 'password'; togglePassword.textContent = 'Ver'; }
+});
+togglePasswordConfirm.addEventListener('click', () => {
+    const pwd = document.getElementById('passwordConfirm');
+    if (pwd.type === 'password') { pwd.type = 'text'; togglePasswordConfirm.textContent = 'Ocultar'; }
+    else { pwd.type = 'password'; togglePasswordConfirm.textContent = 'Ver'; }
 });
 </script>

@@ -14,6 +14,33 @@ FeaturesRouter.get('/watchlist', async (req, res) => {
     });
 });
 
+FeaturesRouter.get('/galerias', async (req, res) => {
+    const locals = {
+        title: `Galerias`,
+        description: "Álbuns de fotos",
+        version: process.env.VERSION,
+    }
+    res.render('pages/features/galerias', {
+        layout: 'layouts/main',
+        locals: locals,
+        HOST: process.env.HOST
+    });
+});
+
+FeaturesRouter.get('/galeria/:id', async (req, res) => {
+    const locals = {
+        title: `Galeria`,
+        description: "Visualizando álbum",
+        version: process.env.VERSION,
+    }
+    res.render('pages/features/galeria', {
+        layout: 'layouts/main',
+        locals: locals,
+        HOST: process.env.HOST,
+        galeriaId: req.params.id
+    });
+});
+
 FeaturesRouter.get('/imagemdodia', async (req, res) => {
     const locals = {
         title: `Imagem do Dia`,

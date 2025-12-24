@@ -1,0 +1,158 @@
+<main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Álbuns da Galeria</h2>
+        <button class="btn btn-primary" onclick="abrirModalCriarGaleria()">+ Novo Álbum</button>
+    </div>
+
+    <div class="galeria" id="lista-galerias">
+        <!-- Galerias serão carregadas aqui -->
+    </div>
+
+    <!-- Modal Criar Galeria -->
+    <div class="modal fade" id="modalCriarGaleria" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Criar Novo Álbum</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formCriarGaleria">
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Álbum</label>
+                            <input type="text" class="form-control" name="nome" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" name="descricao" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Capa (opcional)</label>
+                            <input type="file" class="form-control" name="capa" accept="image/*">
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="is_public" id="isPublicSwitch">
+                            <label class="form-check-label" for="isPublicSwitch">Público (todos podem adicionar fotos)</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Criar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', carregarGalerias);
+
+    async function carregarGalerias() {
+        try {
+            const res = await fetch('/api/galeria');
+            const data = await res.json();
+            if (data.success) {
+                const container = document.getElementById('lista-galerias');
+                container.innerHTML = data.galerias.map(g => `
+                    <div class="imagem">
+                        <a href="/galeria/${g.id}">
+                            <img src="${g.capa_url || '/images/placeholder-album.png'}" alt="${g.nome}">
+                            <div class="texto-hover">
+                                <div>${g.nome}</div>
+                                <small>por ${g.owner.username}</small>
+                            </div>
+                        </a>
+                    </div>
+                `).join('');
+            }
+        } catch (err) {
+            console.error('Erro ao carregar galerias:', err);
+        }
+    }
+
+    function abrirModalCriarGaleria() {
+        const modal = new bootstrap.Modal(document.getElementById('modalCriarGaleria'));
+        modal.show();
+    }
+
+    document.getElementById('formCriarGaleria').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        try {
+            const res = await fetch('/api/galeria', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error('Erro ao criar galeria:', err);
+            alert('Erro ao criar galeria.');
+        }
+    });
+</script>
+
+<style>
+    .galeria {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 20px 0;
+    }
+
+    .imagem {
+        position: relative;
+        width: 100%;
+        height: 0;
+        padding-top: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .imagem a {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .imagem img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .imagem:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .texto-hover {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        padding: 20px 10px 10px;
+        color: white;
+        text-align: center;
+        transition: background 0.3s ease;
+    }
+
+    .imagem:hover .texto-hover {
+        background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    }
+
+    @media (max-width: 768px) {
+        .galeria {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+    }
+</style>
