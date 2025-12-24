@@ -42,6 +42,14 @@ const Filme = sequelize.define('Filme', {
     vote_count: {
         type: DataTypes.INTEGER
     },
+    watched: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    custom_rating: {
+        type: DataTypes.FLOAT,
+        allowNull: true
+    },
     user_id: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: true,

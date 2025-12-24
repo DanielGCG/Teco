@@ -27,8 +27,15 @@ const deleteMovieSchema = z.object({
     id: z.coerce.number().int().positive("ID do filme/série é obrigatório")
 });
 
+const updateMovieStatusSchema = z.object({
+    id: z.number().int(),
+    watched: z.boolean().optional(),
+    custom_rating: z.number().min(0).max(10).optional().nullable()
+});
+
 module.exports = {
     searchMoviesSchema,
     uploadMovieSchema,
-    deleteMovieSchema
+    deleteMovieSchema,
+    updateMovieStatusSchema
 };

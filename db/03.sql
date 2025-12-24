@@ -12,6 +12,8 @@ CREATE TABLE wl_filme (
     release_date DATE,
     vote_average FLOAT,
     vote_count INT,
+    watched BOOLEAN DEFAULT FALSE,
+    custom_rating FLOAT,
     user_id INT UNSIGNED NULL,
     INDEX (title),
     INDEX (release_date),

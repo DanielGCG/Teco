@@ -149,19 +149,26 @@
     .movie img {
         width: 100%;
     }
+
+    h3 {
+        color: #444;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+        margin-top: 30px;
+    }
 </style>
 
 <main class="text-center">
     <h2 class="mb-4">WatchList do Boteco</h2>
-    
-    <div class="alert alert-info mx-auto" style="max-width: 500px;">
-        <h5 class="mb-1">Quer sugerir filme/série?</h5>
-        <p class="mb-0">clique na aba com +</p>
-    </div>
-
     <div class="container">
-        <div class="tabela">
-            <!-- Aqui serão inseridas as obras -->
+        <h3 class="text-start mb-3">Para Assistir</h3>
+        <div class="tabela mb-5" id="tabela-pendentes">
+            <!-- Aqui serão inseridas as obras pendentes -->
+        </div>
+
+        <h3 class="text-start mb-3">Já Vistos</h3>
+        <div class="tabela" id="tabela-vistos">
+            <!-- Aqui serão inseridas as obras vistas -->
         </div>
     </div>
 
@@ -262,17 +269,50 @@ async function removerObra(id) {
     }
 }
 
-function listarObras() {
-    const tabela = document.querySelector('.tabela');
-    tabela.innerHTML = '';
+async function atualizarStatusObra(id, watched, custom_rating) {
+    const body = { id };
+    if (watched !== null) body.watched = watched;
+    if (custom_rating !== null) body.custom_rating = custom_rating === '' ? null : parseFloat(custom_rating);
 
+    try {
+        const response = await fetch('/api/watchlist/watchlistupdate-status', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            // Atualiza localmente
+            const index = obrasWatchlist.findIndex(o => String(o.id) === String(id));
+            if (index !== -1) {
+                if (watched !== null) obrasWatchlist[index].watched = watched;
+                if (custom_rating !== null) obrasWatchlist[index].custom_rating = body.custom_rating;
+                listarObras();
+            }
+        } else {
+            mostrarAviso(data.message || 'Erro ao atualizar status.');
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar status:', error);
+        mostrarAviso('Erro ao atualizar status.');
+    }
+}
+
+function listarObras() {
+    const tabelaPendentes = document.getElementById('tabela-pendentes');
+    const tabelaVistos = document.getElementById('tabela-vistos');
+    tabelaPendentes.innerHTML = '';
+    tabelaVistos.innerHTML = '';
+
+    // Quadro de adicionar sempre no início dos pendentes
     const quadroInicial = document.createElement('div');
     quadroInicial.className = 'conteudo card shadow-sm d-flex flex-column align-items-center justify-content-between p-2';
     quadroInicial.innerHTML = `
         <img src="images/+.png" class="capa rounded" alt="Adicionar" onclick="abrirPopupAdicionar()">
         <h1 class="fw-bold text-dark">Adicionar</h1>
     `;
-    tabela.appendChild(quadroInicial);
+    tabelaPendentes.appendChild(quadroInicial);
 
     obrasWatchlist.forEach(obra => {
         const conteudo = document.createElement('div');
@@ -281,10 +321,16 @@ function listarObras() {
         const titulo = obra.title || obra.name;
 
         conteudo.innerHTML = `
-            <img src="${posterPath}" class="capa rounded" alt="Capa de ${titulo}" onclick="abrirPopup('${posterPath}', '${titulo}')">
+            <img src="${posterPath}" class="capa rounded" alt="Capa de ${titulo}" onclick="abrirPopup('${posterPath}', ${obra.id})">
             <h1 class="fw-bold text-dark">${titulo}</h1>
+            ${obra.custom_rating ? `<div class="badge bg-warning text-dark">★ ${obra.custom_rating.toFixed(1)}</div>` : ''}
         `;
-        tabela.appendChild(conteudo);
+
+        if (obra.watched) {
+            tabelaVistos.appendChild(conteudo);
+        } else {
+            tabelaPendentes.appendChild(conteudo);
+        }
     });
 }
 
@@ -294,10 +340,10 @@ function abrirPopupAdicionar() {
     popup.classList.add('d-flex', 'justify-content-center', 'align-items-center');
 }
 
-function abrirPopup(url, nome) {
+function abrirPopup(url, id) {
     const popup = document.getElementById('popup');
     const popupConteudo = document.getElementById('popup-conteudo');
-    const obra = obrasWatchlist.find(o => o.name === nome || o.title === nome);
+    const obra = obrasWatchlist.find(o => String(o.id) === String(id));
 
     if (!obra) {
         popupConteudo.innerHTML = `<p class="p-4">Obra não encontrada!</p>`;
@@ -305,6 +351,8 @@ function abrirPopup(url, nome) {
         popup.classList.add('d-flex', 'justify-content-center', 'align-items-center');
         return;
     }
+
+    const nome = obra.title || obra.name;
 
     function renderStars(nota) {
         const rating = Math.round(nota) / 2;
@@ -348,8 +396,22 @@ function abrirPopup(url, nome) {
                     <div class="mt-2 small text-muted">
                         Sugerido por: <strong>${obra.requester ? obra.requester.username : 'Sistema'}</strong>
                     </div>
+                    
+                    <hr class="my-2">
+                    
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="watched-switch" ${obra.watched ? 'checked' : ''} onchange="atualizarStatusObra(${obra.id}, this.checked, null)">
+                            <label class="form-check-label" for="watched-switch">Já assistimos</label>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="custom-rating" class="small">Nossa Nota:</label>
+                            <input type="number" id="custom-rating" class="form-control form-control-sm" style="width: 60px;" step="0.1" min="0" max="10" value="${obra.custom_rating || ''}" onchange="atualizarStatusObra(${obra.id}, null, this.value)">
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2 mt-3">
-                        <button class='btn btn-danger btn-sm' onclick="abrirConfirmacaoDelecao('${nome}')">Deletar</button>
+                        <button class='btn btn-danger btn-sm' onclick="abrirConfirmacaoDelecao(${obra.id})">Deletar</button>
                         <button class='btn btn-secondary btn-sm' onclick='fecharPopup()'>Fechar</button>
                     </div>
                 </div>
@@ -371,10 +433,10 @@ function abrirPopup(url, nome) {
     }
 }
 
-function abrirConfirmacaoDelecao(nome) {
+function abrirConfirmacaoDelecao(id) {
     const popupConfirmacao = document.getElementById('popup-confirmacao');
     const confirmarDelecaoBtn = document.getElementById('confirmarDelecaoBtn');
-    const obra = obrasWatchlist.find(o => o.name === nome || o.title === nome);
+    const obra = obrasWatchlist.find(o => String(o.id) === String(id));
 
     if (obra) {
         confirmarDelecaoBtn.setAttribute('data-id-obra', obra.id);
@@ -540,6 +602,9 @@ function displayResults(items) {
                 // Preferir o registro salvo retornado pelo backend, se existir
                 const saved = data.saved || null;
                 const newEntry = saved ? saved : { ...obra, fileUrl: data.fileUrl };
+
+                // Remover se já existir (evitar duplicatas na UI)
+                obrasWatchlist = obrasWatchlist.filter(item => String(item.id) !== String(newEntry.id));
 
                 // Encontrar a posição correta para inserir o filme/série na ordem alfabética
                 const index = obrasWatchlist.findIndex(item => {

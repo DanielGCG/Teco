@@ -4,7 +4,8 @@ const validate = require("../middlewares/validate");
 const {
     searchMoviesSchema,
     uploadMovieSchema,
-    deleteMovieSchema
+    deleteMovieSchema,
+    updateMovieStatusSchema
 } = require("../validators/watchlist.validator");
 const watchlistRouter = express.Router();
 
@@ -132,6 +133,27 @@ watchlistRouter.delete('/watchlistdelete-movie', validate(deleteMovieSchema, 'qu
     } catch (error) {
         console.error('Erro ao remover filme/série:', error);
         res.status(500).json({ success: false, message: 'Erro ao remover filme/série.' });
+    }
+});
+
+watchlistRouter.patch('/watchlistupdate-status', validate(updateMovieStatusSchema), async (req, res) => {
+    const { id, watched, custom_rating } = req.body;
+
+    try {
+        const movie = await Filme.findByPk(id);
+        if (!movie) {
+            return res.status(404).json({ success: false, message: 'Filme/série não encontrado.' });
+        }
+
+        if (watched !== undefined) movie.watched = watched;
+        if (custom_rating !== undefined) movie.custom_rating = custom_rating;
+
+        await movie.save();
+
+        res.json({ success: true, message: 'Status atualizado com sucesso.', movie });
+    } catch (error) {
+        console.error('Erro ao atualizar status do filme/série:', error);
+        res.status(500).json({ success: false, message: 'Erro ao atualizar status.' });
     }
 });
 
