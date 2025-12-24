@@ -43,6 +43,13 @@
                             <label class="form-label">Nome/Legenda (opcional)</label>
                             <input type="text" class="form-control" name="nome">
                         </div>
+                        <div class="mb-3" id="upload-progress-wrapper" style="display:none;">
+                            <label class="form-label">Progresso do Envio</label>
+                            <div class="progress">
+                                <div id="upload-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+                            </div>
+                            <small id="upload-progress-text" class="text-muted">0.00 / 0.00 MB</small>
+                        </div>
                         <button type="submit" class="btn btn-primary w-100">Enviar</button>
                     </form>
                 </div>
@@ -398,51 +405,69 @@
         `).join('');
     }
 
-    document.getElementById('formUpload').addEventListener('submit', async (e) => {
+    document.getElementById('formUpload').addEventListener('submit', (e) => {
         e.preventDefault();
-        const fileInput = e.target.querySelector('input[name="imagem"]');
-        
+        const form = e.target;
+        const fileInput = form.querySelector('input[name="imagem"]');
+
         // Validar tamanho do arquivo antes de enviar
         if (fileInput.files.length > 0) {
             if (!validateFileSize(fileInput.files[0])) {
                 return;
             }
         }
-        
-        const formData = new FormData(e.target);
-        try {
-            const res = await fetch(`/api/galeria/${galeriaId}/upload`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await res.json();
-            
-            if (data.success) {
-                // Adicionar nova imagem à lista local
-                if (data.imagem) {
-                    galeriaData.imagens.push(data.imagem);
-                }
-                
-                // Fechar modal
-                bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
-                
-                // Limpar input
-                e.target.reset();
-                
-                // Renderizar novamente
-                renderizarGaleria();
-                
-                // Mostrar mensagem de sucesso
-                mostrarAviso('Imagem adicionada com sucesso!', 'Sucesso');
-            } else {
-                console.error('Erro no upload (servidor):', data);
-                await mostrarConfirmacao(data.message || 'Erro desconhecido no servidor.', 'Erro');
+
+        const formData = new FormData(form);
+
+        const progressWrapper = document.getElementById('upload-progress-wrapper');
+        const progressBar = document.getElementById('upload-progress-bar');
+        progressWrapper.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/galeria/${galeriaId}/upload`);
+        xhr.withCredentials = true;
+
+        xhr.upload.onprogress = function(ev) {
+            if (ev.lengthComputable) {
+                const pct = Math.round((ev.loaded / ev.total) * 100);
+                const loadedMB = (ev.loaded / (1024 * 1024)).toFixed(2);
+                const totalMB = (ev.total / (1024 * 1024)).toFixed(2);
+                progressBar.style.width = pct + '%';
+                progressBar.textContent = pct + '%';
+                const progressText = document.getElementById('upload-progress-text');
+                if (progressText) progressText.textContent = `${loadedMB} / ${totalMB} MB`;
             }
-        } catch (err) {
-            console.error('Erro no upload (rede/json):', err);
-            await mostrarConfirmacao('Erro ao enviar imagem. Verifique sua conexão ou o tamanho do arquivo.', 'Erro');
-        }
+        };
+
+        xhr.onload = function() {
+            progressWrapper.style.display = 'none';
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+                    if (data.imagem) galeriaData.imagens.push(data.imagem);
+                    bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
+                    form.reset();
+                    renderizarGaleria();
+                    mostrarAviso('Imagem adicionada com sucesso!', 'Sucesso');
+                } else {
+                    console.error('Erro no upload (servidor):', data);
+                    mostrarConfirmacao(data.message || 'Erro desconhecido no servidor.', 'Erro');
+                }
+            } catch (err) {
+                console.error('Resposta inválida do servidor:', err, xhr.responseText);
+                mostrarConfirmacao('Erro na resposta do servidor.', 'Erro');
+            }
+        };
+
+        xhr.onerror = function() {
+            progressWrapper.style.display = 'none';
+            console.error('Erro de rede no upload');
+            mostrarConfirmacao('Erro ao enviar imagem. Verifique sua conexão.', 'Erro');
+        };
+
+        xhr.send(formData);
     });
 
     document.getElementById('formConfig').addEventListener('submit', async (e) => {
