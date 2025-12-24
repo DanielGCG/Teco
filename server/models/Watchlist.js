@@ -41,6 +41,14 @@ const Filme = sequelize.define('Filme', {
     },
     vote_count: {
         type: DataTypes.INTEGER
+    },
+    user_id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     }
 }, {
     tableName: 'wl_filme',

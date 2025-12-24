@@ -1,76 +1,216 @@
-<div class="container py-5">
+﻿<style>
+  .profile-preview-card {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: #fff;
+  }
+
+  .preview-bg {
+    height: 150px;
+    background-color: #6c5ce7;
+    background-size: cover;
+    background-position: center;
+    transition: background 0.3s ease;
+  }
+
+  .preview-avatar-container {
+    position: relative;
+    margin-top: -50px;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+
+  .preview-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 15px;
+    border: 4px solid #fff;
+    object-fit: cover;
+    background: #eee;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  .preview-info {
+    padding-bottom: 0.5rem;
+  }
+
+  .preview-username {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin: 0;
+    color: #2d3436;
+  }
+
+  .preview-bio {
+    padding: 1rem 1.5rem;
+    font-size: 0.9rem;
+    color: #636e72;
+    min-height: 60px;
+  }
+
+  .nav-tabs-custom {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 1.5rem;
+  }
+
+  .nav-tabs-custom .nav-link {
+    border: none;
+    color: #636e72;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .nav-tabs-custom .nav-link.active {
+    color: var(--marrom-escuro, #A39178);
+    background: none;
+    border-bottom: 3px solid var(--marrom-escuro, #A39178);
+  }
+
+  .upload-zone {
+    border: 2px dashed #dfe6e9;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .upload-zone:hover {
+    border-color: var(--marrom-escuro, #A39178);
+    background: #f9f9f9;
+  }
+
+  .input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+  }
+
+  .form-control:focus {
+    box-shadow: none;
+    border-color: var(--marrom-escuro, #A39178);
+  }
+</style>
+
+<div class="container py-3">
   <div class="row justify-content-center">
-    <!-- Formulário de edição de perfil -->
-    <div class="col-md-6">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header text-center">
-          <h3>Editar Perfil</h3>
-        </div>
-        <div class="card-body">
-          <form id="edit-profile-form">
-            <!-- Username -->
-            <div class="mb-3">
-              <label for="username" class="form-label">Nome de usuário</label>
-              <input type="text" class="form-control" id="username" name="username" maxlength="12" required>
+    <!-- Cria duas colunas -->
+    <div class="row">
+      <div class="col-md-6">
+        <div class="profile-preview-card">
+          <div id="preview-bg" class="preview-bg"></div>
+          <div class="preview-avatar-container">
+            <img id="preview-pf" src="/images/placeholder.png" class="preview-avatar" alt="Avatar">
+            <div class="preview-info">
+              <p id="preview-username-text" class="preview-username">@usuario</p>
             </div>
-
-            <!-- Background Image URL -->
-            <div class="mb-3">
-              <label for="background_image" class="form-label">Imagem de fundo (URL)</label>
-              <input type="url" class="form-control" id="background_image" name="background_image">
-              <div class="mt-2">
-                <img id="bg-preview" class="img-fluid rounded" style="max-height:150px; display:none;">
-              </div>
-            </div>
-
-            <!-- Profile Image URL -->
-            <div class="mb-3">
-              <label for="profile_image" class="form-label">Foto de perfil (URL)</label>
-              <input type="url" class="form-control" id="profile_image" name="profile_image">
-              <div class="mt-2">
-                <img id="pf-preview" style="max-height:100px; display:none; border-radius: 10%;">
-              </div>
-            </div>
-
-            <!-- Bio -->
-            <div class="mb-3">
-              <label for="bio" class="form-label">Bio</label>
-              <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="80" oninput="atualizarContadorBio()"></textarea>
-              <small id="bio-contador" class="form-text text-muted">0 / 80</small>
-            </div>
-
-            <div class="text-center">
-              <button type="submit" class="btn btn-success">Salvar alterações</button>
-            </div>
-          </form>
+          </div>
+          <div id="preview-bio-text" class="preview-bio">Sua bio aparecerá aqui...</div>
         </div>
       </div>
-    </div>
+      <div class="col-md-6">
+        <!-- Tabs de Edição -->
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-body p-4">
+            <ul class="nav nav-tabs nav-tabs-custom" id="profileTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab">
+                  <i class="bi bi-person-circle me-2"></i>Perfil
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-pane" type="button" role="tab">
+                  <i class="bi bi-shield-lock me-2"></i>Segurança
+                </button>
+              </li>
+            </ul>
 
-    <!-- Formulário de alteração de senha -->
-    <div class="col-md-6">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header text-center">
-          <h3>Alterar Senha</h3>
-        </div>
-        <div class="card-body">
-          <form id="change-password-form">
-            <div class="mb-3">
-              <label for="current_password" class="form-label">Senha atual</label>
-              <input type="password" class="form-control" id="current_password" required>
+            <div class="tab-content" id="profileTabsContent">
+              <!-- Aba de Informações -->
+              <div class="tab-pane fade show active" id="info-pane" role="tabpanel">
+                <form id="edit-profile-form">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="username" class="form-label fw-bold">Nome de usuário</label>
+                      <div class="input-group">
+                        <span class="input-group-text">@</span>
+                        <input type="text" class="form-control" id="username" name="username" maxlength="12" required placeholder="seu_nome">
+                      </div>
+                    </div>
+                    <div class="col-md-12 mb-4">
+                      <label for="bio" class="form-label fw-bold">Bio</label>
+                      <textarea class="form-control" id="bio" name="bio" rows="2" maxlength="80" oninput="atualizarContadorBio()" placeholder="Conte um pouco sobre você..."></textarea>
+                      <div class="text-end">
+                        <small id="bio-contador" class="text-muted">0 / 80</small>
+                      </div>
+                    </div>
+
+                    <hr class="my-4 opacity-25">
+
+                    <div class="col-md-6 mb-4">
+                      <label class="form-label fw-bold">Foto de Perfil</label>
+                      <div class="mb-2">
+                        <input type="url" class="form-control form-control-sm mb-2" id="profile_image" name="profile_image" placeholder="URL da imagem">
+                        <div class="upload-zone" onclick="document.getElementById('profile_file').click()">
+                          <i class="bi bi-cloud-arrow-up fs-4 d-block"></i>
+                          <span class="small">Clique para upload</span>
+                          <input type="file" id="profile_file" name="profile_file" accept="image/*" hidden>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                      <label class="form-label fw-bold">Imagem de Fundo</label>
+                      <div class="mb-2">
+                        <input type="url" class="form-control form-control-sm mb-2" id="background_image" name="background_image" placeholder="URL da imagem">
+                        <div class="upload-zone" onclick="document.getElementById('background_file').click()">
+                          <i class="bi bi-image fs-4 d-block"></i>
+                          <span class="small">Clique para upload</span>
+                          <input type="file" id="background_file" name="background_file" accept="image/*" hidden>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-center mt-3">
+                    <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold">
+                      Salvar Alterações
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Aba de Segurança -->
+              <div class="tab-pane fade" id="security-pane" role="tabpanel">
+                <form id="change-password-form" style="max-width: 400px; margin: 0 auto;">
+                  <div class="mb-3">
+                    <label for="current_password" class="form-label fw-bold">Senha Atual</label>
+                    <input type="password" class="form-control" id="current_password" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="new_password" class="form-label fw-bold">Nova Senha</label>
+                    <input type="password" class="form-control" id="new_password" required>
+                  </div>
+                  <div class="mb-4">
+                    <label for="confirm_password" class="form-label fw-bold">Confirmar Nova Senha</label>
+                    <input type="password" class="form-control" id="confirm_password" required>
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-secondary px-5 py-2 rounded-pill fw-bold">
+                      Alterar Senha
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-            <div class="mb-3">
-              <label for="new_password" class="form-label">Nova senha</label>
-              <input type="password" class="form-control" id="new_password" required>
-            </div>
-            <div class="mb-3">
-              <label for="confirm_password" class="form-label">Confirme a nova senha</label>
-              <input type="password" class="form-control" id="confirm_password" required>
-            </div>
-            <div class="text-center">
-              <button type="submit" class="btn btn-warning">Alterar senha</button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
@@ -84,39 +224,46 @@
 <script>
 // ================= Funções utilitárias =================
 
-// Atualiza contador da bio
+// Atualiza contador da bio e prévia
 function atualizarContadorBio() {
   const bio = document.getElementById('bio');
   const contador = document.getElementById('bio-contador');
+  const previewBio = document.getElementById('preview-bio-text');
+  
   contador.textContent = `${bio.value.length} / 80`;
+  previewBio.textContent = bio.value || 'Sua bio aparecerá aqui...';
 }
 
-// Normaliza username: adiciona @ e limita 13 caracteres
+// Normaliza username: remove @ se o usuário digitar e limita 12 caracteres
 function normalizarUsername(username) {
   username = username.trim();
-  if (!username.startsWith('@')) username = '@' + username;
-  if (username.length > 13) username = username.slice(0, 13);
+  if (username.startsWith('@')) username = username.substring(1);
+  if (username.length > 12) username = username.slice(0, 12);
   return username.toLowerCase();
 }
 
 // Atualiza previews de imagens e campos do perfil
 function atualizarPreviews(user) {
-  const bgPreview = document.getElementById('bg-preview');
-  const pfPreview = document.getElementById('pf-preview');
+  const previewBg = document.getElementById('preview-bg');
+  const previewPf = document.getElementById('preview-pf');
+  const previewUser = document.getElementById('preview-username-text');
 
   if(user.background_image){
-    bgPreview.src = user.background_image;
-    bgPreview.style.display = 'block';
+    previewBg.style.backgroundImage = `url('${user.background_image}')`;
     document.getElementById('background_image').value = user.background_image;
   }
 
   if(user.profile_image){
-    pfPreview.src = user.profile_image;
-    pfPreview.style.display = 'block';
+    previewPf.src = user.profile_image;
     document.getElementById('profile_image').value = user.profile_image;
   }
 
-  document.getElementById('username').value = user.username || '';
+  const username = user.username || '';
+  // Remove o @ para o input, mas mantém na prévia
+  const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+  document.getElementById('username').value = cleanUsername;
+  previewUser.textContent = '@' + cleanUsername;
+  
   document.getElementById('bio').value = user.bio || '';
   atualizarContadorBio();
 }
@@ -131,65 +278,102 @@ async function carregarPerfil() {
       const user = await res.json();
       atualizarPreviews(user);
     } else {
-      alert("Não foi possível carregar os dados do perfil.");
+      mostrarAviso("Não foi possível carregar os dados do perfil.");
     }
   } catch(err){
     console.error(err);
-    alert("Erro ao conectar com o servidor.");
+    mostrarAviso("Erro ao conectar com o servidor.");
   }
 }
 
 // ================= Eventos =================
 
-// Normaliza username enquanto digita
+// Atualiza prévia do username em tempo real
 document.getElementById('username').addEventListener('input', function() {
-  this.value = normalizarUsername(this.value);
+  const val = normalizarUsername(this.value);
+  document.getElementById('preview-username-text').textContent = val ? '@' + val : '@usuario';
+});
+
+// Atualiza prévia da URL da imagem de fundo
+document.getElementById('background_image').addEventListener('input', function() {
+  if (this.value) {
+    document.getElementById('preview-bg').style.backgroundImage = `url('${this.value}')`;
+  }
+});
+
+// Atualiza prévia da URL da foto de perfil
+document.getElementById('profile_image').addEventListener('input', function() {
+  if (this.value) {
+    document.getElementById('preview-pf').src = this.value;
+  }
+});
+
+// Previews de arquivos locais
+document.getElementById('background_file').addEventListener('change', function() {
+  const file = this.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('preview-bg').style.backgroundImage = `url('${e.target.result}')`;
+    }
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById('profile_file').addEventListener('change', function() {
+  const file = this.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('preview-pf').src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+  }
 });
 
 // Submissão formulário de perfil
 document.getElementById('edit-profile-form').addEventListener('submit', async function(e){
   e.preventDefault();
 
-  const payload = {
-    username: normalizarUsername(document.getElementById('username').value),
-    background_image: document.getElementById('background_image').value,
-    profile_image: document.getElementById('profile_image').value,
-    bio: document.getElementById('bio').value
-  };
+  const formData = new FormData();
+  const rawUsername = document.getElementById('username').value;
+  // Garante que o username enviado comece com @
+  formData.append('username', '@' + normalizarUsername(rawUsername));
+  formData.append('background_image', document.getElementById('background_image').value);
+  formData.append('profile_image', document.getElementById('profile_image').value);
+  formData.append('bio', document.getElementById('bio').value);
+
+  const bgFile = document.getElementById('background_file').files[0];
+  const pfFile = document.getElementById('profile_file').files[0];
+
+  if (bgFile) formData.append('background_file', bgFile);
+  if (pfFile) formData.append('profile_file', pfFile);
 
   try {
     const res = await fetch('/api/users/me', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(payload)
+      body: formData
     });
 
     const data = await res.json();
     if(res.ok){
-      alert(data.message || "Perfil atualizado com sucesso!");
-
-      // Atualiza previews
-      if(payload.background_image){
-        const bgPreview = document.getElementById('bg-preview');
-        bgPreview.src = payload.background_image;
-        bgPreview.style.display = 'block';
-      }
-      if(payload.profile_image){
-        const pfPreview = document.getElementById('pf-preview');
-        pfPreview.src = payload.profile_image;
-        pfPreview.style.display = 'block';
-      }
-
-      atualizarContadorBio();
-      document.getElementById('username').value = payload.username;
+      mostrarAviso(data.message || "Perfil atualizado com sucesso!");
+      
+      // Atualiza com as URLs permanentes retornadas pelo servidor
+      if(data.background_image) document.getElementById('background_image').value = data.background_image;
+      if(data.profile_image) document.getElementById('profile_image').value = data.profile_image;
+      
+      // Limpa inputs de arquivo
+      document.getElementById('background_file').value = '';
+      document.getElementById('profile_file').value = '';
 
     } else {
-      alert(data.message || "Erro ao atualizar perfil.");
+      mostrarAviso(data.message || "Erro ao atualizar perfil.");
     }
   } catch(err){
     console.error(err);
-    alert("Erro de conexão com o servidor");
+    mostrarAviso("Erro de conexão com o servidor");
   }
 });
 
@@ -202,7 +386,7 @@ document.getElementById('change-password-form').addEventListener('submit', async
   const confirmPassword = document.getElementById('confirm_password').value.trim();
 
   if(newPassword !== confirmPassword){
-    alert("As senhas novas não coincidem.");
+    mostrarAviso("As senhas novas não coincidem.");
     return;
   }
 
@@ -217,16 +401,16 @@ document.getElementById('change-password-form').addEventListener('submit', async
     const data = await res.json();
 
     if(res.ok){
-      alert(data.message || "Senha alterada com sucesso!");
+      mostrarAviso(data.message || "Senha alterada com sucesso!");
       document.getElementById('current_password').value = '';
       document.getElementById('new_password').value = '';
       document.getElementById('confirm_password').value = '';
     } else {
-      alert(data.message || "Erro ao alterar senha.");
+      mostrarAviso(data.message || "Erro ao alterar senha.");
     }
   } catch(err){
     console.error(err);
-    alert("Erro de conexão com o servidor.");
+    mostrarAviso("Erro de conexão com o servidor.");
   }
 });
 

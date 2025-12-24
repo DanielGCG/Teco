@@ -32,9 +32,6 @@ servidor.use(express.static(path.join(__dirname, 'public')));
 // Disponibiliza io para as rotas
 servidor.set('io', io);
 
-// Rotas de admin - Nivel de acesso 1
-//servidor.use('/admin', checkAuth(1), require('./server/routes/admin.router'));
-
 servidor.use('/api', require('./server/api/main'));
 
 // Rotas principais - Nivel de acesso 0

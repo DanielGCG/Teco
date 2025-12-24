@@ -19,6 +19,8 @@
 
 <script>
 // Função global para mostrar confirmação
+let confirmacaoModalInstance = null;
+
 function mostrarConfirmacao(mensagem, titulo = 'Confirmação') {
     return new Promise((resolve) => {
         document.getElementById("confirmacaoTexto").textContent = mensagem;
@@ -34,7 +36,9 @@ function mostrarConfirmacao(mensagem, titulo = 'Confirmação') {
         }
         
         const modalElement = document.getElementById('confirmacaoModal');
-        const confirmacaoModal = new bootstrap.Modal(modalElement);
+        if (!confirmacaoModalInstance) {
+            confirmacaoModalInstance = new bootstrap.Modal(modalElement);
+        }
         
         const btnConfirmar = document.getElementById('confirmacaoConfirmar');
         const btnCancelar = document.getElementById('confirmacaoCancelar');
@@ -48,21 +52,23 @@ function mostrarConfirmacao(mensagem, titulo = 'Confirmação') {
         
         // Adiciona novos listeners
         document.getElementById('confirmacaoConfirmar').addEventListener('click', () => {
-            confirmacaoModal.hide();
+            confirmacaoModalInstance.hide();
             resolve(true);
         }, { once: true });
         
         document.getElementById('confirmacaoCancelar').addEventListener('click', () => {
-            confirmacaoModal.hide();
+            confirmacaoModalInstance.hide();
             resolve(false);
         }, { once: true });
         
         // Se fechar o modal sem escolher, resolve como false
-        modalElement.addEventListener('hidden.bs.modal', () => {
+        const onHidden = () => {
             resolve(false);
-        }, { once: true });
+            modalElement.removeEventListener('hidden.bs.modal', onHidden);
+        };
+        modalElement.addEventListener('hidden.bs.modal', onHidden);
         
-        confirmacaoModal.show();
+        confirmacaoModalInstance.show();
     });
 }
 </script>

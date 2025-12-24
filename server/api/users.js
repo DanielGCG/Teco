@@ -6,6 +6,10 @@ const validate = require("../middlewares/validate");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
+const multer = require('multer');
+const axios = require('axios');
+const FormData = require('form-data');
+const sharp = require('sharp');
 const {
     registerSchema,
     loginSchema,
@@ -14,6 +18,8 @@ const {
     validateSessionSchema,
     searchUsersSchema
 } = require("../validators/users.validator");
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper para proteger rotas específicas dentro deste router
 const protect = (minRole = 0) => {
@@ -181,7 +187,7 @@ UsersRouter.get('/me', protect(0), async (req, res) => {
 });
 
 // Atualizar perfil próprio
-UsersRouter.put('/me', protect(0), validate(updateProfileSchema), async (req, res) => {
+UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
     let { username, background_image, profile_image, bio } = req.body;
 
     // Força @ no início
@@ -210,12 +216,46 @@ UsersRouter.put('/me', protect(0), validate(updateProfileSchema), async (req, re
             return res.status(409).json({ message: "Username já está em uso" });
         }
 
+        // Upload de foto de perfil se houver arquivo
+        if (req.files && req.files['profile_file']) {
+            const file = req.files['profile_file'][0];
+            
+            // Converte para PNG usando sharp
+            const pngBuffer = await sharp(file.buffer).png().toBuffer();
+            
+            const form = new FormData();
+            form.append('file', pngBuffer, { filename: 'profile.png', contentType: 'image/png' });
+            form.append('folder', 'profiles');
+            
+            const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=profiles`, form, {
+                headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+            });
+            profile_image = uploadRes.data.url;
+        }
+
+        // Upload de imagem de fundo se houver arquivo
+        if (req.files && req.files['background_file']) {
+            const file = req.files['background_file'][0];
+            
+            // Converte para PNG usando sharp
+            const pngBuffer = await sharp(file.buffer).png().toBuffer();
+
+            const form = new FormData();
+            form.append('file', pngBuffer, { filename: 'background.png', contentType: 'image/png' });
+            form.append('folder', 'backgrounds');
+            
+            const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=backgrounds`, form, {
+                headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+            });
+            background_image = uploadRes.data.url;
+        }
+
         await User.update(
             { username, background_image, profile_image, bio },
             { where: { id: req.user.id } }
         );
 
-        res.json({ message: "Perfil atualizado com sucesso", username });
+        res.json({ message: "Perfil atualizado com sucesso", username, profile_image, background_image });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao atualizar perfil" });
@@ -228,7 +268,7 @@ UsersRouter.put('/me/password', protect(0), validate(updatePasswordSchema), asyn
 
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['password_hash']
+            attributes: ['id', 'password_hash']
         });
 
         if (!user) {

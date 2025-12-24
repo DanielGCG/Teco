@@ -56,4 +56,18 @@ ChatsRouter.get('/', async (req, res) => {
     }
 });
 
+// GET /chats/users - Lista todos os usuários para criação de DM (usado no admin)
+ChatsRouter.get('/users', async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['id', 'username'],
+            order: [['username', 'ASC']]
+        });
+        res.json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao listar usuários" });
+    }
+});
+
 module.exports = ChatsRouter;

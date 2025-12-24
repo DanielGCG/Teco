@@ -95,7 +95,6 @@
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        backdrop-filter: blur(4px);
     }
     
     #loading-modal.show {
@@ -124,7 +123,6 @@
         height: 100%;
         background-color: rgba(0, 0, 0, 0.288);
         z-index: 1000;
-        backdrop-filter: blur(8px);
         overflow: hidden;
     }
     
@@ -146,7 +144,6 @@
     
     .movie {
         max-width: 120px;
-        cursor: url('/img/cursor-mao.png'), auto;
     }
     
     .movie img {
@@ -231,7 +228,6 @@ async function carregarWatchlist() {
         // Verifique se a resposta é um array antes de atribuir a obrasWatchlist
         if (Array.isArray(data)) {
             obrasWatchlist = data;
-            console.log('Obras carregadas com sucesso!');
             listarObras();
         } else {
             console.error('Formato de dados inválido, esperado um array:', data);
@@ -273,7 +269,7 @@ function listarObras() {
     const quadroInicial = document.createElement('div');
     quadroInicial.className = 'conteudo card shadow-sm d-flex flex-column align-items-center justify-content-between p-2';
     quadroInicial.innerHTML = `
-        <img src="pages/lista/+.png" class="capa rounded" alt="Adicionar" onclick="abrirPopupAdicionar()">
+        <img src="images/+.png" class="capa rounded" alt="Adicionar" onclick="abrirPopupAdicionar()">
         <h1 class="fw-bold text-dark">Adicionar</h1>
     `;
     tabela.appendChild(quadroInicial);
@@ -349,6 +345,9 @@ function abrirPopup(url, nome) {
                     <div class="vote-count text-muted small">${obra.vote_count} votos</div>
                     ${obra.original_title && obra.original_title !== obra.title ? `<div><strong>Título original:</strong> ${obra.original_title}</div>` : ''}
                     ${obra.original_language ? `<div class="text-uppercase">${obra.original_language}</div>` : ''}
+                    <div class="mt-2 small text-muted">
+                        Sugerido por: <strong>${obra.requester ? obra.requester.username : 'Sistema'}</strong>
+                    </div>
                     <div class="d-flex gap-2 mt-3">
                         <button class='btn btn-danger btn-sm' onclick="abrirConfirmacaoDelecao('${nome}')">Deletar</button>
                         <button class='btn btn-secondary btn-sm' onclick='fecharPopup()'>Fechar</button>
@@ -451,24 +450,25 @@ function fecharConfirmacao() {
 }
 
 let lastQuery = '';
+let searchTimeout = null;
 
 document.getElementById('search-input').addEventListener('input', function() {
-    
     const query = this.value;
-    console.log('Buscando por:', query); // Adicionando log
 
     if (query.length < 3) {
         document.getElementById('results').innerHTML = '';
         return;
     }
 
-    if (query.length !== lastQuery.length) {
-        searchMovies(query);
+    if (query !== lastQuery) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchMovies(query);
+        }, 500); // 500ms debounce
     }
 });
 
 async function searchMovies(query) {
-    console.log('Procurando por:', query); // Log de consulta
     lastQuery = query;
 
     try {
@@ -529,11 +529,22 @@ function displayResults(items) {
             });
 
             const data = await response.json();
+            if (!response.ok) {
+                const errMsg = data.message || 'Erro ao adicionar o filme/série.';
+                const details = data.errors ? ('\n' + data.errors.map(e => `${e.field}: ${e.message}`).join('\n')) : '';
+                mostrarAviso(errMsg + details);
+                return;
+            }
+
             if (data.success) {
+                // Preferir o registro salvo retornado pelo backend, se existir
+                const saved = data.saved || null;
+                const newEntry = saved ? saved : { ...obra, fileUrl: data.fileUrl };
+
                 // Encontrar a posição correta para inserir o filme/série na ordem alfabética
                 const index = obrasWatchlist.findIndex(item => {
-                    const itemTitle = item.title || item.name || '';
-                    const obraTitle = obra.title || obra.name || '';
+                    const itemTitle = (item.title || item.name || '').toString();
+                    const obraTitle = (newEntry.title || newEntry.name || '').toString();
                     return itemTitle.localeCompare(obraTitle, undefined, { sensitivity: 'base' }) > 0;
                 });
 
@@ -541,7 +552,7 @@ function displayResults(items) {
                 obrasWatchlist.splice(
                     index === -1 ? obrasWatchlist.length : index,
                     0,
-                    { ...obra, fileUrl: data.fileUrl }
+                    newEntry
                 );
 
                 // Atualiza a interface sem recarregar tudo

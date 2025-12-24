@@ -1,0 +1,192 @@
+<main class="container py-4">
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h2 class="mb-1 fw-bold">Calendário de Imagens</h2>
+      <p class="text-muted">Relembre as imagens que passaram pelo Boteco</p>
+      <div id="calendario-loading" class="text-secondary mt-3">
+        <div class="spinner-border spinner-border-sm" role="status"></div> Carregando...
+      </div>
+    </div>
+  </div>
+  <div id="calendario-imagens"></div>
+</main>
+
+<!-- Modal para ver imagem cheia -->
+<div class="modal fade" id="modalImagem" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-body p-0 position-relative text-center">
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="d-inline-block position-relative shadow-lg rounded overflow-hidden" style="aspect-ratio: 1/1; width: 100%; max-width: 80vh;">
+          <img id="modal-img-base" src="" class="w-100 h-100" style="object-fit: cover;">
+          <img id="modal-img-border" src="" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">
+        </div>
+        <div id="modal-texto" class="mt-3 text-white fw-bold fs-5 text-shadow"></div>
+        <div id="modal-autor" class="text-white-50 small"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.calendario-mes { margin-bottom: 3rem; border: none; }
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background-color: #eee;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.calendario-header {
+  background-color: #f8f9fa;
+  padding: 10px 0;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #666;
+}
+.calendario-dia, .calendario-dia-vazio {
+  aspect-ratio: 1/1;
+  position: relative;
+  background-color: #fff;
+}
+.calendario-dia-numero {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.3);
+  z-index: 3;
+  pointer-events: none;
+}
+.calendario-dia.has-image {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.calendario-dia.has-image:hover {
+  z-index: 4;
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.calendario-img-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.calendario-img-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.calendario-dia-vazio { background-color: #fafafa; }
+
+@media (max-width: 768px) {
+  .calendario-header { font-size: 0.6rem; }
+  .calendario-dia-numero { font-size: 0.7rem; top: 2px; right: 4px; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  const container = document.getElementById('calendario-imagens');
+  const loading = document.getElementById('calendario-loading');
+  const modal = new bootstrap.Modal(document.getElementById('modalImagem'));
+  
+  try {
+    const res = await fetch('/api/imagemdodia/ativas');
+    if (!res.ok) throw new Error();
+    const imagens = await res.json();
+    
+    if (!imagens.length) {
+      loading.innerHTML = '<div class="alert alert-light">Nenhuma imagem no histórico ainda.</div>';
+      return;
+    }
+    loading.style.display = 'none';
+
+    // A primeira imagem da lista (ordenada por DESC) é a atual
+    const currentId = imagens[0].id;
+
+    const grupos = {};
+    imagens.forEach(img => {
+      const d = new Date(img.start_at);
+      const mes = d.toLocaleString('pt-BR', { month: 'long' });
+      const ano = d.getFullYear();
+      const chave = `${mes} ${ano}`;
+      if (!grupos[chave]) grupos[chave] = { nome: chave, mes: d.getMonth(), ano, itens: [] };
+      grupos[chave].itens.push({
+        ...img,
+        dia: d.getDate()
+      });
+    });
+
+    container.innerHTML = Object.values(grupos).map(grupo => {
+      const diasNoMes = new Date(grupo.ano, grupo.mes + 1, 0).getDate();
+      const primeiroDiaSemana = new Date(grupo.ano, grupo.mes, 1).getDay();
+      const dias = Array(diasNoMes).fill(null);
+      grupo.itens.forEach(item => dias[item.dia - 1] = item);
+
+      let html = `
+        <div class="calendario-mes">
+          <h4 class="text-capitalize fw-bold mb-3 ps-2 border-start border-primary border-4">${grupo.nome}</h4>
+          <div class="calendario-grid">
+            <div class="calendario-header text-center">Dom</div>
+            <div class="calendario-header text-center">Seg</div>
+            <div class="calendario-header text-center">Ter</div>
+            <div class="calendario-header text-center">Qua</div>
+            <div class="calendario-header text-center">Qui</div>
+            <div class="calendario-header text-center">Sex</div>
+            <div class="calendario-header text-center">Sáb</div>
+      `;
+
+      const totalCelulas = Math.ceil((primeiroDiaSemana + diasNoMes) / 7) * 7;
+      let diaAtual = 1;
+
+      for (let i = 0; i < totalCelulas; i++) {
+        if (i < primeiroDiaSemana || diaAtual > diasNoMes) {
+          html += `<div class="calendario-dia-vazio"></div>`;
+        } else {
+          const item = dias[diaAtual - 1];
+          if (item) {
+            const isCurrent = item.id === currentId;
+            const dataStr = JSON.stringify(item).replace(/"/g, '&quot;');
+            html += `
+              <div class="calendario-dia has-image ${isCurrent ? 'border border-primary border-2' : ''}" onclick='abrirModal(${dataStr})'>
+                ${isCurrent ? '<span class="badge bg-primary position-absolute top-0 start-0 m-1 z-3" style="font-size: 0.5rem; padding: 2px 4px;">ATUAL</span>' : ''}
+                <span class="calendario-dia-numero">${diaAtual}</span>
+                <div class="calendario-img-container position-relative">
+                  <img src="${item.url}" loading="lazy">
+                  ${item.border_url ? `<img src="${item.border_url}" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">` : ''}
+                </div>
+              </div>`;
+          } else {
+            html += `
+              <div class="calendario-dia">
+                <span class="calendario-dia-numero">${diaAtual}</span>
+              </div>`;
+          }
+          diaAtual++;
+        }
+      }
+
+      html += `</div></div>`;
+      return html;
+    }).join('');
+
+    window.abrirModal = (item) => {
+      document.getElementById('modal-img-base').src = item.url;
+      document.getElementById('modal-img-border').src = item.border_url || '';
+      document.getElementById('modal-texto').textContent = item.texto;
+      document.getElementById('modal-autor').textContent = item.requester ? `Sugerido por: ${item.requester.username}` : 'Sugerido pelo Sistema';
+      modal.show();
+    };
+
+  } catch (err) {
+    console.error(err);
+    loading.textContent = 'Erro ao carregar imagens.';
+  }
+});
+</script>

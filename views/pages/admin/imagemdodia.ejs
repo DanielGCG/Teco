@@ -1,0 +1,231 @@
+<main class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3 fw-bold">Gerenciar Imagem do Dia</h2>
+            <p class="text-muted">Controle a fila de exibição e as molduras disponíveis.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Fila de Imagens -->
+        <div class="col-md-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Fila de Espera</h5>
+                    <button id="ativarProximaBtn" class="btn btn-success btn-sm">Ativar Próxima</button>
+                </div>
+                <div class="card-body">
+                    <div id="fila-lista">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Histórico Recente</h5>
+                </div>
+                <div class="card-body">
+                    <div id="historico-lista">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Molduras -->
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Molduras Padrão</h5>
+                </div>
+                <div class="card-body">
+                    <div id="molduras-lista" class="mb-4"></div>
+                    
+                    <hr>
+                    
+                    <h6 class="fw-bold mb-3">Adicionar Nova Moldura</h6>
+                    <form id="formNovaMoldura">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nome:</label>
+                            <input type="text" id="nomeMoldura" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Arquivo PNG:</label>
+                            <input type="file" id="arquivoMoldura" class="form-control form-control-sm" accept="image/png" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Fazer Upload</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+async function carregarFila() {
+    const container = document.getElementById('fila-lista');
+    try {
+        const res = await fetch('/api/admin/imagemdodia/fila');
+        const fila = await res.json();
+        
+        if (fila.length === 0) {
+            container.innerHTML = '<div class="alert alert-info">Nenhuma imagem na fila.</div>';
+            return;
+        }
+
+        container.innerHTML = fila.map(item => `
+            <div class="d-flex align-items-center p-3 border rounded mb-2 bg-light">
+                <div class="position-relative me-3" style="width: 60px; height: 60px;">
+                    <img src="${item.url}" class="w-100 h-100 object-fit-cover rounded">
+                    <img src="${item.border_url}" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold small">${item.texto}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">
+                        Sugerido por: <strong>${item.requester ? item.requester.username : 'Sistema'}</strong><br>
+                        Em: ${new Date(item.created_at).toLocaleDateString()}
+                    </div>
+                </div>
+                <button onclick="removerImagem(${item.id}, 'fila')" class="btn btn-outline-danger btn-sm border-0">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    } catch (err) {
+        container.innerHTML = '<div class="alert alert-danger">Erro ao carregar fila.</div>';
+    }
+}
+
+async function carregarHistorico() {
+    const container = document.getElementById('historico-lista');
+    try {
+        const res = await fetch('/api/imagemdodia/ativas');
+        const historico = await res.json();
+        
+        if (historico.length === 0) {
+            container.innerHTML = '<div class="alert alert-info">Nenhuma imagem no histórico.</div>';
+            return;
+        }
+
+        container.innerHTML = historico.slice(0, 10).map(item => `
+            <div class="d-flex align-items-center p-2 border rounded mb-2">
+                <div class="position-relative me-2" style="width: 40px; height: 40px;">
+                    <img src="${item.url}" class="w-100 h-100 object-fit-cover rounded">
+                    <img src="${item.border_url}" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold" style="font-size: 0.8rem;">${item.texto}</div>
+                    <div class="text-muted" style="font-size: 0.6rem;">Ativada em: ${new Date(item.start_at).toLocaleDateString()}</div>
+                </div>
+                <button onclick="removerImagem(${item.id}, 'historico')" class="btn btn-outline-danger btn-sm border-0">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    } catch (err) {
+        container.innerHTML = '<div class="alert alert-danger">Erro ao carregar histórico.</div>';
+    }
+}
+
+async function carregarMolduras() {
+    const container = document.getElementById('molduras-lista');
+    try {
+        const res = await fetch('/api/imagemdodia/borders');
+        const borders = await res.json();
+        
+        container.innerHTML = borders.map(b => `
+            <div class="d-flex align-items-center mb-2 p-2 border rounded">
+                <img src="${b.url}" style="width: 40px; height: 40px;" class="me-2 border">
+                <span class="small flex-grow-1">${b.nome}</span>
+                <button onclick="removerMoldura(${b.id})" class="btn btn-outline-danger btn-sm border-0">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    } catch (err) {
+        container.innerHTML = '<p class="text-danger small">Erro ao carregar molduras.</p>';
+    }
+}
+
+document.getElementById('ativarProximaBtn').onclick = async () => {
+    try {
+        const res = await fetch('/api/admin/imagemdodia/next', {
+            method: 'POST'
+        });
+        if (res.ok) {
+            alert("Próxima imagem ativada!");
+            carregarFila();
+            carregarHistorico();
+        } else {
+            const data = await res.json();
+            alert(data.message || "Erro ao ativar.");
+        }
+    } catch (err) {
+        alert("Erro de conexão.");
+    }
+};
+
+async function removerImagem(id, tipo) {
+    if (!confirm(`Remover esta imagem da ${tipo === 'fila' ? 'fila' : 'histórico'}?`)) return;
+
+    try {
+        const res = await fetch(`/api/admin/imagemdodia/fila/${id}`, {
+            method: 'DELETE'
+        });
+        if (res.ok) {
+            if (tipo === 'fila') carregarFila();
+            else carregarHistorico();
+        }
+        else alert("Erro ao remover.");
+    } catch (err) {
+        alert("Erro de conexão.");
+    }
+}
+
+async function removerMoldura(id) {
+    if (!confirm("Remover esta moldura?")) return;
+
+    try {
+        const res = await fetch(`/api/admin/imagemdodia/borders/${id}`, {
+            method: 'DELETE'
+        });
+        if (res.ok) carregarMolduras();
+        else alert("Erro ao remover moldura.");
+    } catch (err) {
+        alert("Erro de conexão.");
+    }
+}
+
+document.getElementById('formNovaMoldura').onsubmit = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('file', document.getElementById('arquivoMoldura').files[0]);
+    formData.append('nome', document.getElementById('nomeMoldura').value);
+
+    try {
+        const res = await fetch('/api/admin/imagemdodia/borders', {
+            method: 'POST',
+            body: formData
+        });
+        if (res.ok) {
+            alert("Moldura adicionada!");
+            document.getElementById('formNovaMoldura').reset();
+            carregarMolduras();
+        } else {
+            alert("Erro ao enviar moldura.");
+        }
+    } catch (err) {
+        alert("Erro de conexão.");
+    }
+};
+
+carregarFila();
+carregarHistorico();
+carregarMolduras();
+</script>

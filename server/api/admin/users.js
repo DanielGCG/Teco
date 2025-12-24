@@ -10,7 +10,7 @@ const { Op } = require("sequelize");
 AdminUsersRouter.get('/', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'role', 'profile_image', 'created_at', 'last_access']
+            attributes: ['id', 'username', 'role', 'profile_image', 'bio', 'created_at', 'last_access']
         });
         res.json(users);
     } catch (err) {
@@ -79,10 +79,15 @@ AdminUsersRouter.put('/:id', async (req, res) => {
 // PUT /admin/users/:id/reset-password - Resetar senha de qualquer usuário (admin)
 AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
     const userId = req.params.id;
-    const { newPassword } = req.body;
+    let { newPassword } = req.body || {};
 
-    if (!newPassword || newPassword.length < 6) {
-        return res.status(400).json({ message: "Nova senha deve ter no mínimo 6 caracteres" });
+    // Se não for enviada senha, define o padrão 12345
+    if (!newPassword) {
+        newPassword = "12345";
+    }
+
+    if (newPassword.length < 5) {
+        return res.status(400).json({ message: "Nova senha deve ter no mínimo 5 caracteres" });
     }
 
     // Impede que o usuário resete sua própria senha por aqui (exceto Dono)

@@ -94,7 +94,7 @@ async function carregarUsuarios() {
     });
     } catch(err) {
         console.error(err);
-        alert("Erro ao carregar usuários");
+        mostrarAviso("Erro ao carregar usuários");
     }
 }
 
@@ -102,19 +102,19 @@ async function carregarUsuarios() {
 function abrirModalEdicao(userId) {
     const user = usuariosLista.find(u => u.id === userId);
     if (!user) {
-        alert("Usuário não encontrado!");
+        mostrarAviso("Usuário não encontrado!");
         return;
     }
 
     // Impede editar a si mesmo (exceto Dono)
     if (currentLoggedUser && currentLoggedUser.id === user.id && currentLoggedUser.role < 2) {
-        alert("Você não pode editar seu próprio usuário!");
+        mostrarAviso("Você não pode editar seu próprio usuário!");
         return;
     }
 
     // Impede editar usuários de nível igual ou superior (exceto se for o próprio Dono editando a si mesmo)
     if (currentLoggedUser && user.role >= currentLoggedUser.role && user.id !== currentLoggedUser.id) {
-        alert("Você não pode editar usuários de nível igual ou superior ao seu!");
+        mostrarAviso("Você não pode editar usuários de nível igual ou superior ao seu!");
         return;
     }
 
@@ -158,23 +158,23 @@ document.getElementById("saveUserBtn").addEventListener("click", async () => {
 
         const data = await res.json();
         if(res.ok){
-            alert("Usuário atualizado com sucesso!");
+            mostrarAviso("Usuário atualizado com sucesso!");
             await carregarUsuarios(); // atualiza lista
             const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
             modal.hide();
         } else {
-            alert("Erro: " + data.message);
+            mostrarAviso("Erro: " + data.message);
         }
     } catch(err) {
         console.error(err);
-        alert("Erro ao atualizar usuário");
+        mostrarAviso("Erro ao atualizar usuário");
     }
 });
 
 // ==================== Excluir usuário ====================
 document.getElementById("deleteUserBtn").addEventListener("click", async () => {
     if (!currentUser) return;
-    if (!await confirm("Tem certeza que deseja excluir este usuário?")) return;
+    if (!await mostrarConfirmacao("Tem certeza que deseja excluir este usuário?")) return;
 
     try {
         const res = await fetch(`/api/admin/users/${currentUser.id}`, {
@@ -183,17 +183,17 @@ document.getElementById("deleteUserBtn").addEventListener("click", async () => {
         });
 
         if (res.ok) {
-            alert("Usuário excluído!");
+            mostrarAviso("Usuário excluído!");
             await carregarUsuarios(); // atualiza lista
             const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
             modal.hide();
         } else {
             const data = await res.json();
-            alert("Erro: " + data.message);
+            mostrarAviso("Erro: " + data.message);
         }
     } catch(err) {
         console.error(err);
-        alert("Erro ao excluir usuário");
+        mostrarAviso("Erro ao excluir usuário");
     }
 });
 

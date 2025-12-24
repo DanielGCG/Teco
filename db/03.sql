@@ -12,9 +12,11 @@ CREATE TABLE wl_filme (
     release_date DATE,
     vote_average FLOAT,
     vote_count INT,
+    user_id INT UNSIGNED NULL,
     INDEX (title),
     INDEX (release_date),
-    INDEX (popularity)
+    INDEX (popularity),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Tabela de gêneros (fixa, com os IDs do TMDb)
@@ -32,13 +34,7 @@ CREATE TABLE wl_filme_genero (
     FOREIGN KEY (genero_id) REFERENCES wl_genero(id) ON DELETE CASCADE
 );
 
-
-
-
 -- Tabela de imagens do dia --
-
-
-
 
 -- Cria a tabela
 CREATE TABLE br_imagemdodia (
@@ -46,8 +42,10 @@ CREATE TABLE br_imagemdodia (
     url VARCHAR(256) NOT NULL,
     border_url VARCHAR(256) NOT NULL,
     texto VARCHAR(32) NOT NULL,
+    user_id INT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    start_at TIMESTAMP NULL
+    start_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Trigger: ao inserir uma imagem

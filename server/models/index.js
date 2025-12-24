@@ -11,6 +11,14 @@ const Cartinha = require('./Cartinha');
 const Friendship = require('./Friendship');
 const Notification = require('./Notification');
 const { Filme, Genero, FilmeGenero } = require('./Watchlist');
+const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
+
+// Associações
+ImagemDoDia.belongsTo(User, { foreignKey: 'user_id', as: 'requester' });
+User.hasMany(ImagemDoDia, { foreignKey: 'user_id' });
+
+Filme.belongsTo(User, { foreignKey: 'user_id', as: 'requester' });
+User.hasMany(Filme, { foreignKey: 'user_id' });
 
 // Sincroniza modelos (use com cuidado em produção)
 // sequelize.sync({ alter: true });
@@ -28,5 +36,7 @@ module.exports = {
     Notification,
     Filme,
     Genero,
-    FilmeGenero
+    FilmeGenero,
+    ImagemDoDia,
+    ImagemDoDiaBorder
 };

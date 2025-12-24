@@ -1,14 +1,14 @@
 const express = require('express');
-const { Filme, Genero, FilmeGenero } = require("../models");
+const { Filme, Genero, FilmeGenero, User } = require("../models");
 const validate = require("../middlewares/validate");
 const {
     searchMoviesSchema,
     uploadMovieSchema,
     deleteMovieSchema
 } = require("../validators/watchlist.validator");
-const router = express.Router();
+const watchlistRouter = express.Router();
 
-router.get('/watchlistsearch-movies', validate(searchMoviesSchema, 'query'), async (req, res) => {
+watchlistRouter.get('/watchlistsearch-movies', validate(searchMoviesSchema, 'query'), async (req, res) => {
     const query = req.query.query;
     const BASE_URL = 'https://api.themoviedb.org/3';
     const language = 'pt-BR';
@@ -20,8 +20,6 @@ router.get('/watchlistsearch-movies', validate(searchMoviesSchema, 'query'), asy
         // Fazer a busca na API do TMDb
         const response = await fetch(`${BASE_URL}/search/multi?api_key=${process.env.TMDB_APIKEY}&query=${encodeURIComponent(normalizedQuery)}&language=${language}`);
         const data = await response.json();
-
-        console.log(data);
 
         if (data.results.length === 0) {
             return res.status(404).json({ message: 'No movies found.' });
@@ -40,7 +38,7 @@ router.get('/watchlistsearch-movies', validate(searchMoviesSchema, 'query'), asy
     }
 });
 
-router.post('/watchlistupload-movies', validate(uploadMovieSchema), async (req, res) => {
+watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), async (req, res) => {
     const newMovie = req.body;
     
     try {
@@ -79,12 +77,19 @@ router.post('/watchlistupload-movies', validate(uploadMovieSchema), async (req, 
             backdrop_path: backdrop_path || '',
             release_date: releaseDate,
             vote_average: vote_average || 0,
-            vote_count: vote_count || 0
+            vote_count: vote_count || 0,
+            user_id: req.user.id
         });
 
         // Insere os gêneros na tabela de relação N:N
         if (Array.isArray(genre_ids)) {
             for (const genero_id of genre_ids) {
+                // Garantir que o gênero exista na tabela wl_genero antes de criar a relação
+                await Genero.findOrCreate({
+                    where: { id: genero_id },
+                    defaults: { name: `Desconhecido ${genero_id}` }
+                });
+
                 await FilmeGenero.findOrCreate({
                     where: {
                         filme_id: id,
@@ -94,14 +99,23 @@ router.post('/watchlistupload-movies', validate(uploadMovieSchema), async (req, 
             }
         }
 
-        res.json({ success: true, message: 'Filme/série adicionado com sucesso.' });
+        // Retornar o registro salvo para o frontend (útil para atualizações locais)
+        const saved = await Filme.findByPk(id, {
+            include: [{
+                model: User,
+                as: 'requester',
+                attributes: ['username']
+            }]
+        });
+        res.json({ success: true, message: 'Filme/série adicionado com sucesso.', fileUrl: null, saved });
     } catch (error) {
         console.error('Erro ao adicionar filme/série:', error);
-        res.status(500).json({ success: false, message: 'Erro ao adicionar filme/série.' });
+        const message = error && error.message ? error.message : 'Erro ao adicionar filme/série.';
+        res.status(500).json({ success: false, message });
     }
 });
 
-router.delete('/watchlistdelete-movie', validate(deleteMovieSchema, 'query'), async (req, res) => {
+watchlistRouter.delete('/watchlistdelete-movie', validate(deleteMovieSchema, 'query'), async (req, res) => {
     const { id } = req.query;
 
     try {
@@ -121,9 +135,15 @@ router.delete('/watchlistdelete-movie', validate(deleteMovieSchema, 'query'), as
     }
 });
 
-router.get('/watchlistdownload-movies', async (req, res) => {
+watchlistRouter.get('/watchlistdownload-movies', async (req, res) => {
     try {
         const filmes = await Filme.findAll({
+            include: [{
+                model: User,
+                as: 'requester',
+                attributes: ['username'],
+                required: false
+            }],
             order: [['title', 'ASC']]
         });
         res.json(filmes);
@@ -133,4 +153,4 @@ router.get('/watchlistdownload-movies', async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = watchlistRouter;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br" style="cursor: url('/images/cursor.png'), auto;">
+<html lang="pt-br">
 <link rel="icon" type="image/png" href="/images/icon.ico">
 <head>
 <script>
@@ -51,6 +51,15 @@ document.addEventListener('DOMContentLoaded', function() {
     <script src="/socket.io/socket.io.js"></script>
     
 <style>
+    * {
+        cursor: url('/images/cursor.png'), auto;
+    }
+    a, a *, button, button *, .btn, .btn *, [role="button"], [role="button"] *, select, label, label *, .pointer, .pointer *, input[type="button"], input[type="submit"], input[type="reset"] {
+        cursor: url('/images/cursor-mao.png'), pointer !important;
+    }
+    input[type="text"], input[type="password"], input[type="email"], input[type="number"], input[type="search"], input[type="tel"], input[type="url"], textarea, [contenteditable="true"] {
+        cursor: url('/images/cursor-texto.png'), text !important;
+    }
     #barra-lateral {
         width: 200px;
         height: 100vh;

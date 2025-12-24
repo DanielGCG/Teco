@@ -18,6 +18,8 @@
 
 <script>
 // Função global para mostrar avisos
+let avisoModalInstance = null;
+
 function mostrarAviso(mensagem, titulo = 'Aviso') {
     document.getElementById("avisoTexto").textContent = mensagem;
     document.getElementById("avisoModalTitle").textContent = titulo;
@@ -31,7 +33,10 @@ function mostrarAviso(mensagem, titulo = 'Aviso') {
         console.log('Erro ao carregar som:', err);
     }
     
-    const avisoModal = new bootstrap.Modal(document.getElementById('avisoModal'));
-    avisoModal.show();
+    const modalElement = document.getElementById('avisoModal');
+    if (!avisoModalInstance) {
+        avisoModalInstance = new bootstrap.Modal(modalElement);
+    }
+    avisoModalInstance.show();
 }
 </script>

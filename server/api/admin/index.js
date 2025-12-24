@@ -5,6 +5,7 @@ const AdminRouter = express.Router();
 const AdminUsersRouter = require("./users");
 const AdminCartinhasRouter = require("./cartinhas");
 const AdminChatsRouter = require("./chats");
+const AdminImagemDoDiaRouter = require("./imagemdodia");
 
 // ==================== Rotas Administrativas ====================
 
@@ -16,5 +17,8 @@ AdminRouter.use("/cartinhas", AdminCartinhasRouter);
 
 // Rotas de chats administrativos
 AdminRouter.use("/chats", AdminChatsRouter);
+
+// Rotas de imagem do dia administrativas
+AdminRouter.use("/imagemdodia", AdminImagemDoDiaRouter);
 
 module.exports = AdminRouter;

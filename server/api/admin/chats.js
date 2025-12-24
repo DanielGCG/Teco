@@ -27,6 +27,113 @@ AdminChatsRouter.get('/estatisticas', async (req, res) => {
     }
 });
 
+// POST /admin/chats/public - Criar um novo chat público
+AdminChatsRouter.post('/public', async (req, res) => {
+    const { nome } = req.body;
+
+    if (!nome || nome.trim() === '') {
+        return res.status(400).json({ message: "Nome do chat é obrigatório" });
+    }
+
+    try {
+        const chat = await Chat.create({
+            nome: nome.trim(),
+            tipo: 'public',
+            criado_por: req.user.id
+        });
+
+        res.status(201).json({ message: "Chat público criado com sucesso", chat });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao criar chat público" });
+    }
+});
+
+// POST /admin/chats/dm - Criar uma DM entre dois usuários
+AdminChatsRouter.post('/dm', async (req, res) => {
+    let { otherUserId, creatorId, participants, participantes } = req.body;
+    
+    let user1Id, user2Id;
+
+    if (participants && Array.isArray(participants) && participants.length >= 2) {
+        user1Id = participants[0];
+        user2Id = participants[1];
+    } else if (participantes && Array.isArray(participantes) && participantes.length >= 2) {
+        user1Id = participantes[0];
+        user2Id = participantes[1];
+    } else {
+        user1Id = creatorId || req.user.id;
+        user2Id = otherUserId;
+    }
+
+    if (!user1Id || !user2Id) {
+        return res.status(400).json({ message: "IDs dos usuários são obrigatórios" });
+    }
+
+    if (user1Id == user2Id) {
+        return res.status(400).json({ message: "Não é possível criar uma DM com o mesmo usuário" });
+    }
+
+    try {
+        // Verificar se ambos os usuários existem
+        const user1 = await User.findByPk(user1Id);
+        const user2 = await User.findByPk(user2Id);
+
+        if (!user1 || !user2) {
+            return res.status(404).json({ message: "Um ou ambos os usuários não foram encontrados" });
+        }
+
+        // Verificar se já existe uma DM entre eles
+        const myChats = await ChatParticipant.findAll({
+            where: { user_id: user1Id },
+            attributes: ['chat_id']
+        });
+
+        const otherUserChats = await ChatParticipant.findAll({
+            where: { user_id: user2Id },
+            attributes: ['chat_id']
+        });
+
+        const myChatIds = myChats.map(c => c.chat_id);
+        const otherChatIds = otherUserChats.map(c => c.chat_id);
+        const commonChatIds = myChatIds.filter(id => otherChatIds.includes(id));
+
+        let existingChat = null;
+        if (commonChatIds.length > 0) {
+            existingChat = await Chat.findOne({
+                where: {
+                    id: { [Op.in]: commonChatIds },
+                    tipo: 'dm'
+                }
+            });
+        }
+
+        if (existingChat) {
+            return res.status(409).json({ 
+                message: "Conversa já existe", 
+                chat: existingChat 
+            });
+        }
+
+        // Criar novo chat DM
+        const chat = await Chat.create({
+            tipo: 'dm',
+            criado_por: user1Id
+        });
+
+        // Adicionar ambos como participantes
+        await ChatParticipant.bulkCreate([
+            { chat_id: chat.id, user_id: user1Id },
+            { chat_id: chat.id, user_id: user2Id }
+        ]);
+
+        res.status(201).json({ message: "DM criada com sucesso", chat });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao criar DM" });
+    }
+});
+
 // GET /admin/chats - Listar todos os chats com informações detalhadas
 AdminChatsRouter.get('/', async (req, res) => {
     const page = parseInt(req.query.page) || 1;

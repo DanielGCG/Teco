@@ -94,4 +94,17 @@ AdminRouter.get('/teste-notificacoes', async (req, res) => {
     })
 });
 
+AdminRouter.get('/imagemdodia', async (req, res) => {
+    const locals = {
+        title: `Gerenciar Imagem do Dia`,
+        description: "Controle a fila e molduras",
+        version: process.env.VERSION,
+    }
+    res.render('pages/admin/imagemdodia', {
+        layout: 'layouts/main',
+        locals: locals,
+        HOST: process.env.HOST
+    })
+});
+
 module.exports = AdminRouter;
