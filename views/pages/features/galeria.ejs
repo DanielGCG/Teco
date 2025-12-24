@@ -443,22 +443,36 @@
 
         xhr.onload = function() {
             progressWrapper.style.display = 'none';
+            const text = xhr.responseText || '';
+
+            // Tentar parsear JSON; se falhar, mostrar trecho da resposta e status
+            let data = null;
             try {
-                const data = JSON.parse(xhr.responseText);
-                if (xhr.status >= 200 && xhr.status < 300 && data.success) {
-                    if (data.imagem) galeriaData.imagens.push(data.imagem);
-                    bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
-                    form.reset();
-                    renderizarGaleria();
-                    mostrarAviso('Imagem adicionada com sucesso!', 'Sucesso');
-                } else {
-                    console.error('Erro no upload (servidor):', data);
-                    mostrarConfirmacao(data.message || 'Erro desconhecido no servidor.', 'Erro');
-                }
+                data = text ? JSON.parse(text) : null;
             } catch (err) {
-                console.error('Resposta inválida do servidor:', err, xhr.responseText);
-                mostrarConfirmacao('Erro na resposta do servidor.', 'Erro');
+                console.warn('Resposta não é JSON:', err);
             }
+
+            if (xhr.status >= 200 && xhr.status < 300 && data && data.success) {
+                if (data.imagem) galeriaData.imagens.push(data.imagem);
+                bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
+                form.reset();
+                renderizarGaleria();
+                mostrarAviso('Imagem adicionada com sucesso!', 'Sucesso');
+                return;
+            }
+
+            // Se o servidor retornou JSON com detalhes, use-o
+            if (data) {
+                console.error('Erro no upload (servidor):', data);
+                mostrarConfirmacao(data.message || `Erro no servidor (status ${xhr.status})`, 'Erro');
+                return;
+            }
+
+            // Resposta não-JSON (p.ex. HTML de erro do Heroku). Mostrar trecho para debugging
+            const snippet = text.substring(0, 800);
+            console.error('Resposta inválida do servidor (não-JSON). Status:', xhr.status, 'Resposta (snippet):', snippet);
+            mostrarConfirmacao(`Resposta inválida do servidor (status ${xhr.status}). Pode ser timeout/crash no servidor de arquivos. Trecho: ${snippet}`, 'Erro');
         };
 
         xhr.onerror = function() {
