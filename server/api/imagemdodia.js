@@ -1,27 +1,16 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../models");
 const multer = require('multer');
-const axios = require('axios');
-const FormData = require('form-data');
+const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const axios = require('axios'); // Mantém para outros usos
+const FormData = require('form-data'); // Mantém para outros usos
 const sharp = require('sharp');
 const { Op } = require('sequelize');
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper para deletar arquivo do servidor de arquivos por URL
-async function deleteFileFromServer(fileUrl) {
-    if (!fileUrl) return;
-    try {
-        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
-            data: { url: fileUrl },
-            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
-        });
-    } catch (err) {
-        console.error('Erro ao deletar arquivo do servidor:', err.message);
-        // Não falha a requisição se a deleção remota falhar
-    }
-}
+// deleteFileFromServer substituído por deleteFromFileServer universal
 
 // Busca a imagem do dia ativa
 router.get('/', async (req, res) => {
@@ -71,28 +60,23 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
     try {
         const file = req.files['file'][0];
         const pngBuffer = await sharp(file.buffer).png().toBuffer();
-
-        const form = new FormData();
-        form.append('file', pngBuffer, { filename: 'imagemdodia.png', contentType: 'image/png' });
-        form.append('folder', 'imagemdodia');
-        
-        const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=imagemdodia`, form, {
-            headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+        const url = await uploadToFileServer({
+            buffer: pngBuffer,
+            filename: 'imagemdodia.png',
+            folder: 'imagemdodia',
+            mimetype: 'image/png'
         });
-        const url = uploadRes.data.url;
 
         let border_url = defaultBorderUrl || '';
         if (req.files['border'] && req.files['border'][0]) {
             const borderFile = req.files['border'][0];
             const borderPngBuffer = await sharp(borderFile.buffer).png().toBuffer();
-
-            const borderForm = new FormData();
-            borderForm.append('file', borderPngBuffer, { filename: 'border.png', contentType: 'image/png' });
-            borderForm.append('folder', 'imagemdodia/borders');
-            const borderRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=imagemdodia/borders`, borderForm, {
-                headers: { ...borderForm.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+            border_url = await uploadToFileServer({
+                buffer: borderPngBuffer,
+                filename: 'border.png',
+                folder: 'imagemdodia/borders',
+                mimetype: 'image/png'
             });
-            border_url = borderRes.data.url;
         }
 
         const novaImagem = await ImagemDoDia.create({ 

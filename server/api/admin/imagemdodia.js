@@ -1,6 +1,7 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../../models");
 const multer = require('multer');
+const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
 const axios = require('axios');
 const FormData = require('form-data');
 const sharp = require('sharp');
@@ -8,20 +9,6 @@ const { Op } = require('sequelize');
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
-
-// Helper para deletar arquivo do servidor de arquivos por URL
-async function deleteFileFromServer(fileUrl) {
-    if (!fileUrl) return;
-    try {
-        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
-            data: { url: fileUrl },
-            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
-        });
-    } catch (err) {
-        console.error('Erro ao deletar arquivo do servidor:', err.message);
-        // Não falha a requisição se a deleção remota falhar
-    }
-}
 
 // Fila de Imagens
 router.get('/fila', async (req, res) => {
@@ -68,7 +55,7 @@ router.delete('/fila/:id', async (req, res) => {
         
         // Deleta apenas a imagem do servidor (moldura é reutilizável, não deletar)
         if (imagem.url) {
-            await deleteFileFromServer(imagem.url);
+            await deleteFromFileServer({ fileUrl: imagem.url });
         }
         
         await imagem.destroy();
@@ -87,24 +74,16 @@ router.post('/borders', upload.single('file'), async (req, res) => {
     try {
         // Converte para PNG usando sharp
         const pngBuffer = await sharp(req.file.buffer).png().toBuffer();
-
-        const form = new FormData();
-        form.append('file', pngBuffer, { filename: 'border.png', contentType: 'image/png' });
-        form.append('folder', 'imagemdodia/borders');
-
-        const uploadRes = await axios.post(
-            `${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=imagemdodia/borders`,
-            form,
-            {
-                headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
-            }
-        );
-
+        const url = await uploadToFileServer({
+            buffer: pngBuffer,
+            filename: 'border.png',
+            folder: 'imagemdodia/borders',
+            mimetype: 'image/png'
+        });
         const novaBorder = await ImagemDoDiaBorder.create({
-            url: uploadRes.data.url,
+            url,
             nome: req.body.nome
         });
-
         res.status(201).json(novaBorder);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao adicionar moldura.', error: error.message });
@@ -119,7 +98,7 @@ router.delete('/borders/:id', async (req, res) => {
         
         // Deleta do servidor de arquivos antes de remover do BD
         if (border.url) {
-            await deleteFileFromServer(border.url);
+            await deleteFromFileServer({ fileUrl: border.url });
         }
         
         await border.destroy();

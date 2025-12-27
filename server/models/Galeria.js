@@ -32,9 +32,21 @@ const Galeria = sequelize.define('Galeria', {
     background_url: {
         type: DataTypes.STRING(255)
     },
+    background_fill: {
+        type: DataTypes.STRING(10),
+        defaultValue: 'cover'
+    },
     background_color: {
         type: DataTypes.STRING(7),
         defaultValue: '#e2e1cf'
+    },
+    font_color: {
+        type: DataTypes.STRING(7),
+        defaultValue: '#3E3F29'
+    },
+    card_color: {
+        type: DataTypes.STRING(7),
+        defaultValue: '#ffffff'
     },
     font_family: {
         type: DataTypes.STRING(50),

@@ -8,7 +8,10 @@ CREATE TABLE br_galeria (
     user_id INT UNSIGNED NOT NULL,
     is_public BOOLEAN DEFAULT FALSE,
     background_url VARCHAR(255),
+    background_fill VARCHAR(10) DEFAULT 'cover',
     background_color VARCHAR(7) DEFAULT '#e2e1cf',
+    font_color VARCHAR(7) DEFAULT '#3E3F29',
+    card_color VARCHAR(7) DEFAULT '#ffffff',
     font_family VARCHAR(50) DEFAULT 'Inter',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -1,8 +1,9 @@
 const express = require('express');
 const { Galeria, GaleriaImagem, GaleriaPermissao, User } = require("../models");
 const multer = require('multer');
-const axios = require('axios');
-const FormData = require('form-data');
+const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const axios = require('axios'); // Mantém para outras requisições
+const FormData = require('form-data'); // Mantém para uso em outros pontos se necessário
 // sharp is no longer required for gallery uploads; we preserve original files
 const { Op } = require('sequelize');
 const router = express.Router();
@@ -111,24 +112,21 @@ router.get('/', async (req, res) => {
 
 // Criar nova galeria
 router.post('/', uploadImage.single('capa'), async (req, res) => {
-    const { nome, descricao, is_public } = req.body;
+    const { nome, descricao, is_public, card_color } = req.body;
     if (!nome) return res.status(400).json({ success: false, message: 'Nome é obrigatório.' });
+
 
     try {
         let capa_url = null;
         if (req.file) {
-            const form = new FormData();
             const sanitizedFilename = sanitizeFilename(req.file.originalname);
-            form.append('file', req.file.buffer, { filename: sanitizedFilename, contentType: req.file.mimetype || 'application/octet-stream' });
-            form.append('folder', 'galerias/capas');
-
             try {
-                const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=galerias/capas`, form, {
-                    headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY },
-                    maxContentLength: Infinity,
-                    maxBodyLength: Infinity
+                capa_url = await uploadToFileServer({
+                    buffer: req.file.buffer,
+                    filename: sanitizedFilename,
+                    folder: 'galerias/capas',
+                    mimetype: req.file.mimetype
                 });
-                capa_url = uploadRes.data.url;
             } catch (err) {
                 const remoteStatus = err.response?.status;
                 const remoteData = err.response?.data;
@@ -141,7 +139,8 @@ router.post('/', uploadImage.single('capa'), async (req, res) => {
             descricao,
             capa_url,
             user_id: req.user.id,
-            is_public: is_public === 'true' || is_public === true
+            is_public: is_public === 'true' || is_public === true,
+            card_color: card_color || undefined
         });
 
         res.status(201).json({ success: true, galeria });
@@ -191,19 +190,14 @@ router.post('/:id/upload', checkGaleriaPermission, (req, res, next) => {
         if (!process.env.SERVIDORDEARQUIVOS_URL || !process.env.SERVIDORDEARQUIVOS_KEY) {
             return res.status(500).json({ success: false, message: 'Configuração do servidor de arquivos ausente.' });
         }
-
-        // Upload the original file (preserve PNG/WEBP/GIF/video). No conversion.
-        const form = new FormData();
         const sanitizedFilename = sanitizeFilename(req.file.originalname);
-        form.append('file', req.file.buffer, { filename: sanitizedFilename, contentType: req.file.mimetype || 'application/octet-stream' });
-        form.append('folder', `galerias/${req.params.id}`);
-
-        let uploadRes;
+        let fileUrl;
         try {
-            uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=galerias/${req.params.id}`, form, {
-                headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY },
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity
+            fileUrl = await uploadToFileServer({
+                buffer: req.file.buffer,
+                filename: sanitizedFilename,
+                folder: `galerias/${req.params.id}`,
+                mimetype: req.file.mimetype
             });
         } catch (err) {
             console.error('Erro ao enviar para o servidor de arquivos:', err.message);
@@ -215,34 +209,18 @@ router.post('/:id/upload', checkGaleriaPermission, (req, res, next) => {
                 remoteData: err.response?.data
             });
         }
-
         const imagem = await GaleriaImagem.create({
             galeria_id: req.params.id,
-            url: uploadRes.data.url,
+            url: fileUrl,
             nome: req.body.nome || req.file.originalname,
             user_id: req.user.id
         });
-
         return res.status(201).json({ success: true, imagem });
     } catch (error) {
         console.error('Erro interno no upload:', error);
         res.status(500).json({ success: false, message: 'Erro interno ao processar upload.', error: error.message });
     }
 });
-
-// Helper para deletar arquivo do servidor de arquivos por URL
-async function deleteFileFromServer(fileUrl) {
-    if (!fileUrl) return;
-    try {
-        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
-            data: { url: fileUrl },
-            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
-        });
-    } catch (err) {
-        console.error('Erro ao deletar arquivo do servidor:', err.message);
-        // Não falha a requisição se a deleção remota falhar
-    }
-}
 
 // Deletar imagem da galeria
 router.delete('/:id/imagem/:imagemId', checkGaleriaPermission, async (req, res) => {
@@ -251,7 +229,9 @@ router.delete('/:id/imagem/:imagemId', checkGaleriaPermission, async (req, res) 
         if (!imagem) return res.status(404).json({ success: false, message: 'Imagem não encontrada.' });
 
         // Deletar arquivo do servidor antes de remover do BD
-        await deleteFileFromServer(imagem.url);
+        await deleteFromFileServer({
+            fileUrl: imagem.url
+        });
 
         await imagem.destroy();
         res.json({ success: true, message: 'Imagem removida com sucesso.' });
@@ -270,18 +250,18 @@ router.delete('/:id', checkGaleriaPermission, async (req, res) => {
 
         // Deletar capa do servidor
         if (req.galeria.capa_url) {
-            await deleteFileFromServer(req.galeria.capa_url);
+            await deleteFromFileServer({ fileUrl: req.galeria.capa_url });
         }
 
         // Deletar background do servidor
         if (req.galeria.background_url) {
-            await deleteFileFromServer(req.galeria.background_url);
+            await deleteFromFileServer({ fileUrl: req.galeria.background_url });
         }
 
         // Deletar todas as imagens do servidor antes de destruir
         const imagens = await GaleriaImagem.findAll({ where: { galeria_id: req.params.id } });
         for (const img of imagens) {
-            await deleteFileFromServer(img.url);
+            await deleteFromFileServer({ fileUrl: img.url });
         }
 
         // Agora destroi a galeria e todas as suas imagens (cascade)
@@ -292,9 +272,37 @@ router.delete('/:id', checkGaleriaPermission, async (req, res) => {
     }
 });
 
-// Atualizar configurações da galeria (pública, colaboradores, estilos)
-router.patch('/:id', checkGaleriaPermission, uploadImage.single('background'), async (req, res) => {
-    const { nome, descricao, is_public, colaboradores, background_color, font_family, remove_background } = req.body;
+// Atualizar configurações da galeria (pública, colaboradores, estilos, capa)
+router.patch('/:id', 
+    checkGaleriaPermission, 
+    uploadImage.fields([
+        { name: 'background', maxCount: 1 },
+        { name: 'cover_image', maxCount: 1 }
+    ]), 
+    async (req, res) => {
+    
+    // Função helper para extrair valor do body (trata caso o multer transforme em array)
+    const getBodyValue = (key) => {
+        const val = req.body[key];
+        return Array.isArray(val) ? val[0] : val;
+    };
+
+    // Extrair campos de texto explicitamente
+    const nome = getBodyValue('nome');
+    const descricao = getBodyValue('descricao');
+    const is_public = getBodyValue('is_public');
+    const colaboradores = getBodyValue('colaboradores');
+    const card_color = getBodyValue('card_color');
+    
+    // Campos de Estilo
+    const background_color = getBodyValue('background_color');
+    const font_family = getBodyValue('font_family');
+    const font_color = getBodyValue('font_color');
+    const background_fill = getBodyValue('background_fill');
+    
+    // Flags
+    const remove_background = getBodyValue('remove_background');
+    const remove_cover = getBodyValue('remove_cover');
 
     try {
         // Apenas o dono ou admin pode mudar configurações estruturais
@@ -302,48 +310,94 @@ router.patch('/:id', checkGaleriaPermission, uploadImage.single('background'), a
             return res.status(403).json({ success: false, message: 'Apenas o dono pode alterar as configurações.' });
         }
 
+        // --- Atualizações Básicas ---
         if (nome) req.galeria.nome = nome;
+        // Permite salvar string vazia para descrição
         if (descricao !== undefined) req.galeria.descricao = descricao;
         if (is_public !== undefined) req.galeria.is_public = is_public === 'true' || is_public === true;
+        if (card_color !== undefined) req.galeria.card_color = card_color;
+        
+        // --- Atualizações de Estilo e Aparência ---
         if (background_color) req.galeria.background_color = background_color;
         if (font_family) req.galeria.font_family = font_family;
+        
+        // Garante que o background_fill seja atribuído se estiver presente (cover ou repeat)
+        if (background_fill) {
+            req.galeria.background_fill = background_fill;
+        }
+
+        // Garante que font_color seja atribuída
+        if (font_color) {
+            req.galeria.font_color = font_color;
+        }
+
+        // --- Remoção de Arquivos (Flags) ---
 
         // Se pedido para remover background
         if (remove_background === 'true' || remove_background === true) {
             if (req.galeria.background_url) {
-                await deleteFileFromServer(req.galeria.background_url);
+                await deleteFromFileServer({ fileUrl: req.galeria.background_url });
             }
             req.galeria.background_url = null;
         }
 
-        // Upload de imagem de fundo se enviada
-        if (req.file) {
+        // Se pedido para remover capa
+        if (remove_cover === 'true' || remove_cover === true) {
+            if (req.galeria.capa_url) {
+                await deleteFromFileServer({ fileUrl: req.galeria.capa_url });
+            }
+            req.galeria.capa_url = null;
+        }
+
+        // --- Upload de Arquivos (Capa e Background) ---
+        
+        const files = req.files || {};
+
+        // 1. Upload de Background
+        if (files.background && files.background[0]) {
+            const file = files.background[0];
             // Deletar background antigo se existir
             if (req.galeria.background_url) {
-                await deleteFileFromServer(req.galeria.background_url);
+                await deleteFromFileServer({ fileUrl: req.galeria.background_url });
             }
-
-            // upload original background file (image or video), preserve original
-            const form = new FormData();
-            const sanitizedFilename = sanitizeFilename(req.file.originalname);
-            form.append('file', req.file.buffer, { filename: sanitizedFilename, contentType: req.file.mimetype || 'application/octet-stream' });
-            form.append('folder', `galerias/${req.params.id}/style`);
-
+            const sanitizedFilename = sanitizeFilename(file.originalname);
             try {
-                const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=galerias/${req.params.id}/style`, form, {
-                    headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY },
-                    maxContentLength: Infinity,
-                    maxBodyLength: Infinity
+                req.galeria.background_url = await uploadToFileServer({
+                    buffer: file.buffer,
+                    filename: sanitizedFilename,
+                    folder: `galerias/${req.params.id}/style`,
+                    mimetype: file.mimetype
                 });
-                req.galeria.background_url = uploadRes.data.url;
             } catch (err) {
-                // Surface file-server response when available
                 const remoteStatus = err.response?.status;
                 const remoteData = err.response?.data;
                 return res.status(502).json({ success: false, message: 'Erro ao enviar background ao servidor de arquivos.', remoteStatus, remoteData });
             }
         }
 
+        // 2. Upload de Capa (Cover Image)
+        if (files.cover_image && files.cover_image[0]) {
+            const file = files.cover_image[0];
+            // Deletar capa antiga se existir
+            if (req.galeria.capa_url) {
+                await deleteFromFileServer({ fileUrl: req.galeria.capa_url });
+            }
+            const sanitizedFilename = sanitizeFilename(file.originalname);
+            try {
+                req.galeria.capa_url = await uploadToFileServer({
+                    buffer: file.buffer,
+                    filename: sanitizedFilename,
+                    folder: 'galerias/capas',
+                    mimetype: file.mimetype
+                });
+            } catch (err) {
+                const remoteStatus = err.response?.status;
+                const remoteData = err.response?.data;
+                return res.status(502).json({ success: false, message: 'Erro ao enviar capa ao servidor de arquivos.', remoteStatus, remoteData });
+            }
+        }
+
+        // Salvar tudo no banco
         await req.galeria.save();
 
         // Atualizar colaboradores se fornecido

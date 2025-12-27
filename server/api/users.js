@@ -7,8 +7,9 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
 const multer = require('multer');
-const axios = require('axios');
-const FormData = require('form-data');
+const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const axios = require('axios'); // Mantém para outros usos
+const FormData = require('form-data'); // Mantém para outros usos
 const sharp = require('sharp');
 const {
     registerSchema,
@@ -19,19 +20,7 @@ const {
     searchUsersSchema
 } = require("../validators/users.validator");
 
-// Helper para deletar arquivo do servidor de arquivos por URL
-async function deleteFileFromServer(fileUrl) {
-    if (!fileUrl) return;
-    try {
-        await axios.delete(`${process.env.SERVIDORDEARQUIVOS_URL}/delete`, {
-            data: { url: fileUrl },
-            headers: { 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
-        });
-    } catch (err) {
-        console.error('Erro ao deletar arquivo do servidor:', err.message);
-        // Não falha a requisição se a deleção remota falhar
-    }
-}
+// deleteFileFromServer substituído por deleteFromFileServer universal
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -233,47 +222,37 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         // Upload de foto de perfil se houver arquivo
         if (req.files && req.files['profile_file']) {
             const file = req.files['profile_file'][0];
-            
             // Deletar foto de perfil antiga se existir
             const user = await User.findByPk(req.user.id, { attributes: ['profile_image'] });
             if (user && user.profile_image) {
-                await deleteFileFromServer(user.profile_image);
+                await deleteFromFileServer({ fileUrl: user.profile_image });
             }
-            
             // Converte para PNG usando sharp
             const pngBuffer = await sharp(file.buffer).png().toBuffer();
-            
-            const form = new FormData();
-            form.append('file', pngBuffer, { filename: 'profile.png', contentType: 'image/png' });
-            form.append('folder', 'profiles');
-            
-            const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=profiles`, form, {
-                headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+            profile_image = await uploadToFileServer({
+                buffer: pngBuffer,
+                filename: 'profile.png',
+                folder: 'profiles',
+                mimetype: 'image/png'
             });
-            profile_image = uploadRes.data.url;
         }
 
         // Upload de imagem de fundo se houver arquivo
         if (req.files && req.files['background_file']) {
             const file = req.files['background_file'][0];
-            
             // Deletar imagem de fundo antiga se existir
             const user = await User.findByPk(req.user.id, { attributes: ['background_image'] });
             if (user && user.background_image) {
-                await deleteFileFromServer(user.background_image);
+                await deleteFromFileServer({ fileUrl: user.background_image });
             }
-            
             // Converte para PNG usando sharp
             const pngBuffer = await sharp(file.buffer).png().toBuffer();
-
-            const form = new FormData();
-            form.append('file', pngBuffer, { filename: 'background.png', contentType: 'image/png' });
-            form.append('folder', 'backgrounds');
-            
-            const uploadRes = await axios.post(`${process.env.SERVIDORDEARQUIVOS_URL}/upload?folder=backgrounds`, form, {
-                headers: { ...form.getHeaders(), 'x-api-key': process.env.SERVIDORDEARQUIVOS_KEY }
+            background_image = await uploadToFileServer({
+                buffer: pngBuffer,
+                filename: 'background.png',
+                folder: 'backgrounds',
+                mimetype: 'image/png'
             });
-            background_image = uploadRes.data.url;
         }
 
         await User.update(

@@ -1,607 +1,809 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
-<main class="container py-3">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/galerias">Galerias</a></li>
-            <li class="breadcrumb-item active" id="breadcrumb-nome">Carregando...</li>
-        </ol>
-    </nav>
-
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 id="galeria-titulo">Carregando...</h2>
-            <p id="galeria-descricao" class="text-muted"></p>
-            <small class="text-muted">Criado por <strong id="galeria-autor">...</strong></small>
-        </div>
-        <div class="d-flex gap-2" id="acoes-galeria">
-            <!-- Botões de ação serão inseridos aqui -->
-        </div>
-    </div>
-
-    <div class="row g-3" id="lista-imagens">
-        <!-- Imagens serão carregadas aqui -->
-    </div>
-
-    </main>
-
-    <!-- Modal Upload (fora do main) -->
-    <div class="modal fade" id="modalUpload" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Adicionar Foto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formUpload">
-                        <div class="mb-3">
-                            <label class="form-label">Imagem</label>
-                            <input type="file" class="form-control" name="imagem" accept="image/*,video/*" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nome/Legenda (opcional)</label>
-                            <input type="text" class="form-control" name="nome">
-                        </div>
-                        <div class="mb-3" id="upload-progress-wrapper" style="display:none;">
-                            <label class="form-label">Progresso do Envio</label>
-                            <div class="progress">
-                                <div id="upload-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
-                            </div>
-                            <small id="upload-progress-text" class="text-muted">0.00 / 0.00 MB</small>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Enviar</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Configurações (fora do main) -->
-    <div class="modal fade" id="modalConfig" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Configurações do Álbum</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formConfig">
-                        <div class="mb-3">
-                            <label class="form-label">Nome</label>
-                            <input type="text" class="form-control" name="nome" id="config-nome">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Descrição</label>
-                            <textarea class="form-control" name="descricao" id="config-descricao" rows="2"></textarea>
-                        </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" name="is_public" id="config-is-public">
-                            <label class="form-check-label" for="config-is-public">Público (todos podem adicionar fotos)</label>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Colaboradores Específicos</label>
-                            <div class="input-group mb-2">
-                                <input type="text" id="search-user-input" class="form-control" placeholder="Buscar usuário...">
-                                <button class="btn btn-outline-primary" type="button" onclick="buscarUsuarios()">Buscar</button>
-                            </div>
-                            <div id="search-results" class="list-group mb-2" style="max-height: 150px; overflow-y: auto;"></div>
-                            <div id="colaboradores-selecionados" class="d-flex flex-wrap gap-2">
-                                <!-- Badges de usuários selecionados -->
-                            </div>
-                        </div>
-
-                        <hr>
-                        <h6>Personalização</h6>
-                        <div class="mb-3">
-                            <label class="form-label">Imagem de Fundo</label>
-                            <input type="file" class="form-control" name="background" accept="image/*,.gif">
-                            <small class="text-muted">Deixe vazio para manter a atual.</small>
-                        </div>
-                        <div class="mb-3 d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-danger w-100" onclick="removerBackground()" id="btn-remover-bg" style="display: none;">Remover Imagem de Fundo</button>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Cor de Fundo</label>
-                            <div class="d-flex gap-2">
-                                <input type="color" class="form-control form-control-color" name="background_color" id="config-bg-color" title="Escolha a cor de fundo" style="flex: 1;">
-                                <button type="button" class="btn btn-sm btn-secondary" onclick="resetarCorPadrao()" title="Voltar à cor padrão">↺</button>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fonte da Página</label>
-                            <select class="form-select" name="font_family" id="config-font">
-                                <option value="Inter">Inter (Padrão)</option>
-                                <option value="'Roboto', sans-serif">Roboto</option>
-                                <option value="'Open Sans', sans-serif">Open Sans</option>
-                                <option value="'Montserrat', sans-serif">Montserrat</option>
-                                <option value="'Playfair Display', serif">Playfair Display</option>
-                                <option value="'Courier New', Courier, monospace">Courier New</option>
-                                <option value="'Comic Sans MS', cursive">Comic Sans</option>
-                            </select>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100">Salvar Alterações</button>
-                    </form>
-                    <hr>
-                    <button class="btn btn-danger w-100" onclick="excluirGaleria()">Excluir Álbum Permanentemente</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    const galeriaId = '<%= galeriaId %>';
-    let galeriaData = null;
-    let colaboradoresSelecionados = [];
-
-    // Detectar se URL é um vídeo
-    function isVideoUrl(url) {
-        if (!url) return false;
-        const videoExtensions = ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v'];
-        const lowerUrl = url.toLowerCase();
-        return videoExtensions.some(ext => lowerUrl.includes(ext));
-    }
-
-    // Validar tamanho do arquivo antes de upload
-    function validateFileSize(file) {
-        const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|m4v|mkv|avi|mpg|mpeg)$/i.test(file.name);
-        const limit = isVideo ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB vídeo, 50MB imagem
-        const typeLabel = isVideo ? 'vídeo' : 'imagem';
-        
-        if (file.size > limit) {
-            mostrarAviso(`Arquivo muito grande para o tipo ${typeLabel}. Limite: ${limit / (1024 * 1024)}MB`, 'Arquivo muito grande');
-            return false;
-        }
-        return true;
-    }
-
-    document.addEventListener('DOMContentLoaded', carregarGaleria);
-
-    async function carregarGaleria() {
-        try {
-            const res = await fetch(`/api/galeria/${galeriaId}`);
-            const data = await res.json();
-            if (data.success) {
-                galeriaData = data.galeria;
-                colaboradoresSelecionados = (galeriaData.colaboradores || []).map(c => ({ id: c.id, username: c.username }));
-                renderizarGaleria();
-            } else {
-                alert(data.message);
-                window.location.href = '/galerias';
-            }
-        } catch (err) {
-            console.error('Erro ao carregar galeria:', err);
-        }
-    }
-
-    function renderizarGaleria() {
-        document.getElementById('breadcrumb-nome').textContent = galeriaData.nome;
-        document.getElementById('galeria-titulo').textContent = galeriaData.nome;
-        document.getElementById('galeria-descricao').textContent = galeriaData.descricao || 'Sem descrição.';
-        document.getElementById('galeria-autor').textContent = galeriaData.owner.username;
-
-        // Aplicar estilos personalizados apenas no elemento conteudo-principal (seguro)
-        try {
-            const container = document.getElementById('conteudo-principal');
-            if (container) {
-                // Adicionar transição suave à cor de fundo
-                container.style.transition = 'background-color 2s ease-in-out';
-                
-                if (galeriaData.background_url) {
-                    container.style.backgroundImage = `url('${galeriaData.background_url}')`;
-                    container.style.backgroundSize = 'cover';
-                    container.style.backgroundAttachment = 'fixed';
-                    container.style.backgroundPosition = 'center';
-                }
-                if (galeriaData.background_color) {
-                    container.style.backgroundColor = galeriaData.background_color;
-                }
-                if (galeriaData.font_family) {
-                    container.style.fontFamily = galeriaData.font_family;
-                }
-            }
-        } catch (err) {
-            console.warn('Erro aplicando estilos da galeria:', err);
-        }
-
-        const acoes = document.getElementById('acoes-galeria');
-        acoes.innerHTML = '';
-
-        // Verificar permissão (simplificado no front, o back garante)
-        acoes.innerHTML += `<button class="btn btn-success" onclick="abrirModalUpload()">+ Adicionar Foto</button>`;
-        acoes.innerHTML += `<button class="btn btn-outline-secondary" onclick="abrirModalConfig()"><i class="bi bi-gear"></i></button>`;
-
-        const container = document.getElementById('lista-imagens');
-        container.innerHTML = galeriaData.imagens.map(img => {
-            const isVideo = isVideoUrl(img.url);
-            return `
-            <div class="col-6 col-md-4 col-lg-3">
-                <div class="card h-100 shadow-sm image-card">
-                    ${isVideo ? 
-                        `<video class="card-img-top" controls style="height: 200px; object-fit: cover;">
-                            <source src="${img.url}" type="video/mp4">
-                            Seu navegador não suporta a tag de vídeo.
-                        </video>` 
-                        : 
-                        `<a href="${img.url}" target="_blank">
-                            <img src="${img.url}" class="card-img-top" alt="${img.nome}">
-                        </a>`
-                    }
-                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                        <small class="text-truncate" title="${img.nome}">${img.nome || 'Sem nome'}</small>
-                        <button class="btn btn-sm btn-link text-danger p-0" onclick="excluirImagem(${img.id})">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
-    }
-
-    function abrirModalUpload() {
-        new bootstrap.Modal(document.getElementById('modalUpload')).show();
-    }
-
-    function abrirModalConfig() {
-        document.getElementById('config-nome').value = galeriaData.nome;
-        document.getElementById('config-descricao').value = galeriaData.descricao || '';
-        document.getElementById('config-is-public').checked = galeriaData.is_public;
-        document.getElementById('config-bg-color').value = galeriaData.background_color || '#e2e1cf';
-        document.getElementById('config-font').value = galeriaData.font_family || 'Inter';
-        
-        // Mostrar botão de remover background apenas se houver background
-        const btnRemoverBg = document.getElementById('btn-remover-bg');
-        if (galeriaData.background_url) {
-            btnRemoverBg.style.display = 'block';
-        } else {
-            btnRemoverBg.style.display = 'none';
-        }
-        
-        renderColaboradores();
-        atualizarVisibilidadeColaboradores();
-        new bootstrap.Modal(document.getElementById('modalConfig')).show();
-    }
-
-    // Função para mostrar/ocultar colaboradores baseado no checkbox de público
-    function atualizarVisibilidadeColaboradores() {
-        const isPublic = document.getElementById('config-is-public').checked;
-        const colaboradoresSection = document.querySelector('.mb-3:has(#search-user-input)');
-        
-        if (isPublic) {
-            // Se público, ocultar seção de colaboradores
-            colaboradoresSection.style.display = 'none';
-            // Limpar colaboradores selecionados
-            colaboradoresSelecionados = [];
-            renderColaboradores();
-        } else {
-            // Se privado, mostrar seção de colaboradores
-            colaboradoresSection.style.display = 'block';
-        }
-    }
-
-    // Adicionar listener ao checkbox de público para mostrar/ocultar colaboradores
-    document.addEventListener('DOMContentLoaded', () => {
-        const checkboxPublico = document.getElementById('config-is-public');
-        checkboxPublico?.addEventListener('change', atualizarVisibilidadeColaboradores);
-        
-        // Adicionar listener ao seletor de cor para transição em tempo real
-        const colorPicker = document.getElementById('config-bg-color');
-        colorPicker?.addEventListener('change', () => {
-            const novaCor = colorPicker.value;
-            const container = document.getElementById('conteudo-principal');
-            if (container) {
-                container.style.transition = 'background-color 2s ease-in-out';
-                container.style.backgroundColor = novaCor;
-            }
-        });
-        
-        // Também atualizar enquanto o usuário arrasta o slider de cor (input event)
-        colorPicker?.addEventListener('input', () => {
-            const novaCor = colorPicker.value;
-            const container = document.getElementById('conteudo-principal');
-            if (container) {
-                container.style.transition = 'background-color 2s ease-in-out';
-                container.style.backgroundColor = novaCor;
-            }
-        });
-    });
-
-    async function removerBackground() {
-        const confirmado = await mostrarConfirmacao('Deseja remover a imagem de fundo?', 'Remover Background');
-        if (!confirmado) return;
-        
-        const formData = new FormData();
-        formData.append('remove_background', 'true');
-        
-        try {
-            const res = await fetch(`/api/galeria/${galeriaId}`, {
-                method: 'PATCH',
-                body: formData
-            });
-            const data = await res.json();
-            if (data.success) {
-                // Atualizar dados locais
-                galeriaData.background_url = null;
-                
-                // Renderizar novamente
-                renderizarGaleria();
-                
-                // Fechar modal se estiver aberto (caso tenha sido chamado de lá)
-                const modalConfig = bootstrap.Modal.getInstance(document.getElementById('modalConfig'));
-                if (modalConfig) modalConfig.hide();
-
-                mostrarAviso('Imagem de fundo removida com sucesso!', 'Sucesso');
-            } else {
-                await mostrarConfirmacao(data.message, 'Erro');
-            }
-        } catch (err) {
-            await mostrarConfirmacao('Erro ao remover background.', 'Erro');
-        }
-    }
-
-    // Função para resetar a cor para o padrão
-    function resetarCorPadrao() {
-        const corPadrao = '#e2e1cf';
-        const colorPicker = document.getElementById('config-bg-color');
-        const container = document.getElementById('conteudo-principal');
-        
-        colorPicker.value = corPadrao;
-        
-        if (container) {
-            container.style.transition = 'background-color 5s ease-in-out';
-            container.style.backgroundColor = corPadrao;
-        }
-    }
-
-    // Adicionar listener para busca ao apertar Enter
-    document.getElementById('search-user-input')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            buscarUsuarios();
-        }
-    });
-
-    async function buscarUsuarios() {
-        const q = document.getElementById('search-user-input').value;
-        if (q.length < 2) return;
-
-        try {
-            const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(q)}`);
-            const data = await res.json();
-            const results = document.getElementById('search-results');
-            results.innerHTML = data.usuarios.map(u => `
-                <button type="button" class="list-group-item list-group-item-action" onclick="selecionarUsuario(${u.id}, '${u.username}')">
-                    ${u.username}
-                </button>
-            `).join('');
-        } catch (err) {
-            console.error('Erro ao buscar usuários:', err);
-        }
-    }
-
-    function selecionarUsuario(id, username) {
-        if (!colaboradoresSelecionados.find(c => c.id === id)) {
-            colaboradoresSelecionados.push({ id, username });
-            renderColaboradores();
-        }
-        document.getElementById('search-results').innerHTML = '';
-        document.getElementById('search-user-input').value = '';
-    }
-
-    function removerColaborador(id) {
-        colaboradoresSelecionados = colaboradoresSelecionados.filter(c => c.id !== id);
-        renderColaboradores();
-    }
-
-    function renderColaboradores() {
-        const container = document.getElementById('colaboradores-selecionados');
-        container.innerHTML = colaboradoresSelecionados.map(c => `
-            <span class="badge bg-info text-dark d-flex align-items-center gap-1">
-                ${c.username}
-                <i class="bi bi-x-circle cursor-pointer" onclick="removerColaborador(${c.id})"></i>
-            </span>
-        `).join('');
-    }
-
-    document.getElementById('formUpload').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const fileInput = form.querySelector('input[name="imagem"]');
-
-        // Validar tamanho do arquivo antes de enviar
-        if (fileInput.files.length > 0) {
-            if (!validateFileSize(fileInput.files[0])) {
-                return;
-            }
-        }
-
-        const formData = new FormData(form);
-
-        const progressWrapper = document.getElementById('upload-progress-wrapper');
-        const progressBar = document.getElementById('upload-progress-bar');
-        progressWrapper.style.display = 'block';
-        progressBar.style.width = '0%';
-        progressBar.textContent = '0%';
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/galeria/${galeriaId}/upload`);
-        xhr.withCredentials = true;
-
-        xhr.upload.onprogress = function(ev) {
-            if (ev.lengthComputable) {
-                const pct = Math.round((ev.loaded / ev.total) * 100);
-                const loadedMB = (ev.loaded / (1024 * 1024)).toFixed(2);
-                const totalMB = (ev.total / (1024 * 1024)).toFixed(2);
-                progressBar.style.width = pct + '%';
-                progressBar.textContent = pct + '%';
-                const progressText = document.getElementById('upload-progress-text');
-                if (progressText) progressText.textContent = `${loadedMB} / ${totalMB} MB`;
-            }
-        };
-
-        xhr.onload = function() {
-            progressWrapper.style.display = 'none';
-            const text = xhr.responseText || '';
-
-            // Tentar parsear JSON; se falhar, mostrar trecho da resposta e status
-            let data = null;
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch (err) {
-                console.warn('Resposta não é JSON:', err);
-            }
-
-            if (xhr.status >= 200 && xhr.status < 300 && data && data.success) {
-                if (data.imagem) galeriaData.imagens.push(data.imagem);
-                bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
-                form.reset();
-                renderizarGaleria();
-                mostrarAviso('Imagem adicionada com sucesso!', 'Sucesso');
-                return;
-            }
-
-            // Se o servidor retornou JSON com detalhes, use-o
-            if (data) {
-                console.error('Erro no upload (servidor):', data);
-                mostrarConfirmacao(data.message || `Erro no servidor (status ${xhr.status})`, 'Erro');
-                return;
-            }
-
-            // Resposta não-JSON (p.ex. HTML de erro do Heroku). Mostrar trecho para debugging
-            const snippet = text.substring(0, 800);
-            console.error('Resposta inválida do servidor (não-JSON). Status:', xhr.status, 'Resposta (snippet):', snippet);
-            mostrarConfirmacao(`Resposta inválida do servidor (status ${xhr.status}). Pode ser timeout/crash no servidor de arquivos. Trecho: ${snippet}`, 'Erro');
-        };
-
-        xhr.onerror = function() {
-            progressWrapper.style.display = 'none';
-            console.error('Erro de rede no upload');
-            mostrarConfirmacao('Erro ao enviar imagem. Verifique sua conexão.', 'Erro');
-        };
-
-        xhr.send(formData);
-    });
-
-    document.getElementById('formConfig').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        
-        // Adicionar colaboradores manualmente pois é um array
-        formData.append('colaboradores', JSON.stringify(colaboradoresSelecionados.map(c => c.id)));
-        
-        // Ajustar o checkbox is_public
-        formData.set('is_public', document.getElementById('config-is-public').checked);
-
-        try {
-            const res = await fetch(`/api/galeria/${galeriaId}`, {
-                method: 'PATCH',
-                body: formData // Envia como multipart/form-data
-            });
-            const data = await res.json();
-            if (data.success) {
-                // Atualizar dados locais com a resposta
-                if (data.galeria) {
-                    galeriaData.nome = data.galeria.nome;
-                    galeriaData.descricao = data.galeria.descricao;
-                    galeriaData.is_public = data.galeria.is_public;
-                    galeriaData.background_color = data.galeria.background_color;
-                    galeriaData.background_url = data.galeria.background_url;
-                    galeriaData.font_family = data.galeria.font_family;
-                }
-                
-                // Fechar modal
-                bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
-                
-                // Renderizar novamente
-                renderizarGaleria();
-                
-                // Mostrar mensagem de sucesso
-                mostrarAviso('Configurações salvas com sucesso!', 'Sucesso');
-            } else {
-                await mostrarConfirmacao(data.message, 'Erro');
-            }
-        } catch (err) {
-            await mostrarConfirmacao('Erro ao salvar configurações.', 'Erro');
-        }
-    });
-
-    async function excluirImagem(imagemId) {
-        const confirmado = await mostrarConfirmacao('Deseja remover esta imagem?', 'Remover Imagem');
-        if (!confirmado) return;
-        try {
-            const res = await fetch(`/api/galeria/${galeriaId}/imagem/${imagemId}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.success) {
-                // Remover da lista local
-                galeriaData.imagens = galeriaData.imagens.filter(img => img.id !== imagemId);
-                
-                // Renderizar novamente
-                renderizarGaleria();
-                
-                mostrarAviso('Imagem removida com sucesso!', 'Sucesso');
-            } else {
-                await mostrarConfirmacao(data.message, 'Erro');
-            }
-        } catch (err) {
-            await mostrarConfirmacao('Erro ao excluir imagem.', 'Erro');
-        }
-    }
-
-    async function excluirGaleria() {
-        const confirmado = await mostrarConfirmacao('TEM CERTEZA? Isso excluirá o álbum e todas as fotos permanentemente!', 'Excluir Álbum');
-        if (!confirmado) return;
-        try {
-            const res = await fetch(`/api/galeria/${galeriaId}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.success) {
-                window.location.href = '/galerias';
-            } else {
-                await mostrarConfirmacao(data.message, 'Erro');
-            }
-        } catch (err) {
-            await mostrarConfirmacao('Erro ao excluir galeria.', 'Erro');
-        }
-    }
-</script>
-
 <style>
+    /* === Estilos Visuais === */
     body {
         transition: background-color 0.5s ease, background-image 0.5s ease;
     }
-    
-    main.container {
-        background: rgba(255, 255, 255, 0.05);
+
+    main.container-glass {
+        background: rgba(255, 255, 255, 0.25);
         backdrop-filter: blur(10px);
-        border-radius: 15px;
-        padding: 20px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 24px;
+        margin: 20px auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        transition: all 0.5s ease;
     }
 
     .image-card {
-        transition: transform 0.2s;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        background: var(--gallery-card-bg, rgba(255, 255, 255, 0.6));
+        border: 1px solid rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(5px);
-    }
-    
-    .image-card:hover {
-        transform: scale(1.02);
-    }
-    .image-card img {
-        height: 200px;
-        object-fit: cover;
-    }
-    .image-card video {
-        display: block;
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-    }
-    .cursor-pointer {
+        overflow: hidden;
+        border-radius: 12px;
         cursor: pointer;
     }
+
+    .image-card .card-body {
+        background-color: var(--gallery-card-bg, #ffffff) !important;
+    }
+
+    .image-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        z-index: 2;
+    }
+
+    .media-preview-box {
+        height: 200px;
+        width: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Placeholders para Vídeo e Áudio */
+    .media-placeholder {
+        height: 200px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        transition: opacity 0.3s;
+    }
+
+    .placeholder-video { background-color: #212529; }
+    .placeholder-video:hover { background-color: #000; }
+
+    .placeholder-audio { background: linear-gradient(135deg, #4a4e69 0%, #22223b 100%); }
+    .placeholder-audio:hover { opacity: 0.9; }
+
+    .cursor-pointer { cursor: pointer; }
+    .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 </style>
+
+<main class="container container-glass pt-4 pb-2" id="conteudo-principal">
+    <div class="d-flex justify-content-between align-items-start mb-3 pb-2">
+        <div>
+            <h2 id="galeria-titulo" class="fw-bold mb-1">Carregando...</h2>
+            <p id="galeria-descricao" class="text-muted mb-1"></p>
+            <small class="text-muted">Criado por <strong id="galeria-autor">...</strong></small>
+        </div>
+        <div class="d-flex gap-2" id="acoes-galeria">
+            </div>
+    </div>
+</main>
+
+<!-- Galeria: fora do container-glass para permitir background completo atrás das mídias -->
+<div class="container mt-3" id="gallery-container">
+    <div class="row g-3" id="lista-imagens">
+        <div class="col-12 text-center py-5 text-muted">
+            <div class="spinner-border spinner-border-sm" role="status"></div> Carregando biblioteca...
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUpload" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Mídia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formUpload">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Arquivo</label>
+                        <input type="file" class="form-control" name="fileInput" 
+                               accept="image/*,video/*,audio/*,.mkv,.avi,.webp" required>
+                        <div class="form-text text-muted">
+                            Suporta Imagens, GIFs, Vídeos e Áudios (Máx: 100MB).
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nome/Legenda (Opcional)</label>
+                        <input type="text" class="form-control" name="nome" placeholder="Ex: Aquele dia legal">
+                    </div>
+                    
+                    <div class="mb-3 p-3 bg-light rounded border" id="upload-progress-wrapper" style="display:none;">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold text-primary" id="upload-status-label">Enviando...</span>
+                            <span id="upload-percent-text">0%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="text-end text-muted small">
+                             <span id="upload-size-text">0.0 MB / 0.0 MB</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="btn-submit-upload">
+                        <i class="bi bi-cloud-upload"></i> Enviar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalConfig" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configurações da Galeria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formConfig">
+                    <input type="hidden" name="remove_cover" id="flag-remove-cover" value="false">
+                    <input type="hidden" name="remove_background" id="flag-remove-bg" value="false">
+
+                    <div class="row g-4">
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-primary mb-3">Informações Gerais</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Nome da Galeria</label>
+                                <input type="text" class="form-control" name="nome" id="config-nome" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" name="descricao" id="config-descricao" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="is_public" id="config-is-public">
+                                <label class="form-check-label fw-bold ms-2" for="config-is-public">Galeria Pública</label>
+                            </div>
+                            <div class="form-text small mb-4">Se ativo, qualquer usuário poderá visualizar.</div>
+
+                            <div id="colaboradores-section">
+                                <label class="form-label fw-bold">Colaboradores (Privado)</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" id="search-user-input" class="form-control" placeholder="Username...">
+                                    <button class="btn btn-outline-primary" type="button" onclick="GaleriaManager.buscarUsuarios()">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <div id="search-results" class="list-group mb-2 shadow-sm" style="max-height: 150px; overflow-y: auto;"></div>
+                                <div id="colaboradores-selecionados" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">Personalização Visual</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small text-uppercase fw-bold text-muted">Capa do Card</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" name="cover_image" id="input-cover" accept="image/*">
+                                    <button type="button" class="btn btn-outline-danger" id="btn-remover-cover" onclick="GaleriaManager.toggleRemove('cover')" title="Remover Capa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <small id="status-cover" class="text-danger d-none mt-1"><i class="bi bi-exclamation-circle"></i> Será removida ao salvar</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small text-uppercase fw-bold text-muted">Imagem de Fundo</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control preview-trigger" name="background" id="input-bg" accept="image/*">
+                                    <button type="button" class="btn btn-outline-danger" id="btn-remover-bg" onclick="GaleriaManager.toggleRemove('background')" title="Remover Fundo">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <small id="status-bg" class="text-danger d-none mt-1"><i class="bi bi-exclamation-circle"></i> Será removida ao salvar</small>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label small">Cor de Fundo</label>
+                                    <input type="color" class="form-control form-control-color w-100 preview-trigger" name="background_color" id="config-bg-color">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Cor da Fonte</label>
+                                    <input type="color" class="form-control form-control-color w-100 preview-trigger" name="font_color" id="config-font-color">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Cor dos Cards</label>
+                                    <input type="color" class="form-control form-control-color w-100 preview-trigger" name="card_color" id="config-card-color">
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="group-bg-fill">
+                                <label class="form-label small">Preenchimento</label>
+                                <select class="form-select preview-trigger" name="background_fill" id="config-bg-fill">
+                                    <option value="cover">Preencher (Cover)</option>
+                                    <option value="repeat">Repetir (Tile)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small">Tipografia</label>
+                                <select class="form-select preview-trigger" name="font_family" id="config-font">
+                                    <option value="Inter">Inter (Padrão)</option>
+                                    <option value="'Roboto', sans-serif">Roboto</option>
+                                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                                    <option value="'Playfair Display', serif">Playfair Display</option>
+                                    <option value="'Courier New', Courier, monospace">Courier New</option>                             
+                                    <option value="Comic Sans MS">Comic Sans MS</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer px-0 pb-0 mt-3 border-top-0">
+                        <button type="button" class="btn btn-outline-danger me-auto" onclick="GaleriaManager.excluirGaleria()">
+                            <i class="bi bi-trash"></i> Excluir Galeria
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success px-4">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMedia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="modal-body p-0 position-relative text-center">
+                <div style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; align-items: flex-start;">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div id="media-container" class="d-flex justify-content-center align-items-center" style="min-height: 200px;"></div>
+            </div>
+            
+            <div class="mt-3 text-center">
+                <h5 id="media-caption" class="text-white text-shadow d-inline-block bg-dark bg-opacity-75 px-3 py-1 rounded"></h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configurações Globais
+    const CONFIG = {
+        galeriaId: '<%= galeriaId %>'
+    };
+
+    // Helpers de UI e Utilitários
+    const Utils = {
+        alert: (msg, title) => window.mostrarAviso ? window.mostrarAviso(msg, title) : alert(`${title || 'Aviso'}: ${msg}`),
+        
+        confirm: async (msg, title) => {
+            if (window.mostrarConfirmacao) return await window.mostrarConfirmacao(msg, title);
+            return confirm(msg);
+        },
+
+        // Sanitização simples para evitar XSS na renderização do grid
+        escapeHtml: (str) => {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        },
+
+        // Formata bytes para MB
+        formatSize: (bytes) => (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+    };
+
+    /**
+     * GaleriaManager: Lógica principal
+     */
+    const GaleriaManager = {
+        data: null,
+        colaboradores: [],
+        originalStyles: null,
+        previewBgUrl: null,
+
+        // Inicialização
+        async init() {
+            await this.carregarDados();
+            this.setupEventListeners();
+        },
+
+        // --- DADOS E RENDERIZAÇÃO ---
+
+        async carregarDados() {
+            try {
+                const res = await fetch(`/api/galeria/${CONFIG.galeriaId}`);
+                const json = await res.json();
+
+                if (!json.success) throw new Error(json.message);
+
+                this.data = json.galeria;
+                // Defaults para evitar erros visuais
+                this.data.background_fill = this.data.background_fill || 'cover';
+                this.data.font_color = this.data.font_color || '#3E3F29';
+                
+                this.colaboradores = (this.data.colaboradores || []).map(c => ({ id: c.id, username: c.username }));
+                
+                this.renderizar();
+            } catch (err) {
+                console.error(err);
+                Utils.alert('Erro ao carregar galeria.', 'Erro');
+            }
+        },
+
+        renderizar() {
+            if (!this.data) return;
+
+            // 1. Preencher Cabeçalho e Estilos
+            document.getElementById('galeria-titulo').textContent = this.data.nome;
+            document.getElementById('galeria-descricao').textContent = this.data.descricao || '';
+            document.getElementById('galeria-autor').textContent = this.data.owner?.username || 'Desconhecido';
+            
+            this.aplicarEstilos(this.data);
+            this.renderizarBotoesAcao();
+            this.renderizarGrid();
+        },
+
+        renderizarBotoesAcao() {
+            const htmlBotoes = `
+                <button class="btn btn-primary shadow-sm" onclick="GaleriaManager.abrirModalUpload()">
+                    <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Adicionar</span>
+                </button>
+                <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.abrirModalConfig()">
+                    <i class="bi bi-gear-fill"></i>
+                </button>
+            `;
+            document.getElementById('acoes-galeria').innerHTML = htmlBotoes;
+        },
+
+        renderizarGrid() {
+            const grid = document.getElementById('lista-imagens');
+            
+            if (!this.data.imagens || this.data.imagens.length === 0) {
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-5">Esta galeria está vazia. Adicione fotos, vídeos ou músicas!</div>';
+                return;
+            }
+
+            grid.innerHTML = this.data.imagens.map(img => {
+                const safeNome = Utils.escapeHtml(img.nome || 'Sem nome');
+                const safeUrl = img.url.replace(/'/g, "\\'"); // Escape apenas para o argumento JS onclick
+                const mediaType = this.getMediaType(img.url);
+                
+                let mediaContent;
+
+                if (mediaType === 'video') {
+                    mediaContent = `
+                        <div class="media-placeholder placeholder-video rounded-top">
+                            <i class="bi bi-play-circle-fill display-4 mb-2"></i>
+                            <span class="badge bg-secondary">Vídeo</span>
+                        </div>`;
+                } else if (mediaType === 'audio') {
+                    mediaContent = `
+                        <div class="media-placeholder placeholder-audio rounded-top">
+                            <i class="bi bi-music-note-beamed display-4 mb-2"></i>
+                            <span class="badge bg-light text-dark">Áudio</span>
+                        </div>`;
+                } else {
+                    mediaContent = `<img src="${img.url}" class="media-preview-box rounded-top" loading="lazy" alt="${safeNome}">`;
+                }
+
+                return `
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card h-100 image-card" onclick="GaleriaManager.abrirMedia('${safeUrl}', '${mediaType}', '${safeNome}')">
+                        ${mediaContent}
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center bg-white border-top">
+                            <small class="text-truncate flex-grow-1 fw-bold text-dark" title="${safeNome}">${safeNome}</small>
+                            <button class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(${img.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+
+        aplicarEstilos(settings) {
+            const container = document.getElementById('conteudo-principal');
+            if (!container) return;
+
+            const bgUrl = settings.background_url || this.previewBgUrl;
+            
+            Object.assign(container.style, {
+                backgroundColor: settings.background_color || '',
+                fontFamily: settings.font_family || '',
+                backgroundImage: bgUrl ? `url('${bgUrl}')` : 'none',
+                backgroundRepeat: settings.background_fill === 'repeat' ? 'repeat' : 'no-repeat',
+                backgroundSize: settings.background_fill === 'repeat' ? 'auto' : 'cover',
+                backgroundAttachment: 'fixed',
+                backgroundPosition: 'center',
+                color: settings.font_color || '#3E3F29'
+            });
+
+            // Aplica cor dos cards via variável CSS para que o CSS possa reaproveitar
+            try {
+                container.style.setProperty('--gallery-card-bg', settings.card_color || '#ffffff');
+            } catch (e) { }
+
+            if (settings.font_color) {
+                container.querySelectorAll('h2, p, small, .breadcrumb-item, .breadcrumb-item a').forEach(el => {
+                    el.style.color = settings.font_color;
+                });
+            }
+        },
+
+        // --- LÓGICA DE UPLOAD OTIMIZADA ---
+
+        abrirModalUpload() {
+            new bootstrap.Modal(document.getElementById('modalUpload')).show();
+        },
+
+        async handleUpload(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fileInput = form.querySelector('input[name="fileInput"]');
+            const file = fileInput.files[0];
+            
+            if (!file) return Utils.alert("Selecione um arquivo", "Atenção");
+
+            const btn = document.getElementById('btn-submit-upload');
+            const progressArea = document.getElementById('upload-progress-wrapper');
+            
+            btn.disabled = true;
+            progressArea.style.display = 'block';
+
+            try {
+                // Upload único e direto
+                const result = await this.uploadFile(file, form);
+
+                if (result && result.success) {
+                    if (result.imagem) this.data.imagens.push(result.imagem);
+                    this.renderizar();
+                    
+                    bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
+                    form.reset();
+                    Utils.alert('Upload concluído com sucesso!', 'Sucesso');
+                }
+            } catch (err) {
+                console.error(err);
+                Utils.alert(err.message || 'Falha no upload', 'Erro');
+            } finally {
+                btn.disabled = false;
+                progressArea.style.display = 'none';
+                this.resetProgress();
+            }
+        },
+
+        uploadFile(file, formElement) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData(formElement);
+                
+                // Ajusta o formData para o formato esperado pelo backend (galeria.js espera field 'imagem')
+                formData.delete('fileInput'); 
+                formData.append('imagem', file); 
+
+                xhr.open('POST', `/api/galeria/${CONFIG.galeriaId}/upload`);
+                
+                // Monitoramento de Progresso
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        const bar = document.getElementById('upload-progress-bar');
+                        if (bar) bar.style.width = pct + '%';
+                        
+                        document.getElementById('upload-percent-text').textContent = pct + '%';
+                        document.getElementById('upload-size-text').textContent = 
+                            `${Utils.formatSize(e.loaded)} / ${Utils.formatSize(e.total)}`;
+                    }
+                };
+
+                xhr.onload = () => {
+                    try {
+                        const resp = JSON.parse(xhr.responseText);
+                        if (xhr.status >= 200 && xhr.status < 300) resolve(resp);
+                        else reject(new Error(resp.message || `Erro do servidor: ${xhr.status}`));
+                    } catch (e) { reject(new Error('Resposta inválida do servidor.')); }
+                };
+
+                xhr.onerror = () => reject(new Error('Erro de conexão com a rede.'));
+                xhr.send(formData);
+            });
+        },
+
+        resetProgress() {
+            const bar = document.getElementById('upload-progress-bar');
+            if(bar) bar.style.width = '0%';
+            document.getElementById('upload-percent-text').textContent = '0%';
+        },
+
+        // --- VISUALIZADOR DE MÍDIA (Lightbox) ---
+
+        abrirMedia(url, type, nome) {
+            const container = document.getElementById('media-container');
+            const caption = document.getElementById('media-caption');
+            
+            container.innerHTML = '';
+            // Decode HTML entities para exibir no caption corretamente
+            const txt = document.createElement("textarea");
+            txt.innerHTML = nome;
+            caption.textContent = txt.value || '';
+
+            if (type === 'video') {
+                const v = document.createElement('video');
+                v.src = url;
+                v.controls = true;
+                v.autoplay = true;
+                v.className = 'img-fluid rounded shadow';
+                v.style.maxHeight = '80vh';
+                container.appendChild(v);
+            } else if (type === 'audio') {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'text-center p-4 bg-dark rounded shadow border border-secondary';
+                wrapper.style.minWidth = '300px';
+                wrapper.innerHTML = `
+                    <i class="bi bi-music-note-beamed display-1 text-info mb-4 d-block"></i>
+                    <audio controls autoplay class="w-100">
+                        <source src="${url}" type="audio/mpeg">
+                        Seu navegador não suporta áudio.
+                    </audio>
+                `;
+                container.appendChild(wrapper);
+            } else {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'img-fluid rounded shadow';
+                img.style.maxHeight = '80vh';
+                container.appendChild(img);
+            }
+            new bootstrap.Modal(document.getElementById('modalMedia')).show();
+        },
+
+        // --- GERENCIAMENTO DE CONFIGURAÇÃO ---
+
+        abrirModalConfig() {
+            this.originalStyles = document.getElementById('conteudo-principal').getAttribute('style');
+            const f = document.getElementById('formConfig');
+            f.reset();
+            
+            // Resetar status visual
+            ['cover', 'bg'].forEach(type => {
+                document.getElementById(`flag-remove-${type}`).value = 'false';
+                document.getElementById(`status-${type}`).classList.add('d-none');
+            });
+
+            // Popular formulário
+            document.getElementById('config-nome').value = this.data.nome;
+            document.getElementById('config-descricao').value = this.data.descricao || '';
+            document.getElementById('config-is-public').checked = this.data.is_public;
+            document.getElementById('config-bg-color').value = this.data.background_color;
+            document.getElementById('config-bg-fill').value = this.data.background_fill;
+            document.getElementById('config-card-color').value = this.data.card_color || '#ffffff';
+            // Esconde o seletor de preenchimento se não houver imagem de fundo
+            const bgFillGroup = document.getElementById('group-bg-fill');
+            const hasBg = !!this.data.background_url || (document.getElementById('input-bg').files && document.getElementById('input-bg').files.length > 0);
+            if (bgFillGroup) bgFillGroup.style.display = hasBg ? '' : 'none';
+            document.getElementById('config-font-color').value = this.data.font_color;
+            document.getElementById('config-font').value = this.data.font_family;
+            
+            // Botões de remover
+            document.getElementById('btn-remover-cover').disabled = !this.data.capa_url;
+            document.getElementById('btn-remover-bg').disabled = !this.data.background_url;
+
+            this.togglePublicSection();
+            this.renderColaboradores();
+            
+            // Abrir modal normalmente (com backdrop)
+            const modalEl = document.getElementById('modalConfig');
+            if (this._modalInstance) this._modalInstance.hide();
+            this._modalInstance = new bootstrap.Modal(modalEl, { backdrop: true });
+            this._modalInstance.show();
+        },
+
+        toggleRemove(type) {
+            const key = (type === 'background') ? 'bg' : type;
+            const flagEl = document.getElementById(`flag-remove-${key}`);
+            
+            if (flagEl) {
+                flagEl.value = 'true';
+                document.getElementById(`status-${key}`).classList.remove('d-none');
+                const input = document.getElementById(`input-${key}`);
+                if (input) input.value = '';
+
+                if (key === 'bg') {
+                    this.previewBgUrl = null;
+                    this.applyPreview();
+                }
+            }
+        },
+
+        applyPreview() {
+            // Esconde/mostra o seletor de preenchimento conforme a presença de imagem de fundo
+            const bgFillGroup = document.getElementById('group-bg-fill');
+            let fileInput = document.getElementById('input-bg');
+            const hasBg = !!this.data.background_url || (fileInput && fileInput.files && fileInput.files.length > 0);
+            if (bgFillGroup) bgFillGroup.style.display = hasBg ? '' : 'none';
+            const settings = {
+                background_color: document.getElementById('config-bg-color').value,
+                background_fill: document.getElementById('config-bg-fill').value,
+                font_family: document.getElementById('config-font').value,
+                font_color: document.getElementById('config-font-color').value,
+                card_color: document.getElementById('config-card-color').value,
+                background_url: this.data.background_url
+            };
+
+            const isRemoving = document.getElementById('flag-remove-bg').value === 'true';
+            fileInput = document.getElementById('input-bg');
+
+            // Remover backdrop do modal enquanto ajusta cor de fundo
+            const modalEl = document.getElementById('modalConfig');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (document.activeElement === document.getElementById('config-bg-color')) {
+                if (backdrop) backdrop.style.opacity = '0';
+            } else {
+                if (backdrop) backdrop.style.opacity = '';
+            }
+
+            if (isRemoving) {
+                settings.background_url = null;
+                this.aplicarEstilos(settings);
+            } else if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    this.previewBgUrl = e.target.result;
+                    settings.background_url = this.previewBgUrl;
+                    this.aplicarEstilos(settings);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                this.aplicarEstilos(settings);
+            }
+        },
+
+        async salvarConfig(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            formData.append('colaboradores', JSON.stringify(this.colaboradores.map(c => c.id)));
+            formData.set('is_public', document.getElementById('config-is-public').checked);
+            formData.set('card_color', document.getElementById('config-card-color').value);
+            
+            try {
+                const res = await fetch(`/api/galeria/${CONFIG.galeriaId}`, { method: 'PATCH', body: formData });
+                const json = await res.json();
+                
+                if (json.success) {
+                    Object.assign(this.data, json.galeria);
+                    this.originalStyles = null;
+                    bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
+                    this.renderizar();
+                    Utils.alert('Configurações salvas!', 'Sucesso');
+                } else {
+                    throw new Error(json.message);
+                }
+            } catch (err) {
+                Utils.alert(err.message, 'Erro ao salvar');
+            }
+        },
+
+        // --- COLABORADORES ---
+
+        async buscarUsuarios() {
+            const q = document.getElementById('search-user-input').value;
+            if (q.length < 2) return;
+            try {
+                const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(q)}`);
+                const json = await res.json();
+                document.getElementById('search-results').innerHTML = (json.usuarios || []).map(u => 
+                    `<button type="button" class="list-group-item list-group-item-action" 
+                        onclick="GaleriaManager.addColaborador(${u.id}, '${u.username}')">
+                        ${u.username}
+                    </button>`
+                ).join('');
+            } catch (e) { console.error(e); }
+        },
+
+        addColaborador(id, username) {
+            if (!this.colaboradores.find(c => c.id === id)) {
+                this.colaboradores.push({ id, username });
+                this.renderColaboradores();
+            }
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('search-user-input').value = '';
+        },
+
+        removeColaborador(id) {
+            this.colaboradores = this.colaboradores.filter(c => c.id !== id);
+            this.renderColaboradores();
+        },
+
+        renderColaboradores() {
+            document.getElementById('colaboradores-selecionados').innerHTML = this.colaboradores.map(c => 
+                `<span class="badge bg-primary d-flex align-items-center gap-2 p-2">
+                    ${c.username}
+                    <i class="bi bi-x-circle-fill cursor-pointer" onclick="GaleriaManager.removeColaborador(${c.id})"></i>
+                </span>`
+            ).join('');
+        },
+
+        togglePublicSection() {
+            const isPublic = document.getElementById('config-is-public').checked;
+            document.getElementById('colaboradores-section').style.display = isPublic ? 'none' : 'block';
+        },
+
+        // --- UTILITÁRIOS DE EXCLUSÃO ---
+
+        async excluirImagem(id) {
+            if (!await Utils.confirm('Tem certeza que deseja excluir esta mídia?', 'Excluir')) return;
+            try {
+                const res = await fetch(`/api/galeria/${CONFIG.galeriaId}/imagem/${id}`, { method: 'DELETE' });
+                const json = await res.json();
+                if (json.success) {
+                    this.data.imagens = this.data.imagens.filter(img => img.id !== id);
+                    this.renderizar();
+                    Utils.alert('Mídia removida.', 'Sucesso');
+                }
+            } catch (err) { Utils.alert('Erro ao excluir.', 'Erro'); }
+        },
+
+        async excluirGaleria() {
+            if (!await Utils.confirm('ATENÇÃO: Isso apagará o álbum inteiro. Continuar?', 'EXCLUIR TUDO')) return;
+            try {
+                const res = await fetch(`/api/galeria/${CONFIG.galeriaId}`, { method: 'DELETE' });
+                const json = await res.json();
+                if (json.success) window.location.href = '/galerias';
+                else throw new Error(json.message);
+            } catch (err) { Utils.alert(err.message, 'Erro Crítico'); }
+        },
+
+        // --- HELPERS DE TIPO ---
+        getMediaType(url) {
+            const lower = url.toLowerCase();
+            if (['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v'].some(ext => lower.includes(ext))) return 'video';
+            if (['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac'].some(ext => lower.includes(ext))) return 'audio';
+            return 'image';
+        },
+
+        setupEventListeners() {
+            // Upload e Config Forms
+            document.getElementById('formUpload').addEventListener('submit', (e) => this.handleUpload(e));
+            document.getElementById('formConfig').addEventListener('submit', (e) => this.salvarConfig(e));
+
+            // Config Preview Live
+            document.querySelectorAll('.preview-trigger').forEach(el => {
+                el.addEventListener('input', () => {
+                    if(el.id === 'input-bg' && el.files.length > 0) {
+                        document.getElementById('flag-remove-bg').value = 'false';
+                        document.getElementById('status-bg').classList.add('d-none');
+                    }
+                    this.applyPreview();
+                });
+            });
+            document.getElementById('config-is-public').addEventListener('change', () => this.togglePublicSection());
+
+            // Modal: Cancelar Config restaura estilos
+            document.getElementById('modalConfig').addEventListener('hidden.bs.modal', () => {
+                if (this.originalStyles) {
+                    document.getElementById('conteudo-principal').setAttribute('style', this.originalStyles);
+                    this.originalStyles = null;
+                    this.previewBgUrl = null;
+                }
+            });
+
+            // Modal: Fechar Mídia para o som
+            document.getElementById('modalMedia').addEventListener('hidden.bs.modal', () => {
+                const container = document.getElementById('media-container');
+                container.querySelectorAll('video, audio').forEach(el => { el.pause(); el.src = ""; });
+                container.innerHTML = '';
+            });
+        }
+    };
+
+    // Iniciar
+    document.addEventListener('DOMContentLoaded', () => GaleriaManager.init());
+</script>

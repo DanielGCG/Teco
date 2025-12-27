@@ -75,8 +75,10 @@
 
     document.getElementById('formCriarGaleria').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        
+        const form = e.target;
+        const formData = new FormData(form);
+        // Garante que o campo is_public seja enviado explicitamente como 'true' ou 'false'
+        formData.set('is_public', form.is_public.checked ? 'true' : 'false');
         try {
             const res = await fetch('/api/galeria', {
                 method: 'POST',
@@ -85,7 +87,7 @@
             const data = await res.json();
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('modalCriarGaleria')).hide();
-                e.target.reset();
+                form.reset();
                 carregarGalerias();
                 mostrarAviso('Álbum criado com sucesso!', 'Sucesso');
             } else {
