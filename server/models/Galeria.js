@@ -48,6 +48,10 @@ const Galeria = sequelize.define('Galeria', {
         type: DataTypes.STRING(7),
         defaultValue: '#ffffff'
     },
+    grid_columns: {
+        type: DataTypes.INTEGER,
+        defaultValue: 8
+    },
     font_family: {
         type: DataTypes.STRING(50),
         defaultValue: 'Inter'
@@ -82,6 +86,14 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
     nome: {
         type: DataTypes.STRING(100)
     },
+    grid_w: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1
+    },
+    grid_h: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1
+    },
     user_id: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,
@@ -89,6 +101,19 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
             model: 'users',
             key: 'id'
         }
+    },
+    pos: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    show_title: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
+    },
+    // CAMPO ADICIONADO: Controla se a imagem é 'cover' ou 'contain'
+    img_fit: {
+        type: DataTypes.STRING(10),
+        defaultValue: 'cover'
     },
     created_at: {
         type: DataTypes.DATE,
