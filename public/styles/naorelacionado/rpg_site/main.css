@@ -1,0 +1,115 @@
+body {
+  background: #0080ff; /* azul padrão do XP */
+  margin: 0;
+  height: 100vh;
+  font-family: Tahoma, sans-serif;
+}
+
+/* Moldura da janela - agora tela inteira */
+.janela {
+  width: 100%;
+  height: 100%;
+  border: 4px solid #ecead8; /* marrom/bege nas laterais */
+  background: #ecead8;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Barra superior azul */
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, #0050ef, #3a6ea5);
+  color: white;
+  padding: 2px 6px;
+  height: 28px;
+  border-bottom: 2px solid #faf9f4; /* separador */
+}
+
+.barra .titulo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.barra .botoes {
+  display: flex;
+  gap: 2px;
+}
+
+.botao {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #000;
+  background: #ecead8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  color: black;
+}
+
+.botao:hover {
+  background: #fff;
+}
+
+/* Área interna preta (console) */
+.conteudo {
+  flex: 1;
+  background: #000;
+  color: #0f0;
+  font-family: Consolas, monospace;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.icone {
+  height: 18px;
+  width: 18px;
+  vertical-align: middle; /* alinha com o texto */
+  margin-right: 5px;
+}
+
+.linha {
+    margin-bottom: 8px;
+}
+
+.opcao {
+    margin: 8px 0;
+    padding-left: 10px;
+}
+
+.input-prompt {
+    margin-right: 5px;
+}
+
+#userInput {
+    background: transparent;
+    border: none;
+    color: #0f0;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    outline: none;
+    flex: 1;
+    caret-color: #0f0;
+}
+
+.cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: #0f0;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}

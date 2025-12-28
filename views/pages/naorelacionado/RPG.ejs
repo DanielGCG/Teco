@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>???</title>
+  <link rel="stylesheet" href="styles/naorelacionado/rpg_site/main.css">
+</head>
+<body>
+
+  <div class="janela">
+
+    <div class="barra">
+        <img src="images/naorelacionado/rpg_site/cmd_icon.png" alt="Ícone de Comand Prompt" class="icone">
+      <div class="titulo"> <b>C:\TRANSMISSAO_UIVAR_FAROL.EXE </b></div>
+      <div class="botoes">
+        <div class="botao">−</div>
+        <div class="botao">☐</div>
+        <div class="botao">✕</div>
+      </div>
+    </div>
+    <div class="conteudo" id="conteudo">
+      <b>C:\TRANSMISSAO_UIVAR_FAROL.EXE></b>
+      <div class="linha"> </div>
+      Inicialize seu dispositivo:
+      <div class="linha"> </div>
+      <div class="opcao"> 1. BOOT </div>
+      <div class="linha"> </div>
+      <div class="linha"> </div>
+      <div class="input-linha">
+        <span class="input-prompt">Escolha uma opção:</span>
+        <input type="text" id="userInput" autocomplete="off" autofocus>
+      </div>
+    </div>
+
+  </div>
+
+  <script> 
+  const userInput = document.getElementById('userInput');
+  const conteudo = document.getElementById('conteudo');
+  // Indica se o menu pós-inicialização está ativo (permite tratar as opções 1..5)
+  let menuActive = false;
+  // Submenu atual (null | 'status' | 'biblioteca' ...)
+  let submenu = null;
+
+
+    document.addEventListener('click', () => userInput.focus());
+
+    //Processando a entrada do usuário (captura Enter)
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const valor = userInput.value.trim();
+        if (valor !== '') {
+          processarComando(valor);
+        }
+        userInput.value = '';
+      }
+    });
+
+    // Adiciona uma linha ao terminal. Retorna uma Promise que resolve quando
+    // a linha terminou de ser escrita (útil para animação letra-a-letra).
+    function adicionarLinha(texto, options = { animate: true, speed: 30 }) {
+      return new Promise((resolve) => {
+        if (!conteudo) return resolve(null);
+
+        const linha = document.createElement('div');
+        linha.className = 'linha';
+
+        const inputLinha = document.querySelector('.input-linha');
+        if (inputLinha) {
+          conteudo.insertBefore(linha, inputLinha);
+        } else {
+          conteudo.appendChild(linha);
+        }
+
+        // Se texto for exatamente string vazia, insere um espaço não-quebrável
+        // para garantir que a linha apareça visível (div vazia pode colapsar)
+        if (texto === '') {
+          linha.innerHTML = '&nbsp;';
+          conteudo.scrollTop = conteudo.scrollHeight;
+          return resolve(linha);
+        }
+
+        // Se animação desativada, escreve tudo de uma vez
+        if (!options.animate) {
+          linha.textContent = texto;
+          conteudo.scrollTop = conteudo.scrollHeight;
+          return resolve(linha);
+        }
+
+        // Animação letra-a-letra
+        const speed = options.speed && typeof options.speed === 'number' ? options.speed : 30;
+        let i = 0;
+        const timer = setInterval(() => {
+          linha.textContent += texto.charAt(i);
+          i += 1;
+          // mantem o scroll no fim enquanto digita
+          conteudo.scrollTop = conteudo.scrollHeight;
+          if (i >= texto.length) {
+            clearInterval(timer);
+            return resolve(linha);
+          }
+        }, speed);
+      });
+    }
+
+    // Faz a linha piscar por `duration` ms (toggle visibility a cada `interval` ms)
+    function piscarLinha(linha, duration = 10000, interval = 400) {
+      return new Promise((resolve) => {
+        if (!linha) return resolve();
+        let visible = true;
+        // garante estado inicial
+        linha.style.visibility = 'visible';
+        const iv = setInterval(() => {
+          linha.style.visibility = visible ? 'hidden' : 'visible';
+          visible = !visible;
+          // mantém scroll no final durante o piscar
+          conteudo.scrollTop = conteudo.scrollHeight;
+        }, interval);
+
+        setTimeout(() => {
+          clearInterval(iv);
+          linha.style.visibility = 'visible';
+          resolve();
+        }, duration);
+      });
+    }
+
+    // Rolagem para tornar um elemento visível logo após seu topo
+    function scrollToElement(el, offset = 8) {
+      if (!el || !conteudo) return;
+      // calcula posição relativa ao container
+      const top = el.offsetTop;
+      // ajusta para dar um pequeno espaçamento
+      conteudo.scrollTop = Math.max(0, top - offset);
+    }
+
+    // Normaliza entrada do usuário: trim, lowercase e remove acentos (compatível)
+    function normalizeInput(str) {
+      if (!str) return '';
+      return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '');
+    }
+
+    async function processarComando(cmd) {
+      if (!cmd) return;
+
+      // Se estivermos dentro de um submenu (ex.: 'status'), tratar comandos desse submenu
+      if (submenu === 'status') {
+        const choice = normalizeInput(cmd);
+        // aceitar 'voltar' ou 'menu' para retornar
+        if (choice === 'voltar' || choice === 'menu' || choice === 'retornar') {
+          // reexibe o menu principal (sem números)
+          await adicionarLinha('', { animate: false });
+          const menuPrompt = await adicionarLinha('Selecione o próximo comando:', { animate: false });
+          await adicionarLinha('Status', { animate: false });
+          await adicionarLinha('Biblioteca', { animate: false });
+          await adicionarLinha('Transmissão', { animate: false });
+          await adicionarLinha('Radar', { animate: false });
+          await adicionarLinha('Conexão', { animate: false });
+          scrollToElement(menuPrompt);
+          submenu = null;
+          menuActive = true;
+          if (userInput) userInput.focus();
+          return;
+        }
+
+        // se outro texto for digitado dentro do submenu, orientar o usuário
+        await adicionarLinha("Digite 'voltar' para retornar ao menu anterior.", { animate: true, speed: 18 });
+        if (userInput) userInput.focus();
+        return;
+      }
+
+      // Se estivermos dentro de um submenu (ex.: 'biblioteca' ou 'status'), tratar primeiro
+      if (submenu === 'biblioteca') {
+        const choice = normalizeInput(cmd);
+        if (choice === 'voltar' || choice === 'menu' || choice === 'retornar') {
+          // volta ao menu principal
+          await adicionarLinha('', { animate: false });
+          const menuPrompt = await adicionarLinha('Selecione o próximo comando:', { animate: false });
+          await adicionarLinha('Status', { animate: false });
+          await adicionarLinha('Biblioteca', { animate: false });
+          await adicionarLinha('Transmissão', { animate: false });
+          await adicionarLinha('Radar', { animate: false });
+          await adicionarLinha('Conexão', { animate: false });
+          scrollToElement(menuPrompt);
+          submenu = null;
+          menuActive = true;
+          if (userInput) userInput.focus();
+          return;
+        }
+
+        // escolher entre as três opções internas da biblioteca
+        if (choice.includes('guia') || choice.includes('sinais') || choice.includes('guia de uso')) {
+          // Mostrar o Guia por Jackson (texto completo)
+          await adicionarLinha('Guia por Jackson', { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`Eu deixo esse guia para você, Hallberg, já que a Carol já é mais habituada com os Sinais dos Transmissores.`, { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`Nós, Transmissores, estabelecemos um tipo de linguagem que mimetiza os Sigilos de Eloquência dos rituais, mas em vez de fazer um pedido, usamos os Sinais para se comunicar com o Outro Lado.`, { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`O tipo mais comum são os mais simples, o coração de qualquer Transmissão, esses são conhecidos como “Sinais de Composição”, o exemplo é a imagem 1, que é o sinal de “Significa/Importa”.`, { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`O segundo tipo mais comum são os de Estrutura, que refinam e mudam o sentido e evidenciam o propósito de uma Transmissão, eles complementam os de Composição, o exemplo da imagem 2 é a estrutura de “Fazer/Ação”.`, { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`Por fim, existem os Sinais de Pronomes, esses são mais específicos e complexos e servem para refinar ainda mais uma Transmissão, o exemplo é a imagem 3 que mostra o Sinal de “Alguém”.`, { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`Sei que é difícil, só toma cuidado pra não enlouquecer, mas se você tiver dificuldade, vai atrás de pegar o meu guia rápido pra nossos objetivos aqui, ele está no meu armário na plataforma, se lembra da senha: 9812.`, { animate: true, speed: 18 });
+          await adicionarLinha('', { animate: false });
+
+          await adicionarLinha(`AH, e troca essa porcaria de senha, literalmente TODO ocultista tá com essa modinha de 0413, eu ein…`, { animate: true, speed: 18 });
+        } else if (choice.includes('mensagem') || choice.includes('mestres') || choice.includes('anarquia')) {
+          const linhaRegistroMensagem = await adicionarLinha('Registro de Mensagem - Mestres da Anarquia', { animate: true, speed: 18 });
+          await piscarLinha(linhaRegistroMensagem, 2000, 400);
+          await adicionarLinha('Nada aqui por enquanto...', { animate: true, speed: 20 });
+        } else if (choice.includes('conexao') || choice.includes('conex') || choice.includes('28.08') || choice.includes('28082024')) {
+          const linhaRegistroConexao = await adicionarLinha('Registro de Conexão - 28.08.2024', { animate: true, speed: 18 });
+          await piscarLinha(linhaRegistroConexao, 2000, 400);
+          await adicionarLinha('Nada aqui por enquanto...', { animate: true, speed: 20 });
+        } else {
+          await adicionarLinha('Opção não reconhecida dentro da Biblioteca. Digite o nome da opção (Guia, Registro de Mensagem, Registro de Conexão) ou "voltar" para retornar.', { animate: true, speed: 18 });
+          if (userInput) userInput.focus();
+          return;
+        }
+
+        // após mostrar a escolha, reapresenta as três opções e instrução para voltar
+        await adicionarLinha('', { animate: false });
+        const subPrompt = await adicionarLinha('Selecione: Guia de Uso dos Sinais | Registro de Mensagem | Registro de Conexão (ou digite voltar)', { animate: false });
+        scrollToElement(subPrompt);
+        submenu = 'biblioteca';
+        if (userInput) userInput.focus();
+        return;
+      }
+
+      // Se o menu pós-inicialização estiver ativo, trate as opções pelo nome
+      if (menuActive) {
+        const choice = normalizeInput(cmd);
+        switch (choice) {
+          case 'status':
+            // Exibe o bloco de status detalhado
+            const linhaStatus = await adicionarLinha('==========> STATUS <==========', { animate: true, speed: 20 });
+            await piscarLinha(linhaStatus, 2000, 400);
+            await adicionarLinha('', { animate: false });
+
+            await adicionarLinha('PONTO DE TRANSMISSÃO:', { animate: true, speed: 18 });
+            await adicionarLinha('ILHA DO SOL, PE - FAROL', { animate: true, speed: 18 });
+            await adicionarLinha('ESTADO: ATIVO', { animate: true, speed: 18 });
+            await adicionarLinha('', { animate: false });
+
+            await adicionarLinha('MANIFESTAÇÕES:', { animate: true, speed: 18 });
+            await adicionarLinha('UIVAR DA TORMENTA - ATIVO', { animate: true, speed: 18 });
+            await adicionarLinha('EMPECILHOS - ATIVO', { animate: true, speed: 18 });
+            await adicionarLinha('DISASSOCIAÇÃO CONGELADA - ATIVO', { animate: true, speed: 18 });
+            await adicionarLinha('', { animate: false });
+
+            await adicionarLinha('ESTADO DA MEMBRANA: DANIFICADA', { animate: true, speed: 18 });
+
+            // Oferece opção para retornar ao menu anterior em vez de reexibir automaticamente
+            await adicionarLinha('', { animate: false });
+            await adicionarLinha("Digite 'voltar' para retornar ao menu anterior.", { animate: false });
+            // marca que estamos em submenu 'status'
+            submenu = 'status';
+            menuActive = false;
+            if (userInput) userInput.focus();
+            return;
+          case 'biblioteca':
+            // Mostrar bloco principal da biblioteca
+            const linhaBiblioteca = await adicionarLinha('=========> BIBLIOTECA <==========', { animate: true, speed: 18 });
+            await piscarLinha(linhaBiblioteca, 2000, 400);
+            await adicionarLinha('', { animate: false });
+            await adicionarLinha('Saber tudo é inevitável.', { animate: true, speed: 18 });
+            await adicionarLinha('', { animate: false });
+            await adicionarLinha('Guia de Uso dos Sinais', { animate: true, speed: 18 });
+            await adicionarLinha('Registro de Mensagem - Mestres da Anarquia', { animate: true, speed: 18 });
+            await adicionarLinha('Registro de Conexão - 28.08.2024', { animate: true, speed: 18 });
+            await adicionarLinha('', { animate: false });
+            // Apresenta opções internas para seleção (sem números)
+            const libPrompt = await adicionarLinha('Selecione uma das entradas acima para ver detalhes (ou digite voltar):', { animate: false });
+            scrollToElement(libPrompt);
+            submenu = 'biblioteca';
+            menuActive = false;
+            if (userInput) userInput.focus();
+            return;
+          case 'transmissao':
+            const linhaTransmissao = await adicionarLinha('=========> TRANSMISSÃO <==========', { animate: true, speed: 18 });
+            await piscarLinha(linhaTransmissao, 2000, 400);
+            await adicionarLinha('Nada aqui por enquanto...', { animate: true, speed: 20 });
+            break;
+          case 'radar':
+            // Mostra e faz piscar o título por 2s
+            const linhaRadar = await adicionarLinha('=========> RADAR <==========', { animate: true, speed: 18 });
+            await piscarLinha(linhaRadar, 2000, 400);
+            await adicionarLinha('Nada aqui por enquanto...', { animate: true, speed: 20 });
+            break;
+          case 'conexao':
+            const linhaConexao = await adicionarLinha('=========> CONEXÃO <==========', { animate: true, speed: 18 });
+            await piscarLinha(linhaConexao, 2000, 400);
+            await adicionarLinha('Nada aqui por enquanto...', { animate: true, speed: 20 });
+            break;
+          default:
+            await adicionarLinha('Opção do menu não reconhecida. Digite o nome: Status, Biblioteca, Transmissão, Radar ou Conexão.', { animate: true, speed: 20 });
+        }
+
+        // Depois de mostrar as informações, deixa uma linha em branco e reexibe o menu (sem números)
+        await adicionarLinha('', { animate: false });
+        const menuPrompt = await adicionarLinha('Selecione o próximo comando:', { animate: false });
+        await adicionarLinha('Status', { animate: false });
+        await adicionarLinha('Biblioteca', { animate: false });
+        await adicionarLinha('Transmissão', { animate: false });
+        await adicionarLinha('Radar', { animate: false });
+        await adicionarLinha('Conexão', { animate: false });
+        // rola para o prompt do menu para que ele fique visível logo após o resultado
+        scrollToElement(menuPrompt);
+        // Mantém o menu ativo
+        menuActive = true;
+        if (userInput) userInput.focus();
+        return;
+      }
+
+  // Nota: o eco da escolha será exibido APÓS o resultado do comando,
+  // para não aparecer antes do processamento terminar.
+
+      // Depois executa os resultados/saídas do comando
+      switch(cmd) {
+        case '1':
+          // escreve e obtém o elemento da linha para poder piscar
+          const linhaInicializando = await adicionarLinha('Inicializando o sistema...', { animate: true, speed: 25 });
+          // pisca por ~2000ms antes de continuar
+          await piscarLinha(linhaInicializando, 2000, 400);
+          const linhaSucesso = await adicionarLinha('Sistema inicializado com sucesso!', { animate: true, speed: 20 });
+          // linha em branco após a mensagem de sucesso
+          await adicionarLinha('', { animate: false });
+
+          // Após inicialização, mostrar que o ponto de transmissão está operante
+          const linhaPonto = await adicionarLinha('Ponto de Transmissão 01 operante', { animate: true, speed: 20 });
+          // linha em branco após 'Ponto de Transmissão 01 operante'
+          await adicionarLinha('', { animate: false });
+
+          // Mostrar o menu de próximo comando (agora animado letra-a-letra)
+          const menuPrompt = await adicionarLinha('Selecione o próximo comando:', { animate: true, speed: 30 });
+          await adicionarLinha('Status', { animate: true, speed: 20 });
+          await adicionarLinha('Biblioteca', { animate: true, speed: 20 });
+          await adicionarLinha('Transmissão', { animate: true, speed: 20 });
+          await adicionarLinha('Radar', { animate: true, speed: 20 });
+          await adicionarLinha('Conexão', { animate: true, speed: 20 });
+
+          // garante que o menu apareça logo após o resultado (rola para o prompt do menu)
+          scrollToElement(menuPrompt);
+
+          // Ativa o menu e foca o input para receber o nome da opção
+          menuActive = true;
+          if (userInput) userInput.focus();
+
+          break;
+        default:
+          await adicionarLinha('Comando não reconhecido.', { animate: true, speed: 20 });
+      }
+
+      // garante que o input permaneça focado para a próxima entrada
+      if (userInput) userInput.focus();
+    }
+  </script>
+</body>
+</html>
+

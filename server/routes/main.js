@@ -26,6 +26,9 @@ router.use("/perfil", require("./perfil"));
 // Rota de features
 router.use("/", require("./features"));
 
+// Rota de nao relacionado
+router.use("/", require("./naorelacionado"));
+
 // Rota inicial
 router.use("/", require("./inicial"));
 
