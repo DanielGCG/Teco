@@ -198,7 +198,7 @@ const GaleriaManager = {
                 content = `<video src="${img.url}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
             }
             if (type === 'audio') {
-                content = `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><audio controls src="${img.url}" style="width:100%"></audio></div>`;
+                content = `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon" aria-hidden="true"></i></div></div>`;
             }
 
             const editOverlay = this.editMode ? this.getEditOverlayHtml(img.id, w, h, cols, fit, showTitle) : '';
