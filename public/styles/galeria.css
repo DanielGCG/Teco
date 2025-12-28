@@ -1,5 +1,6 @@
 body { 
-    transition: background-color 0.5s ease, background-image 0.5s ease; 
+    transition: background-color 0.5s ease, background-image 0.5s ease;
+    color: var(--gallery-text-color, #212529);
 }
 
 /* Glassmorphism Container */
@@ -108,7 +109,7 @@ main.container-glass {
     display: flex; justify-content: center; align-items: center; color: white;
 }
 .placeholder-video { background-color: #212529; }
-.placeholder-audio { background: linear-gradient(135deg, #4a4e69 0%, #22223b 100%); }
+.placeholder-audio { background-color: var(--gallery-card-bg, #212529); }
 
 .image-card .card-body {
     flex-shrink: 0; height: 32px;

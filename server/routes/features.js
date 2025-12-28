@@ -17,7 +17,7 @@ FeaturesRouter.get('/watchlist', async (req, res) => {
 FeaturesRouter.get('/galerias', async (req, res) => {
     const locals = {
         title: `Galerias`,
-        description: "Álbuns de fotos",
+        description: "Veja as galerias disponíveis",
         version: process.env.VERSION,
     }
     res.render('pages/features/galerias', {
@@ -30,7 +30,7 @@ FeaturesRouter.get('/galerias', async (req, res) => {
 FeaturesRouter.get('/galeria/:id', async (req, res) => {
     const locals = {
         title: `Galeria`,
-        description: "Visualizando álbum",
+        description: "Visualizando galeria",
         version: process.env.VERSION,
     }
     res.render('pages/features/galeria', {

@@ -273,6 +273,16 @@ router.patch('/:id/imagem/:imagemId', checkGaleriaPermission, uploadImage.single
             }
         }
 
+            // Caso o usuário tenha marcado remoção de capa (remove_cover) e não enviou nova capa,
+            // removeremos o arquivo remoto e zeraremos o campo cover_url.
+            const remove_cover = req.body.remove_cover;
+            if (!req.file && (remove_cover === 'true' || remove_cover === true)) {
+                if (imagem.cover_url && imagem.cover_url !== imagem.content_url) {
+                    try { await deleteFromFileServer({ fileUrl: imagem.cover_url }); } catch (e) { console.warn('Falha ao remover cover marcado', e.message || e); }
+                }
+                imagem.cover_url = null;
+            }
+
         await imagem.save();
         res.json({ success: true, imagem });
     } catch (error) {

@@ -48,6 +48,17 @@ const GaleriaManager = {
         this.setupDragAndDrop();
     },
 
+    markRemoveCover(id) {
+        const flag = document.getElementById('edit-flag-remove-cover');
+        if (flag) flag.value = 'true';
+        const current = document.getElementById('edit-item-current-cover');
+        if (current) {
+            current.innerHTML = `<div class="small text-danger">Capa marcada para remoção</div>`;
+            // keep the area visible so user can still cancel by choosing a new file
+            current.style.display = '';
+        }
+    },
+
     async carregarDados() {
         try {
             const res = await fetch(`/api/galeria/${this.galeriaId}`);
@@ -191,20 +202,20 @@ const GaleriaManager = {
             let content = '';
             if (type === 'video') {
                 if (img.cover_url) {
-                    content = `<img src="${img.cover_url}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
+                    content = `<img src="${img.cover_url}" class="media-preview-box fit-${fit}" loading="lazy">`;
                 } else {
                     content = `<video src="${img.content_url}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
                 }
             } else if (type === 'audio') {
                 if (previewSrc) {
-                    content = `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
+                    content = `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">`;
                 } else {
                     content = `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon" aria-hidden="true"></i></div></div>`;
                 }
             } else {
                 // image / gif
                 const imgSrc = previewSrc || img.content_url || '';
-                content = `<img src="${imgSrc}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
+                content = `<img src="${imgSrc}" class="media-preview-box fit-${fit}" loading="lazy">`;
             }
 
             const editOverlay = this.editMode ? this.getEditOverlayHtml(img.id, w, h, cols, fit, showTitle, img.z_index || 0) : '';
@@ -278,15 +289,41 @@ const GaleriaManager = {
         const coverInput = form.querySelector('input[name="cover"]');
         // sempre limpar o valor antigo ao abrir o modal para evitar enviar arquivos residuais
         if (coverInput) try { coverInput.value = ''; } catch(e) {}
+        if (coverInput) {
+            try { coverInput.value = ''; } catch(e) { /* ignore */ }
+            // se o usuário escolher um novo arquivo, garante que a flag de remoção seja resetada
+            coverInput.onchange = () => {
+                const flag = document.getElementById('edit-flag-remove-cover');
+                if (flag) flag.value = 'false';
+            };
+        }
+        // reset remove flag by default
+        const removeFlag = document.getElementById('edit-flag-remove-cover');
+        if (removeFlag) removeFlag.value = 'false';
+
+        // Se for imagem, escondemos a opção de enviar capa e o bloco de capa atual
         if (type === 'image') {
-            if (coverInput) { coverInput.closest('.mb-3')?.classList.add('d-none'); coverInput.value = ''; }
+            if (coverInput) coverInput.style.display = 'none';
             if (current) { current.style.display = 'none'; current.innerHTML = ''; }
         } else {
-            if (coverInput) coverInput.closest('.mb-3')?.classList.remove('d-none');
-            if (item.cover_url) {
-                current.style.display = '';
-                current.innerHTML = `<div class="mb-2">Capa atual:</div><img src="${item.cover_url}" class="img-fluid rounded" style="max-height:120px">`;
-            } else { current.style.display = 'none'; current.innerHTML = ''; }
+            if (coverInput) coverInput.style.display = '';
+            if (current) {
+                if (item.cover_url) {
+                    current.style.display = '';
+                    current.innerHTML = `
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="${item.cover_url}" style="max-height:80px; max-width:120px; object-fit:cover; border-radius:8px;"/>
+                            <div>
+                                <div class="small text-muted">Capa atual</div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover(${item.id})">Remover capa</button>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    current.style.display = 'none'; current.innerHTML = '';
+                }
+            }
         }
 
         // attach submit handler (once)
@@ -504,7 +541,7 @@ const GaleriaManager = {
         document.getElementById('media-caption').textContent = nome || '';
         let content = '';
         if (type === 'video') content = `<video src="${url}" controls autoplay class="img-fluid rounded shadow" style="max-height:80vh"></video>`;
-        else if (type === 'audio') content = `<div class="p-5 bg-dark rounded border"><i class="bi bi-music-note-beamed display-1 text-info"></i><audio controls autoplay class="d-block mt-3"><source src="${url}"></audio></div>`;
+        else if (type === 'audio') content = `<div class="p-5 bg-dark rounded border"><i class="bi bi-music-note-beamed display-1 text-info"></i><audio controls autoplay class="d-block mt-3" oncanplay="this.volume=0.4"><source src="${url}"></audio></div>`;
         else content = `<img src="${url}" class="img-fluid rounded shadow" style="max-height:80vh">`;
 
         container.innerHTML = `<div class="position-relative d-inline-block"><button type="button" class="btn-close bg-white position-absolute top-0 end-0 m-2" style="z-index:10" data-bs-dismiss="modal"></button>${content}</div>`;
