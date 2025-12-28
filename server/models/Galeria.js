@@ -50,7 +50,7 @@ const Galeria = sequelize.define('Galeria', {
     },
     grid_columns: {
         type: DataTypes.INTEGER,
-        defaultValue: 8
+        defaultValue: 12
     },
     font_family: {
         type: DataTypes.STRING(50),
@@ -65,7 +65,7 @@ const Galeria = sequelize.define('Galeria', {
     timestamps: false
 });
 
-const GaleriaImagem = sequelize.define('GaleriaImagem', {
+const GaleriaItem = sequelize.define('GaleriaItem', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -79,7 +79,11 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
             key: 'id'
         }
     },
-    url: {
+    cover_url: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    content_url: {
         type: DataTypes.STRING(255),
         allowNull: false
     },
@@ -114,7 +118,7 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
             key: 'id'
         }
     },
-    pos: {
+    z_index: {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
@@ -132,7 +136,7 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'br_galeria_imagem',
+    tableName: 'br_galeria_item',
     timestamps: false
 });
 
@@ -158,4 +162,4 @@ const GaleriaPermissao = sequelize.define('GaleriaPermissao', {
     timestamps: false
 });
 
-module.exports = { Galeria, GaleriaImagem, GaleriaPermissao };
+module.exports = { Galeria, GaleriaItem, GaleriaPermissao };

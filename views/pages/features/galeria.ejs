@@ -121,10 +121,9 @@
                                 <div class="mb-3">
                                     <label class="form-label small">Colunas</label>
                                     <select class="form-select preview-trigger" name="grid_columns" id="config-grid-columns">
-                                        <option value="6">6</option>
-                                        <option value="8" selected>8 (Padrão)</option>
+                                        <option value="8">8</option>
                                         <option value="10">10</option>
-                                        <option value="12">12</option>
+                                        <option value="12" selected>12 (Padrão)</option>
                                         <option value="14">14</option>
                                         <option value="16">16</option>
                                     </select>
@@ -161,6 +160,49 @@
                 </div>
                 <div class="mt-3 text-center">
                     <h5 id="media-caption" class="text-white text-shadow d-inline-block bg-dark bg-opacity-75 px-3 py-1 rounded"></h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de edição de atributos do item -->
+    <div class="modal fade" id="modalEditItem" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditItem">
+                        <input type="hidden" name="item_id" id="edit-item-id">
+                        <div class="mb-3">
+                            <label class="form-label">Nome / Legenda</label>
+                            <input type="text" class="form-control" name="nome" id="edit-item-nome">
+                        </div>
+                        <div class="mb-3 form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit-item-showtitle" name="show_title">
+                            <label class="form-check-label" for="edit-item-showtitle">Exibir título</label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ajuste da imagem</label>
+                            <select class="form-select" name="img_fit" id="edit-item-fit">
+                                <option value="cover">Preencher (cover)</option>
+                                <option value="contain">Ajustar (contain)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Capa (imagem/gif) - Opcional</label>
+                            <input type="file" class="form-control" name="cover" accept="image/*,image/gif">
+                            <div class="form-text small">Envie uma capa para ser usada como preview na grade (vídeo/áudio).</div>
+                        </div>
+                        <div class="mb-3" id="edit-item-current-cover" style="display:none;"></div>
+                        <div class="modal-footer px-0 pb-0 mt-3 border-top-0">
+                            <button type="button" class="btn btn-danger me-auto" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(document.getElementById('edit-item-id').value)"><i class="bi bi-trash"></i> Excluir item</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success">Salvar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

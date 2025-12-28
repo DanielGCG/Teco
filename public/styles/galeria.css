@@ -5,8 +5,8 @@ body {
 /* Glassmorphism Container */
 main.container-glass {
     background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     border: 1px solid rgba(255, 255, 255, 0.18);
     transition: all 0.5s ease;
     border-radius: 16px;
@@ -121,9 +121,17 @@ main.container-glass {
 .edit-overlay {
     position: absolute; top: 6px; right: 6px;
     display: flex; gap: 3px; z-index: 20;
-    transition: transform 0.2s ease;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+    opacity: 0; pointer-events: none; transform: translateY(-6px) scale(0.98);
 }
-.edit-overlay:hover { transform: scale(1.05); z-index: 30; }
+.grid-item:hover .edit-overlay { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); z-index: 30; }
+
+.edit-overlay:hover { transform: scale(1.05); z-index: 31; }
+
+.z-indicator {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 0.78rem; line-height: 1;
+}
 
 .btn-xs { 
     padding: 2px 5px; font-size: 1rem; line-height: 1;

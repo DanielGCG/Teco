@@ -75,7 +75,7 @@ const GaleriaManager = {
         const grid = document.getElementById('lista-imagens');
         if (!grid || !this.data) return;
 
-        const cols = parseInt(this.data.grid_columns || 4);
+        const cols = parseInt(this.data.grid_columns || 12);
         const gap = 15; // Deve corresponder ao CSS gap
         const containerWidth = grid.getBoundingClientRect().width;
 
@@ -91,7 +91,7 @@ const GaleriaManager = {
     garantirCoordenadas() {
         if (!this.data.imagens) return;
         
-        const cols = parseInt(this.data.grid_columns || 4);
+        const cols = parseInt(this.data.grid_columns || 12);
         const map = {}; 
         const isOccupied = (x, y, w, h) => {
             for(let i=0; i<w; i++) {
@@ -152,11 +152,11 @@ const GaleriaManager = {
             <button class="btn btn-primary shadow-sm" onclick="GaleriaManager.abrirModalUpload()">
                 <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Adicionar</span>
             </button>
-            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()">
+            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()" title="Alternar modo de edição">
                 <i class="bi bi-grid-3x3-gap-fill"></i> <span class="d-none d-sm-inline">${label}</span>
             </button>
-            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()"><i class="bi bi-save"></i> Salvar</button>` : ''}
-            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.abrirModalConfig()"><i class="bi bi-gear-fill"></i></button>
+            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()" title="Salvar alterações de layout"><i class="bi bi-save"></i> Salvar</button>` : ''}
+            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.abrirModalConfig()" title="Abrir configurações da galeria"><i class="bi bi-gear-fill"></i></button>
         `;
         container.innerHTML = html;
     },
@@ -176,13 +176,13 @@ const GaleriaManager = {
         this.garantirCoordenadas();
         this.updateGridMetrics(); // Atualiza métricas para alinhamento perfeito
 
-        const cols = this.data.grid_columns || 4;
+        const cols = this.data.grid_columns || 12;
         grid.style.setProperty('--gallery-columns', cols);
 
         // Prepara HTML dos itens
         const itemsHtml = this.data.imagens.map(img => {
             const safeNome = Utils.escapeHtml(img.nome || 'Sem nome');
-            const safeUrl = img.url.replace(/'/g, "\\'");
+            const safeUrl = (img.content_url || '').replace(/'/g, "\\'");
             const type = this.getMediaType(img);
             
             const w = img.grid_w || 1;
@@ -193,17 +193,29 @@ const GaleriaManager = {
             const showTitle = (img.show_title !== false);
             const fit = img.img_fit || 'cover';
             
-            let content = `<img src="${img.url}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
+            const previewSrc = img.cover_url || (type === 'image' ? img.content_url : '');
+            let content = '';
             if (type === 'video') {
-                content = `<video src="${img.url}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
-            }
-            if (type === 'audio') {
-                content = `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon" aria-hidden="true"></i></div></div>`;
+                if (img.cover_url) {
+                    content = `<img src="${img.cover_url}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
+                } else {
+                    content = `<video src="${img.content_url}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
+                }
+            } else if (type === 'audio') {
+                if (previewSrc) {
+                    content = `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
+                } else {
+                    content = `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon" aria-hidden="true"></i></div></div>`;
+                }
+            } else {
+                // image / gif
+                const imgSrc = previewSrc || img.content_url || '';
+                content = `<img src="${imgSrc}" class="media-preview-box fit-${fit}" loading="lazy" alt="${safeNome}">`;
             }
 
-            const editOverlay = this.editMode ? this.getEditOverlayHtml(img.id, w, h, cols, fit, showTitle) : '';
+            const editOverlay = this.editMode ? this.getEditOverlayHtml(img.id, w, h, cols, fit, showTitle, img.z_index || 0) : '';
             const dragAttr = this.editMode ? 'draggable="true"' : '';
-            const style = `grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};`;
+            const style = `grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h}; z-index: ${img.z_index || 0};`;
 
             // Adiciona data-w e data-h para facilitar o Drag & Drop
             return `
@@ -211,7 +223,7 @@ const GaleriaManager = {
                 <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" onclick="GaleriaManager.abrirMedia('${safeUrl}', '${type}', '${safeNome}')">
                     ${content}
                     ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeNome}</small></div>` : ''}
-                    ${this.editMode ? `<button class="position-absolute bottom-0 end-0 m-2 btn btn-xs btn-danger" style="z-index:30" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(${img.id})"><i class="bi bi-trash"></i></button>` : ''}
+                    ${this.editMode ? `<button class="position-absolute bottom-0 end-0 m-2 btn btn-xs btn-danger" style="z-index:30" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(${img.id})" title="Excluir item"><i class="bi bi-trash"></i></button>` : ''}
                 </div>
                 ${editOverlay}
             </div>`;
@@ -223,26 +235,104 @@ const GaleriaManager = {
         grid.innerHTML = itemsHtml + highlightHtml;
     },
 
-    getEditOverlayHtml(id, w, h, maxCols, fit, showTitle) {
+    getEditOverlayHtml(id, w, h, maxCols, fit, showTitle, z_index) {
         return `
         <div class="edit-overlay">
+            <button class="btn btn-xs btn-light border" title="Editar atributos" onclick="event.stopPropagation(); GaleriaManager.abrirEditarItem(${id})">
+                <i class="bi bi-pencil-square"></i>
+            </button>
             <button class="btn btn-xs ${fit === 'contain' ? 'btn-info text-white' : 'btn-light'} border" 
-                    onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {img_fit: '${fit === 'cover' ? 'contain' : 'cover'}'})">
+                    onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {img_fit: '${fit === 'cover' ? 'contain' : 'cover'}'})" title="Alternar ajuste da imagem (cover/contain)">
                 <i class="bi bi-aspect-ratio"></i>
             </button>
             <button class="btn btn-xs ${showTitle ? 'btn-primary' : 'btn-light'} border" 
-                    onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {show_title: ${!showTitle}})">
+                    onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {show_title: ${!showTitle}})" title="Alternar exibição do título">
                 <i class="bi bi-card-heading"></i>
             </button>
-            <div class="btn-group-vertical shadow-sm">
-                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_h: ${Math.max(1, h - 1)}})"><i class="bi bi-arrow-up-short"></i></button>
-                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_h: ${Math.min(maxCols, h + 1)}})"><i class="bi bi-arrow-down-short"></i></button>
+                <div class="btn-group-vertical shadow-sm" title="Ajustar altura (linhas)">
+                    <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_h: ${Math.max(1, h - 1)}})" title="Diminuir altura"><i class="bi bi-arrow-up-short"></i></button>
+                    <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_h: ${Math.min(maxCols, h + 1)}})" title="Aumentar altura"><i class="bi bi-arrow-down-short"></i></button>
+                </div>
+            <div class="btn-group-vertical ms-1 shadow-sm" title="Ajustar largura (colunas)">
+                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_w: ${Math.max(1, w - 1)}})" title="Diminuir largura"><i class="bi bi-arrow-left-short"></i></button>
+                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_w: ${Math.min(maxCols, w + 1)}})" title="Aumentar largura"><i class="bi bi-arrow-right-short"></i></button>
             </div>
-            <div class="btn-group-vertical ms-1 shadow-sm">
-                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_w: ${Math.max(1, w - 1)}})"><i class="bi bi-arrow-left-short"></i></button>
-                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_w: ${Math.min(maxCols, w + 1)}})"><i class="bi bi-arrow-right-short"></i></button>
+                <div class="d-flex align-items-center ms-1">
+                <div class="btn-group-vertical shadow-sm me-2" title="Alterar ordem de empilhamento (z-index)">
+                    <button class="btn btn-xs btn-secondary" title="Trazer para frente" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {z_index: ${((z_index||0) + 1)}})"><i class="bi bi-arrow-up-circle"></i></button>
+                    <button class="btn btn-xs btn-secondary" title="Mandar para trás" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {z_index: ${Math.max(0, (z_index||0) - 1)}})"><i class="bi bi-arrow-down-circle"></i></button>
+                </div>
+                <div class="z-indicator small text-white bg-secondary px-2 py-1 rounded" title="Valor atual de z-index">Z: ${z_index || 0}</div>
             </div>
         </div>`;
+    },
+
+    abrirEditarItem(id) {
+        const item = this.data.imagens.find(i => i.id === id);
+        if (!item) return Utils.alert('Item não encontrado.');
+        const form = document.getElementById('formEditItem');
+        if (!form) return Utils.alert('Formulário de edição não encontrado.');
+
+        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('edit-item-nome').value = item.nome || '';
+        document.getElementById('edit-item-showtitle').checked = item.show_title !== false;
+        document.getElementById('edit-item-fit').value = item.img_fit || 'cover';
+
+        const current = document.getElementById('edit-item-current-cover');
+        const type = this.getMediaType(item);
+        // Se o item for imagem/gif, não mostramos opção de enviar capa (desnecessário)
+        const coverInput = form.querySelector('input[name="cover"]');
+        // sempre limpar o valor antigo ao abrir o modal para evitar enviar arquivos residuais
+        if (coverInput) try { coverInput.value = ''; } catch(e) {}
+        if (type === 'image') {
+            if (coverInput) { coverInput.closest('.mb-3')?.classList.add('d-none'); coverInput.value = ''; }
+            if (current) { current.style.display = 'none'; current.innerHTML = ''; }
+        } else {
+            if (coverInput) coverInput.closest('.mb-3')?.classList.remove('d-none');
+            if (item.cover_url) {
+                current.style.display = '';
+                current.innerHTML = `<div class="mb-2">Capa atual:</div><img src="${item.cover_url}" class="img-fluid rounded" style="max-height:120px">`;
+            } else { current.style.display = 'none'; current.innerHTML = ''; }
+        }
+
+        // attach submit handler (once)
+        if (!form._hasHandler) {
+            form.addEventListener('submit', (e) => this.handleEditItemSubmit(e));
+            form._hasHandler = true;
+        }
+
+        new bootstrap.Modal(document.getElementById('modalEditItem')).show();
+    },
+
+    async handleEditItemSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const id = document.getElementById('edit-item-id').value;
+        if (!id) return Utils.alert('ID do item faltando.');
+
+        const fd = new FormData(form);
+        // Se o checkbox estiver desmarcado, não envia 'show_title' -> manda explicitamente
+        fd.set('show_title', document.getElementById('edit-item-showtitle').checked);
+
+        try {
+            const res = await fetch(`/api/galeria/${this.galeriaId}/imagem/${id}`, { method: 'PATCH', body: fd });
+            const json = await res.json();
+            if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
+
+            // Atualiza item localmente com os campos retornados (imagem atualizado)
+            const updated = json.imagem;
+            const idx = this.data.imagens.findIndex(i => i.id === parseInt(id));
+            if (idx > -1) {
+                this.data.imagens[idx] = { ...this.data.imagens[idx], ...updated };
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalEditItem')).hide();
+            this.renderizarGrid();
+            Utils.alert('Item atualizado com sucesso!', 'Sucesso');
+        } catch (err) {
+            console.error(err);
+            Utils.alert(err.message || 'Erro ao atualizar item', 'Erro');
+        }
     },
 
     updateImg(id, changes) {
@@ -252,7 +342,7 @@ const GaleriaManager = {
         
         if(changes.grid_w) {
             const img = this.data.imagens[idx];
-            const cols = parseInt(this.data.grid_columns || 4);
+            const cols = parseInt(this.data.grid_columns || 12);
             if (img.col_start + img.grid_w - 1 > cols) {
                 img.col_start = Math.max(1, cols - img.grid_w + 1);
             }
@@ -273,6 +363,7 @@ const GaleriaManager = {
             grid_h: it.grid_h || 1, 
             col_start: it.col_start || 1,
             row_start: it.row_start || 1,
+            z_index: it.z_index || 0,
             show_title: it.show_title, 
             img_fit: it.img_fit 
         }));
@@ -381,7 +472,6 @@ const GaleriaManager = {
             const xhr = new XMLHttpRequest();
             const data = new FormData(form);
             data.delete('fileInput'); data.append('imagem', file);
-            
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const pct = Math.round((e.loaded / e.total) * 100) + '%';
@@ -432,7 +522,7 @@ const GaleriaManager = {
         setVal('config-bg-color', d.background_color);
         setVal('config-bg-fill', d.background_fill);
         setVal('config-card-color', d.card_color || '#ffffff');
-        setVal('config-grid-columns', d.grid_columns || 4);
+        setVal('config-grid-columns', d.grid_columns || 12);
         setVal('config-font-color', d.font_color);
         setVal('config-custom-font', d.custom_font || '');
         
@@ -563,7 +653,7 @@ const GaleriaManager = {
                     const el = document.getElementById('conteudo-principal');
                     if (el) el.setAttribute('style', this.originalStyles);
                     const grid = document.getElementById('lista-imagens');
-                    if (grid) grid.style.setProperty('--gallery-columns', this.data.grid_columns || 4);
+                    if (grid) grid.style.setProperty('--gallery-columns', this.data.grid_columns || 12);
                     this.originalStyles = null; this.previewBgUrl = null; this.lastAppliedFont = null;
                 }
             });
@@ -623,7 +713,7 @@ const GaleriaManager = {
 
             // Cálculos
             const rect = gridContainer.getBoundingClientRect();
-            const cols = parseInt(this.data.grid_columns || 4);
+            const cols = parseInt(this.data.grid_columns || 12);
             const gap = 15;
             // Largura calculada sem o gap final (mesma lógica do updateMetrics)
             const cellW = (rect.width - ((cols - 1) * gap)) / cols;
@@ -680,7 +770,19 @@ const GaleriaManager = {
         });
     },
     
-    excluirImagem: async (id) => { if (await Utils.confirm('Excluir mídia?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galeriaId}/imagem/${id}`, id); },
+    excluirImagem: async (id) => {
+        if (!(await Utils.confirm('Excluir mídia?'))) return;
+        await GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galeriaId}/imagem/${id}`, id);
+        // Se estivermos com o modal de edição aberto para esse id, fecha-o após remoção
+        try {
+            const modalEl = document.getElementById('modalEditItem');
+            const currentId = document.getElementById('edit-item-id')?.value;
+            if (modalEl && currentId && parseInt(currentId) === parseInt(id)) {
+                const bs = bootstrap.Modal.getInstance(modalEl);
+                if (bs) bs.hide();
+            }
+        } catch (e) { /* silent */ }
+    },
     excluirGaleria: async () => { if (await Utils.confirm('Excluir TUDO?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galeriaId}`, null, '/galerias'); },
     
     async apiDelete(url, imgId, redirect) {
@@ -700,8 +802,8 @@ const GaleriaManager = {
             const mt = (arg.mimetype || '').toLowerCase();
             if (mt.startsWith('video/')) return 'video';
             if (mt.startsWith('audio/')) return 'audio';
-            // fallback to url-based detection
-            arg = arg.url || '';
+            // fallback to content_url/cover_url-based detection
+            arg = arg.content_url || arg.cover_url || '';
         }
         const u = (arg || '').toLowerCase();
         if (/\.(mp4|mov|webm|m4v|mkv|avi)(?:\?|$)/.test(u)) return 'video';
