@@ -228,8 +228,9 @@ const GaleriaManager = {
                 <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" onclick="GaleriaManager.abrirMedia('${safeUrl}', '${type}', '${safeNome}')">
                     ${content}
                     ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeNome}</small></div>` : ''}
-                    ${this.editMode ? `<button class="position-absolute bottom-0 end-0 m-2 btn btn-xs btn-danger" style="z-index:30" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(${img.id})" title="Excluir item"><i class="bi bi-trash"></i></button>` : ''}
+                    ${this.editMode ? `<button class="position-absolute bottom-0 start-0 m-2 btn btn-xs btn-danger" style="z-index:30" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(${img.id})" title="Excluir item"><i class="bi bi-trash"></i></button>` : ''}
                 </div>
+                ${this.editMode ? `<div class="resize-handle" data-id="${img.id}" title="Arraste para redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>` : ''}
                 ${editOverlay}
             </div>`;
         }).join('');
@@ -246,29 +247,6 @@ const GaleriaManager = {
             <button class="btn btn-xs btn-light border" title="Editar atributos" onclick="event.stopPropagation(); GaleriaManager.abrirEditarItem(${id})">
                 <i class="bi bi-pencil-square"></i>
             </button>
-            <button class="btn btn-xs ${fit === 'contain' ? 'btn-info text-white' : 'btn-light'} border" 
-                    onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {img_fit: '${fit === 'cover' ? 'contain' : 'cover'}'})" title="Alternar ajuste da imagem (cover/contain)">
-                <i class="bi bi-aspect-ratio"></i>
-            </button>
-            <button class="btn btn-xs ${showTitle ? 'btn-primary' : 'btn-light'} border" 
-                    onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {show_title: ${!showTitle}})" title="Alternar exibição do título">
-                <i class="bi bi-card-heading"></i>
-            </button>
-                <div class="btn-group-vertical shadow-sm" title="Ajustar altura (linhas)">
-                    <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_h: ${Math.max(1, h - 1)}})" title="Diminuir altura"><i class="bi bi-arrow-up-short"></i></button>
-                    <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_h: ${Math.min(maxCols, h + 1)}})" title="Aumentar altura"><i class="bi bi-arrow-down-short"></i></button>
-                </div>
-            <div class="btn-group-vertical ms-1 shadow-sm" title="Ajustar largura (colunas)">
-                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_w: ${Math.max(1, w - 1)}})" title="Diminuir largura"><i class="bi bi-arrow-left-short"></i></button>
-                <button class="btn btn-xs btn-dark bg-opacity-75" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {grid_w: ${Math.min(maxCols, w + 1)}})" title="Aumentar largura"><i class="bi bi-arrow-right-short"></i></button>
-            </div>
-                <div class="d-flex align-items-center ms-1">
-                <div class="btn-group-vertical shadow-sm me-2" title="Alterar ordem de empilhamento (z-index)">
-                    <button class="btn btn-xs btn-secondary" title="Trazer para frente" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {z_index: ${((z_index||0) + 1)}})"><i class="bi bi-arrow-up-circle"></i></button>
-                    <button class="btn btn-xs btn-secondary" title="Mandar para trás" onclick="event.stopPropagation(); GaleriaManager.updateImg(${id}, {z_index: ${Math.max(0, (z_index||0) - 1)}})"><i class="bi bi-arrow-down-circle"></i></button>
-                </div>
-                <div class="z-indicator small text-white bg-secondary px-2 py-1 rounded" title="Valor atual de z-index">Z: ${z_index || 0}</div>
-            </div>
         </div>`;
     },
 
@@ -282,6 +260,9 @@ const GaleriaManager = {
         document.getElementById('edit-item-nome').value = item.nome || '';
         document.getElementById('edit-item-showtitle').checked = item.show_title !== false;
         document.getElementById('edit-item-fit').value = item.img_fit || 'cover';
+        // z-index field (moved to modal)
+        const zinput = document.getElementById('edit-item-zindex');
+        if (zinput) zinput.value = item.z_index || 0;
 
         const current = document.getElementById('edit-item-current-cover');
         const type = this.getMediaType(item);
@@ -344,6 +325,9 @@ const GaleriaManager = {
         const fd = new FormData(form);
         // Se o checkbox estiver desmarcado, não envia 'show_title' -> manda explicitamente
         fd.set('show_title', document.getElementById('edit-item-showtitle').checked);
+        // garante que z_index seja enviado como número
+        const zEl = document.getElementById('edit-item-zindex');
+        if (zEl) fd.set('z_index', parseInt(zEl.value) || 0);
 
         try {
             const res = await fetch(`/api/galeria/${this.galeriaId}/imagem/${id}`, { method: 'PATCH', body: fd });
@@ -714,6 +698,84 @@ const GaleriaManager = {
         if (!gridContainer) return;
         
         let draggedId = null;
+        let resizing = null; // { id, itemEl, idx, colStart, rowStart, startW, startH }
+
+        // Pointer-based resize: aceita arrastar o handle no canto inferior direito
+        gridContainer.addEventListener('pointerdown', (e) => {
+            if (!this.editMode) return;
+            const handle = e.target.closest('.resize-handle');
+            if (!handle) return;
+            e.preventDefault(); e.stopPropagation();
+            const id = parseInt(handle.dataset.id);
+            const itemEl = gridContainer.querySelector(`.grid-item[data-id="${id}"]`);
+            if (!itemEl) return;
+            const idx = this.data.imagens.findIndex(i => i.id === id);
+            if (idx === -1) return;
+
+            const img = this.data.imagens[idx];
+            resizing = {
+                id,
+                itemEl,
+                idx,
+                colStart: img.col_start || 1,
+                rowStart: img.row_start || 1,
+                startW: img.grid_w || 1,
+                startH: img.grid_h || 1
+            };
+
+            try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+        });
+
+        const _onPointerMove = (e) => {
+            if (!resizing || !this.editMode) return;
+            const rect = gridContainer.getBoundingClientRect();
+            const cols = parseInt(this.data.grid_columns || 12);
+            const gap = 15;
+            const cellW = (rect.width - ((cols - 1) * gap)) / cols;
+            const cellH = cellW;
+
+            const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            const offsetY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+
+            let targetCol = Math.ceil(offsetX / ((rect.width + gap)/cols));
+            let targetRow = Math.ceil(offsetY / (cellH + gap));
+            if (targetCol < 1) targetCol = 1; if (targetCol > cols) targetCol = cols;
+            if (targetRow < 1) targetRow = 1;
+
+            const newW = Math.max(1, Math.min(cols - resizing.colStart + 1, targetCol - resizing.colStart + 1));
+            const newH = Math.max(1, targetRow - resizing.rowStart + 1);
+
+            // Apply visual changes directly to element without full re-render
+            resizing.itemEl.style.gridColumnEnd = `span ${newW}`;
+            resizing.itemEl.style.gridRowEnd = `span ${newH}`;
+            resizing.itemEl.dataset.w = newW;
+            resizing.itemEl.dataset.h = newH;
+        };
+
+        const _onPointerUp = (e) => {
+            if (!resizing) return;
+            // Commit to data model
+            const finalW = parseInt(resizing.itemEl.dataset.w) || resizing.startW;
+            const finalH = parseInt(resizing.itemEl.dataset.h) || resizing.startH;
+            const img = this.data.imagens[resizing.idx];
+            img.grid_w = finalW; img.grid_h = finalH;
+            // cleanup
+            try { e.target.releasePointerCapture && e.target.releasePointerCapture(e.pointerId); } catch (err) {}
+            resizing = null;
+            // Re-render to update overlays, handles and internal state
+            this.renderizarGrid();
+        };
+
+        window.addEventListener('pointermove', _onPointerMove);
+        window.addEventListener('pointerup', _onPointerUp);
+
+        // Modal z-index helper
+        this.changeModalZ = (delta) => {
+            const el = document.getElementById('edit-item-zindex');
+            if (!el) return;
+            const v = parseInt(el.value) || 0;
+            el.value = Math.max(0, v + delta);
+        };
 
         gridContainer.addEventListener('dragstart', (e) => {
             if (!this.editMode) return;

@@ -139,6 +139,51 @@ main.container-glass {
 }
 .edit-overlay .btn-group-vertical .btn-xs { height: 16px; font-size: 0.65rem; }
 
+/* Resize handle em formato de L cobrindo o canto inferior direito */
+.resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 25px;
+    height: 25px;
+    z-index: 60;
+    background: transparent;
+    pointer-events: auto;
+    cursor: nwse-resize;
+}
+.resize-handle::before,
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.resize-handle::before { /* barra vertical na borda direita */
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    height: 100%;
+    border-top-left-radius: 6px;
+}
+.resize-handle::after { /* barra horizontal na borda inferior */
+    left: 0;
+    bottom: 0;
+    height: 12px;
+    width: 100%;
+    border-top-left-radius: 6px;
+}
+.resize-handle i {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    font-size: 14px;
+    color: #333;
+    pointer-events: none;
+    transform: rotate(45deg);
+}
+.resize-handle:hover::before,
+.resize-handle:hover::after { background: rgba(255,255,255,1); }
+
 @media (max-width: 576px) {
     #lista-imagens { gap: 8px; grid-template-columns: repeat(2, 1fr) !important; }
 }

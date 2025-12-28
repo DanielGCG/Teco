@@ -207,6 +207,15 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Z-index (ordem de empilhamento)</label>
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="GaleriaManager.changeModalZ(-1)"><i class="bi bi-dash-lg"></i></button>
+                                <input type="number" class="form-control text-center" name="z_index" id="edit-item-zindex" value="0" min="0">
+                                <button type="button" class="btn btn-outline-secondary" onclick="GaleriaManager.changeModalZ(1)"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                            <div class="form-text small text-muted">Ajuste a ordem visual deste item na galeria.</div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Capa (imagem/gif) - Opcional</label>
                             <input type="file" class="form-control" name="cover" accept="image/*,image/gif">
                             <div class="form-text small">Envie uma capa para ser usada como preview na grade (vídeo/áudio).</div>
