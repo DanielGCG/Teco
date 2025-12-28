@@ -1,0 +1,136 @@
+body { 
+    transition: background-color 0.5s ease, background-image 0.5s ease; 
+}
+
+/* Glassmorphism Container */
+main.container-glass {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: all 0.5s ease;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+/* Grid System */
+#lista-imagens {
+    display: grid;
+    grid-template-columns: repeat(var(--gallery-columns, 4), 1fr);
+    grid-auto-rows: var(--row-height, 200px);
+    grid-auto-flow: dense; 
+    gap: 15px; 
+    width: 100%;
+    min-height: 400px;
+    transition: background 0.3s;
+    border-radius: 8px;
+    position: relative;
+}
+
+/* MODO EDIÇÃO */
+.edit-mode #lista-imagens {
+    grid-auto-rows: var(--row-height, 200px) !important;
+    background-image: 
+        linear-gradient(to right, rgba(0,0,0,0.05) var(--cell-size), transparent var(--cell-size)),
+        linear-gradient(to bottom, rgba(0,0,0,0.05) var(--row-height), transparent var(--row-height));
+    background-size: 
+        calc(var(--cell-size) + 15px) calc(var(--row-height) + 15px);
+    border: 2px dashed rgba(0,0,0,0.1);
+    
+    grid-auto-flow: row;
+}
+
+/* Feedback Visual de Onde Vai Cair (Highlight) */
+.grid-highlight {
+    background-color: rgba(13, 110, 253, 0.2);
+    border: 2px dashed #0d6efd;
+    border-radius: 16px;
+    pointer-events: none;
+    z-index: 5;
+    transition: all 0.1s ease-out;
+    display: none;
+}
+
+.grid-item { 
+    display: block;
+    position: relative;
+    grid-column: span 1; grid-row: span 1;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-mode .grid-item {
+    z-index: 10;
+    cursor: grab;
+}
+
+.edit-mode .grid-item:active {
+    cursor: grabbing;
+}
+
+.grid-item.dragging {
+    opacity: 0.3;
+    filter: grayscale(100%);
+}
+
+.grid-full-width { grid-column: 1 / -1; }
+
+.image-card {
+    display: flex; flex-direction: column;
+    width: 100%; height: 100%;
+    border-radius: 16px; overflow: hidden;
+    background: transparent;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.image-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    z-index: 2;
+}
+
+.media-preview-box {
+    width: 100%; height: 100%; display: block;
+    flex-grow: 1; min-height: 0;
+}
+.media-preview-box video,
+.media-preview-box audio {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background: transparent;
+}
+.fit-cover { object-fit: cover; }
+.fit-contain { object-fit: contain; }
+
+.media-placeholder {
+    width: 100%; height: 100%; flex-grow: 1;
+    display: flex; justify-content: center; align-items: center; color: white;
+}
+.placeholder-video { background-color: #212529; }
+.placeholder-audio { background: linear-gradient(135deg, #4a4e69 0%, #22223b 100%); }
+
+.image-card .card-body {
+    flex-shrink: 0; height: 32px;
+    display: flex; align-items: center;
+    background-color: var(--gallery-card-bg, #ffffff);
+    padding: 0 12px; border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.edit-overlay {
+    position: absolute; top: 6px; right: 6px;
+    display: flex; gap: 3px; z-index: 20;
+    transition: transform 0.2s ease;
+}
+.edit-overlay:hover { transform: scale(1.05); z-index: 30; }
+
+.btn-xs { 
+    padding: 2px 5px; font-size: 1rem; line-height: 1;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 32px;
+}
+.edit-overlay .btn-group-vertical .btn-xs { height: 16px; font-size: 0.65rem; }
+
+@media (max-width: 576px) {
+    #lista-imagens { gap: 8px; grid-template-columns: repeat(2, 1fr) !important; }
+}

@@ -159,10 +159,13 @@ router.post('/:id/upload', checkGaleriaPermission, (req, res, next) => {
             galeria_id: req.params.id,
             url: fileUrl,
             nome: req.body.nome || req.file.originalname,
+            mimetype: req.file.mimetype,
             user_id: req.user.id,
             pos: (maxPos || 0) + 1,
             grid_w: 1,
-            grid_h: 1
+            grid_h: 1,
+            col_start: req.body.col_start ? parseInt(req.body.col_start) : null,
+            row_start: req.body.row_start ? parseInt(req.body.row_start) : null
         });
         return res.status(201).json({ success: true, imagem });
     } catch (error) {
@@ -282,8 +285,8 @@ router.patch('/:id',
             try { parsed = typeof layout === 'string' ? JSON.parse(layout) : layout; } catch (e) { parsed = null; }
             if (Array.isArray(parsed)) {
                 for (const item of parsed) {
-                    // ATUALIZAÇÃO: Adicionado img_fit na extração
-                    const { id, grid_w, grid_h, pos, show_title, img_fit } = item;
+                    // ATUALIZAÇÃO: Adicionado img_fit, col_start, row_start na extração
+                    const { id, grid_w, grid_h, pos, show_title, img_fit, col_start, row_start } = item;
                     if (!id) continue;
                     
                     const updateData = {
@@ -294,6 +297,8 @@ router.patch('/:id',
                     
                     if (show_title !== undefined) updateData.show_title = show_title;
                     if (img_fit !== undefined) updateData.img_fit = img_fit;
+                    if (col_start !== undefined) updateData.col_start = col_start === null ? null : parseInt(col_start);
+                    if (row_start !== undefined) updateData.row_start = row_start === null ? null : parseInt(row_start);
 
                     try {
                         await GaleriaImagem.update(

@@ -25,10 +25,19 @@ async function deleteFromFileServer({ fileUrl }) {
     relPath = relPath.replace(/^https?:\/\/[^/]+\/files\//, '');
     // Remove query params (?token=...)
     relPath = relPath.split('?')[0];
-    await axios.delete(`${SERVER_URL}/delete`, {
-        data: { filepath: relPath },
-        headers: { 'x-api-key': API_KEY }
-    });
+    try {
+        await axios.delete(`${SERVER_URL}/delete`, {
+            data: { filepath: relPath },
+            headers: { 'x-api-key': API_KEY }
+        });
+        return true;
+    } catch (err) {
+        // Log do erro para diagnóstico, mas não propague para evitar travar o fluxo
+        console.warn(`[fileServer] Falha ao deletar arquivo remoto: ${relPath} - ${err.message}`);
+        // Para debug mais profundo, inclua resposta quando disponível
+        if (err.response) console.debug('[fileServer] response data:', err.response.data);
+        return false;
+    }
 }
 
 module.exports = {

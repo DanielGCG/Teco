@@ -83,6 +83,10 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
         type: DataTypes.STRING(255),
         allowNull: false
     },
+    mimetype: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
     nome: {
         type: DataTypes.STRING(100)
     },
@@ -93,6 +97,14 @@ const GaleriaImagem = sequelize.define('GaleriaImagem', {
     grid_h: {
         type: DataTypes.INTEGER,
         defaultValue: 1
+    },
+    col_start: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    row_start: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     },
     user_id: {
         type: DataTypes.INTEGER.UNSIGNED,
