@@ -4,7 +4,7 @@
 </head>
 <body>
     <main class="container container-glass p-4 my-4" id="conteudo-principal" data-galeria-id="<%= (typeof galeriaId !== 'undefined') ? galeriaId : '' %>">
-        <div class="d-flex justify-content-between align-items-start mb-3 pb-2">
+        <div class="d-flex justify-content-between align-items-start pb-2">
             <div>
                 <h2 id="galeria-titulo" class="fw-bold mb-1">Carregando...</h2>
                 <p id="galeria-descricao" class="text-muted mb-1"></p>
@@ -136,7 +136,22 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small">Fonte Google (Nome)</label>
-                                    <input type="text" class="form-control preview-trigger" id="config-custom-font" placeholder="Ex: Montserrat, Roboto:700">
+                                    <div class="input-group">
+                                        <input list="fonts-list" type="text" class="form-control preview-trigger" id="config-custom-font" placeholder="Ex: Montserrat, Roboto:700">
+                                        <button class="btn btn-outline-secondary" type="button" id="btn-show-fonts" title="Mostrar fontes" onclick="GaleriaManager.showFontOptions()"><i class="bi bi-chevron-down"></i></button>
+                                    </div>
+                                    <datalist id="fonts-list">
+                                        <option value="Inter">
+                                        <option value="Roboto">
+                                        <option value="Montserrat">
+                                        <option value="Poppins">
+                                        <option value="Lato">
+                                        <option value="Open Sans">
+                                        <option value="Nunito">
+                                        <option value="Merriweather">
+                                        <option value="Playfair Display">
+                                    </datalist>
+                                    <small class="form-text text-muted">Escolha uma fonte sugerida ou digite o nome/variante do Google Fonts (ex: 'Roboto' ou 'Montserrat:700').</small>
                                 </div>
                             </div>
                         </div>

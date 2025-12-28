@@ -1,9 +1,3 @@
-/**
- * galeria.js
- * Gerenciamento de interface e Grid.
- * Versão: Posicionamento Explícito Quadrado com Feedback Visual (Highlight)
- */
-
 const Utils = {
     alert: (msg, title) => window.mostrarAviso ? window.mostrarAviso(msg, title) : alert(`${title || 'Aviso'}: ${msg}`),
     confirm: async (msg, title) => window.mostrarConfirmacao ? await window.mostrarConfirmacao(msg, title) : confirm(msg),
@@ -27,7 +21,7 @@ const GaleriaManager = {
     editMode: false,
     lastAppliedFont: null,
     resizeObserver: null,
-    draggedItemDims: null, // Armazena dimensões do item sendo arrastado
+    draggedItemDims: null,
 
     async init() {
         const mainEl = document.getElementById('conteudo-principal');
@@ -436,6 +430,19 @@ const GaleriaManager = {
             family = `'${familyName}', sans-serif`;
         }
         document.getElementById('conteudo-principal').style.fontFamily = family;
+    },
+
+    showFontOptions() {
+        const inp = document.getElementById('config-custom-font');
+        if (!inp) return;
+        try {
+            inp.focus();
+            // Tenta abrir a lista simulando ArrowDown — alguns navegadores respeitam, outros abrem pelo botão nativo
+            const ev = new KeyboardEvent('keydown', { key: 'ArrowDown', keyCode: 40, which: 40, bubbles: true });
+            inp.dispatchEvent(ev);
+        } catch (e) {
+            inp.focus();
+        }
     },
 
     // --- Upload e Modais ---

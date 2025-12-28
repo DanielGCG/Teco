@@ -308,8 +308,6 @@ router.patch('/:id',
     const remove_cover = getBodyValue('remove_cover');
 
     try {
-        if (req.galeria.user_id !== req.user.id && req.user.role < 1) return res.status(403).json({ success: false, message: 'Apenas o dono pode alterar as configurações.' });
-
         if (nome) req.galeria.nome = nome;
         if (descricao !== undefined) req.galeria.descricao = descricao;
         if (is_public !== undefined) req.galeria.is_public = is_public === 'true' || is_public === true;
