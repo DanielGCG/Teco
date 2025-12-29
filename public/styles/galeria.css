@@ -14,7 +14,7 @@ main.container-glass {
 }
 
 /* Grid System */
-#lista-imagens {
+#image-list {
     display: grid;
     grid-template-columns: repeat(var(--gallery-columns, 4), 1fr);
     grid-auto-rows: var(--row-height, 200px);
@@ -27,8 +27,8 @@ main.container-glass {
     position: relative;
 }
 
-/* MODO EDIÇÃO */
-.edit-mode #lista-imagens {
+/* EDIT MODE */
+.edit-mode #image-list {
     grid-auto-rows: var(--row-height, 200px) !important;
     background-image: 
         linear-gradient(to right, rgba(0,0,0,0.05) var(--cell-size), transparent var(--cell-size)),
@@ -36,11 +36,10 @@ main.container-glass {
     background-size: 
         calc(var(--cell-size) + 15px) calc(var(--row-height) + 15px);
     border: 2px dashed rgba(0,0,0,0.1);
-    
     grid-auto-flow: row;
 }
 
-/* Feedback Visual de Onde Vai Cair (Highlight) */
+/* Drag & Drop Visual Feedback (Highlight) */
 .grid-highlight {
     background-color: rgba(13, 110, 253, 0.2);
     border: 2px dashed #0d6efd;
@@ -58,14 +57,13 @@ main.container-glass {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.edit-mode .grid-item {
-    z-index: 10;
-    cursor: grab;
+/* CRITICAL FIX: On hover in edit mode, bring item to front */
+.edit-mode .grid-item:hover {
+    z-index: 1000 !important;
 }
 
-.edit-mode .grid-item:active {
-    cursor: grabbing;
-}
+.edit-mode .grid-item { cursor: grab; }
+.edit-mode .grid-item:active { cursor: grabbing; }
 
 .grid-item.dragging {
     opacity: 0.3;
@@ -81,11 +79,14 @@ main.container-glass {
     background: transparent;
     transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
+    /* Ensures card content stays below controls */
+    z-index: 1; 
 }
 
 .image-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    /* Keep z-index controlled to not cover its own buttons */
     z-index: 2;
 }
 
@@ -95,11 +96,8 @@ main.container-glass {
 }
 .media-preview-box video,
 .media-preview-box audio {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    background: transparent;
+    width: 100%; height: 100%; display: block;
+    object-fit: cover; background: transparent;
 }
 .fit-cover { object-fit: cover; }
 .fit-contain { object-fit: contain; }
@@ -118,72 +116,80 @@ main.container-glass {
     padding: 0 12px; border-top: 1px solid rgba(0,0,0,0.05);
 }
 
+/* --- EDIT CONTROLS (Buttons, Resize, Overlay) --- */
+
+/* Delete Button */
+.btn-delete {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    z-index: 1010;
+    width: 32px; height: 32px;
+    padding: 0;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    background-color: #dc3545; color: white;
+    border: none;
+    transition: background-color 0.2s;
+}
+.btn-delete:hover { background-color: #bb2d3b; color: white; }
+
+/* Edit Overlay (Pencil) */
 .edit-overlay {
     position: absolute; top: 6px; right: 6px;
-    display: flex; gap: 3px; z-index: 20;
-    transition: transform 0.12s ease, opacity 0.12s ease;
-    opacity: 0; pointer-events: none; transform: translateY(-6px) scale(0.98);
+    display: flex; gap: 3px; z-index: 1010;
+    transform: translateY(-6px) scale(0.98);
 }
-.grid-item:hover .edit-overlay { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); z-index: 30; }
+.btn-xs { 
+    padding: 2px 5px; font-size: 1rem; line-height: 1;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 32px;
+}
 
-.edit-overlay:hover { transform: scale(1.05); z-index: 31; }
+/* Resize Handle */
+.resize-handle {
+    position: absolute; right: 0; bottom: 0;
+    width: 30px; height: 30px;
+    z-index: 1020;
+    background: rgba(255, 255, 255, 0.85);
+    border-top-left-radius: 100%;
+    cursor: nwse-resize;
+    transition: background 0.2s;
+}
+
+.resize-handle i {
+    position: absolute; right: 5px; bottom: 5px;
+    font-size: 13px; color: #444;
+    pointer-events: none; transform: rotate(45deg);
+}
+
+.resize-handle:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+/* VISIBILITY LOGIC (HOVER) */
+/* Hide everything by default in edit mode */
+.edit-mode .btn-delete,
+.edit-mode .resize-handle,
+.edit-mode .edit-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Only show when hovering the specific card */
+.edit-mode .grid-item:hover .btn-delete,
+.edit-mode .grid-item:hover .resize-handle,
+.edit-mode .grid-item:hover .edit-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
 
 .z-indicator {
     display: inline-flex; align-items: center; justify-content: center;
     font-weight: 600; font-size: 0.78rem; line-height: 1;
 }
 
-.btn-xs { 
-    padding: 2px 5px; font-size: 1rem; line-height: 1;
-    border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 32px;
-}
-.edit-overlay .btn-group-vertical .btn-xs { height: 16px; font-size: 0.65rem; }
-
-/* Resize handle em formato de L cobrindo o canto inferior direito */
-.resize-handle {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 25px;
-    height: 25px;
-    z-index: 60;
-    background: transparent;
-    pointer-events: auto;
-    cursor: nwse-resize;
-}
-.resize-handle::before,
-.resize-handle::after {
-    content: '';
-    position: absolute;
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-}
-.resize-handle::before { /* barra vertical na borda direita */
-    right: 0;
-    bottom: 0;
-    width: 12px;
-    height: 100%;
-    border-top-left-radius: 6px;
-}
-.resize-handle::after { /* barra horizontal na borda inferior */
-    left: 0;
-    bottom: 0;
-    height: 12px;
-    width: 100%;
-    border-top-left-radius: 6px;
-}
-.resize-handle i {
-    position: absolute;
-    right: 6px;
-    bottom: 6px;
-    font-size: 14px;
-    color: #333;
-    pointer-events: none;
-    transform: rotate(45deg);
-}
-.resize-handle:hover::before,
-.resize-handle:hover::after { background: rgba(255,255,255,1); }
-
 @media (max-width: 576px) {
-    #lista-imagens { gap: 8px; grid-template-columns: repeat(2, 1fr) !important; }
+    #image-list { gap: 8px; grid-template-columns: repeat(2, 1fr) !important; }
 }

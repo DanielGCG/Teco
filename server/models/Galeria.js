@@ -7,14 +7,14 @@ const Galeria = sequelize.define('Galeria', {
         primaryKey: true,
         autoIncrement: true
     },
-    nome: {
+    name: { // Alterado de 'nome'
         type: DataTypes.STRING(100),
         allowNull: false
     },
-    descricao: {
+    description: { // Alterado de 'descricao'
         type: DataTypes.TEXT
     },
-    capa_url: {
+    cover_url: { // Alterado de 'capa_url'
         type: DataTypes.STRING(255)
     },
     user_id: {
@@ -61,7 +61,7 @@ const Galeria = sequelize.define('Galeria', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'br_galeria',
+    tableName: 'galleries', // Nova tabela em Inglês
     timestamps: false
 });
 
@@ -71,7 +71,7 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         primaryKey: true,
         autoIncrement: true
     },
-    galeria_id: {
+    gallery_id: { // Alterado de 'galeria_id'
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -91,7 +91,7 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         type: DataTypes.STRING(100),
         allowNull: true
     },
-    nome: {
+    name: { // Alterado de 'nome'
         type: DataTypes.STRING(100)
     },
     grid_w: {
@@ -126,8 +126,7 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     },
-    // CAMPO ADICIONADO: Controla se a imagem é 'cover' ou 'contain'
-    img_fit: {
+    object_fit: { // Alterado de 'img_fit' para padrão CSS
         type: DataTypes.STRING(10),
         defaultValue: 'cover'
     },
@@ -136,12 +135,12 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'br_galeria_item',
+    tableName: 'gallery_items', // Nova tabela em Inglês
     timestamps: false
 });
 
 const GaleriaPermissao = sequelize.define('GaleriaPermissao', {
-    galeria_id: {
+    gallery_id: { // Alterado de 'galeria_id'
         type: DataTypes.INTEGER,
         primaryKey: true,
         references: {
@@ -158,7 +157,7 @@ const GaleriaPermissao = sequelize.define('GaleriaPermissao', {
         }
     }
 }, {
-    tableName: 'br_galeria_permissao',
+    tableName: 'gallery_permissions', // Nova tabela em Inglês
     timestamps: false
 });
 

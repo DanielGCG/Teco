@@ -11,7 +11,7 @@ const WatchlistRouter = require("./watchlist");
 const NotificationsRouter = require("./notifications");
 const FriendsRouter = require("./friends");
 const ImagemDoDiaRouter = require("./imagemdodia");
-const GaleriaRouter = require("./galeria");
+const GaleriaRouter = require("./galeria-api");
 
 // Rotas de usuários (tem rotas públicas e protegidas dentro)
 router.use("/users", UsersRouter);

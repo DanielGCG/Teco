@@ -6,6 +6,7 @@
 
     <div class="galeria" id="lista-galerias">
         <!-- Galerias serão carregadas aqui -->
+        <div class="col-12 text-center text-muted">Carregando...</div>
     </div>
 
     <!-- Modal Criar Galeria -->
@@ -20,15 +21,18 @@
                     <form id="formCriarGaleria">
                         <div class="mb-3">
                             <label class="form-label">Nome da Galeria</label>
-                            <input type="text" class="form-control" name="nome" required>
+                            <!-- CORREÇÃO: name="nome" -> name="name" -->
+                            <input type="text" class="form-control" name="name" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Descrição</label>
-                            <textarea class="form-control" name="descricao" rows="2"></textarea>
+                            <!-- CORREÇÃO: name="descricao" -> name="description" -->
+                            <textarea class="form-control" name="description" rows="2"></textarea>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Capa (opcional)</label>
-                            <input type="file" class="form-control" name="capa" accept="image/*,video/*">
+                            <!-- CORREÇÃO: name="capa" -> name="cover" -->
+                            <input type="file" class="form-control" name="cover" accept="image/*,video/*">
                         </div>
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" name="is_public" id="isPublicSwitch">
@@ -49,15 +53,24 @@
         try {
             const res = await fetch('/api/galeria');
             const data = await res.json();
-            if (data.success) {
+            
+            // CORREÇÃO: data.galerias -> data.galleries (API retorna em inglês agora)
+            if (data.success && Array.isArray(data.galleries)) {
                 const container = document.getElementById('lista-galerias');
-                container.innerHTML = data.galerias.map(g => `
+                
+                if (data.galleries.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted p-5">Nenhuma galeria encontrada. Crie a primeira!</div>';
+                    return;
+                }
+
+                container.innerHTML = data.galleries.map(g => `
                     <div class="imagem">
                         <a href="/galeria/${g.id}">
-                            <img src="${g.capa_url || '/images/placeholder-album.png'}" alt="${g.nome}">
+                            <!-- CORREÇÃO: g.capa_url -> g.cover_url e g.nome -> g.name -->
+                            <img src="${g.cover_url || '/images/placeholder-album.png'}" alt="${g.name}" onerror="this.src='/images/placeholder-album.png'">
                             <div class="texto-hover">
-                                <div>${g.nome}</div>
-                                <small>por ${g.owner.username}</small>
+                                <div>${g.name}</div>
+                                <small>por ${g.owner ? g.owner.username : 'Desconhecido'}</small>
                             </div>
                         </a>
                     </div>
@@ -65,6 +78,7 @@
             }
         } catch (err) {
             console.error('Erro ao carregar galerias:', err);
+            document.getElementById('lista-galerias').innerHTML = '<div class="text-danger text-center">Erro ao carregar galerias.</div>';
         }
     }
 
@@ -77,25 +91,30 @@
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
-        // Garante que o campo is_public seja enviado explicitamente como 'true' ou 'false'
+        
+        // Garante que is_public seja string 'true' ou 'false'
         formData.set('is_public', form.is_public.checked ? 'true' : 'false');
+        
         try {
             const res = await fetch('/api/galeria', {
                 method: 'POST',
                 body: formData
             });
             const data = await res.json();
+            
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('modalCriarGaleria')).hide();
                 form.reset();
                 carregarGalerias();
-                mostrarAviso('Álbum criado com sucesso!', 'Sucesso');
+                if(typeof mostrarAviso === 'function') mostrarAviso('Álbum criado com sucesso!', 'Sucesso');
             } else {
-                await mostrarConfirmacao(data.message, 'Erro');
+                if(typeof mostrarConfirmacao === 'function') await mostrarConfirmacao(data.message, 'Erro');
+                else alert('Erro: ' + data.message);
             }
         } catch (err) {
             console.error('Erro ao criar galeria:', err);
-            await mostrarConfirmacao('Erro ao criar galeria.', 'Erro');
+            if(typeof mostrarConfirmacao === 'function') await mostrarConfirmacao('Erro ao criar galeria.', 'Erro');
+            else alert('Erro ao criar galeria.');
         }
     });
 </script>
@@ -112,23 +131,24 @@
         position: relative;
         width: 100%;
         height: 0;
-        padding-top: 100%;
+        padding-top: 100%; /* Aspect Ratio 1:1 */
         border-radius: 12px;
         overflow: hidden;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
     }
 
     .imagem a {
         display: block;
         width: 100%;
         height: 100%;
+        position: absolute; /* Fixa o link sobre toda a área do padding-top */
+        top: 0;
+        left: 0;
     }
 
     .imagem img {
-        position: absolute;
-        top: 0;
-        left: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -137,6 +157,7 @@
     .imagem:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        z-index: 10;
     }
 
     .texto-hover {
@@ -148,11 +169,13 @@
         padding: 20px 10px 10px;
         color: white;
         text-align: center;
-        transition: background 0.3s ease;
+        opacity: 0; /* Opcional: só mostrar no hover se preferir, mas o CSS original mantinha visivel ou com transição de fundo */
+        transition: opacity 0.3s ease, background 0.3s ease;
+        opacity: 1; /* Mantendo visível conforme original, ajustado apenas o gradiente no hover abaixo */
     }
 
     .imagem:hover .texto-hover {
-        background: linear-gradient(transparent, rgba(0,0,0,0.9));
+        background: linear-gradient(transparent, rgba(0,0,0,0.95));
     }
 
     @media (max-width: 768px) {

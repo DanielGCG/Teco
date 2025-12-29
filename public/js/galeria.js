@@ -14,8 +14,8 @@ const Utils = {
 
 const GaleriaManager = {
     data: null,
-    galeriaId: null,
-    colaboradores: [],
+    galleryId: null, // Unified: galleryId
+    collaborators: [], // Unified: collaborators
     originalStyles: null,
     previewBgUrl: null,
     editMode: false,
@@ -24,26 +24,25 @@ const GaleriaManager = {
     draggedItemDims: null,
 
     async init() {
-        const mainEl = document.getElementById('conteudo-principal');
+        const mainEl = document.getElementById('main-content'); // Changed ID to English in HTML
         if (!mainEl) return;
         
-        let id = mainEl.dataset.galeriaId;
+        let id = mainEl.dataset.galleryId;
         if (!id || id === 'undefined') {
             const parts = window.location.pathname.split('/').filter(p => p);
             const last = parts.pop();
             if (last && !['galeria', 'galerias'].includes(last.toLowerCase())) id = last;
         }
 
-        if (!id) return Utils.alert('ID da galeria não encontrado.', 'Erro Crítico');
+        if (!id) return Utils.alert('Gallery ID not found.', 'Critical Error');
         
-        this.galeriaId = id;
+        this.galleryId = id;
         
-        // Observer para manter os quadrados quadrados e o background alinhado
         this.resizeObserver = new ResizeObserver(Utils.debounce(() => this.updateGridMetrics(), 50));
-        const grid = document.getElementById('lista-imagens');
+        const grid = document.getElementById('image-list'); // Changed ID to English in HTML
         if (grid) this.resizeObserver.observe(grid);
 
-        await this.carregarDados();
+        await this.loadData();
         this.setupEventListeners();
         this.setupDragAndDrop();
     },
@@ -53,75 +52,68 @@ const GaleriaManager = {
         if (flag) flag.value = 'true';
         const current = document.getElementById('edit-item-current-cover');
         if (current) {
-            current.innerHTML = `<div class="small text-danger">Capa marcada para remoção</div>`;
-            // keep the area visible so user can still cancel by choosing a new file
+            current.innerHTML = `<div class="small text-danger">Cover marked for removal</div>`;
             current.style.display = '';
         }
     },
 
-    async carregarDados() {
+    async loadData() {
         try {
-            const res = await fetch(`/api/galeria/${this.galeriaId}`);
+            const res = await fetch(`/api/galeria/${this.galleryId}`);
             const json = await res.json();
             if (!json.success) throw new Error(json.message);
             
             this.data = {
-                ...json.galeria,
-                background_fill: json.galeria.background_fill || 'cover',
-                font_color: json.galeria.font_color || '#3E3F29'
+                ...json.gallery,
+                // Fallbacks only for defaults, not name mapping
+                background_fill: json.gallery.background_fill || 'cover',
+                font_color: json.gallery.font_color || '#3E3F29'
             };
-            this.colaboradores = (this.data.colaboradores || []).map(c => ({ id: c.id, username: c.username }));
-            this.renderizar();
-        } catch (err) { console.error(err); Utils.alert('Erro ao carregar.', 'Erro'); }
+            this.collaborators = (this.data.collaborators || []).map(c => ({ id: c.id, username: c.username }));
+            this.render();
+        } catch (err) { console.error(err); Utils.alert('Error loading data.', 'Error'); }
     },
 
-    // --- CÁLCULO DE MÉTRICAS (Pixels Reais para CSS) ---
     updateGridMetrics() {
-        const grid = document.getElementById('lista-imagens');
+        const grid = document.getElementById('image-list');
         if (!grid || !this.data) return;
 
         const cols = parseInt(this.data.grid_columns || 12);
-        const gap = 15; // Deve corresponder ao CSS gap
+        const gap = 15;
         const containerWidth = grid.getBoundingClientRect().width;
 
-        // Calcula a largura exata de um slot (célula)
         if (containerWidth > 0) {
             const cellWidth = (containerWidth - ((cols - 1) * gap)) / cols;
-            // Injeta variáveis CSS para uso no background-size e altura
             grid.style.setProperty('--cell-size', `${cellWidth}px`);
             grid.style.setProperty('--row-height', `${Math.floor(cellWidth)}px`);
         }
     },
 
-    garantirCoordenadas() {
-        if (!this.data.imagens) return;
+    ensureCoordinates() {
+        if (!this.data.items) return; // Changed from imagens to items
         
         const cols = parseInt(this.data.grid_columns || 12);
         const map = {}; 
         const isOccupied = (x, y, w, h) => {
-            for(let i=0; i<w; i++) {
-                for(let j=0; j<h; j++) { if(map[`${x+i},${y+j}`]) return true; }
-            }
+            for(let i=0; i<w; i++) for(let j=0; j<h; j++) if(map[`${x+i},${y+j}`]) return true;
             return false;
         };
         const markOccupied = (x, y, w, h) => {
-            for(let i=0; i<w; i++) {
-                for(let j=0; j<h; j++) { map[`${x+i},${y+j}`] = true; }
-            }
+            for(let i=0; i<w; i++) for(let j=0; j<h; j++) map[`${x+i},${y+j}`] = true;
         };
 
-        this.data.imagens.forEach(img => {
-            if(img.col_start && img.row_start) markOccupied(img.col_start, img.row_start, img.grid_w || 1, img.grid_h || 1);
+        this.data.items.forEach(item => {
+            if(item.col_start && item.row_start) markOccupied(item.col_start, item.row_start, item.grid_w || 1, item.grid_h || 1);
         });
 
         let currentY = 1, currentX = 1;
-        this.data.imagens.forEach(img => {
-            const w = img.grid_w || 1, h = img.grid_h || 1;
-            if(!img.col_start || !img.row_start) {
+        this.data.items.forEach(item => {
+            const w = item.grid_w || 1, h = item.grid_h || 1;
+            if(!item.col_start || !item.row_start) {
                 while(true) {
                     if (currentX + w - 1 > cols) { currentX = 1; currentY++; }
                     if (!isOccupied(currentX, currentY, w, h)) {
-                        img.col_start = currentX; img.row_start = currentY;
+                        item.col_start = currentX; item.row_start = currentY;
                         markOccupied(currentX, currentY, w, h); break; 
                     }
                     currentX++;
@@ -130,164 +122,132 @@ const GaleriaManager = {
         });
     },
 
-    renderizar() {
+    render() {
         if (!this.data) return;
-        const titulo = document.getElementById('galeria-titulo');
-        if (titulo) titulo.textContent = this.data.nome;
+        const title = document.getElementById('gallery-title');
+        if (title) title.textContent = this.data.name;
         
-        const desc = document.getElementById('galeria-descricao');
-        if (desc) desc.textContent = this.data.descricao || '';
+        const desc = document.getElementById('gallery-description');
+        if (desc) desc.textContent = this.data.description || '';
         
-        const autor = document.getElementById('galeria-autor');
-        if (autor) autor.textContent = this.data.owner?.username || 'Desconhecido';
+        const author = document.getElementById('gallery-author');
+        if (author) author.textContent = this.data.owner?.username || 'Unknown';
         
-        this.aplicarEstilos(this.data);
-        this.renderizarBotoesAcao();
-        this.renderizarGrid();
+        this.applyStyles(this.data);
+        this.renderActionButtons();
+        this.renderGrid();
     },
 
-    renderizarBotoesAcao() {
-        const container = document.getElementById('acoes-galeria');
+    renderActionButtons() {
+        const container = document.getElementById('gallery-actions');
         if (!container) return;
-
         const editClass = this.editMode ? 'btn-warning' : 'btn-outline-secondary';
-        const label = this.editMode ? 'Sair' : 'Editar';
+        const label = this.editMode ? 'Exit' : 'Edit';
         
-        const html = `
-            <button class="btn btn-primary shadow-sm" onclick="GaleriaManager.abrirModalUpload()">
-                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Adicionar</span>
+        container.innerHTML = `
+            <button class="btn btn-primary shadow-sm" onclick="GaleriaManager.openUploadModal()">
+                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Add Media</span>
             </button>
-            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()" title="Alternar modo de edição">
+            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()" title="Toggle Edit Mode">
                 <i class="bi bi-grid-3x3-gap-fill"></i> <span class="d-none d-sm-inline">${label}</span>
             </button>
-            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()" title="Salvar alterações de layout"><i class="bi bi-save"></i> Salvar</button>` : ''}
-            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.abrirModalConfig()" title="Abrir configurações da galeria"><i class="bi bi-gear-fill"></i></button>
+            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()" title="Save layout changes"><i class="bi bi-save"></i> Save</button>` : ''}
+            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.openConfigModal()" title="Gallery Settings"><i class="bi bi-gear-fill"></i></button>
         `;
-        container.innerHTML = html;
     },
 
-    renderizarGrid() {
-        const grid = document.getElementById('lista-imagens');
+    renderGrid() {
+        const grid = document.getElementById('image-list');
         if (!grid) return;
         
         if (this.editMode) grid.parentElement.classList.add('edit-mode');
         else grid.parentElement.classList.remove('edit-mode');
 
-        if (!this.data.imagens?.length) {
-            grid.innerHTML = '<div class="col-12 text-center text-muted py-5 grid-full-width">Galeria vazia. Adicione conteúdo!</div>';
+        if (!this.data.items?.length) {
+            grid.innerHTML = '<div class="col-12 text-center text-muted py-5 grid-full-width">Gallery is empty. Add content!</div>';
             return;
         }
 
-        this.garantirCoordenadas();
-        this.updateGridMetrics(); // Atualiza métricas para alinhamento perfeito
+        this.ensureCoordinates();
+        this.updateGridMetrics();
 
         const cols = this.data.grid_columns || 12;
         grid.style.setProperty('--gallery-columns', cols);
 
-        // Prepara HTML dos itens
-        const itemsHtml = this.data.imagens.map(img => {
-            const safeNome = Utils.escapeHtml(img.nome || 'Sem nome');
-            const safeUrl = (img.content_url || '').replace(/'/g, "\\'");
-            const type = this.getMediaType(img);
+        const itemsHtml = this.data.items.map(item => {
+            const safeName = Utils.escapeHtml(item.name || 'Untitled');
+            const safeUrl = (item.content_url || '').replace(/'/g, "\\'");
+            const type = this.getMediaType(item);
             
-            const w = img.grid_w || 1;
-            const h = img.grid_h || 1;
-            const x = img.col_start || 1;
-            const y = img.row_start || 1;
+            const w = item.grid_w || 1;
+            const h = item.grid_h || 1;
+            const x = item.col_start || 1;
+            const y = item.row_start || 1;
             
-            const showTitle = (img.show_title !== false);
-            const fit = img.img_fit || 'cover';
+            const showTitle = (item.show_title !== false);
+            // Standardized: object_fit
+            const fit = item.object_fit || 'cover'; 
+            const previewSrc = item.cover_url || (type === 'image' ? item.content_url : '');
             
-            const previewSrc = img.cover_url || (type === 'image' ? img.content_url : '');
-            let content = '';
+            let content;
             if (type === 'video') {
-                if (img.cover_url) {
-                    content = `<img src="${img.cover_url}" class="media-preview-box fit-${fit}" loading="lazy">`;
-                } else {
-                    content = `<video src="${img.content_url}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
-                }
+                content = item.cover_url ? `<img src="${item.cover_url}" class="media-preview-box fit-${fit}" loading="lazy">` : `<video src="${item.content_url}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
             } else if (type === 'audio') {
-                if (previewSrc) {
-                    content = `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">`;
-                } else {
-                    content = `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon" aria-hidden="true"></i></div></div>`;
-                }
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon"></i></div></div>`;
             } else {
-                // image / gif
-                const imgSrc = previewSrc || img.content_url || '';
-                content = `<img src="${imgSrc}" class="media-preview-box fit-${fit}" loading="lazy">`;
+                content = `<img src="${previewSrc || item.content_url || ''}" class="media-preview-box fit-${fit}" loading="lazy">`;
             }
 
-            const editOverlay = this.editMode ? this.getEditOverlayHtml(img.id, w, h, cols, fit, showTitle, img.z_index || 0) : '';
-            const dragAttr = this.editMode ? 'draggable="true"' : '';
-            const style = `grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h}; z-index: ${img.z_index || 0};`;
-
-            // Adiciona data-w e data-h para facilitar o Drag & Drop
-            return `
-            <div class="grid-item" data-id="${img.id}" data-w="${w}" data-h="${h}" ${dragAttr} style="${style}">
-                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" onclick="GaleriaManager.abrirMedia('${safeUrl}', '${type}', '${safeNome}')">
-                    ${content}
-                    ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeNome}</small></div>` : ''}
-                    ${this.editMode ? `<button class="position-absolute bottom-0 start-0 m-2 btn btn-xs btn-danger" style="z-index:30" onclick="event.stopPropagation(); GaleriaManager.excluirImagem(${img.id})" title="Excluir item"><i class="bi bi-trash"></i></button>` : ''}
+            const editControls = this.editMode ? `
+                <div class="edit-overlay">
+                    <button class="btn btn-xs btn-light border" title="Edit" onclick="event.stopPropagation(); GaleriaManager.openEditItem(${item.id})">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
                 </div>
-                ${this.editMode ? `<div class="resize-handle" data-id="${img.id}" title="Arraste para redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>` : ''}
-                ${editOverlay}
+                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem(${item.id})" title="Delete"><i class="bi bi-trash"></i></button>
+                <div class="resize-handle" data-id="${item.id}" title="Resize"><i class="bi bi-arrows-angle-expand"></i></div>
+            ` : '';
+
+            return `
+            <div class="grid-item" data-id="${item.id}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h}; z-index: ${item.z_index || 0};">
+                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}')">
+                    ${content}
+                    ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeName}</small></div>` : ''}
+                </div>
+                ${editControls}
             </div>`;
         }).join('');
 
-        // Adiciona o elemento de Highlight (oculto por padrão)
-        const highlightHtml = `<div id="drag-highlight" class="grid-highlight"></div>`;
-        
-        grid.innerHTML = itemsHtml + highlightHtml;
+        grid.innerHTML = itemsHtml + `<div id="drag-highlight" class="grid-highlight"></div>`;
     },
 
-    getEditOverlayHtml(id, w, h, maxCols, fit, showTitle, z_index) {
-        return `
-        <div class="edit-overlay">
-            <button class="btn btn-xs btn-light border" title="Editar atributos" onclick="event.stopPropagation(); GaleriaManager.abrirEditarItem(${id})">
-                <i class="bi bi-pencil-square"></i>
-            </button>
-        </div>`;
-    },
-
-    abrirEditarItem(id) {
-        const item = this.data.imagens.find(i => i.id === id);
-        if (!item) return Utils.alert('Item não encontrado.');
+    openEditItem(id) {
+        const item = this.data.items.find(i => i.id === id);
+        if (!item) return Utils.alert('Item not found.');
         const form = document.getElementById('formEditItem');
-        if (!form) return Utils.alert('Formulário de edição não encontrado.');
+        if (!form) return Utils.alert('Edit form not found.');
 
         document.getElementById('edit-item-id').value = item.id;
-        document.getElementById('edit-item-nome').value = item.nome || '';
+        document.getElementById('edit-item-name').value = item.name || '';
         document.getElementById('edit-item-showtitle').checked = item.show_title !== false;
-        document.getElementById('edit-item-fit').value = item.img_fit || 'cover';
-        // z-index field (moved to modal)
+        document.getElementById('edit-item-fit').value = item.object_fit || 'cover'; // object_fit
         const zinput = document.getElementById('edit-item-zindex');
         if (zinput) zinput.value = item.z_index || 0;
 
         const current = document.getElementById('edit-item-current-cover');
         const type = this.getMediaType(item);
-        // Se o item for imagem/gif, não mostramos opção de enviar capa (desnecessário)
         const coverInput = form.querySelector('input[name="cover"]');
-        // sempre limpar o valor antigo ao abrir o modal para evitar enviar arquivos residuais
-        if (coverInput) try { coverInput.value = ''; } catch(e) {}
-        if (coverInput) {
-            try { coverInput.value = ''; } catch(e) { /* ignore */ }
-            // se o usuário escolher um novo arquivo, garante que a flag de remoção seja resetada
-            coverInput.onchange = () => {
-                const flag = document.getElementById('edit-flag-remove-cover');
-                if (flag) flag.value = 'false';
-            };
-        }
-        // reset remove flag by default
+        const coverWrapper = coverInput ? coverInput.closest('.mb-3') : null;
+
+        if (coverInput) { try { coverInput.value = ''; } catch(e) {} coverInput.onchange = () => { const f=document.getElementById('edit-flag-remove-cover'); if(f)f.value='false'; }; }
         const removeFlag = document.getElementById('edit-flag-remove-cover');
         if (removeFlag) removeFlag.value = 'false';
 
-        // Se for imagem, escondemos a opção de enviar capa e o bloco de capa atual
         if (type === 'image') {
-            if (coverInput) coverInput.style.display = 'none';
+            if (coverWrapper) coverWrapper.style.display = 'none';
             if (current) { current.style.display = 'none'; current.innerHTML = ''; }
         } else {
-            if (coverInput) coverInput.style.display = '';
+            if (coverWrapper) coverWrapper.style.display = '';
             if (current) {
                 if (item.cover_url) {
                     current.style.display = '';
@@ -295,10 +255,8 @@ const GaleriaManager = {
                         <div class="d-flex align-items-center gap-2">
                             <img src="${item.cover_url}" style="max-height:80px; max-width:120px; object-fit:cover; border-radius:8px;"/>
                             <div>
-                                <div class="small text-muted">Capa atual</div>
-                                <div class="mt-2">
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover(${item.id})">Remover capa</button>
-                                </div>
+                                <div class="small text-muted">Current Cover</div>
+                                <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover(${item.id})">Remove Cover</button></div>
                             </div>
                         </div>`;
                 } else {
@@ -307,12 +265,10 @@ const GaleriaManager = {
             }
         }
 
-        // attach submit handler (once)
         if (!form._hasHandler) {
             form.addEventListener('submit', (e) => this.handleEditItemSubmit(e));
             form._hasHandler = true;
         }
-
         new bootstrap.Modal(document.getElementById('modalEditItem')).show();
     },
 
@@ -320,88 +276,64 @@ const GaleriaManager = {
         e.preventDefault();
         const form = e.target;
         const id = document.getElementById('edit-item-id').value;
-        if (!id) return Utils.alert('ID do item faltando.');
+        if (!id) return Utils.alert('Item ID missing.');
 
         const fd = new FormData(form);
-        // Se o checkbox estiver desmarcado, não envia 'show_title' -> manda explicitamente
         fd.set('show_title', document.getElementById('edit-item-showtitle').checked);
-        // garante que z_index seja enviado como número
         const zEl = document.getElementById('edit-item-zindex');
         if (zEl) fd.set('z_index', parseInt(zEl.value) || 0);
 
         try {
-            const res = await fetch(`/api/galeria/${this.galeriaId}/imagem/${id}`, { method: 'PATCH', body: fd });
+            // URL endpoint changed to English: /item/
+            const res = await fetch(`/api/galeria/${this.galleryId}/item/${id}`, { method: 'PATCH', body: fd });
             const json = await res.json();
-            if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
+            if (!json.success) throw new Error(json.message || 'Error updating item');
 
-            // Atualiza item localmente com os campos retornados (imagem atualizado)
-            const updated = json.imagem;
-            const idx = this.data.imagens.findIndex(i => i.id === parseInt(id));
-            if (idx > -1) {
-                this.data.imagens[idx] = { ...this.data.imagens[idx], ...updated };
-            }
+            const idx = this.data.items.findIndex(i => i.id === parseInt(id));
+            if (idx > -1) this.data.items[idx] = { ...this.data.items[idx], ...json.item };
 
             bootstrap.Modal.getInstance(document.getElementById('modalEditItem')).hide();
-            this.renderizarGrid();
-            Utils.alert('Item atualizado com sucesso!', 'Sucesso');
-        } catch (err) {
-            console.error(err);
-            Utils.alert(err.message || 'Erro ao atualizar item', 'Erro');
-        }
-    },
-
-    updateImg(id, changes) {
-        const idx = this.data.imagens.findIndex(i => i.id === id);
-        if (idx === -1) return;
-        Object.assign(this.data.imagens[idx], changes);
-        
-        if(changes.grid_w) {
-            const img = this.data.imagens[idx];
-            const cols = parseInt(this.data.grid_columns || 12);
-            if (img.col_start + img.grid_w - 1 > cols) {
-                img.col_start = Math.max(1, cols - img.grid_w + 1);
-            }
-        }
-        this.renderizarGrid();
+            this.renderGrid();
+            Utils.alert('Item updated successfully!', 'Success');
+        } catch (err) { console.error(err); Utils.alert(err.message, 'Error'); }
     },
 
     toggleEditMode() {
         this.editMode = !this.editMode;
-        this.renderizarBotoesAcao();
-        this.renderizarGrid();
+        this.renderActionButtons();
+        this.renderGrid();
     },
 
     async saveLayout() {
-        const layout = this.data.imagens.map((it) => ({ 
+        // Standardized Keys for Layout
+        const layout = this.data.items.map((it) => ({ 
             id: it.id, 
             grid_w: it.grid_w || 1, 
             grid_h: it.grid_h || 1, 
-            col_start: it.col_start || 1,
+            col_start: it.col_start || 1, 
             row_start: it.row_start || 1,
-            z_index: it.z_index || 0,
+            z_index: it.z_index || 0, 
             show_title: it.show_title, 
-            img_fit: it.img_fit 
+            object_fit: it.object_fit 
         }));
         
         const formData = new FormData();
         formData.set('layout', JSON.stringify(layout));
-        
         try {
-            const res = await fetch(`/api/galeria/${this.galeriaId}`, { method: 'PATCH', body: formData });
+            const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: formData });
             const json = await res.json();
             if (json.success) {
                 this.editMode = false;
-                this.renderizarBotoesAcao();
-                this.renderizarGrid();
-                Utils.alert('Layout salvo com sucesso!', 'Sucesso');
+                this.renderActionButtons();
+                this.renderGrid();
+                Utils.alert('Layout saved successfully!', 'Success');
             } else throw new Error(json.message);
-        } catch (err) { Utils.alert('Erro ao salvar layout', 'Erro'); }
+        } catch (err) { Utils.alert('Error saving layout', 'Error'); }
     },
 
-    aplicarEstilos(s) {
-        const el = document.getElementById('conteudo-principal');
+    applyStyles(s) {
+        const el = document.getElementById('main-content');
         if (!el) return;
-        
         const bg = s.background_url || this.previewBgUrl;
         
         Object.assign(el.style, {
@@ -414,30 +346,26 @@ const GaleriaManager = {
         });
 
         if (s.grid_columns) {
-            document.getElementById('lista-imagens')?.style.setProperty('--gallery-columns', s.grid_columns);
+            document.getElementById('image-list')?.style.setProperty('--gallery-columns', s.grid_columns);
             this.updateGridMetrics();
         }
         const cardColor = s.card_color || '#ffffff';
         el.style.setProperty('--gallery-card-bg', cardColor);
         document.querySelectorAll('.image-card .card-body').forEach(cb => cb.style.backgroundColor = cardColor);
-
         if (s.font_color) el.querySelectorAll('h2, p, small').forEach(t => t.style.color = s.font_color);
-        this.gerenciarFonte(s.custom_font);
+        this.manageFont(s.font_family); // font_family
     },
 
-    gerenciarFonte(fontName) {
+    manageFont(fontName) {
         if (!fontName || fontName === this.lastAppliedFont) return;
         this.lastAppliedFont = fontName;
-        
         const clean = fontName.trim();
         let family = `'Inter', sans-serif`;
 
-        if (clean.toLowerCase().includes('comic sans')) {
-            family = `'Comic Sans MS', cursive`;
-        } else if (clean) {
+        if (clean.toLowerCase().includes('comic sans')) family = `'Comic Sans MS', cursive`;
+        else if (clean) {
             let apiParam = clean.replace(/\s+/g, '+');
             if (!apiParam.includes(':')) apiParam += ':ital,wght@0,300;0,400;0,700;1,400';
-            
             const oldLink = document.querySelector(`link[data-custom-font]`);
             if (oldLink) oldLink.remove();
 
@@ -446,28 +374,17 @@ const GaleriaManager = {
             link.rel = 'stylesheet';
             link.setAttribute('data-custom-font', 'true');
             document.head.appendChild(link);
-            
-            const familyName = clean.split(':')[0];
-            family = `'${familyName}', sans-serif`;
+            family = `'${clean.split(':')[0]}', sans-serif`;
         }
-        document.getElementById('conteudo-principal').style.fontFamily = family;
+        document.getElementById('main-content').style.fontFamily = family;
     },
 
     showFontOptions() {
-        const inp = document.getElementById('config-custom-font');
-        if (!inp) return;
-        try {
-            inp.focus();
-            // Tenta abrir a lista simulando ArrowDown — alguns navegadores respeitam, outros abrem pelo botão nativo
-            const ev = new KeyboardEvent('keydown', { key: 'ArrowDown', keyCode: 40, which: 40, bubbles: true });
-            inp.dispatchEvent(ev);
-        } catch (e) {
-            inp.focus();
-        }
+        const inp = document.getElementById('config-font-family');
+        if (inp) { inp.focus(); try{inp.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',keyCode:40,which:40,bubbles:true}));}catch(e){}}
     },
 
-    // --- Upload e Modais ---
-    abrirModalUpload() { new bootstrap.Modal(document.getElementById('modalUpload')).show(); },
+    openUploadModal() { new bootstrap.Modal(document.getElementById('modalUpload')).show(); },
     
     async handleUpload(e) { 
         e.preventDefault();
@@ -483,15 +400,16 @@ const GaleriaManager = {
             const res = await this.uploadFileXHR(file, form);
             if (res.success) {
                 const cols = parseInt(this.data.grid_columns) || 4;
-                res.imagem.grid_w = res.imagem.grid_h = (cols >= 9 ? 3 : (cols >= 6 ? 2 : 1));
-                this.data.imagens.push(res.imagem);
-                this.garantirCoordenadas(); 
-                this.renderizarGrid();
+                // Default new items to reasonable size based on cols
+                res.item.grid_w = res.item.grid_h = (cols >= 9 ? 3 : (cols >= 6 ? 2 : 1));
+                this.data.items.push(res.item);
+                this.ensureCoordinates(); 
+                this.renderGrid();
                 bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
                 form.reset();
-                Utils.alert('Upload concluído!');
+                Utils.alert('Upload completed!');
             }
-        } catch (err) { Utils.alert(err.message, 'Erro'); }
+        } catch (err) { Utils.alert(err.message, 'Error'); }
         finally { btn.disabled = false; prog.style.display = 'none'; this.resetProgress(); }
     },
 
@@ -499,7 +417,9 @@ const GaleriaManager = {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             const data = new FormData(form);
-            data.delete('fileInput'); data.append('imagem', file);
+            data.delete('fileInput'); 
+            // Key change: 'media'
+            data.append('media', file);
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const pct = Math.round((e.loaded / e.total) * 100) + '%';
@@ -508,9 +428,9 @@ const GaleriaManager = {
                     document.getElementById('upload-size-text').textContent = `${Utils.formatSize(e.loaded)} / ${Utils.formatSize(e.total)}`;
                 }
             };
-            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(JSON.parse(xhr.responseText)) : reject(new Error('Falha no upload'));
-            xhr.onerror = () => reject(new Error('Erro de rede'));
-            xhr.open('POST', `/api/galeria/${this.galeriaId}/upload`);
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(JSON.parse(xhr.responseText)) : reject(new Error('Upload failed'));
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.open('POST', `/api/galeria/${this.galleryId}/upload`);
             xhr.send(data);
         });
     },
@@ -520,10 +440,10 @@ const GaleriaManager = {
         document.getElementById('upload-percent-text').textContent = '0%';
     },
 
-    abrirMedia(url, type, nome) {
+    openMedia(url, type, name) {
         const container = document.getElementById('media-container');
-        document.getElementById('media-caption').textContent = nome || '';
-        let content = '';
+        document.getElementById('media-caption').textContent = name || '';
+        let content;
         if (type === 'video') content = `<video src="${url}" controls autoplay class="img-fluid rounded shadow" style="max-height:80vh"></video>`;
         else if (type === 'audio') content = `<div class="p-5 bg-dark rounded border"><i class="bi bi-music-note-beamed display-1 text-info"></i><audio controls autoplay class="d-block mt-3" oncanplay="this.volume=0.4"><source src="${url}"></audio></div>`;
         else content = `<img src="${url}" class="img-fluid rounded shadow" style="max-height:80vh">`;
@@ -532,9 +452,8 @@ const GaleriaManager = {
         new bootstrap.Modal(document.getElementById('modalMedia')).show();
     },
 
-    // --- Configurações e Preview ---
-    abrirModalConfig() {
-        const principal = document.getElementById('conteudo-principal');
+    openConfigModal() {
+        const principal = document.getElementById('main-content');
         if (principal) this.originalStyles = principal.getAttribute('style');
         
         const f = document.getElementById('formConfig'); 
@@ -544,15 +463,15 @@ const GaleriaManager = {
         const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
         const setCheck = (id, v) => { const el = document.getElementById(id); if(el) el.checked = v; };
 
-        setVal('config-nome', d.nome);
-        setVal('config-descricao', d.descricao || '');
+        setVal('config-name', d.name);
+        setVal('config-description', d.description || '');
         setCheck('config-is-public', d.is_public);
         setVal('config-bg-color', d.background_color);
         setVal('config-bg-fill', d.background_fill);
         setVal('config-card-color', d.card_color || '#ffffff');
         setVal('config-grid-columns', d.grid_columns || 12);
         setVal('config-font-color', d.font_color);
-        setVal('config-custom-font', d.custom_font || '');
+        setVal('config-font-family', d.font_family || ''); // font_family
         
         ['cover','bg'].forEach(k => {
              const flag = document.getElementById(`flag-remove-${k}`);
@@ -560,9 +479,33 @@ const GaleriaManager = {
              const status = document.getElementById(`status-${k}`);
              if (status) status.classList.add('d-none');
         });
+
+        const showCurrent = (inputId, url) => {
+            const input = document.getElementById(inputId);
+            if(!input) return;
+            const parent = input.closest('.mb-3');
+            if(!parent) return;
+            const old = parent.querySelector('.current-file-preview');
+            if(old) old.remove();
+            
+            if(url) {
+                const div = document.createElement('div');
+                div.className = 'current-file-preview mt-2 d-flex align-items-center gap-2 p-2 border rounded bg-light';
+                div.innerHTML = `
+                    <img src="${url}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="border">
+                    <div class="small text-truncate flex-grow-1 text-muted">
+                        <strong>Current:</strong> ${url.split('/').pop()}
+                    </div>
+                `;
+                parent.appendChild(div);
+            }
+        };
+
+        showCurrent('input-bg', d.background_url);
+        showCurrent('input-cover', d.cover_url);
         
         this.togglePublicSection();
-        this.renderColaboradores();
+        this.renderCollaborators();
         new bootstrap.Modal(document.getElementById('modalConfig')).show();
     },
 
@@ -572,14 +515,21 @@ const GaleriaManager = {
         if (flag) flag.value = 'true';
         const status = document.getElementById(`status-${k}`);
         if (status) status.classList.remove('d-none');
+        
+        const inputId = (type === 'background') ? 'input-bg' : 'input-cover';
+        const input = document.getElementById(inputId);
+        if(input) {
+            const preview = input.closest('.mb-3')?.querySelector('.current-file-preview');
+            if(preview) preview.style.opacity = '0.3';
+        }
+
         if (k === 'bg') { this.previewBgUrl = null; this.applyPreview(); }
     },
 
     applyPreview() {
         const bgInput = document.getElementById('input-bg');
         const hasBg = !!this.data.background_url || (bgInput && bgInput.files && bgInput.files.length > 0);
-        const groupBg = document.getElementById('group-bg-fill');
-        if (groupBg) groupBg.style.display = hasBg ? '' : 'none';
+        document.getElementById('group-bg-fill').style.display = hasBg ? '' : 'none';
 
         const getVal = (id) => document.getElementById(id)?.value || '';
         const flagBg = document.getElementById('flag-remove-bg');
@@ -588,47 +538,42 @@ const GaleriaManager = {
         const s = {
             background_color: getVal('config-bg-color'),
             background_fill: getVal('config-bg-fill'),
-            custom_font: getVal('config-custom-font'),
+            font_family: getVal('config-font-family'), // font_family
             font_color: getVal('config-font-color'),
             card_color: getVal('config-card-color'),
             grid_columns: getVal('config-grid-columns'),
             background_url: removeBg ? null : (this.previewBgUrl || this.data.background_url)
         };
-        this.aplicarEstilos(s);
+        this.applyStyles(s);
     },
 
-    async buscarUsuarios() {
-        const inp = document.getElementById('search-user-input');
-        if (!inp) return;
-        const q = inp.value;
-        if (q.length < 2) return;
+    async searchUsers() {
+        const q = document.getElementById('search-user-input')?.value;
+        if (q?.length < 2) return;
         try {
             const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(q)}`);
             const json = await res.json();
             const results = document.getElementById('search-results');
             if (results) {
-                results.innerHTML = (json.usuarios || [])
-                    .map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addColaborador(${u.id}, '${u.username}')">${u.username}</button>`).join('');
+                // Assuming json.usuarios is legacy or needs change? keeping logic generic
+                const list = json.users || json.usuarios || [];
+                results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator(${u.id}, '${u.username}')">${u.username}</button>`).join('');
             }
         } catch (e) { console.error(e); }
     },
 
-    addColaborador(id, username) {
-        if (!this.colaboradores.find(c => c.id === id)) this.colaboradores.push({ id, username });
-        this.renderColaboradores();
-        const results = document.getElementById('search-results');
-        if (results) results.innerHTML = '';
+    addCollaborator(id, username) {
+        if (!this.collaborators.find(c => c.id === id)) this.collaborators.push({ id, username });
+        this.renderCollaborators();
+        document.getElementById('search-results').innerHTML = '';
     },
-    removeColaborador(id) { this.colaboradores = this.colaboradores.filter(c => c.id !== id); this.renderColaboradores(); },
-    renderColaboradores() {
-        const container = document.getElementById('colaboradores-selecionados');
-        if (container) {
-            container.innerHTML = this.colaboradores
-                .map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeColaborador(${c.id})"></i></span>`).join('');
-        }
+    removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.id !== id); this.renderCollaborators(); },
+    renderCollaborators() {
+        const container = document.getElementById('collaborators-list'); // Changed ID
+        if (container) container.innerHTML = this.collaborators.map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeCollaborator(${c.id})"></i></span>`).join('');
     },
     togglePublicSection() {
-        const section = document.getElementById('colaboradores-section');
+        const section = document.getElementById('collaborators-section'); // Changed ID
         const check = document.getElementById('config-is-public');
         if (section && check) section.style.display = check.checked ? 'none' : 'block';
     },
@@ -642,31 +587,31 @@ const GaleriaManager = {
             formConfig.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
-                fd.append('colaboradores', JSON.stringify(this.colaboradores.map(c => c.id)));
-                const checkPublic = document.getElementById('config-is-public');
-                if (checkPublic) fd.set('is_public', checkPublic.checked);
-                
+                // Unified: collaborators
+                fd.append('collaborators', JSON.stringify(this.collaborators.map(c => c.id)));
+                if (document.getElementById('config-is-public')) fd.set('is_public', document.getElementById('config-is-public').checked);
                 try {
-                    const res = await fetch(`/api/galeria/${this.galeriaId}`, { method: 'PATCH', body: fd });
+                    const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: fd });
                     const json = await res.json();
                     if (json.success) {
-                        Object.assign(this.data, json.galeria);
+                        Object.assign(this.data, json.gallery);
                         this.originalStyles = null;
                         bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
-                        this.renderizar();
-                        Utils.alert('Salvo com sucesso!');
+                        this.render();
+                        Utils.alert('Saved successfully!');
                     }
-                } catch (err) { Utils.alert('Erro ao salvar.'); }
+                } catch (err) { Utils.alert('Error saving.'); }
             });
         }
 
         const preview = Utils.debounce(() => {
             const inpBg = document.getElementById('input-bg');
             if (inpBg && inpBg.files.length) {
-                const flag = document.getElementById('flag-remove-bg');
-                if (flag) flag.value = 'false';
-                const status = document.getElementById('status-bg');
-                if (status) status.classList.add('d-none');
+                if(document.getElementById('flag-remove-bg')) document.getElementById('flag-remove-bg').value='false';
+                if(document.getElementById('status-bg')) document.getElementById('status-bg').classList.add('d-none');
+                
+                const previewDiv = inpBg.closest('.mb-3')?.querySelector('.current-file-preview');
+                if(previewDiv) previewDiv.style.display = 'none';
             }
             this.applyPreview();
         }, 150);
@@ -678,29 +623,24 @@ const GaleriaManager = {
         if (modalConfig) {
             modalConfig.addEventListener('hidden.bs.modal', () => {
                 if (this.originalStyles) {
-                    const el = document.getElementById('conteudo-principal');
+                    const el = document.getElementById('main-content');
                     if (el) el.setAttribute('style', this.originalStyles);
-                    const grid = document.getElementById('lista-imagens');
-                    if (grid) grid.style.setProperty('--gallery-columns', this.data.grid_columns || 12);
+                    if (document.getElementById('image-list')) document.getElementById('image-list').style.setProperty('--gallery-columns', this.data.grid_columns || 12);
                     this.originalStyles = null; this.previewBgUrl = null; this.lastAppliedFont = null;
                 }
             });
         }
         const modalMedia = document.getElementById('modalMedia');
-        if (modalMedia) {
-            modalMedia.addEventListener('hidden.bs.modal', () => { const c = document.getElementById('media-container'); if (c) c.innerHTML = ''; });
-        }
+        if (modalMedia) modalMedia.addEventListener('hidden.bs.modal', () => { const c = document.getElementById('media-container'); if (c) c.innerHTML = ''; });
     },
 
-    // --- DRAG AND DROP COM HIGHLIGHT ---
     setupDragAndDrop() {
-        const gridContainer = document.getElementById('lista-imagens');
+        const gridContainer = document.getElementById('image-list');
         if (!gridContainer) return;
         
         let draggedId = null;
-        let resizing = null; // { id, itemEl, idx, colStart, rowStart, startW, startH }
+        let resizing = null;
 
-        // Pointer-based resize: aceita arrastar o handle no canto inferior direito
         gridContainer.addEventListener('pointerdown', (e) => {
             if (!this.editMode) return;
             const handle = e.target.closest('.resize-handle');
@@ -709,20 +649,11 @@ const GaleriaManager = {
             const id = parseInt(handle.dataset.id);
             const itemEl = gridContainer.querySelector(`.grid-item[data-id="${id}"]`);
             if (!itemEl) return;
-            const idx = this.data.imagens.findIndex(i => i.id === id);
+            const idx = this.data.items.findIndex(i => i.id === id);
             if (idx === -1) return;
 
-            const img = this.data.imagens[idx];
-            resizing = {
-                id,
-                itemEl,
-                idx,
-                colStart: img.col_start || 1,
-                rowStart: img.row_start || 1,
-                startW: img.grid_w || 1,
-                startH: img.grid_h || 1
-            };
-
+            const item = this.data.items[idx];
+            resizing = { id, itemEl, idx, colStart: item.col_start || 1, rowStart: item.row_start || 1, startW: item.grid_w || 1, startH: item.grid_h || 1 };
             try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
         });
 
@@ -735,7 +666,7 @@ const GaleriaManager = {
             const cellH = cellW;
 
             const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-            const offsetY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+            const offsetY = Math.max(0, e.clientY - rect.top);
 
             let targetCol = Math.ceil(offsetX / ((rect.width + gap)/cols));
             let targetRow = Math.ceil(offsetY / (cellH + gap));
@@ -745,7 +676,6 @@ const GaleriaManager = {
             const newW = Math.max(1, Math.min(cols - resizing.colStart + 1, targetCol - resizing.colStart + 1));
             const newH = Math.max(1, targetRow - resizing.rowStart + 1);
 
-            // Apply visual changes directly to element without full re-render
             resizing.itemEl.style.gridColumnEnd = `span ${newW}`;
             resizing.itemEl.style.gridRowEnd = `span ${newH}`;
             resizing.itemEl.dataset.w = newW;
@@ -754,27 +684,21 @@ const GaleriaManager = {
 
         const _onPointerUp = (e) => {
             if (!resizing) return;
-            // Commit to data model
             const finalW = parseInt(resizing.itemEl.dataset.w) || resizing.startW;
             const finalH = parseInt(resizing.itemEl.dataset.h) || resizing.startH;
-            const img = this.data.imagens[resizing.idx];
-            img.grid_w = finalW; img.grid_h = finalH;
-            // cleanup
+            this.data.items[resizing.idx].grid_w = finalW;
+            this.data.items[resizing.idx].grid_h = finalH;
             try { e.target.releasePointerCapture && e.target.releasePointerCapture(e.pointerId); } catch (err) {}
             resizing = null;
-            // Re-render to update overlays, handles and internal state
-            this.renderizarGrid();
+            this.renderGrid();
         };
 
         window.addEventListener('pointermove', _onPointerMove);
         window.addEventListener('pointerup', _onPointerUp);
 
-        // Modal z-index helper
         this.changeModalZ = (delta) => {
             const el = document.getElementById('edit-item-zindex');
-            if (!el) return;
-            const v = parseInt(el.value) || 0;
-            el.value = Math.max(0, v + delta);
+            if (el) el.value = Math.max(0, (parseInt(el.value) || 0) + delta);
         };
 
         gridContainer.addEventListener('dragstart', (e) => {
@@ -782,133 +706,93 @@ const GaleriaManager = {
             const item = e.target.closest('.grid-item');
             if (item) {
                 draggedId = parseInt(item.dataset.id);
-                // Armazena dimensões para desenhar o highlight corretamente
                 this.draggedItemDims = { w: parseInt(item.dataset.w), h: parseInt(item.dataset.h) };
-                
                 e.dataTransfer.effectAllowed = 'move';
                 setTimeout(() => item.classList.add('dragging'), 0);
-                
-                // Exibe o highlight imediatamente (mesmo que na posição inicial)
                 const hl = document.getElementById('drag-highlight');
-                if(hl) {
-                    hl.style.display = 'block';
-                    hl.style.gridColumn = item.style.gridColumn;
-                    hl.style.gridRow = item.style.gridRow;
-                }
+                if(hl) { hl.style.display = 'block'; hl.style.gridColumn = item.style.gridColumn; hl.style.gridRow = item.style.gridRow; }
             }
         });
 
         gridContainer.addEventListener('dragend', (e) => {
             const item = e.target.closest('.grid-item');
             if (item) item.classList.remove('dragging');
-            draggedId = null;
-            this.draggedItemDims = null;
-            
-            // Esconde highlight
+            draggedId = null; this.draggedItemDims = null;
             const hl = document.getElementById('drag-highlight');
             if(hl) hl.style.display = 'none';
         });
 
         gridContainer.addEventListener('dragover', (e) => {
             if (!this.editMode || !draggedId) return;
-            e.preventDefault(); 
-            e.dataTransfer.dropEffect = 'move';
-
+            e.preventDefault(); e.dataTransfer.dropEffect = 'move';
             const hl = document.getElementById('drag-highlight');
             if (!hl) return;
 
-            // Cálculos
             const rect = gridContainer.getBoundingClientRect();
             const cols = parseInt(this.data.grid_columns || 12);
             const gap = 15;
-            // Largura calculada sem o gap final (mesma lógica do updateMetrics)
             const cellW = (rect.width - ((cols - 1) * gap)) / cols;
-            const cellH = cellW; // Quadrado
-
+            const cellH = cellW;
             const offsetX = e.clientX - rect.left;
             const offsetY = e.clientY - rect.top;
 
-            // Adiciona metade da largura da célula ao offset para centralizar melhor o "snap" sob o mouse
-            let targetCol = Math.ceil(offsetX / (cellW + gap)); 
-            targetCol = Math.ceil(offsetX / (cellW + (gap/2))); 
-            
-            // Revertendo para método simples que funciona bem visualmente
-            targetCol = Math.ceil(offsetX / ((rect.width + gap)/cols));
+            let targetCol = Math.ceil(offsetX / ((rect.width + gap)/cols));
             let targetRow = Math.ceil(offsetY / (cellH + gap));
-
-            if (targetCol < 1) targetCol = 1;
-            if (targetCol > cols) targetCol = cols;
+            if (targetCol < 1) targetCol = 1; if (targetCol > cols) targetCol = cols;
             if (targetRow < 1) targetRow = 1;
 
-            // Ajusta se o item for largo e sair da tela
-            const w = this.draggedItemDims.w;
-            if (targetCol + w - 1 > cols) {
-                targetCol = Math.max(1, cols - w + 1);
-            }
+            if (targetCol + this.draggedItemDims.w - 1 > cols) targetCol = Math.max(1, cols - this.draggedItemDims.w + 1);
 
-            // Atualiza Highlight em tempo real
-            hl.style.gridColumnStart = targetCol;
-            hl.style.gridColumnEnd = `span ${w}`;
-            hl.style.gridRowStart = targetRow;
-            hl.style.gridRowEnd = `span ${this.draggedItemDims.h}`;
+            hl.style.gridColumnStart = targetCol; hl.style.gridColumnEnd = `span ${this.draggedItemDims.w}`;
+            hl.style.gridRowStart = targetRow; hl.style.gridRowEnd = `span ${this.draggedItemDims.h}`;
         });
 
         gridContainer.addEventListener('drop', (e) => {
             e.preventDefault();
             if (!this.editMode || !draggedId) return;
-            
-            // A lógica é a mesma do DragOver para consistência
             const hl = document.getElementById('drag-highlight');
             if(!hl) return;
 
-            // Pega a posição final do highlight (que já foi calculada e validada no dragover)
             const style = window.getComputedStyle(hl);
             const targetCol = parseInt(style.gridColumnStart);
             const targetRow = parseInt(style.gridRowStart);
 
-            const imgIndex = this.data.imagens.findIndex(i => i.id === draggedId);
+            const imgIndex = this.data.items.findIndex(i => i.id === draggedId);
             if (imgIndex > -1) {
-                const img = this.data.imagens[imgIndex];
-                img.col_start = targetCol;
-                img.row_start = targetRow;
-                this.renderizarGrid();
+                this.data.items[imgIndex].col_start = targetCol;
+                this.data.items[imgIndex].row_start = targetRow;
+                this.renderGrid();
             }
         });
     },
     
-    excluirImagem: async (id) => {
-        if (!(await Utils.confirm('Excluir mídia?'))) return;
-        await GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galeriaId}/imagem/${id}`, id);
-        // Se estivermos com o modal de edição aberto para esse id, fecha-o após remoção
+    deleteItem: async (id) => {
+        if (!(await Utils.confirm('Delete this media?'))) return;
+        await GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}/item/${id}`, id);
         try {
             const modalEl = document.getElementById('modalEditItem');
             const currentId = document.getElementById('edit-item-id')?.value;
-            if (modalEl && currentId && parseInt(currentId) === parseInt(id)) {
-                const bs = bootstrap.Modal.getInstance(modalEl);
-                if (bs) bs.hide();
-            }
-        } catch (e) { /* silent */ }
+            if (modalEl && currentId && parseInt(currentId) === parseInt(id)) { bootstrap.Modal.getInstance(modalEl)?.hide(); }
+        } catch (e) {}
     },
-    excluirGaleria: async () => { if (await Utils.confirm('Excluir TUDO?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galeriaId}`, null, '/galerias'); },
+    deleteGallery: async () => { if (await Utils.confirm('Delete ENTIRE gallery?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}`, null, '/galerias'); },
     
-    async apiDelete(url, imgId, redirect) {
+    async apiDelete(url, itemId, redirect) {
         try {
             const res = await fetch(url, { method: 'DELETE' });
             if ((await res.json()).success) {
                 if (redirect) window.location.href = redirect;
-                else { this.data.imagens = this.data.imagens.filter(i => i.id !== imgId); this.renderizarGrid(); }
+                else { this.data.items = this.data.items.filter(i => i.id !== itemId); this.renderGrid(); }
             }
-        } catch(e) { Utils.alert('Erro ao excluir'); }
+        } catch(e) { Utils.alert('Delete failed'); }
     },
     
     getMediaType: (arg) => {
-        // Accept either an object (image record) or a url string
         if (!arg) return 'image';
         if (typeof arg === 'object') {
             const mt = (arg.mimetype || '').toLowerCase();
             if (mt.startsWith('video/')) return 'video';
             if (mt.startsWith('audio/')) return 'audio';
-            // fallback to content_url/cover_url-based detection
             arg = arg.content_url || arg.cover_url || '';
         }
         const u = (arg || '').toLowerCase();
