@@ -208,9 +208,10 @@ const GaleriaManager = {
                 <div class="resize-handle" data-id="${item.id}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
             ` : '';
 
+            // MODIFICATION: z-index moved from grid-item to image-card to allow controls to float above neighbors
             return `
-            <div class="grid-item" data-id="${item.id}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h}; z-index: ${item.z_index || 0};">
-                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}')">
+            <div class="grid-item" data-id="${item.id}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};">
+                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.z_index || 0};" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}')">
                     ${content}
                     ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeName}</small></div>` : ''}
                 </div>
