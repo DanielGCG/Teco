@@ -24,7 +24,7 @@ const GaleriaManager = {
     draggedItemDims: null,
 
     async init() {
-        const mainEl = document.getElementById('main-content'); // Changed ID to English in HTML
+        const mainEl = document.getElementById('conteudo-principal'); // Changed ID to English in HTML
         if (!mainEl) return;
         
         let id = mainEl.dataset.galleryId;
@@ -34,7 +34,7 @@ const GaleriaManager = {
             if (last && !['galeria', 'galerias'].includes(last.toLowerCase())) id = last;
         }
 
-        if (!id) return Utils.alert('Gallery ID not found.', 'Critical Error');
+        if (!id) return Utils.alert('ID da galeria não encontrado.', 'Erro Crítico');
         
         this.galleryId = id;
         
@@ -52,7 +52,7 @@ const GaleriaManager = {
         if (flag) flag.value = 'true';
         const current = document.getElementById('edit-item-current-cover');
         if (current) {
-            current.innerHTML = `<div class="small text-danger">Cover marked for removal</div>`;
+            current.innerHTML = `<div class="small text-danger">Capa marcada para remoção</div>`;
             current.style.display = '';
         }
     },
@@ -71,7 +71,7 @@ const GaleriaManager = {
             };
             this.collaborators = (this.data.collaborators || []).map(c => ({ id: c.id, username: c.username }));
             this.render();
-        } catch (err) { console.error(err); Utils.alert('Error loading data.', 'Error'); }
+        } catch (err) { console.error(err); Utils.alert('Erro ao carregar dados.', 'Erro'); }
     },
 
     updateGridMetrics() {
@@ -131,7 +131,7 @@ const GaleriaManager = {
         if (desc) desc.textContent = this.data.description || '';
         
         const author = document.getElementById('gallery-author');
-        if (author) author.textContent = this.data.owner?.username || 'Unknown';
+        if (author) author.textContent = this.data.owner?.username || 'Desconhecido';
         
         this.applyStyles(this.data);
         this.renderActionButtons();
@@ -142,17 +142,17 @@ const GaleriaManager = {
         const container = document.getElementById('gallery-actions');
         if (!container) return;
         const editClass = this.editMode ? 'btn-warning' : 'btn-outline-secondary';
-        const label = this.editMode ? 'Exit' : 'Edit';
+        const label = this.editMode ? 'Sair' : 'Editar';
         
         container.innerHTML = `
             <button class="btn btn-primary shadow-sm" onclick="GaleriaManager.openUploadModal()">
-                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Add Media</span>
+                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Adicionar Mídia</span>
             </button>
-            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()" title="Toggle Edit Mode">
+            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()" title="Alternar Modo Edição">
                 <i class="bi bi-grid-3x3-gap-fill"></i> <span class="d-none d-sm-inline">${label}</span>
             </button>
-            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()" title="Save layout changes"><i class="bi bi-save"></i> Save</button>` : ''}
-            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.openConfigModal()" title="Gallery Settings"><i class="bi bi-gear-fill"></i></button>
+            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()" title="Salvar alterações de layout"><i class="bi bi-save"></i> Salvar</button>` : ''}
+            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.openConfigModal()" title="Configurações da Galeria"><i class="bi bi-gear-fill"></i></button>
         `;
     },
 
@@ -164,7 +164,7 @@ const GaleriaManager = {
         else grid.parentElement.classList.remove('edit-mode');
 
         if (!this.data.items?.length) {
-            grid.innerHTML = '<div class="col-12 text-center text-muted py-5 grid-full-width">Gallery is empty. Add content!</div>';
+            grid.innerHTML = '<div class="col-12 text-center text-muted py-5 grid-full-width">A galeria está vazia. Adicione conteúdo!</div>';
             return;
         }
 
@@ -175,7 +175,7 @@ const GaleriaManager = {
         grid.style.setProperty('--gallery-columns', cols);
 
         const itemsHtml = this.data.items.map(item => {
-            const safeName = Utils.escapeHtml(item.name || 'Untitled');
+            const safeName = Utils.escapeHtml(item.name || 'Sem título');
             const safeUrl = (item.content_url || '').replace(/'/g, "\\'");
             const type = this.getMediaType(item);
             
@@ -200,12 +200,12 @@ const GaleriaManager = {
 
             const editControls = this.editMode ? `
                 <div class="edit-overlay">
-                    <button class="btn btn-xs btn-light border" title="Edit" onclick="event.stopPropagation(); GaleriaManager.openEditItem(${item.id})">
+                    <button class="btn btn-xs btn-light border" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem(${item.id})">
                         <i class="bi bi-pencil-square"></i>
                     </button>
                 </div>
-                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem(${item.id})" title="Delete"><i class="bi bi-trash"></i></button>
-                <div class="resize-handle" data-id="${item.id}" title="Resize"><i class="bi bi-arrows-angle-expand"></i></div>
+                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem(${item.id})" title="Excluir"><i class="bi bi-trash"></i></button>
+                <div class="resize-handle" data-id="${item.id}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
             ` : '';
 
             return `
@@ -223,9 +223,9 @@ const GaleriaManager = {
 
     openEditItem(id) {
         const item = this.data.items.find(i => i.id === id);
-        if (!item) return Utils.alert('Item not found.');
+        if (!item) return Utils.alert('Item não encontrado.');
         const form = document.getElementById('formEditItem');
-        if (!form) return Utils.alert('Edit form not found.');
+        if (!form) return Utils.alert('Formulário de edição não encontrado.');
 
         document.getElementById('edit-item-id').value = item.id;
         document.getElementById('edit-item-name').value = item.name || '';
@@ -255,8 +255,8 @@ const GaleriaManager = {
                         <div class="d-flex align-items-center gap-2">
                             <img src="${item.cover_url}" style="max-height:80px; max-width:120px; object-fit:cover; border-radius:8px;"/>
                             <div>
-                                <div class="small text-muted">Current Cover</div>
-                                <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover(${item.id})">Remove Cover</button></div>
+                                <div class="small text-muted">Capa Atual</div>
+                                <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover(${item.id})">Remover Capa</button></div>
                             </div>
                         </div>`;
                 } else {
@@ -276,7 +276,7 @@ const GaleriaManager = {
         e.preventDefault();
         const form = e.target;
         const id = document.getElementById('edit-item-id').value;
-        if (!id) return Utils.alert('Item ID missing.');
+        if (!id) return Utils.alert('ID do item faltando.');
 
         const fd = new FormData(form);
         fd.set('show_title', document.getElementById('edit-item-showtitle').checked);
@@ -287,15 +287,15 @@ const GaleriaManager = {
             // URL endpoint changed to English: /item/
             const res = await fetch(`/api/galeria/${this.galleryId}/item/${id}`, { method: 'PATCH', body: fd });
             const json = await res.json();
-            if (!json.success) throw new Error(json.message || 'Error updating item');
+            if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
 
             const idx = this.data.items.findIndex(i => i.id === parseInt(id));
             if (idx > -1) this.data.items[idx] = { ...this.data.items[idx], ...json.item };
 
             bootstrap.Modal.getInstance(document.getElementById('modalEditItem')).hide();
             this.renderGrid();
-            Utils.alert('Item updated successfully!', 'Success');
-        } catch (err) { console.error(err); Utils.alert(err.message, 'Error'); }
+            Utils.alert('Item atualizado com sucesso!', 'Sucesso');
+        } catch (err) { console.error(err); Utils.alert(err.message, 'Erro'); }
     },
 
     toggleEditMode() {
@@ -326,13 +326,13 @@ const GaleriaManager = {
                 this.editMode = false;
                 this.renderActionButtons();
                 this.renderGrid();
-                Utils.alert('Layout saved successfully!', 'Success');
+                Utils.alert('Layout salvo com sucesso!', 'Sucesso');
             } else throw new Error(json.message);
-        } catch (err) { Utils.alert('Error saving layout', 'Error'); }
+        } catch (err) { Utils.alert('Erro ao salvar layout', 'Erro'); }
     },
 
     applyStyles(s) {
-        const el = document.getElementById('main-content');
+        const el = document.getElementById('conteudo-principal');
         if (!el) return;
         const bg = s.background_url || this.previewBgUrl;
         
@@ -376,7 +376,7 @@ const GaleriaManager = {
             document.head.appendChild(link);
             family = `'${clean.split(':')[0]}', sans-serif`;
         }
-        document.getElementById('main-content').style.fontFamily = family;
+        document.getElementById('conteudo-principal').style.fontFamily = family;
     },
 
     showFontOptions() {
@@ -407,9 +407,9 @@ const GaleriaManager = {
                 this.renderGrid();
                 bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
                 form.reset();
-                Utils.alert('Upload completed!');
+                Utils.alert('Upload concluído!');
             }
-        } catch (err) { Utils.alert(err.message, 'Error'); }
+        } catch (err) { Utils.alert(err.message, 'Erro'); }
         finally { btn.disabled = false; prog.style.display = 'none'; this.resetProgress(); }
     },
 
@@ -428,8 +428,8 @@ const GaleriaManager = {
                     document.getElementById('upload-size-text').textContent = `${Utils.formatSize(e.loaded)} / ${Utils.formatSize(e.total)}`;
                 }
             };
-            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(JSON.parse(xhr.responseText)) : reject(new Error('Upload failed'));
-            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(JSON.parse(xhr.responseText)) : reject(new Error('Falha no upload'));
+            xhr.onerror = () => reject(new Error('Erro de rede'));
             xhr.open('POST', `/api/galeria/${this.galleryId}/upload`);
             xhr.send(data);
         });
@@ -453,7 +453,7 @@ const GaleriaManager = {
     },
 
     openConfigModal() {
-        const principal = document.getElementById('main-content');
+        const principal = document.getElementById('conteudo-principal');
         if (principal) this.originalStyles = principal.getAttribute('style');
         
         const f = document.getElementById('formConfig'); 
@@ -494,7 +494,7 @@ const GaleriaManager = {
                 div.innerHTML = `
                     <img src="${url}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="border">
                     <div class="small text-truncate flex-grow-1 text-muted">
-                        <strong>Current:</strong> ${url.split('/').pop()}
+                        <strong>Atual:</strong> ${url.split('/').pop()}
                     </div>
                 `;
                 parent.appendChild(div);
@@ -598,9 +598,9 @@ const GaleriaManager = {
                         this.originalStyles = null;
                         bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
                         this.render();
-                        Utils.alert('Saved successfully!');
+                        Utils.alert('Salvo com sucesso!');
                     }
-                } catch (err) { Utils.alert('Error saving.'); }
+                } catch (err) { Utils.alert('Erro ao salvar.'); }
             });
         }
 
@@ -623,7 +623,7 @@ const GaleriaManager = {
         if (modalConfig) {
             modalConfig.addEventListener('hidden.bs.modal', () => {
                 if (this.originalStyles) {
-                    const el = document.getElementById('main-content');
+                    const el = document.getElementById('conteudo-principal');
                     if (el) el.setAttribute('style', this.originalStyles);
                     if (document.getElementById('image-list')) document.getElementById('image-list').style.setProperty('--gallery-columns', this.data.grid_columns || 12);
                     this.originalStyles = null; this.previewBgUrl = null; this.lastAppliedFont = null;
@@ -767,7 +767,7 @@ const GaleriaManager = {
     },
     
     deleteItem: async (id) => {
-        if (!(await Utils.confirm('Delete this media?'))) return;
+        if (!(await Utils.confirm('Excluir esta mídia?'))) return;
         await GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}/item/${id}`, id);
         try {
             const modalEl = document.getElementById('modalEditItem');
@@ -775,7 +775,7 @@ const GaleriaManager = {
             if (modalEl && currentId && parseInt(currentId) === parseInt(id)) { bootstrap.Modal.getInstance(modalEl)?.hide(); }
         } catch (e) {}
     },
-    deleteGallery: async () => { if (await Utils.confirm('Delete ENTIRE gallery?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}`, null, '/galerias'); },
+    deleteGallery: async () => { if (await Utils.confirm('Excluir a galeria INTEIRA?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}`, null, '/galerias'); },
     
     async apiDelete(url, itemId, redirect) {
         try {
@@ -784,7 +784,7 @@ const GaleriaManager = {
                 if (redirect) window.location.href = redirect;
                 else { this.data.items = this.data.items.filter(i => i.id !== itemId); this.renderGrid(); }
             }
-        } catch(e) { Utils.alert('Delete failed'); }
+        } catch(e) { Utils.alert('Falha na exclusão'); }
     },
     
     getMediaType: (arg) => {
