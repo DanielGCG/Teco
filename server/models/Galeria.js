@@ -7,14 +7,14 @@ const Galeria = sequelize.define('Galeria', {
         primaryKey: true,
         autoIncrement: true
     },
-    name: { // Alterado de 'nome'
+    name: {
         type: DataTypes.STRING(100),
         allowNull: false
     },
-    description: { // Alterado de 'descricao'
+    description: {
         type: DataTypes.TEXT
     },
-    cover_url: { // Alterado de 'capa_url'
+    cover_url: {
         type: DataTypes.STRING(255)
     },
     user_id: {
@@ -61,7 +61,7 @@ const Galeria = sequelize.define('Galeria', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'galleries', // Nova tabela em Inglês
+    tableName: 'galleries',
     timestamps: false
 });
 
@@ -71,7 +71,7 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         primaryKey: true,
         autoIncrement: true
     },
-    gallery_id: { // Alterado de 'galeria_id'
+    gallery_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -91,7 +91,7 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         type: DataTypes.STRING(100),
         allowNull: true
     },
-    name: { // Alterado de 'nome'
+    name: {
         type: DataTypes.STRING(100)
     },
     grid_w: {
@@ -126,7 +126,7 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     },
-    object_fit: { // Alterado de 'img_fit' para padrão CSS
+    object_fit: {
         type: DataTypes.STRING(10),
         defaultValue: 'cover'
     },
@@ -135,12 +135,12 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'gallery_items', // Nova tabela em Inglês
+    tableName: 'gallery_items',
     timestamps: false
 });
 
 const GaleriaPermissao = sequelize.define('GaleriaPermissao', {
-    gallery_id: { // Alterado de 'galeria_id'
+    gallery_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         references: {
@@ -157,7 +157,7 @@ const GaleriaPermissao = sequelize.define('GaleriaPermissao', {
         }
     }
 }, {
-    tableName: 'gallery_permissions', // Nova tabela em Inglês
+    tableName: 'gallery_permissions',
     timestamps: false
 });
 
