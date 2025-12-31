@@ -7,8 +7,6 @@ const FormData = require('form-data');
 const { Op } = require('sequelize');
 const router = express.Router();
 
-// --- UTILS ---
-
 function sanitizeFilename(filename) {
     if (!filename) return `file_${Date.now()}`;
     const normalized = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); 
@@ -65,9 +63,6 @@ async function checkGalleryPermission(req, res, next) {
     }
 }
 
-// --- ROUTES ---
-
-// GET All
 router.get('/', async (req, res) => {
     try {
         const galleries = await Galeria.findAll({
@@ -80,7 +75,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// CREATE Gallery
 router.post('/', uploadImage.single('cover'), async (req, res) => {
     const { name, description, is_public, card_color, grid_columns } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name is required.' });
@@ -117,7 +111,6 @@ router.post('/', uploadImage.single('cover'), async (req, res) => {
     }
 });
 
-// GET Single Gallery
 router.get('/:id', async (req, res) => {
     try {
         const gallery = await Galeria.findByPk(req.params.id, {
@@ -125,12 +118,12 @@ router.get('/:id', async (req, res) => {
                 { model: User, as: 'owner', attributes: ['username', 'profile_image'] },
                 { 
                     model: GaleriaItem, 
-                    as: 'items', // Certifique-se que o models/index.js define "as: 'items'"
+                    as: 'items',
                     include: [{ model: User, as: 'uploader', attributes: ['username'] }]
                 },
                 { 
                     model: User, 
-                    as: 'collaborators', // Certifique-se que o models/index.js define "as: 'collaborators'"
+                    as: 'collaborators',
                     attributes: ['id', 'username'] 
                 }
             ]
@@ -143,7 +136,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// UPLOAD Media Item
 router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
     uploadVideo.fields([{ name: 'media', maxCount: 1 }, { name: 'cover', maxCount: 1 }])(req, res, (err) => {
         if (err) {
@@ -207,7 +199,6 @@ router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
     }
 });
 
-// DELETE Item
 router.delete('/:id/item/:itemId', checkGalleryPermission, async (req, res) => {
     try {
         const item = await GaleriaItem.findOne({ where: { id: req.params.itemId, gallery_id: req.params.id } });
@@ -223,7 +214,6 @@ router.delete('/:id/item/:itemId', checkGalleryPermission, async (req, res) => {
     }
 });
 
-// DELETE Gallery
 router.delete('/:id', checkGalleryPermission, async (req, res) => {
     try {
         if (req.gallery.user_id !== req.user.id && req.user.role < 1) return res.status(403).json({ success: false, message: 'Only owner can delete.' });
@@ -244,7 +234,6 @@ router.delete('/:id', checkGalleryPermission, async (req, res) => {
     }
 });
 
-// PATCH Item (Update specific attributes)
 router.patch('/:id/item/:itemId', checkGalleryPermission, uploadImage.single('cover'), async (req, res) => {
     try {
         const item = await GaleriaItem.findOne({ where: { id: req.params.itemId, gallery_id: req.params.id } });

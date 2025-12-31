@@ -14,8 +14,8 @@ const Utils = {
 
 const GaleriaManager = {
     data: null,
-    galleryId: null, // Unified: galleryId
-    collaborators: [], // Unified: collaborators
+    galleryId: null,
+    collaborators: [],
     originalStyles: null,
     previewBgUrl: null,
     editMode: false,
@@ -24,7 +24,7 @@ const GaleriaManager = {
     draggedItemDims: null,
 
     async init() {
-        const mainEl = document.getElementById('conteudo-principal'); // Changed ID to English in HTML
+        const mainEl = document.getElementById('conteudo-principal');
         if (!mainEl) return;
         
         let id = mainEl.dataset.galleryId;
@@ -39,7 +39,7 @@ const GaleriaManager = {
         this.galleryId = id;
         
         this.resizeObserver = new ResizeObserver(Utils.debounce(() => this.updateGridMetrics(), 50));
-        const grid = document.getElementById('image-list'); // Changed ID to English in HTML
+        const grid = document.getElementById('image-list');
         if (grid) this.resizeObserver.observe(grid);
 
         await this.loadData();
@@ -65,9 +65,8 @@ const GaleriaManager = {
             
             this.data = {
                 ...json.gallery,
-                // Fallbacks only for defaults, not name mapping
-                background_fill: json.gallery.background_fill || 'cover',
-                font_color: json.gallery.font_color || '#3E3F29'
+                background_fill: json.gallery.background_fill,
+                font_color: json.gallery.font_color
             };
             this.collaborators = (this.data.collaborators || []).map(c => ({ id: c.id, username: c.username }));
             this.render();
@@ -76,9 +75,9 @@ const GaleriaManager = {
 
     updateGridMetrics() {
         const grid = document.getElementById('image-list');
-        if (!grid || !this.data) return;
+        if (!grid) return;
 
-        const cols = parseInt(this.data.grid_columns || 12);
+        const cols = parseInt(this.data.grid_columns);
         const gap = 15;
         const containerWidth = grid.getBoundingClientRect().width;
 
@@ -90,34 +89,18 @@ const GaleriaManager = {
     },
 
     ensureCoordinates() {
-        if (!this.data.items) return; // Changed from imagens to items
-        
-        const cols = parseInt(this.data.grid_columns || 12);
-        const map = {}; 
-        const isOccupied = (x, y, w, h) => {
-            for(let i=0; i<w; i++) for(let j=0; j<h; j++) if(map[`${x+i},${y+j}`]) return true;
-            return false;
-        };
-        const markOccupied = (x, y, w, h) => {
-            for(let i=0; i<w; i++) for(let j=0; j<h; j++) map[`${x+i},${y+j}`] = true;
-        };
+        if (!this.data.items) return;
 
-        this.data.items.forEach(item => {
-            if(item.col_start && item.row_start) markOccupied(item.col_start, item.row_start, item.grid_w || 1, item.grid_h || 1);
-        });
-
+        const cols = parseInt(this.data.grid_columns) || 12;
         let currentY = 1, currentX = 1;
+
         this.data.items.forEach(item => {
-            const w = item.grid_w || 1, h = item.grid_h || 1;
-            if(!item.col_start || !item.row_start) {
-                while(true) {
-                    if (currentX + w - 1 > cols) { currentX = 1; currentY++; }
-                    if (!isOccupied(currentX, currentY, w, h)) {
-                        item.col_start = currentX; item.row_start = currentY;
-                        markOccupied(currentX, currentY, w, h); break; 
-                    }
-                    currentX++;
-                }
+            if (!item.col_start || !item.row_start) {
+                const w = item.grid_w || 1;
+                if (currentX + w - 1 > cols) { currentX = 1; currentY++; }
+                item.col_start = currentX;
+                item.row_start = currentY;
+                currentX += w;
             }
         });
     },
@@ -128,32 +111,13 @@ const GaleriaManager = {
         if (title) title.textContent = this.data.name;
         
         const desc = document.getElementById('gallery-description');
-        if (desc) desc.textContent = this.data.description || '';
+        if (desc) desc.textContent = this.data.description;
         
         const author = document.getElementById('gallery-author');
         if (author) author.textContent = this.data.owner?.username || 'Desconhecido';
         
         this.applyStyles(this.data);
-        this.renderActionButtons();
         this.renderGrid();
-    },
-
-    renderActionButtons() {
-        const container = document.getElementById('gallery-actions');
-        if (!container) return;
-        const editClass = this.editMode ? 'btn-warning' : 'btn-outline-secondary';
-        const label = this.editMode ? 'Sair' : 'Editar';
-        
-        container.innerHTML = `
-            <button class="btn btn-primary shadow-sm" onclick="GaleriaManager.openUploadModal()">
-                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Adicionar Mídia</span>
-            </button>
-            <button class="btn ${editClass} ms-2" onclick="GaleriaManager.toggleEditMode()" title="Alternar Modo Edição">
-                <i class="bi bi-grid-3x3-gap-fill"></i> <span class="d-none d-sm-inline">${label}</span>
-            </button>
-            ${this.editMode ? `<button class="btn btn-success ms-2" onclick="GaleriaManager.saveLayout()" title="Salvar alterações de layout"><i class="bi bi-save"></i> Salvar</button>` : ''}
-            <button class="btn btn-light border shadow-sm" onclick="GaleriaManager.openConfigModal()" title="Configurações da Galeria"><i class="bi bi-gear-fill"></i></button>
-        `;
     },
 
     renderGrid() {
@@ -171,22 +135,22 @@ const GaleriaManager = {
         this.ensureCoordinates();
         this.updateGridMetrics();
 
-        const cols = this.data.grid_columns || 12;
+        const cols = this.data.grid_columns;
         grid.style.setProperty('--gallery-columns', cols);
 
         const itemsHtml = this.data.items.map(item => {
+            // ALTERAR PARA MAIOR SEGURANÇA CUIDADO COM CONCATENAÇÃO DE STRINGS
             const safeName = Utils.escapeHtml(item.name || 'Sem título');
             const safeUrl = (item.content_url || '').replace(/'/g, "\\'");
             const type = this.getMediaType(item);
             
-            const w = item.grid_w || 1;
-            const h = item.grid_h || 1;
-            const x = item.col_start || 1;
-            const y = item.row_start || 1;
+            const w = item.grid_w;
+            const h = item.grid_h;
+            const x = item.col_start;
+            const y = item.row_start;
             
             const showTitle = (item.show_title !== false);
-            // Standardized: object_fit
-            const fit = item.object_fit || 'cover'; 
+            const fit = item.object_fit; 
             const previewSrc = item.cover_url || (type === 'image' ? item.content_url : '');
             
             let content;
@@ -208,7 +172,6 @@ const GaleriaManager = {
                 <div class="resize-handle" data-id="${item.id}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
             ` : '';
 
-            // MODIFICATION: z-index moved from grid-item to image-card to allow controls to float above neighbors
             return `
             <div class="grid-item" data-id="${item.id}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};">
                 <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.z_index || 0};" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}')">
@@ -229,9 +192,9 @@ const GaleriaManager = {
         if (!form) return Utils.alert('Formulário de edição não encontrado.');
 
         document.getElementById('edit-item-id').value = item.id;
-        document.getElementById('edit-item-name').value = item.name || '';
+        document.getElementById('edit-item-name').value = item.name;
         document.getElementById('edit-item-showtitle').checked = item.show_title !== false;
-        document.getElementById('edit-item-fit').value = item.object_fit || 'cover'; // object_fit
+        document.getElementById('edit-item-fit').value = item.object_fit;
         const zinput = document.getElementById('edit-item-zindex');
         if (zinput) zinput.value = item.z_index || 0;
 
@@ -285,7 +248,6 @@ const GaleriaManager = {
         if (zEl) fd.set('z_index', parseInt(zEl.value) || 0);
 
         try {
-            // URL endpoint changed to English: /item/
             const res = await fetch(`/api/galeria/${this.galleryId}/item/${id}`, { method: 'PATCH', body: fd });
             const json = await res.json();
             if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
@@ -301,19 +263,39 @@ const GaleriaManager = {
 
     toggleEditMode() {
         this.editMode = !this.editMode;
-        this.renderActionButtons();
+        
+        // Manipula os botões estáticos via classe
+        const btnEdit = document.getElementById('btn-edit-mode');
+        const spanEdit = btnEdit ? btnEdit.querySelector('span') : null;
+        const btnSave = document.getElementById('btn-save-layout');
+        
+        if (this.editMode) {
+            if(btnEdit) {
+                btnEdit.classList.remove('btn-outline-secondary');
+                btnEdit.classList.add('btn-warning');
+            }
+            if(spanEdit) spanEdit.textContent = 'Sair';
+            if(btnSave) btnSave.classList.remove('d-none');
+        } else {
+            if(btnEdit) {
+                btnEdit.classList.remove('btn-warning');
+                btnEdit.classList.add('btn-outline-secondary');
+            }
+            if(spanEdit) spanEdit.textContent = 'Editar';
+            if(btnSave) btnSave.classList.add('d-none');
+        }
+        
         this.renderGrid();
     },
 
     async saveLayout() {
-        // Standardized Keys for Layout
         const layout = this.data.items.map((it) => ({ 
             id: it.id, 
-            grid_w: it.grid_w || 1, 
-            grid_h: it.grid_h || 1, 
-            col_start: it.col_start || 1, 
-            row_start: it.row_start || 1,
-            z_index: it.z_index || 0, 
+            grid_w: it.grid_w, 
+            grid_h: it.grid_h, 
+            col_start: it.col_start, 
+            row_start: it.row_start,
+            z_index: it.z_index, 
             show_title: it.show_title, 
             object_fit: it.object_fit 
         }));
@@ -324,9 +306,7 @@ const GaleriaManager = {
             const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: formData });
             const json = await res.json();
             if (json.success) {
-                this.editMode = false;
-                this.renderActionButtons();
-                this.renderGrid();
+                this.toggleEditMode();
                 Utils.alert('Layout salvo com sucesso!', 'Sucesso');
             } else throw new Error(json.message);
         } catch (err) { Utils.alert('Erro ao salvar layout', 'Erro'); }
@@ -335,26 +315,26 @@ const GaleriaManager = {
     applyStyles(s) {
         const el = document.getElementById('conteudo-principal');
         if (!el) return;
-        const bg = s.background_url || this.previewBgUrl;
+        const bg = s.background_url;
         
         Object.assign(el.style, {
-            backgroundColor: s.background_color || '',
+            backgroundColor: s.background_color,
             backgroundImage: bg ? `url('${bg}')` : 'none',
-            backgroundRepeat: s.background_fill === 'repeat' ? 'repeat' : 'no-repeat',
-            backgroundSize: s.background_fill === 'repeat' ? 'auto' : 'cover',
+            backgroundRepeat: s.background_fill,
+            backgroundSize: s.background_fill,
             backgroundAttachment: 'fixed',
-            color: s.font_color || '#3E3F29'
+            color: s.font_color
         });
 
         if (s.grid_columns) {
             document.getElementById('image-list')?.style.setProperty('--gallery-columns', s.grid_columns);
             this.updateGridMetrics();
         }
-        const cardColor = s.card_color || '#ffffff';
+        const cardColor = s.card_color;
         el.style.setProperty('--gallery-card-bg', cardColor);
         document.querySelectorAll('.image-card .card-body').forEach(cb => cb.style.backgroundColor = cardColor);
         if (s.font_color) el.querySelectorAll('h2, p, small').forEach(t => t.style.color = s.font_color);
-        this.manageFont(s.font_family); // font_family
+        this.manageFont(s.font_family);
     },
 
     manageFont(fontName) {
@@ -400,11 +380,10 @@ const GaleriaManager = {
         try {
             const res = await this.uploadFileXHR(file, form);
             if (res.success) {
-                const cols = parseInt(this.data.grid_columns) || 4;
-                // Default new items to reasonable size based on cols
+                const cols = parseInt(this.data.grid_columns);
                 res.item.grid_w = res.item.grid_h = (cols >= 9 ? 3 : (cols >= 6 ? 2 : 1));
                 this.data.items.push(res.item);
-                this.ensureCoordinates(); 
+                this.ensureCoordinates();
                 this.renderGrid();
                 bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
                 form.reset();
@@ -419,7 +398,6 @@ const GaleriaManager = {
             const xhr = new XMLHttpRequest();
             const data = new FormData(form);
             data.delete('fileInput'); 
-            // Key change: 'media'
             data.append('media', file);
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
@@ -454,7 +432,7 @@ const GaleriaManager = {
     },
 
     openConfigModal() {
-        const principal = document.getElementById('conteudo-principal');
+        const principal = document.getElementById('conteudo-principal'); // ID corrigido
         if (principal) this.originalStyles = principal.getAttribute('style');
         
         const f = document.getElementById('formConfig'); 
@@ -465,14 +443,14 @@ const GaleriaManager = {
         const setCheck = (id, v) => { const el = document.getElementById(id); if(el) el.checked = v; };
 
         setVal('config-name', d.name);
-        setVal('config-description', d.description || '');
+        setVal('config-description', d.description);
         setCheck('config-is-public', d.is_public);
         setVal('config-bg-color', d.background_color);
         setVal('config-bg-fill', d.background_fill);
-        setVal('config-card-color', d.card_color || '#ffffff');
-        setVal('config-grid-columns', d.grid_columns || 12);
+        setVal('config-card-color', d.card_color);
+        setVal('config-grid-columns', d.grid_columns);
         setVal('config-font-color', d.font_color);
-        setVal('config-font-family', d.font_family || ''); // font_family
+        setVal('config-font-family', d.font_family);
         
         ['cover','bg'].forEach(k => {
              const flag = document.getElementById(`flag-remove-${k}`);
@@ -539,7 +517,7 @@ const GaleriaManager = {
         const s = {
             background_color: getVal('config-bg-color'),
             background_fill: getVal('config-bg-fill'),
-            font_family: getVal('config-font-family'), // font_family
+            font_family: getVal('config-font-family'),
             font_color: getVal('config-font-color'),
             card_color: getVal('config-card-color'),
             grid_columns: getVal('config-grid-columns'),
@@ -556,7 +534,6 @@ const GaleriaManager = {
             const json = await res.json();
             const results = document.getElementById('search-results');
             if (results) {
-                // Assuming json.usuarios is legacy or needs change? keeping logic generic
                 const list = json.users || json.usuarios || [];
                 results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator(${u.id}, '${u.username}')">${u.username}</button>`).join('');
             }
@@ -570,11 +547,11 @@ const GaleriaManager = {
     },
     removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.id !== id); this.renderCollaborators(); },
     renderCollaborators() {
-        const container = document.getElementById('collaborators-list'); // Changed ID
+        const container = document.getElementById('collaborators-list');
         if (container) container.innerHTML = this.collaborators.map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeCollaborator(${c.id})"></i></span>`).join('');
     },
     togglePublicSection() {
-        const section = document.getElementById('collaborators-section'); // Changed ID
+        const section = document.getElementById('collaborators-section');
         const check = document.getElementById('config-is-public');
         if (section && check) section.style.display = check.checked ? 'none' : 'block';
     },
@@ -588,7 +565,6 @@ const GaleriaManager = {
             formConfig.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
-                // Unified: collaborators
                 fd.append('collaborators', JSON.stringify(this.collaborators.map(c => c.id)));
                 if (document.getElementById('config-is-public')) fd.set('is_public', document.getElementById('config-is-public').checked);
                 try {
@@ -624,7 +600,7 @@ const GaleriaManager = {
         if (modalConfig) {
             modalConfig.addEventListener('hidden.bs.modal', () => {
                 if (this.originalStyles) {
-                    const el = document.getElementById('conteudo-principal');
+                    const el = document.getElementById('conteudo-principal'); // ID corrigido
                     if (el) el.setAttribute('style', this.originalStyles);
                     if (document.getElementById('image-list')) document.getElementById('image-list').style.setProperty('--gallery-columns', this.data.grid_columns || 12);
                     this.originalStyles = null; this.previewBgUrl = null; this.lastAppliedFont = null;
@@ -661,7 +637,7 @@ const GaleriaManager = {
         const _onPointerMove = (e) => {
             if (!resizing || !this.editMode) return;
             const rect = gridContainer.getBoundingClientRect();
-            const cols = parseInt(this.data.grid_columns || 12);
+            const cols = parseInt(this.data.grid_columns);
             const gap = 15;
             const cellW = (rect.width - ((cols - 1) * gap)) / cols;
             const cellH = cellW;
@@ -730,7 +706,7 @@ const GaleriaManager = {
             if (!hl) return;
 
             const rect = gridContainer.getBoundingClientRect();
-            const cols = parseInt(this.data.grid_columns || 12);
+            const cols = parseInt(this.data.grid_columns);
             const gap = 15;
             const cellW = (rect.width - ((cols - 1) * gap)) / cols;
             const cellH = cellW;
@@ -778,14 +754,13 @@ const GaleriaManager = {
     },
     deleteGallery: async () => { if (await Utils.confirm('Excluir a galeria INTEIRA?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}`, null, '/galerias'); },
     
-    async apiDelete(url, itemId, redirect) {
-        try {
-            const res = await fetch(url, { method: 'DELETE' });
-            if ((await res.json()).success) {
+    apiDelete(url, itemId, redirect) {
+        return fetch(url, { method: 'DELETE' }).then(res => res.json()).then(json => {
+            if (json.success) {
                 if (redirect) window.location.href = redirect;
                 else { this.data.items = this.data.items.filter(i => i.id !== itemId); this.renderGrid(); }
-            }
-        } catch(e) { Utils.alert('Falha na exclusão'); }
+            } else { Utils.alert('Falha na exclusão'); }
+        }).catch(e => Utils.alert('Falha na exclusão'));
     },
     
     getMediaType: (arg) => {

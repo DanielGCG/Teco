@@ -22,8 +22,6 @@ User.hasMany(ImagemDoDia, { foreignKey: 'user_id' });
 Filme.belongsTo(User, { foreignKey: 'user_id', as: 'requester' });
 User.hasMany(Filme, { foreignKey: 'user_id' });
 
-// --- Associações de Galeria (CORRIGIDAS PARA INGLÊS) ---
-
 // Dono da galeria
 Galeria.belongsTo(User, { foreignKey: 'user_id', as: 'owner' });
 User.hasMany(Galeria, { foreignKey: 'user_id' });
@@ -35,7 +33,7 @@ GaleriaItem.belongsTo(Galeria, { foreignKey: 'gallery_id' });
 // Uploader do item
 GaleriaItem.belongsTo(User, { foreignKey: 'user_id', as: 'uploader' });
 
-// Colaboradores (Mudado de 'colaboradores' para 'collaborators')
+// Colaboradores
 Galeria.belongsToMany(User, { 
     through: GaleriaPermissao, 
     foreignKey: 'gallery_id', 
