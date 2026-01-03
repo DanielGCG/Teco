@@ -1,7 +1,5 @@
 const { z } = require('zod');
 
-// ==================== Validadores de Amizades (Seguidores) ====================
-
 const userIdSchema = z.object({
     userId: z.coerce.number().int().positive()
 });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { Galeria, GaleriaItem, GaleriaPermissao, User } = require("../models");
+const { Galeria, GaleriaItem, GaleriaPermissao, User, UserSession } = require("../models");
 const multer = require('multer');
 const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
 const axios = require('axios'); 
@@ -403,6 +403,41 @@ router.patch('/:id',
         res.json({ success: true, message: 'Gallery updated successfully.', gallery: req.gallery });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error updating gallery.', error: error.message });
+    }
+});
+
+// GET /galerias/user/:userId - Listar galerias de um usuário específico
+router.get('/user/:userId', async (req, res) => {
+    try {
+        const targetUserId = req.params.userId;
+        let showPrivate = false;
+
+        // Tenta identificar o usuário logado para permitir ver galerias privadas se for o dono
+        const cookieValue = req.cookies?.session;
+        if (cookieValue) {
+            const session = await UserSession.findOne({
+                where: {
+                    cookie_value: cookieValue,
+                    expires_at: { [Op.gt]: new Date() }
+                }
+            });
+            if (session && session.user_id == targetUserId) {
+                showPrivate = true;
+            }
+        }
+
+        const whereClause = { user_id: targetUserId };
+        if (!showPrivate) {
+            whereClause.is_public = true;
+        }
+
+        const galleries = await Galeria.findAll({
+            where: whereClause,
+            order: [['created_at', 'DESC']]
+        });
+        res.json({ success: true, galleries });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching user galleries.', error: error.message });
     }
 });
 

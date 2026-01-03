@@ -154,7 +154,7 @@ class ModalCartinha {
         }
 
         // Determinar nome do remetente/destinatário
-        let nomeExibido = usuario.username;
+        let nomeExibido = `<a href="/${usuario.username}" class="text-decoration-none" style="color: inherit;">${usuario.username}</a>`;
         let labelNome = '';
         
         if (tipo === 'enviadas') {
@@ -168,7 +168,7 @@ class ModalCartinha {
         if (tipo === 'enviadas') {
             assinatura = 'Você';
         } else {
-            assinatura = usuario.username;
+            assinatura = `<a href="/${usuario.username}" class="text-decoration-none" style="color: inherit;">${usuario.username}</a>`;
         }
 
         content.innerHTML = `

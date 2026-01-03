@@ -110,6 +110,7 @@
             <img id="preview-pf" src="/images/placeholder.png" class="preview-avatar" alt="Avatar">
             <div class="preview-info">
               <p id="preview-username-text" class="preview-username">@usuario</p>
+              <small id="preview-pronouns-text" class="text-muted"></small>
             </div>
           </div>
           <div id="preview-bio-text" class="preview-bio">Sua bio aparecerá aqui...</div>
@@ -142,6 +143,10 @@
                       <div class="input-group">
                         <span class="input-group-text">@</span>
                         <input type="text" class="form-control" id="username" name="username" maxlength="12" required placeholder="seu_nome">
+                      </div>
+                      <label for="pronouns" class="form-label fw-bold">Pronomes</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="pronouns" name="pronouns" maxlength="12" placeholder="ele/ela/elu">
                       </div>
                     </div>
                     <div class="col-md-12 mb-4">
@@ -265,6 +270,8 @@ function atualizarPreviews(user) {
   previewUser.textContent = '@' + cleanUsername;
   
   document.getElementById('bio').value = user.bio || '';
+  document.getElementById('pronouns').value = user.pronouns || '';
+  document.getElementById('preview-pronouns-text').textContent = user.pronouns || '';
   atualizarContadorBio();
 }
 
@@ -292,6 +299,13 @@ async function carregarPerfil() {
 document.getElementById('username').addEventListener('input', function() {
   const val = normalizarUsername(this.value);
   document.getElementById('preview-username-text').textContent = val ? '@' + val : '@usuario';
+});
+
+// Atualiza prévia dos pronomes em tempo real
+document.getElementById('pronouns').addEventListener('input', function() {
+  if (this.value) {
+    document.getElementById('preview-pronouns-text').textContent = this.value;
+  }
 });
 
 // Atualiza prévia da URL da imagem de fundo
@@ -342,6 +356,7 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
   formData.append('background_image', document.getElementById('background_image').value);
   formData.append('profile_image', document.getElementById('profile_image').value);
   formData.append('bio', document.getElementById('bio').value);
+  formData.append('pronouns', document.getElementById('pronouns').value);
 
   const bgFile = document.getElementById('background_file').files[0];
   const pfFile = document.getElementById('profile_file').files[0];

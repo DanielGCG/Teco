@@ -70,7 +70,7 @@
                             <img src="${g.cover_url || '/images/placeholder-album.png'}" alt="${g.name}" onerror="this.src='/images/placeholder-album.png'">
                             <div class="texto-hover">
                                 <div>${g.name}</div>
-                                <small>por ${g.owner ? g.owner.username : 'Desconhecido'}</small>
+                                <small>por <a href="/${g.owner ? g.owner.username : ''}" class="text-white text-decoration-underline" onclick="event.stopPropagation()">${g.owner ? g.owner.username : 'Desconhecido'}</a></small>
                             </div>
                         </a>
                     </div>

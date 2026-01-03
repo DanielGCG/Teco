@@ -177,7 +177,7 @@ UsersRouter.post('/logout', async (req, res) => {
 UsersRouter.get('/me', protect(0), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['id', 'username', 'role', 'background_image', 'profile_image', 'bio']
+            attributes: ['id', 'username', 'role', 'background_image', 'profile_image', 'bio', 'pronouns']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
@@ -191,7 +191,7 @@ UsersRouter.get('/me', protect(0), async (req, res) => {
 
 // Atualizar perfil próprio
 UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
-    let { username, background_image, profile_image, bio } = req.body;
+    let { username, background_image, profile_image, bio, pronouns } = req.body;
 
     // Força @ no início
     if (!username.startsWith('@')) {
@@ -256,11 +256,11 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         }
 
         await User.update(
-            { username, background_image, profile_image, bio },
+            { username, background_image, profile_image, bio, pronouns },
             { where: { id: req.user.id } }
         );
 
-        res.json({ message: "Perfil atualizado com sucesso", username, profile_image, background_image });
+        res.json({ message: "Perfil atualizado com sucesso", username, background_image, profile_image, bio, pronouns });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao atualizar perfil" });
@@ -295,18 +295,24 @@ UsersRouter.put('/me/password', protect(0), validate(updatePasswordSchema), asyn
     }
 });
 
-// GET /admin/users - Listar todos usuários
-UsersRouter.get('/', async (req, res) => {
+// GET /users/:username - Obter perfil de usuário por username
+UsersRouter.get('/:username', protect(0), async (req, res) => {
     try {
-        const users = await User.findAll({
-            attributes: ['id', 'username', 'role', 'profile_image', 'created_at', 'last_access']
+        const user = await User.findOne({
+            where: { username: req.params.username },
+            attributes: ['id', 'username', 'background_image', 'profile_image', 'bio', 'pronouns', 'created_at', 'last_access']
         });
-        res.json(users);
+        if (!user) return res.status(404).json({
+            message: "Usuário não encontrado"
+        });
+
+        res.json(user);
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao listar usuários" });
+        res.status(500).json({ message: "Erro ao carregar perfil do usuário" });
     }
 });
+
 
 // GET /users/buscar - Buscar usuários por nome
 UsersRouter.get('/buscar', protect(0), validate(searchUsersSchema, 'query'), async (req, res) => {

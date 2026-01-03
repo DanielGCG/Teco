@@ -31,10 +31,16 @@ const ChatUtils = (() => {
 
         // Nome do usuário
         if (showUsername && message.username) {
+            const nomeLink = document.createElement('a');
+            nomeLink.href = `/${message.username}`;
+            nomeLink.style.cssText = 'text-decoration: none; color: inherit;';
+            
             const nomeEl = document.createElement('div');
             nomeEl.style.cssText = 'font-size: 0.75rem; font-weight: bold; margin-bottom: 0.2rem;';
             nomeEl.textContent = message.username;
-            msgDiv.appendChild(nomeEl);
+            
+            nomeLink.appendChild(nomeEl);
+            msgDiv.appendChild(nomeLink);
         }
 
         // Conteúdo

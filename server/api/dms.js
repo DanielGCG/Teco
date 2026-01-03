@@ -1,6 +1,6 @@
 const express = require("express");
 const DMsRouter = express.Router();
-const { Chat, ChatMessage, ChatRead, ChatParticipant, User, Friendship, sequelize } = require("../models");
+const { Chat, ChatMessage, ChatRead, ChatParticipant, User, Follow, sequelize } = require("../models");
 const socketRouter = require("../routes/socket.router");
 const validate = require("../middlewares/validate");
 const { Op } = require("sequelize");
@@ -58,33 +58,17 @@ DMsRouter.get('/', async (req, res) => {
 
             const otherUser = otherParticipant.User;
 
-            // Busca informações de amizade
-            const friendship = await Friendship.findOne({
-                where: {
-                    [Op.or]: [
-                        { requester_id: req.user.id, addressee_id: otherUser.id },
-                        { requester_id: otherUser.id, addressee_id: req.user.id }
-                    ]
-                }
+            // Busca informações de seguimento
+            const following = await Follow.findOne({
+                where: { follower_id: req.user.id, following_id: otherUser.id }
+            });
+            const followedBy = await Follow.findOne({
+                where: { follower_id: otherUser.id, following_id: req.user.id }
             });
 
-            let isFriend = false;
-            let friendRequestSent = false;
-            let friendRequestReceived = false;
-            let friendshipId = null;
-
-            if (friendship) {
-                friendshipId = friendship.id;
-                if (friendship.status === 'accepted') {
-                    isFriend = true;
-                } else if (friendship.status === 'pending') {
-                    if (friendship.requester_id === req.user.id) {
-                        friendRequestSent = true;
-                    } else {
-                        friendRequestReceived = true;
-                    }
-                }
-            }
+            const isFriend = !!(following && followedBy);
+            const isFollowing = !!following;
+            const isFollowedBy = !!followedBy;
 
             // Busca bio do usuário
             const fullUserData = await User.findByPk(otherUser.id, {
@@ -129,9 +113,8 @@ DMsRouter.get('/', async (req, res) => {
                     bio: fullUserData?.bio || null,
                     status: getUserStatus(otherUser.id),
                     isFriend,
-                    friendRequestSent,
-                    friendRequestReceived,
-                    friendshipId
+                    isFollowing,
+                    isFollowedBy
                 },
                 lastMessage: lastMessage ? lastMessage.mensagem : null,
                 lastMessageAt: lastMessage ? lastMessage.created_at : null,
@@ -205,65 +188,50 @@ DMsRouter.get('/friends', async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Busca amigos aceitos
-        const friendships = await Friendship.findAll({
-            where: {
-                [Op.or]: [
-                    { requester_id: userId },
-                    { addressee_id: userId }
-                ],
-                status: 'accepted'
-            },
+        // Amigos são seguidores mútuos
+        const friendsList = await User.findAll({
             include: [
                 {
-                    model: User,
-                    as: 'requester',
-                    attributes: ['id', 'username', 'profile_image']
+                    model: Follow,
+                    as: 'followers',
+                    where: { follower_id: userId },
+                    attributes: []
                 },
                 {
-                    model: User,
-                    as: 'addressee',
-                    attributes: ['id', 'username', 'profile_image']
+                    model: Follow,
+                    as: 'following',
+                    where: { following_id: userId },
+                    attributes: []
                 }
-            ]
+            ],
+            attributes: ['id', 'username', 'profile_image']
         });
 
-        const friends = await Promise.all(friendships.map(async (f) => {
-            const friend = f.requester_id === userId ? f.addressee : f.requester;
-
-            // Verifica se já existe conversa - busca chats comuns
-            const friendChats = await ChatParticipant.findAll({
-                where: { user_id: friend.id },
-                attributes: ['chat_id']
-            });
-
-            const myChats = await ChatParticipant.findAll({
-                where: { user_id: userId },
-                attributes: ['chat_id']
-            });
-
-            const friendChatIds = friendChats.map(c => c.chat_id);
-            const myChatIds = myChats.map(c => c.chat_id);
-            const commonChatIds = friendChatIds.filter(id => myChatIds.includes(id));
-
-            let existingChat = null;
-            if (commonChatIds.length > 0) {
-                existingChat = await Chat.findOne({
-                    where: {
-                        id: { [Op.in]: commonChatIds },
-                        tipo: 'dm'
+        const friends = await Promise.all(friendsList.map(async (friend) => {
+            // Verifica se já existe conversa - busca chats comuns do tipo DM
+            const commonChat = await Chat.findOne({
+                where: { type: 'dm' },
+                include: [
+                    { 
+                        model: ChatParticipant, 
+                        as: 'Participants',
+                        where: { user_id: userId } 
                     },
-                    attributes: ['id']
-                });
-            }
+                    { 
+                        model: ChatParticipant, 
+                        as: 'Participants',
+                        where: { user_id: friend.id } 
+                    }
+                ]
+            });
 
             return {
                 id: friend.id,
                 username: friend.username,
                 profile_image: friend.profile_image,
                 status: getUserStatus(friend.id),
-                hasConversation: existingChat !== null,
-                conversationId: existingChat?.id || null
+                hasConversation: commonChat !== null,
+                conversationId: commonChat?.id || null
             };
         }));
 

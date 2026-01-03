@@ -69,7 +69,9 @@ if (typeof window.UIUtils !== 'undefined') {
                             ${createAvatarWithStatus(user, avatarSize)}
                             <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
                                 <div class="d-flex justify-content-between align-items-start gap-1">
-                                    <strong class="text-truncate">${user.username}</strong>
+                                    <a href="/${user.username}" class="text-decoration-none text-dark text-truncate">
+                                        <strong>${user.username}</strong>
+                                    </a>
                                     ${unreadBadgeHtml}
                                 </div>
                                 <small class="text-muted text-truncate d-block" style="margin-top:0.25rem;">
@@ -100,10 +102,16 @@ if (typeof window.UIUtils !== 'undefined') {
             infoDiv.style.minWidth = '0';
             
             const nameDiv = document.createElement('div');
+            const nameLink = document.createElement('a');
+            nameLink.href = `/${user.username}`;
+            nameLink.className = 'text-decoration-none text-dark';
+            
             const nameEl = document.createElement('h6');
             nameEl.className = 'mb-0';
             nameEl.textContent = user.username;
-            nameDiv.appendChild(nameEl);
+            
+            nameLink.appendChild(nameEl);
+            nameDiv.appendChild(nameLink);
             
             if (user.bio) {
                 const bioEl = document.createElement('small');
@@ -155,9 +163,15 @@ if (typeof window.UIUtils !== 'undefined') {
             const infoDiv = document.createElement('div');
             infoDiv.style.flex = '1';
             
+            const nameLink = document.createElement('a');
+            nameLink.href = `/${user.username}`;
+            nameLink.className = 'text-decoration-none text-dark';
+            
             const nameEl = document.createElement('strong');
             nameEl.textContent = user.username;
-            infoDiv.appendChild(nameEl);
+            
+            nameLink.appendChild(nameEl);
+            infoDiv.appendChild(nameLink);
             
             if (user.isFriend) {
                 const badge = document.createElement('small');

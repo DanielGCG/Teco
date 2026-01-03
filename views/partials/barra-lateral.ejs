@@ -40,10 +40,12 @@
 
 <div class="sidebar d-flex flex-column align-items-center">
     <!-- Card do usuário -->
-    <div class="user-card text-center mb-3 w-100">
-        <img src="/images/placeholder.png" alt="Foto de Perfil" class="user-avatar mb-2">
-        <h5 class="user-name mb-0"></h5>
-    </div>
+    <a id="sidebar-profile-link" href="#" class="text-decoration-none w-100">
+        <div class="user-card text-center mb-3 w-100">
+            <img src="/images/placeholder.png" alt="Foto de Perfil" class="user-avatar mb-2">
+            <h5 class="user-name mb-0"></h5>
+        </div>
+    </a>
     <hr class="w-100">
     <!-- Links ou botões da barra lateral -->
     <div class="sidebar-buttons d-flex flex-column align-items-center w-100">
@@ -75,6 +77,12 @@ async function carregarPerfil() {
         const userCard = document.querySelector(".user-card");
         const userAvatar = document.querySelector(".user-avatar");
         const sidebarButtons = document.querySelector(".sidebar-buttons");
+        const profileLink = document.getElementById("sidebar-profile-link");
+
+        // Link do perfil
+        if (profileLink) {
+            profileLink.href = `/${user.username}`;
+        }
 
         // Nome e status
         document.querySelector(".user-name").textContent = user.username;

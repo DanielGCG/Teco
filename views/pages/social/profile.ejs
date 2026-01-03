@@ -1,0 +1,289 @@
+<style>
+    .banner-wrap {
+        background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWoycWk3a2t5aHBycjd4cWFxZHFnZTBiajZhd25pbzlmcWJtMHkzZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LKNqU8ISdR7iw/giphy.gif');
+        background-size: cover;
+        background-position: center;
+        height: 12rem;
+        position: relative;
+    }
+    .profile-card{
+        background-color: rgba(0,0,0,0.45);
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0;
+        border-radius: 1rem;
+    }
+    .profile-avatar {
+        width: 144px;
+        height: 144px;
+        border-radius: 1rem;
+        object-fit: cover;
+    }
+    .profile-name {
+        font-size: 1.2rem;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    .profile-meta{
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    .profile-pronouns{
+        color: #fff;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        opacity: 0.95;
+    }
+    .profile-actions {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+    .bio-container, .galerias-container, .amigos-container {
+        background: #fff;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+    .gallery-item, .friend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        text-decoration: none;
+        color: inherit;
+    }
+    .galerias-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+    .gallery-square {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .gallery-square img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .gallery-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 0.75rem;
+        text-align: center;
+        padding: 4px;
+    }
+    .gallery-square:hover .gallery-overlay {
+        opacity: 1;
+    }
+    .gallery-cover, .friend-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 0.5rem;
+        object-fit: cover;
+    }
+    .friend-avatar {
+        border-radius: 50%;
+    }
+    .bio-container, .galerias-container, .amigos-container, .card-header {
+        background-color: var(--verde);
+    }
+</style>
+
+<div class="container">
+    <div class="profile">
+        <div class="banner-wrap mb-3 w-100 position-relative" id="profile-banner">
+            <div class="profile-card position-absolute start-0 top-50 translate-middle-y ms-3 d-flex align-items-start">
+                <img class="profile-avatar me-2" src="">
+                <div class="profile-meta">
+                    <h1 class="profile-name mb-0">...</h1>
+                    <mute class="profile-pronouns"></mute>
+                </div>
+            </div>
+            <div class="profile-actions">
+                <button id="btn-edit" class="btn btn-light btn-sm d-none" onclick="window.location.href='/perfil/editar'">Editar Perfil</button>
+                <button id="btn-follow" class="btn btn-primary btn-sm d-none">Seguir</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="bio-container">
+                    <div class="section-title">Biografia</div>
+                    <div id="bio-text">Carregando...</div>
+                </div>
+                <div class="galerias-container">
+                    <div class="section-title">Galerias</div>
+                    <div id="galerias-list">Carregando...</div>
+                </div>
+                <div class="amigos-container">
+                    <div class="section-title">Amigos</div>
+                    <div id="amigos-list">Carregando...</div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Posts</h5>
+                    </div>
+                    <div class="card-body text-center text-muted py-5">
+                        <i class="fas fa-pencil-alt mb-3 d-block" style="font-size: 2rem; opacity: 0.3;"></i>
+                        Em breve você poderá ver os posts do usuário aqui!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/commons/follow-common.js"></script>
+<script>
+    const pathParts = window.location.pathname.split('/');
+    const username = pathParts[1];
+    let profileUserId = null;
+
+    async function carregarPerfil() {
+        try {
+            // 1. Carregar dados básicos do usuário
+            const response = await fetch(`/api/users/${username}`, {
+                method: "GET",
+                credentials: "include"
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const user = await response.json();
+            profileUserId = user.id;
+
+            // Atualizar UI básica
+            document.querySelector(".profile-name").textContent = user.username;
+            document.querySelector(".profile-avatar").src = user.profile_image || '/images/default-avatar.png';
+            document.querySelector(".profile-pronouns").textContent = user.pronouns || 'opa!';
+            document.getElementById("bio-text").innerHTML = user.bio ? user.bio.replace(/\n/g, '<br>') : 'Nenhuma biografia disponível.';
+            
+            if (user.background_image) {
+                document.getElementById("profile-banner").style.backgroundImage = `url('${user.background_image}')`;
+            }
+
+            // 2. Verificar se é o próprio perfil ou outro usuário
+            const meResponse = await fetch('/api/users/me', { credentials: "include" });
+            if (meResponse.ok) {
+                const me = await meResponse.json();
+                if (me.id === user.id) {
+                    document.getElementById("btn-edit").classList.remove("d-none");
+                } else {
+                    document.getElementById("btn-follow").classList.remove("d-none");
+                    verificarSeguimento(user.id);
+                }
+            }
+
+            // 3. Carregar Galerias
+            carregarGalerias(user.id);
+
+            // 4. Carregar Amigos
+            carregarAmigos(user.id);
+            
+        } catch (error) {
+            console.error("Erro ao carregar perfil:", error);
+        }
+    }
+
+    async function verificarSeguimento(targetId) {
+        const btn = document.getElementById("btn-follow");
+        if (!btn) return;
+
+        try {
+            const status = await FollowAPI.verificarStatus(targetId);
+            const config = status.isMutual 
+                ? { text: 'Amigos', class: 'btn-outline-primary', action: FollowAPI.deixarDeSeguir }
+                : status.following 
+                    ? { text: 'Seguindo', class: 'btn-secondary', action: FollowAPI.deixarDeSeguir }
+                    : status.followedBy 
+                        ? { text: 'Seguir de volta', class: 'btn-success', action: FollowAPI.seguir }
+                        : { text: 'Seguir', class: 'btn-primary', action: FollowAPI.seguir };
+
+            btn.innerHTML = config.text;
+            btn.className = `btn btn-sm ${config.class}`;
+            btn.disabled = false;
+            btn.onclick = async () => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                await config.action(targetId, { showAlert: false });
+                await verificarSeguimento(targetId);
+                if (window.carregarAmigos) carregarAmigos(targetId);
+            };
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = 'Erro';
+        }
+    }
+
+    async function carregarGalerias(userId) {
+        try {
+            const response = await fetch(`/api/galeria/user/${userId}`);
+            const data = await response.json();
+            const list = document.getElementById("galerias-list");
+            
+            if (data.success && data.galleries.length > 0) {
+                list.innerHTML = `<div class="galerias-grid">
+                    ${data.galleries.map(g => `
+                        <a href="/galeria/${g.id}" class="gallery-square" title="${g.name}">
+                            <img src="${g.cover_url || '/images/default-gallery.png'}">
+                            <div class="gallery-overlay"><span>${g.name}</span></div>
+                        </a>
+                    `).join('')}
+                </div>`;
+            } else {
+                list.innerHTML = '<div class="text-muted small">Nenhuma galeria pública.</div>';
+            }
+        } catch (e) {
+            document.getElementById("galerias-list").innerHTML = 'Erro ao carregar.';
+        }
+    }
+
+    async function carregarAmigos(userId) {
+        try {
+            const friends = await FollowAPI.carregarAmigos(userId);
+            const list = document.getElementById("amigos-list");
+            
+            if (friends && friends.length > 0) {
+                list.innerHTML = friends.map(f => `
+                    <a href="/${f.username}" class="friend-item">
+                        <img src="${f.profile_image || '/images/default-avatar.png'}" class="friend-avatar">
+                        <span class="small">${f.username}</span>
+                    </a>
+                `).join('');
+            } else {
+                list.innerHTML = '<div class="text-muted small">Nenhum amigo ainda.</div>';
+            }
+        } catch (e) {
+            document.getElementById("amigos-list").innerHTML = 'Erro ao carregar.';
+        }
+    }
+
+    carregarPerfil();
+</script>

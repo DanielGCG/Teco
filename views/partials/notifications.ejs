@@ -161,12 +161,13 @@
                 if (data.success && data.notifications.length > 0) {
                     // Cache para ícones e cores
                     const iconMap = {
-                        'FRIEND_REQUEST': { icon: 'bi-person-plus', color: 'text-info' },
-                        'FRIEND_ACCEPTED': { icon: 'bi-person-check', color: 'text-success' },
+                        'FOLLOW': { icon: 'bi-person-plus-fill', color: 'text-info' },
                         'NEW_DM': { icon: 'bi-chat-dots', color: 'text-primary' },
                         'NEW_CARTINHA': { icon: 'bi-envelope-heart', color: 'text-danger' },
                         'MENTION': { icon: 'bi-at', color: 'text-warning' },
-                        'SYSTEM': { icon: 'bi-info-circle', color: 'text-secondary' }
+                        'SYSTEM': { icon: 'bi-info-circle', color: 'text-secondary' },
+                        'FRIEND_REQUEST': { icon: 'bi-person-plus', color: 'text-info' },
+                        'FRIEND_ACCEPTED': { icon: 'bi-person-check', color: 'text-success' }
                     };
                     
                     // Limpa a lista
@@ -361,39 +362,6 @@
             return date.toLocaleDateString('pt-BR');
         }
 
-        // ==================== PEDIDOS DE AMIZADE ====================
-        notificationsSocket.emit('getFriendRequestsCount');
-
-        notificationsSocket.on('friendRequestsCount', ({ count }) => {
-            const badge = document.getElementById('friend-requests-badge');
-            if (badge) {
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.style.display = 'inline-block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
-        });
-
-        notificationsSocket.on('newFriendRequest', () => {
-            notificationsSocket.emit('getFriendRequestsCount');
-            // Dispara evento customizado para páginas que precisam reagir
-            document.dispatchEvent(new CustomEvent('friendRequest:new'));
-        });
-
-        notificationsSocket.on('friendRequestsUpdated', () => {
-            notificationsSocket.emit('getFriendRequestsCount');
-            // Dispara evento customizado para páginas que precisam reagir
-            document.dispatchEvent(new CustomEvent('friendRequest:updated'));
-        });
-
-        notificationsSocket.on('friendRequestAccepted', () => {
-            notificationsSocket.emit('getFriendRequestsCount');
-            // Dispara evento customizado para páginas que precisam reagir
-            document.dispatchEvent(new CustomEvent('friendRequest:accepted'));
-        });
-        
         // ==================== STATUS DE USUÁRIOS (para página de amigos) ====================
         notificationsSocket.on('userStatusChanged', ({ userId, status }) => {
             // Dispara evento customizado com os dados

@@ -349,34 +349,6 @@ module.exports = (io) => {
             }
         });
 
-        // ==================== Friend Requests Count ====================
-        socket.on('getFriendRequestsCount', async () => {
-            try {
-                const auth = await authenticateSocket(socket);
-                if (!auth) {
-                    socket.emit('error', { message: 'Não autenticado' });
-                    return;
-                }
-
-                const { userId } = auth;
-                const { Friendship } = require('../models');
-
-                // Busca contagem de pedidos de amizade pendentes
-                const count = await Friendship.count({
-                    where: {
-                        addressee_id: userId,
-                        status: 'pending'
-                    }
-                });
-
-                socket.emit('friendRequestsCount', { count });
-                console.log('[Socket] Contagem de pedidos enviada:', count);
-            } catch (err) {
-                console.error('[Socket] Erro ao buscar pedidos:', err);
-                socket.emit('error', { message: 'Erro ao buscar pedidos' });
-            }
-        });
-
         // ==================== Join User Room ====================
         socket.on('joinUserRoom', async () => {
             try {

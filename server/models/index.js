@@ -8,7 +8,7 @@ const ChatParticipant = require('./ChatParticipant');
 const ChatMessage = require('./ChatMessage');
 const ChatRead = require('./ChatRead');
 const Cartinha = require('./Cartinha');
-const Friendship = require('./Friendship');
+const Follow = require('./Follow');
 const Notification = require('./Notification');
 const { Filme, Genero, FilmeGenero } = require('./Watchlist');
 const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
@@ -60,7 +60,7 @@ module.exports = {
     ChatMessage,
     ChatRead,
     Cartinha,
-    Friendship,
+    Follow,
     Notification,
     Filme,
     Genero,

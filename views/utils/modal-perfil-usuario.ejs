@@ -14,7 +14,9 @@
                             <span id="profile-modal-status-indicator" class="position-absolute bottom-0 end-0 border border-white rounded-circle" style="width: 30px; height: 30px; background: #6c757d;"></span>
                         </div>
                         <!-- Username -->
-                        <h4 id="profile-modal-username" class="fw-bold mb-1"></h4>
+                        <a id="profile-modal-username-link" href="" class="text-decoration-none text-dark">
+                            <h4 id="profile-modal-username" class="fw-bold mb-1"></h4>
+                        </a>
                         <!-- Badge de Amigos (abaixo do username) -->
                         <div id="profile-modal-friend-badge" class="mb-3"></div>
                     </div>
@@ -39,7 +41,7 @@
 
 <!-- Importar módulos compartilhados -->
 <script src="/js/commons/ui-common.js"></script>
-<script src="/js/commons/friendship-common.js"></script>
+<script src="/js/commons/follow-common.js"></script>
 
 <style>
 #userProfileModal .modal-content {
@@ -83,6 +85,7 @@
 
             // Username
             document.getElementById('profile-modal-username').textContent = userData.username;
+            document.getElementById('profile-modal-username-link').href = `/${userData.username}`;
 
             // Status
             updateStatus(userData.status || 'offline');
@@ -100,8 +103,8 @@
             bioContainer.innerHTML = '';
             bioContainer.appendChild(bioSmall);
 
-            // Ações de amizade
-            renderFriendshipActions(userData);
+            // Ações de seguimento
+            renderFollowActions(userData);
 
             // Botão de conversa
             renderDmButton(userData);
@@ -123,72 +126,36 @@
             }
         }
 
-        // Renderiza as ações de amizade
-        function renderFriendshipActions(userData) {
-            const actionsContainer = document.getElementById('profile-modal-friendship-actions');
-            const badgeContainer = document.getElementById('profile-modal-friend-badge');
+        // Renderiza as ações de seguimento
+        async function renderFollowActions(userData) {
+            const actions = document.getElementById('profile-modal-friendship-actions');
+            const badges = document.getElementById('profile-modal-friend-badge');
             
-            // Limpa os containers
-            badgeContainer.innerHTML = '';
-            actionsContainer.innerHTML = '';
+            badges.innerHTML = '';
+            actions.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span></div>';
             
-            if (userData.isFriend) {
-                // Badge de amigos abaixo do username
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-success';
-                badge.innerHTML = '<i class="bi bi-check-circle"></i> Amigos';
-                badgeContainer.appendChild(badge);
-                
-                // Botão de remover amizade
-                const btn = UIUtils.createActionButton({
-                    text: 'Remover Amizade',
-                    icon: 'bi bi-person-dash',
-                    variant: 'outline-danger',
-                    className: 'friendship-action-btn',
-                    onClick: () => UserProfileModal.removeFriend()
-                });
-                actionsContainer.appendChild(btn);
-            } else if (userData.friendRequestSent) {
-                // Pedido já enviado - fica abaixo da foto
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-info';
-                badge.innerHTML = '<i class="bi bi-clock"></i> Pedido Enviado';
-                badgeContainer.appendChild(badge);
-            } else if (userData.friendRequestReceived) {
-                // Pedido recebido (pode aceitar/rejeitar)
-                const acceptBtn = UIUtils.createActionButton({
-                    text: 'Aceitar',
-                    icon: 'bi bi-check-lg',
-                    variant: 'success',
-                    size: 'sm',
-                    onClick: () => UserProfileModal.acceptFriendRequest()
-                });
-                
-                const rejectBtn = UIUtils.createActionButton({
-                    text: 'Rejeitar',
-                    icon: 'bi bi-x-lg',
-                    variant: 'danger',
-                    size: 'sm',
-                    onClick: () => UserProfileModal.rejectFriendRequest()
-                });
-                
-                const wrapper = document.createElement('div');
-                wrapper.className = 'd-flex gap-2 justify-content-center';
-                wrapper.appendChild(acceptBtn);
-                wrapper.appendChild(rejectBtn);
-                actionsContainer.appendChild(wrapper);
-            } else {
-                // Não é amigo, pode enviar pedido
-                const btn = UIUtils.createActionButton({
-                    text: 'Adicionar Amigo',
-                    icon: 'bi bi-person-plus',
-                    variant: 'primary',
-                    size: 'sm',
-                    className: 'friendship-action-btn',
-                    onClick: () => UserProfileModal.sendFriendRequest()
-                });
-                actionsContainer.appendChild(btn);
+            const status = await FollowAPI.verificarStatus(userData.id);
+            actions.innerHTML = '';
+            if (!status) return;
+
+            const config = status.isMutual 
+                ? { badge: 'Amigos', bClass: 'bg-primary', bIcon: 'bi-people-fill', text: 'Deixar de Seguir', variant: 'outline-danger', action: 'unfollow' }
+                : status.following 
+                    ? { badge: 'Seguindo', bClass: 'bg-secondary', bIcon: 'bi-check-lg', text: 'Deixar de Seguir', variant: 'outline-danger', action: 'unfollow' }
+                    : status.followedBy 
+                        ? { text: 'Seguir de Volta', variant: 'success', action: 'follow' }
+                        : { text: 'Seguir', variant: 'primary', action: 'follow' };
+
+            if (config.badge) {
+                badges.innerHTML = `<span class="badge ${config.bClass}"><i class="bi ${config.bIcon}"></i> ${config.badge}</span>`;
             }
+
+            actions.appendChild(UIUtils.createActionButton({
+                text: config.text,
+                variant: config.variant,
+                className: 'friendship-action-btn',
+                onClick: () => UserProfileModal[config.action]()
+            }));
         }
 
         // Renderiza o botão de conversa
@@ -217,52 +184,20 @@
             }
         }
 
-        // Ações de amizade
-        async function sendFriendRequest() {
-            if (!currentUserData || !currentUserData.id) return;
-
-            await FriendshipAPI.enviarPedido(currentUserData.id, {
-                onSuccess: () => {
-                    currentUserData.friendRequestSent = true;
-                    renderFriendshipActions(currentUserData);
-                }
-            });
+        // Ações de seguimento
+        async function follow() {
+            if (!currentUserData?.id) return;
+            await FollowAPI.seguir(currentUserData.id, { showAlert: false });
+            renderFollowActions(currentUserData);
         }
 
-        async function removeFriend() {
-            if (!currentUserData || !currentUserData.id) return;
-
-            await FriendshipAPI.removerAmigo(currentUserData.id, {
-                confirmMessage: `Tem certeza que deseja remover ${currentUserData.username} dos seus amigos?`,
-                onSuccess: () => {
-                    currentUserData.isFriend = false;
-                    renderFriendshipActions(currentUserData);
-                }
+        async function unfollow() {
+            if (!currentUserData?.id) return;
+            const res = await FollowAPI.deixarDeSeguir(currentUserData.id, { 
+                confirmMessage: `Parar de seguir ${currentUserData.username}?`,
+                showAlert: false 
             });
-        }
-
-        async function acceptFriendRequest() {
-            if (!currentUserData || !currentUserData.friendshipId) return;
-
-            await FriendshipAPI.aceitarPedido(currentUserData.friendshipId, {
-                onSuccess: () => {
-                    currentUserData.isFriend = true;
-                    currentUserData.friendRequestReceived = false;
-                    renderFriendshipActions(currentUserData);
-                }
-            });
-        }
-
-        async function rejectFriendRequest() {
-            if (!currentUserData || !currentUserData.friendshipId) return;
-
-            await FriendshipAPI.rejeitarPedido(currentUserData.friendshipId, {
-                confirmMessage: null,
-                onSuccess: () => {
-                    currentUserData.friendRequestReceived = false;
-                    renderFriendshipActions(currentUserData);
-                }
-            });
+            if (res.success) renderFollowActions(currentUserData);
         }
 
         function openDm() {
@@ -281,10 +216,8 @@
             show,
             updateStatus,
             hide,
-            sendFriendRequest,
-            removeFriend,
-            acceptFriendRequest,
-            rejectFriendRequest,
+            follow,
+            unfollow,
             openDm
         };
     })();

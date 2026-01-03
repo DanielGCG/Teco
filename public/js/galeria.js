@@ -114,7 +114,14 @@ const GaleriaManager = {
         if (desc) desc.textContent = this.data.description;
         
         const author = document.getElementById('gallery-author');
-        if (author) author.textContent = this.data.owner?.username || 'Desconhecido';
+        if (author) {
+            const username = this.data.owner?.username;
+            if (username) {
+                author.innerHTML = `<a href="/${username}" class="text-decoration-none" style="color: inherit;">${username}</a>`;
+            } else {
+                author.textContent = 'Desconhecido';
+            }
+        }
         
         this.applyStyles(this.data);
         this.renderGrid();

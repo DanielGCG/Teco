@@ -17,11 +17,8 @@ router.use("/cartinhas", require("./cartinhas"));
 // Rota de amigos
 router.use("/amigos", require("./friends"));
 
-// Rota de perfil
-router.use("/perfil", require("./perfil"));
-
-// Rota de perfil
-router.use("/perfil", require("./perfil"));
+// Rota de perfil (agora na raiz /@username)
+router.use("/", require("./profile"));
 
 // Rota de features
 router.use("/", require("./features"));
