@@ -6,6 +6,7 @@ InicialRouter.get('/', async (req, res) => {
         title: "Teco",
         description: "Página inicial",
         version: process.env.VERSION,
+        loggedUser: req.user // Garante que o usuário logado chegue ao front-end
     }
     res.render('pages/index', {
         layout: 'layouts/main',

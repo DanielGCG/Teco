@@ -407,6 +407,11 @@
 </style>
 
 <div class="container-escrever">
+    <div class="mb-3">
+        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar ao Menu
+        </a>
+    </div>
     <div class="card-cartinha">
         <div class="header-cartinha">
             <h5 class="mb-0">✉️ Nova Cartinha</h5>
@@ -531,8 +536,8 @@
                     <button type="button" class="btn btn-outline-primary me-2" onclick="window.location.href='/cartinhas/enviadas'">
                         📤 Ver Enviadas
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='/cartinhas/recebidas'">
-                        📬 Ver Recebidas
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='/cartinhas'">
+                        📬 Voltar ao Correio
                     </button>
                 </div>
             </div>
@@ -667,7 +672,7 @@
                 this.usuarioAtual = {
                     id: null,
                     username: 'Você',
-                    profile_image: '/images/placeholder.png'
+                    profile_image: null
                 };
             }
         }
@@ -768,7 +773,7 @@
                 this.destinatarioSelecionado = {
                     id: parseInt(paraUserId),
                     username: decodeURIComponent(paraUsername),
-                    profile_image: '/images/placeholder.png',
+                    profile_image: null,
                     status: 'online'
                 };
                 
@@ -821,7 +826,7 @@
             // Adiciona o usuário atual flutuando no topo, se estiver na lista
             let usuariosFiltrados = this.usuarios.map(usuario => ({
                 ...usuario,
-                profile_image: usuario.profile_image ?? '/images/placeholder.png'
+                profile_image: usuario.profile_image
             }));
 
             let usuarioAtual = this.usuarioAtual;
@@ -832,7 +837,7 @@
                 if (existe) {
                     html += `
                     <div class="sugestao-usuario sugestao-atual" data-usuario-id="${usuarioAtual.id}" style="position:sticky;top:0;z-index:2;background:#f8f9fa;border-bottom:1px solid #eee;">
-                        <img src="${usuarioAtual.profile_image ?? '/images/placeholder.png'}" alt="${usuarioAtual.username}" class="avatar-sugestao">
+                        <img src="${usuarioAtual.profile_image}" alt="${usuarioAtual.username}" class="avatar-sugestao">
                         <div class="info-usuario">
                             <div class="nome-usuario">${usuarioAtual.username} <span class="badge bg-primary ms-1">Você</span></div>
                             <div class="status-usuario">${this.formatarStatus(usuarioAtual.status || 'online')}</div>

@@ -6,12 +6,21 @@
 function aplicarFallbackImagens(selector = 'img', placeholder = '/images/placeholder.png') {
     document.querySelectorAll(selector).forEach(img => {
         if (!img.dataset.fallbackSet) {
+            const rawSrc = img.getAttribute('src');
+            if (!rawSrc || rawSrc.trim() === '') {
+                img.src = placeholder;
+            }
             img.onerror = function() {
                 if (img.src !== placeholder) {
                     img.src = placeholder;
                 }
             };
             img.dataset.fallbackSet = 'true';
+        } else {
+            const rawSrc = img.getAttribute('src');
+            if (!rawSrc || rawSrc.trim() === '') {
+                if (img.src !== placeholder) img.src = placeholder;
+            }
         }
     });
 }

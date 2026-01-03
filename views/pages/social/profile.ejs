@@ -1,4 +1,52 @@
 <style>
+    #conteudo-principal {
+        padding: 0 !important;
+    }
+    .profile-container {
+        max-width: 1300px;
+        margin: 0 auto;
+        width: 100%;
+    }
+    .profile-body {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .profile-sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+    }
+    .profile-main {
+        flex: 1;
+        min-width: 0;
+    }
+    #posts-feed {
+        padding-bottom: 2rem;
+    }
+    
+    /* Ajustes de responsividade */
+    @media (max-width: 992px) {
+        .profile-sidebar {
+            width: 280px;
+        }
+    }
+    @media (max-width: 768px) {
+        .profile-body {
+            flex-direction: column;
+            padding: 0.5rem;
+        }
+        .profile-sidebar, .profile-main {
+            width: 100%;
+            position: static;
+            max-height: none;
+        }
+    }
+
     .banner-wrap {
         background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWoycWk3a2t5aHBycjd4cWFxZHFnZTBiajZhd25pbzlmcWJtMHkzZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LKNqU8ISdR7iw/giphy.gif');
         background-size: cover;
@@ -6,56 +54,84 @@
         height: 12rem;
         position: relative;
     }
-    .profile-card{
-        background-color: rgba(0,0,0,0.45);
-        padding: 0.5rem 0.75rem;
+    .profile-card {
+        background-color: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(2px);
+        padding: 1rem;
         margin-bottom: 0;
-        border-radius: 1rem;
+        border-radius: 1.5rem;
     }
     .profile-avatar {
         width: 144px;
         height: 144px;
-        border-radius: 1rem;
+        border-radius: 1.5rem;
         object-fit: cover;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
+    .profile-avatar-container {
+        position: relative;
+        flex-shrink: 0;
+    }
+    .status-dot {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid rgba(0,0,0,0.45);
+        background-color: #9e9e9e;
+        z-index: 2;
+        transition: all 0.3s ease;
+    }
+    .status-dot.online { background-color: #4caf50; }
+    .status-dot.ausente { background-color: #ffc107;}
+    .status-dot.offline { background-color: #9e9e9e; }
+
     .profile-name {
         font-size: 1.2rem;
+        font-weight: 700;
         color: #fff;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        text-shadow: 0 2px 4px rgba(0,0,0,0.4);
     }
-    .profile-meta{
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-    }
+
     .profile-pronouns{
         color: #fff;
-        font-size: 0.9rem;
-        margin-top: 0.25rem;
-        opacity: 0.95;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
     }
     .profile-actions {
         position: absolute;
-        bottom: 1rem;
-        right: 1rem;
+        bottom: 1.5rem;
+        right: 1.5rem;
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
     }
     .bio-container, .galerias-container, .amigos-container {
         background: #fff;
-        border-radius: 1rem;
-        padding: 1rem;
+        border-radius: 1.25rem;
+        padding: 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #f0f0f0;
     }
     .section-title {
-        font-size: 1.1rem;
-        font-weight: bold;
-        margin-bottom: 0.75rem;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 0.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #0f1419;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
-    .gallery-item, .friend-item {
+    .section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #f0f0f0;
+    }
+
+    .friend-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -98,60 +174,90 @@
     .gallery-square:hover .gallery-overlay {
         opacity: 1;
     }
-    .gallery-cover, .friend-avatar {
+    .friend-avatar {
         width: 40px;
         height: 40px;
-        border-radius: 0.5rem;
-        object-fit: cover;
-    }
-    .friend-avatar {
         border-radius: 50%;
+        object-fit: cover;
     }
     .bio-container, .galerias-container, .amigos-container, .card-header {
         background-color: var(--verde);
     }
+    .profile-tab {
+        cursor: pointer;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid transparent;
+        color: #666;
+        transition: all 0.2s;
+    }
+    .profile-tab.active {
+        color: var(--verde-escuro);
+        border-bottom-color: var(--verde-escuro);
+    }
+    .profile-sidebar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .profile-sidebar::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
+    }
+    .profile-sidebar::-webkit-scrollbar-thumb:hover {
+        background: #bbb;
+    }
 </style>
+<link rel="stylesheet" href="/styles/posts.css">
 
-<div class="container">
-    <div class="profile">
-        <div class="banner-wrap mb-3 w-100 position-relative" id="profile-banner">
-            <div class="profile-card position-absolute start-0 top-50 translate-middle-y ms-3 d-flex align-items-start">
-                <img class="profile-avatar me-2" src="">
-                <div class="profile-meta">
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="banner-wrap w-100 position-relative" id="profile-banner">
+            <div class="profile-card position-absolute start-0 bottom-0 ms-4 mb-4 d-flex align-items-start">
+                <div class="profile-avatar-container me-3">
+                    <img class="profile-avatar" src="">
+                    <span class="status-dot" id="user-status-dot" title="Offline"></span>
+                </div>
+                <div class="profile-meta pb-1">
                     <h1 class="profile-name mb-0">...</h1>
-                    <mute class="profile-pronouns"></mute>
+                    <span class="profile-pronouns"></span>
                 </div>
             </div>
             <div class="profile-actions">
-                <button id="btn-edit" class="btn btn-light btn-sm d-none" onclick="window.location.href='/perfil/editar'">Editar Perfil</button>
-                <button id="btn-follow" class="btn btn-primary btn-sm d-none">Seguir</button>
+                <button id="btn-edit" class="btn btn-light btn-sm rounded-pill fw-bold px-4 d-none" onclick="window.location.href='/editar'">Editar Perfil</button>
+                <button id="btn-follow" class="btn btn-primary btn-sm rounded-pill fw-bold px-4 d-none">Seguir</button>
             </div>
         </div>
+    </div>
 
-        <div class="row">
-            <div class="col-md-3">
-                <div class="bio-container">
-                    <div class="section-title">Biografia</div>
-                    <div id="bio-text">Carregando...</div>
-                </div>
-                <div class="galerias-container">
-                    <div class="section-title">Galerias</div>
-                    <div id="galerias-list">Carregando...</div>
-                </div>
-                <div class="amigos-container">
-                    <div class="section-title">Amigos</div>
-                    <div id="amigos-list">Carregando...</div>
-                </div>
+
+    <div class="profile-body">
+        <div class="profile-sidebar">
+            <div class="bio-container">
+                <div class="section-title">Biografia</div>
+                <div id="bio-text">Carregando...</div>
             </div>
-            <div class="col-md-9">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Posts</h5>
-                    </div>
-                    <div class="card-body text-center text-muted py-5">
-                        <i class="fas fa-pencil-alt mb-3 d-block" style="font-size: 2rem; opacity: 0.3;"></i>
-                        Em breve você poderá ver os posts do usuário aqui!
-                    </div>
+            <div class="galerias-container">
+                <div class="section-title">Galerias</div>
+                <div id="galerias-list">Carregando...</div>
+            </div>
+            <div class="amigos-container">
+                <div class="section-title">Amigos</div>
+                <div id="amigos-list">Carregando...</div>
+            </div>
+        </div>
+        <div class="profile-main">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex gap-3">
+                    <h4 class="mb-0 profile-tab active" id="tab-posts" onclick="switchTab('posts')">Posts</h4>
+                    <h4 class="mb-0 profile-tab d-none" id="tab-bookmarks" onclick="switchTab('bookmarks')">Favoritos</h4>
+                </div>
+                <button id="btn-new-post" class="btn btn-primary btn-sm d-none" onclick="abrirModalNovoPost()">
+                    <i class="bi bi-plus-lg me-1"></i> Novo Post
+                </button>
+            </div>
+            
+            <div id="posts-feed">
+                <div class="text-center text-muted py-5">
+                    <div class="spinner-border spinner-border-sm mb-2"></div>
+                    <p>Carregando posts...</p>
                 </div>
             </div>
         </div>
@@ -159,10 +265,117 @@
 </div>
 
 <script src="/js/commons/follow-common.js"></script>
+<script src="/js/post.js"></script>
 <script>
     const pathParts = window.location.pathname.split('/');
     const username = pathParts[1];
+    window.username = username;
     let profileUserId = null;
+    window.selectedFiles = [];
+    window.currentTab = 'posts';
+    let socket = null;
+
+    async function switchTab(tab) {
+        window.currentTab = tab;
+        document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        
+        const feed = document.getElementById('posts-feed');
+        feed.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <div class="spinner-border spinner-border-sm mb-2"></div>
+                <p>Carregando ${tab === 'posts' ? 'posts' : 'favoritos'}...</p>
+            </div>
+        `;
+        
+        carregarPosts(username);
+    }
+
+    // Inicializar Socket e Listeners
+    function initSocket() {
+        if (socket) return;
+        
+        socket = SocketConnector.init();
+        
+        // Entrar na sala do perfil
+        socket.emit('joinProfile', username);
+
+        // Ouvir mudanças de status
+        socket.on('userStatusChanged', ({ userId, status }) => {
+            if (userId === profileUserId) {
+                const dot = document.getElementById('user-status-dot');
+                if (dot) {
+                    dot.className = `status-dot ${status}`;
+                    dot.title = status.charAt(0).toUpperCase() + status.slice(1);
+                }
+            }
+        });
+
+        // Ouvir carregamento de posts
+        socket.on('postsLoaded', ({ posts, tab }) => {
+            if (tab !== window.currentTab) return;
+            
+            const feed = document.getElementById('posts-feed');
+            if (posts.length === 0) {
+                feed.innerHTML = `<div class="card-body text-center py-5 text-muted">Nenhum ${tab === 'posts' ? 'post' : 'favorito'} ainda.</div>`;
+                return;
+            }
+
+            feed.innerHTML = posts.map(post => PostUI.renderPost(post, window.currentUser)).join('');
+        });
+
+        // Ouvir novos posts em tempo real
+        socket.on('newPost', (post) => {
+            // Só adiciona se estivermos na aba de posts e o post for do dono do perfil
+            if (window.currentTab === 'posts' && post.author.username === username) {
+                const feed = document.getElementById('posts-feed');
+                
+                // Verifica se o post já existe no feed para evitar duplicatas
+                if (document.getElementById(`post-${post.id}`)) return;
+
+                // Se houver uma mensagem de "Nenhum post" ou o spinner de carregamento, limpa o feed
+                const emptyState = feed.querySelector('.text-muted');
+                if (emptyState && !feed.querySelector('.post-card')) {
+                    feed.innerHTML = '';
+                }
+
+                // Adiciona o novo post no topo com uma pequena animação de fade se desejar
+                const postHtml = PostUI.renderPost(post, window.currentUser);
+                feed.insertAdjacentHTML('afterbegin', postHtml);
+            }
+        });
+
+        // Ouvir atualizações de posts (curtidas, etc)
+        socket.on('postUpdate', (data) => {
+            // Pode haver múltiplos elementos para o mesmo post (feed e modal)
+            const postElements = document.querySelectorAll(`[id="post-${data.id}"]`);
+            postElements.forEach(postEl => {
+                if (data.likes_count !== undefined) {
+                    const likeCountEl = postEl.querySelector('.post-action.like span');
+                    if (likeCountEl) likeCountEl.textContent = data.likes_count;
+                }
+                if (data.replies_count !== undefined) {
+                    const replyCountEl = postEl.querySelector('.post-action.reply span');
+                    if (replyCountEl) replyCountEl.textContent = data.replies_count;
+                }
+                if (data.reposts_count !== undefined) {
+                    const repostCountEl = postEl.querySelector('.post-action.repost span');
+                    if (repostCountEl) repostCountEl.textContent = data.reposts_count;
+                }
+            });
+        });
+
+
+        // Ouvir deleções de posts
+        socket.on('postDeleted', (postId) => {
+            const postEl = document.getElementById(`post-${postId}`);
+            if (postEl) {
+                postEl.style.opacity = '0';
+                postEl.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => postEl.remove(), 300);
+            }
+        });
+    }
 
     async function carregarPerfil() {
         try {
@@ -179,10 +392,13 @@
             const user = await response.json();
             profileUserId = user.id;
 
+            // Inicializa socket após ter o ID do usuário
+            initSocket();
+
             // Atualizar UI básica
             document.querySelector(".profile-name").textContent = user.username;
-            document.querySelector(".profile-avatar").src = user.profile_image || '/images/default-avatar.png';
-            document.querySelector(".profile-pronouns").textContent = user.pronouns || 'opa!';
+            document.querySelector(".profile-avatar").src = user.profile_image;
+            document.querySelector(".profile-pronouns").textContent = user.pronouns || '';
             document.getElementById("bio-text").innerHTML = user.bio ? user.bio.replace(/\n/g, '<br>') : 'Nenhuma biografia disponível.';
             
             if (user.background_image) {
@@ -190,11 +406,14 @@
             }
 
             // 2. Verificar se é o próprio perfil ou outro usuário
-            const meResponse = await fetch('/api/users/me', { credentials: "include" });
-            if (meResponse.ok) {
-                const me = await meResponse.json();
-                if (me.id === user.id) {
+            if (window.currentUser) {
+                // Atualizar avatares nos modais com a imagem do usuário logado
+                const avatarSrc = window.currentUser.profile_image;
+                
+                if (window.currentUser.id === user.id) {
                     document.getElementById("btn-edit").classList.remove("d-none");
+                    document.getElementById("btn-new-post").classList.remove("d-none");
+                    document.getElementById("tab-bookmarks").classList.remove("d-none");
                 } else {
                     document.getElementById("btn-follow").classList.remove("d-none");
                     verificarSeguimento(user.id);
@@ -206,11 +425,33 @@
 
             // 4. Carregar Amigos
             carregarAmigos(user.id);
+
+            // 5. Carregar Posts
+            carregarPosts(username);
             
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
         }
     }
+
+    function abrirModalNovoPost() {
+        PostUI.abrirModalNovoPost();
+    }
+
+    async function enviarNovoPost() {
+        const textarea = document.getElementById('novo-post-textarea');
+        const btn = document.getElementById('btn-confirmar-novo-post');
+        const content = textarea.value.trim();
+        PostActions.enviarPost(content, window.selectedFiles, { type: 'post' }, btn, 'modalNovoPost');
+    }
+
+    async function carregarPosts(targetUsername) {
+        if (socket) {
+            socket.emit('loadPosts', { username: targetUsername, tab: window.currentTab });
+        }
+    }
+
+    window.carregarPosts = carregarPosts;
 
     async function verificarSeguimento(targetId) {
         const btn = document.getElementById("btn-follow");
@@ -252,7 +493,7 @@
                 list.innerHTML = `<div class="galerias-grid">
                     ${data.galleries.map(g => `
                         <a href="/galeria/${g.id}" class="gallery-square" title="${g.name}">
-                            <img src="${g.cover_url || '/images/default-gallery.png'}">
+                            <img src="${g.cover_url}">
                             <div class="gallery-overlay"><span>${g.name}</span></div>
                         </a>
                     `).join('')}
@@ -273,7 +514,7 @@
             if (friends && friends.length > 0) {
                 list.innerHTML = friends.map(f => `
                     <a href="/${f.username}" class="friend-item">
-                        <img src="${f.profile_image || '/images/default-avatar.png'}" class="friend-avatar">
+                        <img src="${f.profile_image}" class="friend-avatar">
                         <span class="small">${f.username}</span>
                     </a>
                 `).join('');
@@ -287,3 +528,5 @@
 
     carregarPerfil();
 </script>
+
+<%- include('../../partials/post-modals') %>

@@ -140,6 +140,100 @@ module.exports = (io) => {
             }
         });
 
+        // ==================== Join Profile ====================
+        socket.on('joinProfile', async (username) => {
+            try {
+                // Limpa salas de perfil anteriores para este socket
+                const rooms = Array.from(socket.rooms);
+                rooms.forEach(room => {
+                    if (room.startsWith('profile_')) {
+                        socket.leave(room);
+                    }
+                });
+
+                socket.join(`profile_${username}`);
+                console.log(`[Socket] Cliente entrou no perfil de: ${username}`);
+
+                // Enviar status atual do dono do perfil para quem entrou
+                const { User } = require('../models');
+                const user = await User.findOne({ where: { username }, attributes: ['id'] });
+                if (user) {
+                    const status = getUserStatus(user.id);
+                    socket.emit('userStatusChanged', { userId: user.id, status });
+                }
+            } catch (err) {
+                console.error('[Socket] Erro ao entrar no perfil:', err);
+            }
+        });
+
+        // ==================== Load Posts ====================
+        socket.on('loadPosts', async ({ username, tab = 'posts' }) => {
+            try {
+                const { Post, User, PostMedia, PostLike, PostBookmark, PostMention } = require('../models');
+                const { Op } = require('sequelize');
+
+                const user = await User.findOne({ where: { username } });
+                if (!user) {
+                    socket.emit('error', { message: 'Usuário não encontrado' });
+                    return;
+                }
+
+                const POST_INCLUDES = [
+                    { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] },
+                    { model: PostMedia, as: 'media' },
+                    { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username'] }] },
+                    { model: PostBookmark, as: 'bookmarks', attributes: ['user_id'] },
+                    { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] },
+                    { 
+                        model: Post, 
+                        as: 'parent', 
+                        include: [
+                            { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] },
+                            { model: PostMedia, as: 'media' },
+                            { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] },
+                            {
+                                model: Post,
+                                as: 'parent',
+                                include: [
+                                    { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] }
+                                ]
+                            }
+                        ] 
+                    }
+                ];
+
+                let posts = [];
+                if (tab === 'posts') {
+                    posts = await Post.findAll({
+                        where: { 
+                            user_id: user.id, 
+                            type: { [Op.ne]: 'reply' },
+                            is_deleted: false 
+                        },
+                        include: POST_INCLUDES,
+                        order: [['created_at', 'DESC']]
+                    });
+                } else if (tab === 'bookmarks') {
+                    const bookmarks = await PostBookmark.findAll({
+                        where: { user_id: user.id },
+                        include: [{
+                            model: Post,
+                            where: { is_deleted: false },
+                            required: true,
+                            include: POST_INCLUDES
+                        }],
+                        order: [['created_at', 'DESC']]
+                    });
+                    posts = bookmarks.map(b => b.Post);
+                }
+
+                socket.emit('postsLoaded', { posts, tab });
+            } catch (err) {
+                console.error('[Socket] Erro ao carregar posts:', err);
+                socket.emit('error', { message: 'Erro ao carregar posts' });
+            }
+        });
+
         // ==================== Send Message ====================
         socket.on('sendMessage', async ({ chatId, mensagem }) => {
             try {

@@ -1,7 +1,7 @@
 const express = require("express");
 const FollowsRouter = express.Router();
 const { Follow, User, sequelize } = require("../models");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 const { createNotification } = require("./notifications");
 const validate = require("../middlewares/validate");
 const { userIdSchema } = require("../validators/follows.validator");
@@ -48,6 +48,7 @@ FollowsRouter.post('/:userId', protect(0), validate(userIdSchema, 'params'), asy
             type: 'FOLLOW',
             title: 'Novo Seguidor',
             body: `${req.user.username} começou a te seguir`,
+            link: `/${req.user.username}`,
             data: { followerId: followerId }
         });
 

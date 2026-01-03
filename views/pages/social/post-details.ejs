@@ -1,0 +1,218 @@
+<style>
+    .post-details-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        padding: 0 16px;
+        height: 53px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .header-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+</style>
+
+<link rel="stylesheet" href="/styles/posts.css">
+
+<div class="row justify-content-center">
+    <div class="col-md-5 shadow-sm">
+        <div class="post-details-header">
+            <a href="javascript:history.back()" class="back-button">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="header-title">Post</h2>
+        </div>
+
+        <div id="post-thread-container">
+            <!-- Ancestry (Thread) -->
+            <div id="ancestry-container"></div>
+
+            <!-- Main Post -->
+            <div id="main-post-container">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+            </div>
+
+            <!-- Reply Box -->
+            <div class="reply-section d-flex gap-3 p-3 border-bottom" id="reply-box" style="display: none;">
+                <img src="" id="current-user-avatar" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
+                <div class="flex-grow-1">
+                    <textarea class="reply-textarea" id="reply-textarea" placeholder="Postar sua resposta" rows="1"></textarea>
+                    <div id="reply-preview" class="post-preview-container"></div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="d-flex gap-2">
+                            <label for="reply-media-input" class="post-action reply" style="cursor: pointer;">
+                                <i class="bi bi-image"></i>
+                            </label>
+                            <input type="file" id="reply-media-input" hidden multiple accept="image/*,video/*" onchange="PostUI.handleMediaSelect(event, 'reply-preview')">
+                        </div>
+                        <button class="btn btn-primary rounded-pill px-4 fw-bold" id="btn-enviar-resposta" onclick="enviarResposta()">Responder</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Replies -->
+            <div id="replies-container"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/post.js"></script>
+<script>
+    const postId = "<%= locals.postId %>";
+    const username = "<%= locals.username %>";
+    window.selectedFiles = [];
+
+    async function carregarPostCompleto() {
+        try {
+            // Configurar avatar do usuário logado se existir
+            if (window.currentUser) {
+                document.getElementById('current-user-avatar').src = window.currentUser.profile_image;
+                document.getElementById('reply-box').style.display = 'flex';
+            }
+
+            const res = await fetch(`/api/posts/${postId}`);
+            if (!res.ok) throw new Error('Post não encontrado');
+            
+            const post = await res.json();
+            
+            // Renderizar Ancestralidade
+            const ancestryContainer = document.getElementById('ancestry-container');
+            if (post.ancestry && post.ancestry.length > 0) {
+                ancestryContainer.innerHTML = post.ancestry.map(p => PostUI.renderPost(p, window.currentUser, true)).join('');
+            }
+
+            // Renderizar Post Principal (com estilo diferente)
+            renderMainPost(post);
+
+            // Carregar Respostas
+            carregarRespostas();
+
+            // Se tiver ?reply=true na URL, foca no textarea
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('reply') === 'true') {
+                setTimeout(() => {
+                    const textarea = document.getElementById('reply-textarea');
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 500);
+            }
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('main-post-container').innerHTML = `
+                <div class="alert alert-danger m-3">Erro ao carregar post.</div>
+            `;
+        }
+    }
+
+    function renderMainPost(post) {
+        const container = document.getElementById('main-post-container');
+        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.user_id === window.currentUser.id);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.user_id === window.currentUser.id);
+        
+        const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
+        const mediaHtml = mediaCount > 0 
+            ? `<div class="post-media-grid grid-${mediaCount} mb-2">
+                ${post.media.slice(0, 4).map(m => m.type === 'video' 
+                    ? `<video src="${m.url}" class="post-media-item" controls></video>` 
+                    : `<img src="${m.url}" class="post-media-item" loading="lazy" onclick="window.open('${m.url}')">`).join('')}
+               </div>`
+            : '';
+
+        const date = new Date(post.created_at);
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
+
+        const deleteBtn = (window.currentUser && window.currentUser.id === post.user_id) 
+            ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar(${post.id})" title="Deletar">
+                <i class="bi bi-trash"></i>
+               </button>` 
+            : '';
+
+        container.innerHTML = `
+            <div class="main-post p-3 border-bottom" id="post-${post.id}">
+                <div class="d-flex gap-3 mb-2">
+                    <img src="${post.author.profile_image}" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                    <div class="d-flex flex-column">
+                        <a href="/${post.author.username}" class="post-author-name fw-bold text-decoration-none">${post.author.username}</a>
+                        <span class="text-muted small">${post.author.username}</span>
+                    </div>
+                </div>
+                <div class="post-content mb-3 text-break">${PostUI.formatContent(post.content, post.mentions)}</div>
+                ${mediaHtml}
+                <div class="post-meta py-2 text-muted small border-top">
+                    ${timeStr} · ${dateStr}
+                </div>
+                <div class="post-stats d-flex gap-3 py-2 border-top border-bottom">
+                    <a href="#" class="stat-item text-decoration-none"><strong>${post.reposts_count || 0}</strong> <span class="text-muted">Reposts</span></a>
+                    <a href="#" class="stat-item text-decoration-none"><strong>${post.likes_count || 0}</strong> <span class="text-muted">Curtidas</span></a>
+                </div>
+                <div class="post-actions d-flex justify-content-around py-2">
+                    <button class="post-action reply d-flex align-items-center" onclick="document.getElementById('reply-textarea').focus()" title="Responder">
+                        <i class="bi bi-chat" style="font-size: 20px;"></i>
+                    </button>
+                    <button class="post-action repost d-flex align-items-center ${post.type === 'repost' ? 'reposted' : ''}" onclick="PostUI.abrirModalInteracao(${post.id}, 'repost')" title="Repostar">
+                        <i class="bi bi-arrow-repeat" style="font-size: 20px;"></i>
+                    </button>
+                    <button class="post-action like d-flex align-items-center ${isLiked ? 'liked' : ''}" onclick="PostActions.like(${post.id})" title="Curtir">
+                        <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}" style="font-size: 20px;"></i>
+                    </button>
+                    <button class="post-action bookmark d-flex align-items-center ${isBookmarked ? 'bookmarked' : ''}" onclick="PostActions.toggleBookmark(${post.id})" title="Salvar">
+                        <i class="bi ${isBookmarked ? 'bi-bookmark-fill' : 'bi-bookmark'}" style="font-size: 20px;"></i>
+                    </button>
+                    <button class="post-action share d-flex align-items-center" onclick="PostActions.compartilhar(${post.id}, '${post.author.username}')" title="Compartilhar">
+                        <i class="bi bi-share" style="font-size: 20px;"></i>
+                    </button>
+                    ${deleteBtn}
+                </div>
+            </div>
+        `;
+    }
+
+    async function carregarRespostas() {
+        const container = document.getElementById('replies-container');
+        try {
+            const res = await fetch(`/api/posts/${postId}/replies`);
+            const replies = await res.json();
+            container.innerHTML = replies.map(r => PostUI.renderPost(r, window.currentUser)).join('');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function enviarResposta() {
+        const textarea = document.getElementById('reply-textarea');
+        const btn = document.getElementById('btn-enviar-resposta');
+        const content = textarea.value.trim();
+        
+        if (!content && window.selectedFiles.length === 0) return;
+
+        await PostActions.enviarPost(content, window.selectedFiles, { 
+            type: 'reply', 
+            parent_id: postId 
+        }, btn);
+
+        textarea.value = '';
+        window.selectedFiles = [];
+        document.getElementById('reply-preview').innerHTML = '';
+        carregarRespostas();
+    }
+
+    // Auto-resize textarea
+    document.getElementById('reply-textarea').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    carregarPostCompleto();
+</script>
+
+<%- include('../../partials/post-modals') %>

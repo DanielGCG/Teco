@@ -10,6 +10,11 @@ const ChatRead = require('./ChatRead');
 const Cartinha = require('./Cartinha');
 const Follow = require('./Follow');
 const Notification = require('./Notification');
+const Post = require('./Post');
+const PostMedia = require('./PostMedia');
+const PostLike = require('./PostLike');
+const PostBookmark = require('./PostBookmark');
+const PostMention = require('./PostMention');
 const { Filme, Genero, FilmeGenero } = require('./Watchlist');
 const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
 const { Galeria, GaleriaItem, GaleriaPermissao } = require('./Galeria');
@@ -48,6 +53,28 @@ User.belongsToMany(Galeria, {
     as: 'shared_galleries' 
 });
 
+// Associações de Posts
+Post.belongsTo(User, { foreignKey: 'user_id', as: 'author' });
+User.hasMany(Post, { foreignKey: 'user_id', as: 'posts' });
+
+Post.hasMany(PostMedia, { foreignKey: 'post_id', as: 'media' });
+PostMedia.belongsTo(Post, { foreignKey: 'post_id' });
+
+Post.hasMany(PostLike, { foreignKey: 'post_id', as: 'likes' });
+PostLike.belongsTo(Post, { foreignKey: 'post_id' });
+PostLike.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+Post.hasMany(PostBookmark, { foreignKey: 'post_id', as: 'bookmarks' });
+PostBookmark.belongsTo(Post, { foreignKey: 'post_id' });
+PostBookmark.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+Post.hasMany(PostMention, { foreignKey: 'post_id', as: 'mentions' });
+PostMention.belongsTo(Post, { foreignKey: 'post_id' });
+PostMention.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+Post.belongsTo(Post, { foreignKey: 'parent_id', as: 'parent' });
+Post.hasMany(Post, { foreignKey: 'parent_id', as: 'replies' });
+
 // Sincroniza modelos (use com cuidado em produção)
 // sequelize.sync({ alter: true });
 
@@ -62,6 +89,11 @@ module.exports = {
     Cartinha,
     Follow,
     Notification,
+    Post,
+    PostMedia,
+    PostLike,
+    PostBookmark,
+    PostMention,
     Filme,
     Genero,
     FilmeGenero,

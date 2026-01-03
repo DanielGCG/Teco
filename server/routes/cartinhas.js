@@ -1,12 +1,28 @@
 const express = require("express");
 const CartinhasRouter = express.Router();
 
+CartinhasRouter.get('/', async (req, res) => {
+    const locals = {
+        title: `Correio`,
+        description: "Gerencie suas cartinhas",
+        icon: "📬",
+        version: process.env.VERSION,
+        loggedUser: req.user
+    }
+    res.render('pages/cartinhas/cartinhas', {
+        layout: 'layouts/main',
+        locals: locals,
+        HOST: process.env.HOST
+    });
+});
+
 CartinhasRouter.get('/recebidas', async (req, res) => {
     const locals = {
         title: `Caixa de entrada`,
         description: "Suas cartinhas recebidas",
         icon: "📩",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/cartinhas/recebidas', {
         layout: 'layouts/main',
@@ -21,6 +37,7 @@ CartinhasRouter.get('/escrever', async (req, res) => {
         description: "Escreva uma nova cartinha",
         icon: "✏️",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/cartinhas/escrever', {
         layout: 'layouts/main',
@@ -35,6 +52,7 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
         description: "Suas cartinhas favoritas guardadas com carinho",
         icon: "⭐",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/cartinhas/favoritas', {
         layout: 'layouts/main',
@@ -49,6 +67,7 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
         description: "Gerencie as cartinhas que você enviou",
         icon: "📤",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/cartinhas/enviadas', {
         layout: 'layouts/main',

@@ -6,13 +6,27 @@
 // Função global para fallback de imagens quebradas
 function aplicarFallbackImagens(selector = 'img', placeholder = '/images/placeholder.png') {
     document.querySelectorAll(selector).forEach(img => {
+        // Evita reaplicar várias vezes
         if (!img.dataset.fallbackSet) {
+            // Se o atributo src estiver vazio ou ausente, aplica placeholder imediatamente
+            const rawSrc = img.getAttribute('src');
+            if (!rawSrc || rawSrc.trim() === '') {
+                img.src = placeholder;
+            }
+
             img.onerror = function() {
                 if (img.src !== placeholder) {
                     img.src = placeholder;
                 }
             };
+
             img.dataset.fallbackSet = 'true';
+        } else {
+            // Caso o src seja definido dinamicamente para string vazia após o dataset já ter sido marcado
+            const rawSrc = img.getAttribute('src');
+            if (!rawSrc || rawSrc.trim() === '') {
+                if (img.src !== placeholder) img.src = placeholder;
+            }
         }
     });
 }
@@ -49,6 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <!-- Socket.IO -->
     <script src="/socket.io/socket.io.js"></script>
+
+    <!-- User Context (Global User State) -->
+    <script src="/js/global/user-context.js"></script>
     
 <style>
     * {

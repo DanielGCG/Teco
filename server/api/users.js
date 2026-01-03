@@ -1,7 +1,7 @@
 const express = require("express");
 const UsersRouter = express.Router();
 const { User, UserSession } = require("../models");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { authMiddleware, setUserCookie } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -94,7 +94,7 @@ UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
         await User.create({
             username,
             password_hash: hashedPassword,
-            bio: bio || ""
+            bio: bio
         });
 
         res.status(201).json({ message: "Conta criada com sucesso", username });
@@ -111,7 +111,7 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
     try {
         const user = await User.findOne({ 
             where: { username },
-            attributes: ['id', 'password_hash']
+            attributes: ['id', 'username', 'password_hash', 'profile_image', 'background_image', 'role']
         });
 
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
@@ -142,6 +142,10 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
         }
 
         res.cookie('session', cookieValue, { httpOnly: true, maxAge: 7*24*60*60*1000 });
+        
+        // Define um cookie não-HttpOnly com informações básicas para o frontend
+        setUserCookie(res, user);
+
         res.json({ message: "Login realizado com sucesso", cookie: cookieValue, expiresAt });
     } catch (err) {
         console.error(err);
@@ -155,6 +159,7 @@ UsersRouter.post('/logout', async (req, res) => {
     // Sempre limpa o cookie e responde sucesso, mesmo se não houver usuário autenticado
     if (!cookieValue || !req.user || !req.user.id) {
         res.clearCookie('session');
+        res.clearCookie('teco_user');
         return res.json({ message: "Logout realizado com sucesso" });
     }
     try {
@@ -168,6 +173,7 @@ UsersRouter.post('/logout', async (req, res) => {
         console.error(err);
     }
     res.clearCookie('session');
+    res.clearCookie('teco_user');
     res.json({ message: "Logout realizado com sucesso" });
 });
 
@@ -260,6 +266,10 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
             { where: { id: req.user.id } }
         );
 
+        // Busca o usuário atualizado para garantir dados corretos no cookie (opção certeira)
+        const updatedUser = await User.findByPk(req.user.id);
+        setUserCookie(res, updatedUser);
+
         res.json({ message: "Perfil atualizado com sucesso", username, background_image, profile_image, bio, pronouns });
     } catch (err) {
         console.error(err);
@@ -294,25 +304,6 @@ UsersRouter.put('/me/password', protect(0), validate(updatePasswordSchema), asyn
         res.status(500).json({ message: "Erro ao atualizar senha" });
     }
 });
-
-// GET /users/:username - Obter perfil de usuário por username
-UsersRouter.get('/:username', protect(0), async (req, res) => {
-    try {
-        const user = await User.findOne({
-            where: { username: req.params.username },
-            attributes: ['id', 'username', 'background_image', 'profile_image', 'bio', 'pronouns', 'created_at', 'last_access']
-        });
-        if (!user) return res.status(404).json({
-            message: "Usuário não encontrado"
-        });
-
-        res.json(user);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao carregar perfil do usuário" });
-    }
-});
-
 
 // GET /users/buscar - Buscar usuários por nome
 UsersRouter.get('/buscar', protect(0), validate(searchUsersSchema, 'query'), async (req, res) => {
@@ -357,6 +348,26 @@ UsersRouter.get('/buscar', protect(0), validate(searchUsersSchema, 'query'), asy
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+});
+
+// GET /users/:username - Obter perfil de usuário por username
+UsersRouter.get('/:username', protect(0), async (req, res) => {
+    try {
+        let username = req.params.username;
+
+        const user = await User.findOne({
+            where: { username: username },
+            attributes: ['id', 'username', 'background_image', 'profile_image', 'bio', 'pronouns', 'created_at', 'last_access']
+        });
+        if (!user) return res.status(404).json({
+            message: "Usuário não encontrado"
+        });
+
+        res.json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao carregar perfil do usuário" });
     }
 });
 

@@ -3,28 +3,43 @@ const { Op } = require("sequelize");
 
 const PUBLIC_ROUTES = ['/register', '/login', '/logout', '/validate-session']; // rotas públicas
 
+const setUserCookie = (res, user) => {
+    const userData = user.get ? user.get({ plain: true }) : user;
+    const userInfo = JSON.stringify({
+        id: userData.id,
+        username: userData.username,
+        profile_image: userData.profile_image,
+        background_image: userData.background_image,
+        role: userData.role
+    });
+    res.cookie('teco_user', Buffer.from(userInfo).toString('base64'), { 
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: false, // Permitir acesso via JS
+        secure: false, // Desativado para facilitar desenvolvimento local
+        sameSite: 'lax',
+        path: '/'
+    });
+};
+
 // authMiddleware(minRole, refresh = true)
 const authMiddleware = (minRole = 0, refresh = true) => {
     return async (req, res, next) => {
         try {
-            // Rotas públicas não precisam de verificação de cookies
-            if (PUBLIC_ROUTES.includes(req.path)) {
+            const isPublic = PUBLIC_ROUTES.includes(req.path);
+            const cookieValue = req.cookies?.session;
+
+            // Se não houver cookie e for rota pública, segue sem usuário
+            if (!cookieValue && isPublic) {
                 return next();
             }
 
-            // Pega o cookie de sessão
-            const cookieValue = req.cookies?.session;
-
-            if (!cookieValue) {
+            // Se não houver cookie e NÃO for rota pública, redireciona/erro
+            if (!cookieValue && !isPublic) {
                 if (res && res.status) {
-                    // Redireciona para login
-                    if (req.accepts('html')) {
-                        return res.redirect('/login');
-                    }
+                    if (req.accepts('html')) return res.redirect('/login');
                     return res.status(401).json({ message: "Sessão não encontrada" });
-                } else {
-                    return next(new Error("Sessão não encontrada")); // Para Socket.IO
                 }
+                return next(new Error("Sessão não encontrada"));
             }
 
             // Busca sessão válida
@@ -35,53 +50,64 @@ const authMiddleware = (minRole = 0, refresh = true) => {
                 },
                 include: [{
                     model: User,
-                    attributes: ['id', 'username', 'role']
+                    attributes: ['id', 'username', 'role', 'profile_image', 'background_image']
                 }]
             });
 
+            // Se sessão for inválida
             if (!session) {
+                if (isPublic) return next(); // Se for pública, ignora erro de sessão
+                
                 if (res && res.status) {
-                    // Se for uma requisição de página (HTML), redireciona para login
-                    if (req.accepts('html')) {
-                        return res.redirect('/login');
-                    }
+                    if (req.accepts('html')) return res.redirect('/login');
                     return res.status(401).json({ message: "Sessão inválida ou expirada" });
-                } else {
-                    return next(new Error("Sessão inválida ou expirada")); // Para Socket.IO
                 }
+                return next(new Error("Sessão inválida ou expirada"));
             }
 
             const user = session.User;
 
-            // Verifica role mínima
-            if (user.role < minRole) {
+            // Verifica role mínima (apenas se não for rota pública ou se minRole > 0)
+            if (!isPublic && user.role < minRole) {
                 if (res && res.status) {
                     return res.status(403).json({ message: "Acesso negado" });
-                } else {
-                    return next(new Error("Acesso negado")); // Para Socket.IO
                 }
+                return next(new Error("Acesso negado"));
             }
 
             // Atualiza expires_at se refresh ativado
             if (refresh) {
-                const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
+                const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                 await session.update({ expires_at: newExpires });
             }
 
             // Anexa informações do usuário
+            const userData = user.get ? user.get({ plain: true }) : user;
             req.user = {
-                id: user.id,
-                username: user.username,
-                role: user.role
+                id: userData.id,
+                username: userData.username,
+                role: userData.role,
+                profile_image: userData.profile_image,
+                background_image: userData.background_image
             };
+
+            if (res.locals) {
+                res.locals.loggedUser = req.user;
+                // Mantém res.locals.user por compatibilidade, mas loggedUser é a "opção certa"
+                res.locals.user = req.user;
+            }
+
+            // Define um cookie não-HttpOnly com informações básicas para o frontend
+            setUserCookie(res, user);
 
             next();
         } catch (err) {
-            console.error(err);
+            console.error("Erro no authMiddleware:", err);
+            if (isPublic) return next();
             if (res && res.status) {
                 return res.status(500).json({ message: "Erro na autenticação" });
             } else {
-                return next(new Error("Erro na autenticação")); // Para Socket.IO
+                return next(new Error("Erro na autenticação"));
             }
         }
     };
@@ -106,4 +132,4 @@ setInterval(() => {
     limparSessoesExpiradas();
 }, 60 * 60 * 1000); // 60 minutos   
 
-module.exports = authMiddleware;
+module.exports = { authMiddleware, setUserCookie };

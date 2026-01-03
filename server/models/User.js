@@ -32,7 +32,8 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING(255)
     },
     bio: {
-        type: DataTypes.STRING(160)
+        type: DataTypes.STRING(160),
+        defaultValue: ''
     },
     created_at: {
         type: DataTypes.DATE,

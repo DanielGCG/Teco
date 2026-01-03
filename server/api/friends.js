@@ -1,7 +1,7 @@
 const express = require("express");
 const FriendsRouter = express.Router();
 const { Follow, User, sequelize } = require("../models");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 const socketRouter = require("../routes/socket.router");
 const validate = require("../middlewares/validate");
 const { Op } = require("sequelize");

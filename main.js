@@ -6,7 +6,7 @@ const cors = require('cors');
 const cookieParser = require("cookie-parser");
 const http = require('http');
 const { Server } = require('socket.io');
-const authMiddleware = require('./server/middlewares/authMiddleware');
+const { authMiddleware } = require('./server/middlewares/authMiddleware');
 
 const servidor = express();
 const httpServer = http.createServer(servidor);
@@ -28,6 +28,14 @@ servidor.set('layout', './layouts/main');
 servidor.set('view engine', 'ejs');
 servidor.set('views', path.join(__dirname, 'views'));
 servidor.use(express.static(path.join(__dirname, 'public')));
+
+// Inicializa variáveis globais para as views (opção certeira)
+servidor.use((req, res, next) => {
+    res.locals.loggedUser = null;
+    res.locals.user = null;
+    res.locals.version = process.env.VERSION;
+    next();
+});
 
 // Disponibiliza io para as rotas
 servidor.set('io', io);

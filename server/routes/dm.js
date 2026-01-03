@@ -6,8 +6,9 @@ DMsRouter.get('/', async (req, res) => {
         title: `Mensagens Diretas`,
         description: "Lista de mensagens diretas",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
-    res.render('pages/chats/dms', {
+    res.render('pages/chats/dm', {
         layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST

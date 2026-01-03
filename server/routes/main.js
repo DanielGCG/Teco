@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middlewares/authMiddleware');
+const { authMiddleware } = require('../middlewares/authMiddleware');
 
 // Rota de admin - Requer role 1 (administrador)
 router.use("/admin", authMiddleware(1), require("./admin"));
 
 // Rota de chats
-router.use("/chat", require("./chats"));
+router.use("/chat", require("./chat"));
 
 // Rota de DMs (mensagens diretas)
-router.use("/dms", require("./dms"));
+router.use("/dms", require("./dm"));
 
 // Rota de cartinhas
 router.use("/cartinhas", require("./cartinhas"));

@@ -1,0 +1,281 @@
+/* Teco - Sistema de Posts (Inspirado em Twitter/Bluesky) */
+
+:root {
+    --post-border: #eff3f4;
+    --post-hover: rgba(0, 0, 0, 0.03);
+    --twitter-blue: #1d9bf0;
+    --twitter-green: #00ba7c;
+    --twitter-pink: #f91880;
+    --twitter-gray: #536471;
+    --verde: #b6c9ad;
+}
+
+.post-card {
+    transition: background-color 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.post-card:hover {
+    background-color: var(--post-hover);
+}
+
+.post-card.in-thread {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+/* Typography */
+.post-author-name {
+    color: #0f1419;
+    text-decoration: none;
+}
+
+.post-author-name:hover {
+    text-decoration: underline;
+}
+
+.post-content {
+    font-size: 15px;
+    line-height: 20px;
+    color: #0f1419;
+}
+
+/* Links, Mentions, Hashtags */
+.post-link, .mention, .hashtag {
+    color: var(--twitter-blue);
+    text-decoration: none;
+}
+
+.post-link:hover, .mention:hover, .hashtag:hover {
+    text-decoration: underline;
+}
+
+/* Grid de Mídia */
+.post-media-grid {
+    display: grid;
+    gap: 2px;
+    margin-top: 12px;
+    border-radius: 16px;
+    overflow: hidden;
+    width: 100%;
+    max-height: 350px;
+    max-width: 100%;
+}
+
+.post-media-grid.grid-1 { 
+    display: block; 
+    border: none; 
+}
+
+.post-media-grid.grid-1 .post-media-item { 
+    max-height: 350px; 
+    width: auto; 
+    max-width: 100%; 
+    border-radius: 16px; 
+    object-fit: cover; 
+}
+
+.post-media-grid.grid-2 { 
+    grid-template-columns: 1fr 1fr; 
+}
+
+.post-media-grid.grid-3 { 
+    grid-template-columns: 1fr 1fr; 
+    grid-template-rows: 1fr 1fr; 
+}
+.post-media-grid.grid-3 .post-media-item:first-child { 
+    grid-row: span 2; 
+}
+
+.post-media-grid.grid-4 { 
+    grid-template-columns: 1fr 1fr; 
+    grid-template-rows: 1fr 1fr; 
+}
+
+.post-media-item { 
+    width: 100%; 
+    height: 100%; 
+    min-height: 0;
+    object-fit: cover; 
+    cursor: pointer; 
+    background: rgba(0, 0, 0, 0.07);
+    display: block;
+    transition: opacity 0.2s;
+}
+
+.post-media-item:hover {
+    opacity: 0.9;
+}
+
+/* Ações de Post */
+.post-actions {
+    max-width: 425px;
+    color: var(--twitter-gray);
+}
+
+.post-action {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    transition: all 0.2s;
+    font-size: 13px;
+    z-index: 2;
+}
+
+.post-action i {
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+/* Hover states for actions */
+.post-action.reply:hover { color: var(--twitter-blue); }
+.post-action.reply:hover i { background-color: rgba(29, 155, 240, 0.1); }
+
+.post-action.repost:hover { color: var(--twitter-green); }
+.post-action.repost:hover i { background-color: rgba(0, 186, 124, 0.1); }
+.post-action.reposted { color: var(--twitter-green); }
+
+.post-action.like:hover { color: var(--twitter-pink); }
+.post-action.like:hover i { background-color: rgba(249, 24, 128, 0.1); }
+.post-action.liked { color: var(--twitter-pink); }
+
+.post-action.bookmark:hover { color: var(--twitter-blue); }
+.post-action.bookmark:hover i { background-color: rgba(29, 155, 240, 0.1); }
+.post-action.bookmarked { color: var(--twitter-blue); }
+
+.post-action.share:hover { color: var(--twitter-blue); }
+.post-action.share:hover i { background-color: rgba(29, 155, 240, 0.1); }
+
+.post-action.delete:hover { color: var(--bs-danger); }
+.post-action.delete:hover i { background-color: rgba(220, 53, 69, 0.1); }
+
+/* Reposts */
+.repost-container { 
+    border-radius: 16px; 
+    margin-top: 12px; 
+    padding: 12px; 
+    background: rgba(0, 0, 0, 0.07);
+    transition: background-color 0.2s; 
+    overflow: hidden;
+}
+
+.repost-container:hover { 
+    background-color: var(--post-hover); 
+}
+
+/* Thread Line */
+.thread-line {
+    position: absolute;
+    left: 40px;
+    top: 60px;
+    bottom: 0;
+    width: 2px;
+    background-color: #cfd9de;
+    z-index: 1;
+}
+
+/* Previews */
+.post-preview-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.preview-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.preview-item img, .preview-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.deleted-post { background-color: rgba(0, 0, 0, 0.05); border-left: 4px solid #dee2e6; }
+.italic { font-style: italic; }
+
+/* Fix para Modais Sobrepostos */
+#modalPostInteracao, #confirmacaoModal {
+    z-index: 1080 !important;
+}
+.modal-backdrop.show:nth-of-type(even) {
+    z-index: 1075 !important;
+}
+
+.main-post .post-author-name {
+    font-size: 16px;
+    color: #0f1419;
+    text-decoration: none;
+}
+
+.main-post .post-author-name:hover {
+    text-decoration: underline;
+}
+
+.main-post .post-content {
+    font-size: 19px;
+    line-height: 24px;
+    color: #0f1419;
+}
+
+.main-post .post-meta {
+    color: var(--twitter-gray);
+    font-size: 14px;
+}
+
+.stat-item {
+    color: var(--twitter-gray);
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.stat-item strong {
+    color: #0f1419;
+}
+
+.stat-item:hover {
+    text-decoration: underline;
+}
+
+.main-post .post-actions {
+    max-width: none;
+    color: var(--twitter-gray);
+}
+
+.reply-textarea {
+    border: none;
+    resize: none;
+    font-size: 18px;
+    width: 100%;
+    padding: 4px 0;
+    background: transparent;
+}
+.reply-textarea:focus {
+    outline: none;
+}

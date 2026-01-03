@@ -1,185 +1,306 @@
-<link rel="stylesheet" href="/styles/chat.css">
 <link rel="stylesheet" href="/styles/global/chat-dm-common.css">
 
-<div class="container-fluid h-100" style="padding: 0px;">
-  <div class="card h-100 d-flex flex-column" style="background-color: var(--verde);">
-    <div class="card-header text-center">
-      <h5 class="mb-0"><%= locals.title %></h5>
-    </div>
+<style>
+#chats-container { height: 100%; }
+#sidebar { background-color: var(--verde); }
+#info-area { background-color: var(--verde); }
 
-    <div id="chat-container" class="card-body position-relative" style="height:500px; overflow-y:auto; display:flex; flex-direction:column;">
-      <div id="loader" class="text-center my-2" style="display:none;">
-        <span class="spinner-border spinner-border-sm"></span> Carregando...
-      </div>
-    </div>
+.chat-card { cursor: pointer; margin-bottom: 0.5rem; }
+.chat-card.card { border: none; background: transparent; }
+.chat-card .card-body { padding: 0.75rem; border-radius: 0.6rem; transition: box-shadow .15s ease, transform .08s ease, background .15s ease; }
+.chat-card:hover .card-body { background: #f9fafb; box-shadow: 0 6px 18px rgba(16,24,40,0.06); transform: translateY(-2px); }
+.chat-card.active .card-body { background: #ede9fe; box-shadow: 0 8px 22px rgba(16,24,40,0.08); }
 
-    <div class="card-footer">
-      <div class="input-group">
-        <textarea id="input-msg" class="form-control" placeholder="Digite sua mensagem..." rows="1" style="resize: none; overflow-y: auto; max-height: 120px;"></textarea>
-        <button id="send-btn" class="btn btn-primary">Enviar</button>
-      </div>
+.unread-badge {
+    background: #7c3aed;
+    color: white;
+    border-radius: 50%;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+.chat-icon-circle {
+    width: 40px;
+    height: 40px;
+    background: var(--roxo);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.chat-preview-info {
+    text-align: center;
+    padding: 2rem;
+}
+
+.chat-preview-icon {
+    font-size: 4rem;
+    color: var(--roxo);
+    margin-bottom: 1rem;
+}
+</style>
+
+<div id="chats-container" class="container-fluid" style="padding: 0px;">
+    <div class="row h-100 g-3">
+        <!-- Sidebar -->
+        <div class="col-12 col-md-4 d-flex flex-column">
+            <div class="card h-100 d-flex flex-column" id="sidebar">
+                <div class="card-header">
+                    <h5 class="mb-0">Salas Públicas</h5>
+                </div>
+                <div class="p-3">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="search-chat-input" placeholder="Filtrar salas...">
+                        <span class="input-group-text"><i class="bi bi-filter"></i></span>
+                    </div>
+                </div>
+                <div id="chat-list" class="flex-grow-1 overflow-auto px-2">
+                    <div class="text-center p-3">
+                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                        <p class="text-muted small mt-2">Carregando salas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Chat -->
+        <div class="col-12 col-md-8">
+            <div id="chat-area" class="card h-100 d-flex flex-column" style="display: none !important;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" id="chat-title">Sala</h5>
+                    <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="voltarLista()">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </button>
+                </div>
+                
+                <div id="chat-messages" class="card-body position-relative" style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column;">
+                    <!-- Mensagens aqui -->
+                </div>
+
+                <div class="card-footer">
+                    <div class="input-group">
+                        <textarea id="input-msg" class="form-control" placeholder="Digite sua mensagem..." rows="1" style="resize: none; overflow-y: auto; max-height: 120px;"></textarea>
+                        <button id="send-btn" class="btn btn-primary">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Placeholder quando nada selecionado -->
+            <div id="info-area" class="card h-100 d-flex flex-column">
+                <div class="card-header">
+                    <h5 class="mb-0">Detalhes da Sala</h5>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <div class="chat-preview-info">
+                        <i class="bi bi-chat-quote chat-preview-icon"></i>
+                        <h4>Selecione uma sala</h4>
+                        <p class="text-muted">Escolha uma das salas ao lado para ver mais detalhes e entrar na conversa.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Módulos globais -->
 <script src="/js/commons/ui-common.js"></script>
 <script src="/js/commons/chat-dm-common.js"></script>
 
-<!-- Reutiliza conexão Socket.IO global do partial de notificações -->
 <script>
-const socket = window.appSocket;
-const chatName = "<%= chatName %>";
-let allMessages = [];
-let loadedStart = 0;
-let loadedEnd = 0;
-const bufferSize = 100;
+    const socket = window.appSocket;
+    let allChats = [];
+    let selectedChat = null;
+    let currentUser = null;
+    let allMessages = [];
+    const bufferSize = 100;
 
-const chatContainer = document.getElementById("chat-container");
-const loader = document.getElementById("loader");
-let currentUser = null;
-let chatId = null;
+    const chatArea = document.getElementById('chat-area');
+    const infoArea = document.getElementById('info-area');
+    const chatMessages = document.getElementById('chat-messages');
+    const inputMsg = document.getElementById('input-msg');
+    const sendBtn = document.getElementById('send-btn');
+    const chatTitle = document.getElementById('chat-title');
 
-if (!socket) {
-    console.error('[Chat] Socket.IO não disponível!');
-}
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', async () => {
+        const resUser = await fetch('/api/users/me', { credentials: 'include' });
+        currentUser = await resUser.json();
+        
+        await carregarChats();
 
-// Função de reconexão
-function onSocketConnect() {
-    if (chatId) {
-        socket.emit('joinChat', chatId);
-        socket.emit('getMessages', { chatId, page: 1 });
-    }
-}
-
-// Registra handler de reconexão
-if (window.SocketConnector) {
-    SocketConnector.onReconnect(onSocketConnect);
-}
-
-// ==================== Renderização de mensagens ====================
-function renderMessage(msgData, prepend = false) {
-    ChatUtils.renderMessage(msgData, chatContainer, {
-        isMine: msgData.tipo === 'usuario',
-        showUsername: true,
-        showTime: true,
-        prepend
+        // Se houver um chatName na URL (passado pelo backend)
+        const initialChatName = "<%= locals.chatName || '' %>";
+        if (initialChatName) {
+            const chat = allChats.find(c => c.nome === initialChatName || c.id.toString() === initialChatName);
+            if (chat) selecionarChat(chat);
+        }
     });
-}
 
-function renderMessagesInitial(){
-    chatContainer.innerHTML = "";
-    if(loadedEnd === 0) return; // não há mensagens ainda
-
-    for(let i = loadedStart; i < loadedEnd; i++){
-        renderMessage(allMessages[i]);
-    }
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-// ==================== Enviar nova mensagem ====================
-const inputMsg = document.getElementById("input-msg");
-const sendBtn = document.getElementById("send-btn");
-
-ChatUtils.setupMessageInput(inputMsg, sendBtn, (text) => {
-    if (!chatId) {
-        console.error('[Chat] Chat ID não encontrado');
-        return;
+    async function carregarChats() {
+        try {
+            const res = await fetch('/api/chats', { credentials: 'include' });
+            allChats = await res.json();
+            renderizarLista(allChats);
+        } catch (error) {
+            console.error('[Chats] Erro ao carregar:', error);
+            document.getElementById('chat-list').innerHTML = '<p class="text-danger text-center p-3">Erro ao carregar salas.</p>';
+        }
     }
 
-    socket.emit('sendMessage', {
-        chatId: chatId,
-        mensagem: text
+    function renderizarLista(chats) {
+        const container = document.getElementById('chat-list');
+        container.innerHTML = '';
+
+        if (chats.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center p-3">Nenhuma sala encontrada.</p>';
+            return;
+        }
+
+        chats.forEach(chat => {
+            const card = document.createElement('div');
+            card.dataset.id = chat.id;
+            card.className = `chat-card card ${selectedChat?.id === chat.id ? 'active' : ''}`;
+            card.innerHTML = `
+                <div class="card-body d-flex gap-3 align-items-center">
+                    <div class="chat-icon-circle">
+                        <i class="bi bi-hash"></i>
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="text-truncate">${chat.nome}</strong>
+                            ${chat.unreadCount > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : ''}
+                        </div>
+                        <small class="text-muted d-block">por ${chat.criado_por}</small>
+                    </div>
+                </div>
+            `;
+            card.onclick = () => selecionarChat(chat);
+            container.appendChild(card);
+        });
+    }
+
+    function selecionarChat(chat) {
+        if (selectedChat?.id === chat.id) return;
+        
+        selectedChat = chat;
+        chat.unreadCount = 0;
+        renderizarLista(allChats);
+        
+        allMessages = [];
+        chatMessages.innerHTML = '';
+        
+        // Atualiza URL sem recarregar
+        window.history.pushState({}, '', `/chat/${chat.nome}`);
+
+        // UI
+        document.querySelectorAll('.chat-card').forEach(c => {
+            c.classList.toggle('active', c.dataset.id == chat.id);
+        });
+
+        infoArea.style.setProperty('display', 'none', 'important');
+        chatArea.style.setProperty('display', 'flex', 'important');
+        chatTitle.innerText = `# ${chat.nome}`;
+
+        // Mobile toggle
+        if (window.innerWidth < 768) {
+            document.getElementById('sidebar').parentElement.classList.add('d-none');
+        }
+
+        // Socket
+        socket.emit('getMessages', { chatName: chat.nome, page: 1 });
+    }
+
+    function voltarLista() {
+        document.getElementById('sidebar').parentElement.classList.remove('d-none');
+        chatArea.style.setProperty('display', 'none', 'important');
+        infoArea.style.setProperty('display', 'flex', 'important');
+        selectedChat = null;
+        window.history.pushState({}, '', '/chat');
+    }
+
+    // ==================== Socket.IO Events ====================
+    socket.on('messagesLoaded', ({ chatId: loadedChatId, messages }) => {
+        if (!selectedChat || (loadedChatId !== selectedChat.id && !selectedChat.id)) {
+            // Se ainda não temos o ID do chat selecionado, mas o nome bate
+            // (O backend retorna o ID no messagesLoaded)
+            if (selectedChat) selectedChat.id = loadedChatId;
+        }
+        
+        if (selectedChat?.id !== loadedChatId) return;
+
+        allMessages = messages.map(msg => formatMessage(msg));
+        chatMessages.innerHTML = '';
+        allMessages.forEach(msg => renderMessage(msg));
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        socket.emit('joinChat', loadedChatId);
+        socket.emit('markAsRead', { chatId: loadedChatId });
     });
-});
 
-// ==================== Socket.IO Events ====================
-socket.on('joinedChat', ({ chatId, success }) => {
-    if (success) {
-        console.log('[Socket] Entrou no chat:', chatId);
-    }
-});
+    socket.on('newMessage', (data) => {
+        const { chatId, message } = data;
+        
+        if (selectedChat?.id === chatId) {
+            const formatted = formatMessage(message);
+            allMessages.push(formatted);
+            renderMessage(formatted);
+            
+            if (chatMessages.children.length > bufferSize) {
+                chatMessages.removeChild(chatMessages.firstChild);
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
 
-socket.on('messagesLoaded', ({ chatId: loadedChatId, page, messages, hasMore }) => {
-    // Armazena chatId na primeira vez
-    if (!chatId) {
-        chatId = loadedChatId;
-        console.log('[Socket] Chat ID recebido:', chatId);
-        socket.emit('joinChat', chatId);
-    }
-    
-    // Ignora se não é o chat atual
-    if (loadedChatId !== chatId) return;
-    
-    // Converte formato do backend para o frontend
-    const formatted = messages.map(msg => ({
-        id: msg.id,
-        text: msg.mensagem,
-        mensagem: msg.mensagem,
-        username: msg.User?.username || msg.username,
-        nome: msg.User?.username || msg.username,
-        tipo: msg.isMine ? "usuario" : "outrousuario",
-        createdAt: msg.created_at
-    }));
+            if (formatted.username !== currentUser.username) {
+                socket.emit('markAsRead', { chatId });
+            }
+        } else {
+            // Incrementa contador se não for o chat atual
+            const chat = allChats.find(c => c.id === chatId);
+            if (chat && (message.User?.username || message.username) !== currentUser.username) {
+                chat.unreadCount = (chat.unreadCount || 0) + 1;
+                renderizarLista(allChats);
+            }
+        }
+    });
 
-    if (page === 1) {
-        // Carregamento inicial
-        allMessages = formatted;
-        loadedStart = 0;
-        loadedEnd = allMessages.length;
-        renderMessagesInitial();
-    }
-});
-
-socket.on('newMessage', async (data) => {
-    console.log('[Socket] Nova mensagem recebida:', data);
-    
-    const { chatId: msgChatId, message } = data;
-    
-    // Se é o chat atual, adiciona a mensagem
-    if (msgChatId === chatId && message) {
-
-        const newMsg = {
-            id: message.id,
-            text: message.mensagem || message.text,
-            mensagem: message.mensagem || message.text,
-            username: message.username,
-            nome: message.username,
-            tipo: message.username === currentUser.username ? "usuario" : "outrousuario",
-            createdAt: message.created_at || new Date().toISOString()
+    function formatMessage(msg) {
+        return {
+            id: msg.id,
+            text: msg.mensagem,
+            username: msg.User?.username || msg.username,
+            tipo: (msg.User?.username || msg.username) === currentUser.username ? "usuario" : "outrousuario",
+            createdAt: msg.created_at || new Date().toISOString()
         };
-        
-        allMessages.push(newMsg);
-        renderMessage(newMsg);
-        loadedEnd++;
-        
-        // Remove mensagens antigas se ultrapassar o buffer
-        if (chatContainer.children.length > bufferSize + 1) {
-            chatContainer.removeChild(chatContainer.firstChild);
-            loadedStart++;
-        }
-        
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        
-        // Marca como lida automaticamente quando recebe mensagem de outro usuário
-        if (message.username !== currentUser.username) {
-            socket.emit('markAsRead', { chatId });
-        }
     }
-});
 
-// Chat público não precisa de evento messageRead - apenas marca como lido no backend
-socket.on('error', (error) => {
-    console.error('[Socket] Erro:', error);
-    alert('Erro: ' + error.message);
-});
+    function renderMessage(msg) {
+        ChatUtils.renderMessage(msg, chatMessages, {
+            isMine: msg.tipo === 'usuario',
+            showUsername: true,
+            showTime: true
+        });
+    }
 
-// ==================== Inicialização ====================
-(async () => {
-    const res = await fetch('/api/users/me', { credentials: 'include' });
-    currentUser = await res.json();
-    
-    // Carrega mensagens iniciais via socket
-    socket.emit('getMessages', { chatName, page: 1 });
-})();
+    // ==================== Envio ====================
+    ChatUtils.setupMessageInput(inputMsg, sendBtn, (text) => {
+        if (!selectedChat?.id) return;
+        socket.emit('sendMessage', {
+            chatId: selectedChat.id,
+            mensagem: text
+        });
+    });
+
+    // Filtro de busca
+    document.getElementById('search-chat-input').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = allChats.filter(c => c.nome.toLowerCase().includes(term));
+        renderizarLista(filtered);
+    });
 </script>

@@ -131,7 +131,11 @@ async function carregarChats() {
                 </div>
             `;
             card.addEventListener("click", () => {
-                window.location.href = `/chat/${chat.id}`;
+                if (chat.tipo === 'public') {
+                    window.location.href = `/chat/${chat.nome}`;
+                } else {
+                    window.location.href = `/dms`;
+                }
             });
             chatList.appendChild(card);
         });

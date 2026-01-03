@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS posts (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    content TEXT,
+    parent_id INT UNSIGNED DEFAULT NULL,
+    type ENUM('post', 'repost', 'reply') DEFAULT 'post',
+    likes_count INT UNSIGNED DEFAULT 0,
+    reposts_count INT UNSIGNED DEFAULT 0,
+    replies_count INT UNSIGNED DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES posts(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS post_media (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    post_id INT UNSIGNED NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    type ENUM('image', 'video') DEFAULT 'image',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS post_likes (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    post_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_like (post_id, user_id),
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS post_mentions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    post_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    mentioned_username VARCHAR(50) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bookmarks table (merged from 08_bookmarks.sql)
+CREATE TABLE IF NOT EXISTS post_bookmarks (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    post_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_bookmark (post_id, user_id),
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

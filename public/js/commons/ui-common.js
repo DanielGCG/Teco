@@ -20,27 +20,15 @@ if (typeof window.UIUtils !== 'undefined') {
     function createAvatarWithStatus(user, size = 40) {
         if (!user) return `<div style="width:${size}px;height:${size}px;"></div>`;
         
-        const profileImage = user.profile_image || '/images/placeholder.png';
+        const profileImage = user.profile_image;
         const statusColor = getStatusColor(user.status || 'offline');
-        const initial = user.username ? user.username.charAt(0).toUpperCase() : '?';
         
         return `
             <div class="position-relative" style="width:${size}px;height:${size}px;flex-shrink:0;align-self:flex-start;">
-                ${profileImage && profileImage !== '/images/placeholder.png' ? 
-                    `<img src="${profileImage}" 
-                         class="rounded-circle" 
-                         style="width:100%;height:100%;object-fit:cover;"
-                         alt="${user.username}"
-                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                     <div class="rounded-circle d-none" 
-                          style="width:100%;height:100%;background:#6c757d;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">
-                         ${initial}
-                     </div>` :
-                    `<div class="rounded-circle" 
-                          style="width:100%;height:100%;background:#6c757d;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">
-                         ${initial}
-                     </div>`
-                }
+                <img src="${profileImage}" 
+                     class="rounded-circle" 
+                     style="width:100%;height:100%;object-fit:cover;"
+                     alt="${user.username}">
                 <span class="position-absolute bottom-0 end-0 border border-white rounded-circle" 
                       style="width:${Math.round(size * 0.3)}px;height:${Math.round(size * 0.3)}px;background:${statusColor};"></span>
             </div>

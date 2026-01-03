@@ -1,0 +1,102 @@
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h2 class="display-6 fw-bold"><span class="marca-texto-roxo">Central do Correio</span></h2>
+        <p class="text-muted">Gerencie suas mensagens e conexões</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <!-- Escrever -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="/cartinhas/escrever" class="text-decoration-none">
+                <div class="card h-100 menu-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="menu-icon-wrapper mb-3 mx-auto" style="background-color: var(--roxo);">
+                            <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2 text-dark">Escrever</h5>
+                        <p class="small text-muted mb-0">Enviar uma nova cartinha</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Caixa de Entrada -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="/cartinhas/recebidas" class="text-decoration-none">
+                <div class="card h-100 menu-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="menu-icon-wrapper mb-3 mx-auto" style="background-color: var(--verde);">
+                            <i class="bi bi-mailbox2"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2 text-dark">Entrada</h5>
+                        <p class="small text-muted mb-0">Cartinhas recebidas</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Enviadas -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="/cartinhas/enviadas" class="text-decoration-none">
+                <div class="card h-100 menu-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="menu-icon-wrapper mb-3 mx-auto" style="background-color: var(--azul);">
+                            <i class="bi bi-send-check"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2 text-dark">Enviadas</h5>
+                        <p class="small text-muted mb-0">Histórico de envios</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Favoritas -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="/cartinhas/favoritas" class="text-decoration-none">
+                <div class="card h-100 menu-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="menu-icon-wrapper mb-3 mx-auto" style="background-color: var(--amarelo);">
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2 text-dark">Favoritas</h5>
+                        <p class="small text-muted mb-0">Mensagens guardadas</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.menu-card {
+    border-radius: 1rem;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.menu-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
+    background: #fcfcfc;
+}
+
+.menu-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.marca-texto-roxo {
+    background: linear-gradient(120deg, rgba(162, 155, 254, 0.3) 0%, rgba(162, 155, 254, 0.3) 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 0.4em;
+    background-position: 0 88%;
+    padding: 0.1em 0.2em;
+}
+</style>

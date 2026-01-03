@@ -1,0 +1,66 @@
+<!-- Modal para Novo Post -->
+<div class="modal fade" id="modalNovoPost" tabindex="-1" aria-labelledby="modalNovoPostLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex gap-3">
+                    <img src="<%= locals.user ? locals.user.profile_image : '' %>" class="rounded-circle object-fit-cover" style="width: 48px; height: 48px;">
+                    <div class="flex-grow-1">
+                        <textarea id="novo-post-textarea" class="modal-post-textarea border-0 w-100" placeholder="O que está acontecendo?" rows="3" oninput="PostUI.handleTextareaInput(event, 'novo-post-char-counter')"></textarea>
+                        <div id="novo-post-preview" class="post-preview-container"></div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                            <div class="d-flex gap-2">
+                                <label for="novo-post-media" class="post-action reply d-flex align-items-center" style="cursor: pointer;">
+                                    <i class="bi bi-image" style="font-size: 1.2rem;"></i>
+                                </label>
+                                <input type="file" id="novo-post-media" hidden multiple accept="image/*,video/*" onchange="PostUI.handleMediaSelect(event, 'novo-post-preview')">
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span id="novo-post-char-counter" class="text-muted small">0/300</span>
+                                <button id="btn-confirmar-novo-post" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="PostActions.enviarNovoPost()">Postar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Repost/Reply -->
+<div class="modal fade" id="modalPostInteracao" tabindex="-1" aria-labelledby="modalPostInteracaoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPostInteracaoLabel">Interação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="interacao-post-id">
+                <input type="hidden" id="interacao-type">
+                <div class="d-flex gap-3">
+                    <img src="<%= locals.user ? locals.user.profile_image : '' %>" class="rounded-circle object-fit-cover" style="width: 48px; height: 48px;">
+                    <div class="flex-grow-1">
+                        <textarea id="interacao-textarea" class="modal-post-textarea border-0 w-100" placeholder="Adicione um comentário..." rows="3" oninput="PostUI.handleTextareaInput(event, 'interacao-char-counter')"></textarea>
+                        <div id="interacao-preview" class="post-preview-container"></div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                            <div class="d-flex gap-2">
+                                <label for="interacao-media" class="post-action reply d-flex align-items-center" style="cursor: pointer;">
+                                    <i class="bi bi-image" style="font-size: 1.2rem;"></i>
+                                </label>
+                                <input type="file" id="interacao-media" hidden multiple accept="image/*,video/*" onchange="PostUI.handleMediaSelect(event, 'interacao-preview')">
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span id="interacao-char-counter" class="text-muted small">0/300</span>
+                                <button id="btn-confirmar-interacao" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="PostActions.enviarInteracao()">Confirmar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

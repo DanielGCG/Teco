@@ -18,7 +18,7 @@ const Notification = sequelize.define('Notification', {
         }
     },
     type: {
-        type: DataTypes.ENUM('FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'NEW_DM', 'NEW_CARTINHA', 'MENTION', 'SYSTEM'),
+        type: DataTypes.ENUM('FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'NEW_DM', 'NEW_CARTINHA', 'MENTION', 'SYSTEM', 'FOLLOW', 'POST_LIKE', 'POST_REPLY', 'POST_REPOST'),
         allowNull: false
     },
     title: {
