@@ -3,7 +3,7 @@
  * Gerencia renderização, interações e modais de posts
  */
 
-const PostUI = {
+window.PostUI = {
     // Inicializa listeners globais para modais
     init: function() {
         document.addEventListener('DOMContentLoaded', () => {
@@ -237,11 +237,43 @@ const PostUI = {
         if (counter) {
             counter.textContent = `${len}/300`;
             counter.classList.toggle('limit', len >= 300);
+        }    },
+
+    // Configura um formulário de novo post (inline ou modal)
+    setupNewPostForm: function(config) {
+        const { textareaId, mediaInputId, btnId, previewId, extraData, modalId } = config;
+        const textarea = document.getElementById(textareaId);
+        const mediaInput = document.getElementById(mediaInputId);
+        const btn = document.getElementById(btnId);
+
+        if (mediaInput) {
+            mediaInput.onchange = (e) => this.handleMediaSelect(e, previewId);
         }
-    }
+
+        if (btn && textarea) {
+            btn.onclick = async () => {
+                const content = textarea.value.trim();
+                if (!content && window.selectedFiles.length === 0 && extraData.type !== 'repost') return;
+
+                await PostActions.enviarPost(content, window.selectedFiles, extraData, btn, modalId);
+                
+                // Limpar campos após enviar
+                textarea.value = '';
+                const preview = document.getElementById(previewId);
+                if (preview) preview.innerHTML = '';
+                window.selectedFiles = [];
+                
+                // Resetar contador se existir
+                const counterId = textareaId === 'novo-post-textarea' ? 'novo-post-char-counter' : null;
+                if (counterId) {
+                    const counter = document.getElementById(counterId);
+                    if (counter) counter.textContent = '0/300';
+                }
+            };
+        }    }
 };
 
-const PostActions = {
+window.PostActions = {
     // Curtir post
     like: async function(postId) {
         try {
@@ -379,20 +411,14 @@ const PostActions = {
                     if (modal) modal.hide();
                 }
                 
-                // Se for uma interação em um modal aberto, recarrega o modal
-                if (extraData.parent_id) {
-                    // Se estivermos na página de detalhes do post, recarrega as respostas
-                    if (typeof carregarRespostas === 'function') {
-                        carregarRespostas();
-                    }
-                }
-
-                if (window.carregarPosts && window.username) {
-                    window.carregarPosts(window.username);
-                }
-
+                // Se houver um feed ativo, recarrega para mostrar o novo post
                 if (window.PostFeed && typeof window.PostFeed.reload === 'function') {
                     window.PostFeed.reload();
+                }
+
+                // Se estivermos na página de detalhes do post (parent_id existe), recarrega as respostas
+                if (extraData.parent_id && typeof carregarRespostas === 'function') {
+                    carregarRespostas();
                 }
             } else {
                 const err = await res.json();
@@ -407,20 +433,22 @@ const PostActions = {
     }
 };
 
-const PostFeed = {
+window.PostFeed = {
     container: null,
     loading: false,
     hasMore: true,
     offset: 0,
     limit: 10,
     type: 'for-you',
+    username: null,
 
-    init: function(containerId, type = 'for-you') {
+    init: function(containerId, type = 'for-you', username = null) {
         this.container = document.getElementById(containerId);
         if (!this.container) return;
 
         this.type = type;
-        this.loadMore();
+        this.username = username;
+        this.reload();
 
         window.addEventListener('scroll', () => {
             if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !this.loading && this.hasMore) {
@@ -429,9 +457,10 @@ const PostFeed = {
         });
     },
 
-    switchFeed: function(type) {
-        if (this.type === type) return;
+    switchFeed: function(type, username = null) {
+        if (this.type === type && this.username === username) return;
         this.type = type;
+        this.username = username;
         this.reload();
     },
 
@@ -453,7 +482,15 @@ const PostFeed = {
         this.container.appendChild(loadingIndicator);
 
         try {
-            const res = await fetch(`/api/posts/feed?type=${this.type}&limit=${this.limit}&offset=${this.offset}`);
+            let url = `/api/posts/feed?type=${this.type}&limit=${this.limit}&offset=${this.offset}`;
+            
+            if (this.type === 'user' && this.username) {
+                url = `/api/posts/user/${this.username}?limit=${this.limit}&offset=${this.offset}`;
+            } else if (this.type === 'bookmarks' && this.username) {
+                url = `/api/posts/user/${this.username}/bookmarks?limit=${this.limit}&offset=${this.offset}`;
+            }
+
+            const res = await fetch(url);
             const posts = await res.json();
 
             loadingIndicator.remove();

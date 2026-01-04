@@ -3,11 +3,27 @@
 :root {
     --post-border: #eff3f4;
     --post-hover: rgba(0, 0, 0, 0.03);
-    --twitter-blue: #1d9bf0;
-    --twitter-green: #00ba7c;
-    --twitter-pink: #f91880;
     --twitter-gray: #536471;
-    --verde: #b6c9ad;
+}
+
+/* Feed Tabs */
+.feed-tab {
+    border: none;
+    border-bottom: 4px solid transparent;
+    border-radius: 0;
+    transition: all 0.2s;
+    color: var(--cinza-claro);
+    background: transparent;
+}
+
+.feed-tab:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.feed-tab.active {
+    border-bottom-color: var(--verde-escuro);
+    color: var(--verde-escuro);
+    font-weight: bold;
 }
 
 .post-card {
@@ -43,7 +59,7 @@
 
 /* Links, Mentions, Hashtags */
 .post-link, .mention, .hashtag {
-    color: var(--twitter-blue);
+    color: var(--verde-escuro);
     text-decoration: none;
 }
 
@@ -111,7 +127,7 @@
 /* Ações de Post */
 .post-actions {
     max-width: 425px;
-    color: var(--twitter-gray);
+    color: var(--cinza-claro);
 }
 
 .post-action {
@@ -133,23 +149,30 @@
     font-size: 18px;
 }
 
+/* Apply brown background while mouse is held down on action icons */
+.post-action:active i,
+.post-action i:active {
+    background-color: var(--marrom) !important;
+    color: #fff !important;
+}
+
 /* Hover states for actions */
-.post-action.reply:hover { color: var(--twitter-blue); }
+.post-action.reply:hover { color: var(--verde-escuro); }
 .post-action.reply:hover i { background-color: rgba(29, 155, 240, 0.1); }
 
-.post-action.repost:hover { color: var(--twitter-green); }
+.post-action.repost:hover { color: var(--verde-claro); }
 .post-action.repost:hover i { background-color: rgba(0, 186, 124, 0.1); }
-.post-action.reposted { color: var(--twitter-green); }
+.post-action.reposted { color: var(--verde-claro); }
 
-.post-action.like:hover { color: var(--twitter-pink); }
+.post-action.like:hover { color: var(--vermelho); }
 .post-action.like:hover i { background-color: rgba(249, 24, 128, 0.1); }
-.post-action.liked { color: var(--twitter-pink); }
+.post-action.liked { color: var(--vermelho); }
 
-.post-action.bookmark:hover { color: var(--twitter-blue); }
+.post-action.bookmark:hover { color: var(--verde-escuro); }
 .post-action.bookmark:hover i { background-color: rgba(29, 155, 240, 0.1); }
-.post-action.bookmarked { color: var(--twitter-blue); }
+.post-action.bookmarked { color: var(--verde-escuro); }
 
-.post-action.share:hover { color: var(--twitter-blue); }
+.post-action.share:hover { color: var(--verde-escuro); }
 .post-action.share:hover i { background-color: rgba(29, 155, 240, 0.1); }
 
 .post-action.delete:hover { color: var(--bs-danger); }
@@ -245,12 +268,12 @@
 }
 
 .main-post .post-meta {
-    color: var(--twitter-gray);
+    color: var(--cinza-claro);
     font-size: 14px;
 }
 
 .stat-item {
-    color: var(--twitter-gray);
+    color: var(--cinza-claro);
     font-size: 14px;
     text-decoration: none;
 }
@@ -265,7 +288,7 @@
 
 .main-post .post-actions {
     max-width: none;
-    color: var(--twitter-gray);
+    color: var(--cinza-claro);
 }
 
 .reply-textarea {

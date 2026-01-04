@@ -1,19 +1,4 @@
 <link rel="stylesheet" href="/styles/posts.css">
-<style>
-    .feed-tab {
-        border: none;
-        border-bottom: 4px solid transparent;
-        border-radius: 0;
-        transition: all 0.2s;
-    }
-    .feed-tab:hover {
-        background-color: rgba(0,0,0,0.05);
-    }
-    .feed-tab.active {
-        border-bottom-color: var(--bs-primary);
-        color: var(--bs-primary);
-    }
-</style>
 
 <div class="row justify-content-center">
     <div class="col-md-5">
@@ -24,15 +9,15 @@
         </div>
 
         <!-- Área de Novo Post -->
-        <div class="card mb-3 border-0 shadow-sm">
+        <div class="card mb-3 border-0 shadow-sm" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
             <div class="card-body">
                 <div class="d-flex gap-3">
                     <% const u = locals.loggedUser; %>
                     <img src="<%= u ? u.profile_image : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
                     <div class="flex-grow-1">
-                        <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está acontecendo?" rows="2" style="resize: none; font-size: 1.1rem;"></textarea>
+                        <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está acontecendo?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
                         <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <div class="d-flex justify-content-between align-items-center border-top">
                             <div class="d-flex gap-2">
                                 <label for="feed-novo-post-media" class="btn btn-outline-primary btn-sm rounded-pill border-0">
                                     <i class="bi bi-image"></i>
@@ -74,26 +59,12 @@
         PostFeed.init('feed-container');
 
         // Configura o mini-form de post no feed
-        const textarea = document.getElementById('feed-novo-post-textarea');
-        const mediaInput = document.getElementById('feed-novo-post-media');
-        const btnPostar = document.getElementById('btn-feed-postar');
-
-        if (mediaInput) {
-            mediaInput.onchange = (e) => PostUI.handleMediaSelect(e, 'feed-novo-post-preview');
-        }
-
-        if (btnPostar) {
-            btnPostar.onclick = async () => {
-                const content = textarea.value.trim();
-                if (!content && window.selectedFiles.length === 0) return;
-
-                await PostActions.enviarPost(content, window.selectedFiles, { type: 'post' }, btnPostar, null);
-                
-                // Limpar campos após enviar
-                textarea.value = '';
-                document.getElementById('feed-novo-post-preview').innerHTML = '';
-                window.selectedFiles = [];
-            };
-        }
+        PostUI.setupNewPostForm({
+            textareaId: 'feed-novo-post-textarea',
+            mediaInputId: 'feed-novo-post-media',
+            btnId: 'btn-feed-postar',
+            previewId: 'feed-novo-post-preview',
+            extraData: { type: 'post' }
+        });
     });
 </script>

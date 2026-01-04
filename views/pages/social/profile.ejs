@@ -11,7 +11,7 @@
         display: flex;
         align-items: flex-start;
         gap: 1rem;
-        padding: 1rem;
+        padding-top: 1rem;
     }
     .profile-sidebar {
         width: 320px;
@@ -46,13 +46,12 @@
             max-height: none;
         }
     }
-
     .banner-wrap {
-        background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWoycWk3a2t5aHBycjd4cWFxZHFnZTBiajZhd25pbzlmcWJtMHkzZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LKNqU8ISdR7iw/giphy.gif');
         background-size: cover;
         background-position: center;
         height: 12rem;
         position: relative;
+        background-color: rgba(0,0,0,0.1);
     }
     .profile-card {
         background-color: rgba(0, 0, 0, 0.3);
@@ -113,7 +112,6 @@
         padding: 1.25rem;
         margin-bottom: 1rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #f0f0f0;
     }
     .section-title {
         font-size: 1rem;
@@ -183,16 +181,20 @@
     .bio-container, .galerias-container, .amigos-container, .card-header {
         background-color: var(--verde);
     }
-    .profile-tab {
-        cursor: pointer;
-        padding-bottom: 0.5rem;
-        border-bottom: 3px solid transparent;
-        color: #666;
+    .feed-tab {
+        border: none;
+        border-bottom: 4px solid transparent;
+        border-radius: 0;
         transition: all 0.2s;
+        color: #666;
     }
-    .profile-tab.active {
-        color: var(--verde-escuro);
+    .feed-tab:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .feed-tab.active {
         border-bottom-color: var(--verde-escuro);
+        color: var(--verde-escuro);
+        font-weight: bold;
     }
     .profile-sidebar::-webkit-scrollbar {
         width: 4px;
@@ -210,12 +212,12 @@
 <div class="profile-container">
     <div class="profile-header">
         <div class="banner-wrap w-100 position-relative" id="profile-banner">
-            <div class="profile-card position-absolute start-0 bottom-0 ms-4 mb-4 d-flex align-items-start">
+            <div class="profile-card position-absolute start-0 top-50 translate-middle-y ms-4 d-flex align-items-start">
                 <div class="profile-avatar-container me-3">
                     <img class="profile-avatar" src="">
                     <span class="status-dot" id="user-status-dot" title="Offline"></span>
                 </div>
-                <div class="profile-meta pb-1">
+                <div class="profile-meta">
                     <h1 class="profile-name mb-0">...</h1>
                     <span class="profile-pronouns"></span>
                 </div>
@@ -244,17 +246,36 @@
             </div>
         </div>
         <div class="profile-main">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="d-flex gap-3">
-                    <h4 class="mb-0 profile-tab active" id="tab-posts" onclick="switchTab('posts')">Posts</h4>
-                    <h4 class="mb-0 profile-tab d-none" id="tab-bookmarks" onclick="switchTab('bookmarks')">Favoritos</h4>
+            <!-- Tabs de Feed -->
+            <div class="d-flex border-bottom mb-3 rounded-top">
+                <button class="btn flex-grow-1 py-1 fw-bold feed-tab active" id="tab-posts" onclick="switchTab('posts')">Posts</button>
+                <button class="btn flex-grow-1 py-1 fw-bold feed-tab d-none" id="tab-bookmarks" onclick="switchTab('bookmarks')">Favoritos</button>
+            </div>
+
+            <!-- Área de Novo Post (Apenas se for o próprio perfil) -->
+            <div class="card mb-3 border-0 shadow-sm d-none" id="profile-new-post-area" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                <div class="card-body">
+                    <div class="d-flex gap-3">
+                        <% const u = locals.loggedUser; %>
+                        <img src="<%= u ? u.profile_image : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                        <div class="flex-grow-1">
+                            <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está pensando?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
+                            <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
+                            <div class="d-flex justify-content-between align-items-center border-top">
+                                <div class="d-flex gap-2">
+                                    <label for="feed-novo-post-media" class="btn btn-outline-primary btn-sm rounded-pill border-0">
+                                        <i class="bi bi-image"></i>
+                                    </label>
+                                    <input type="file" id="feed-novo-post-media" hidden multiple accept="image/*,video/*">
+                                </div>
+                                <button id="btn-feed-postar" class="btn btn-primary rounded-pill px-4 fw-bold">Postar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button id="btn-new-post" class="btn btn-primary btn-sm d-none" onclick="abrirModalNovoPost()">
-                    <i class="bi bi-plus-lg me-1"></i> Novo Post
-                </button>
             </div>
             
-            <div id="posts-feed">
+            <div id="feed-container" class="rounded shadow-sm">
                 <div class="text-center text-muted py-5">
                     <div class="spinner-border spinner-border-sm mb-2"></div>
                     <p>Carregando posts...</p>
@@ -277,18 +298,11 @@
 
     async function switchTab(tab) {
         window.currentTab = tab;
-        document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
         document.getElementById(`tab-${tab}`).classList.add('active');
         
-        const feed = document.getElementById('posts-feed');
-        feed.innerHTML = `
-            <div class="text-center text-muted py-5">
-                <div class="spinner-border spinner-border-sm mb-2"></div>
-                <p>Carregando ${tab === 'posts' ? 'posts' : 'favoritos'}...</p>
-            </div>
-        `;
-        
-        carregarPosts(username);
+        const feedType = tab === 'posts' ? 'user' : 'bookmarks';
+        PostFeed.switchFeed(feedType, username);
     }
 
     // Inicializar Socket e Listeners
@@ -311,24 +325,11 @@
             }
         });
 
-        // Ouvir carregamento de posts
-        socket.on('postsLoaded', ({ posts, tab }) => {
-            if (tab !== window.currentTab) return;
-            
-            const feed = document.getElementById('posts-feed');
-            if (posts.length === 0) {
-                feed.innerHTML = `<div class="card-body text-center py-5 text-muted">Nenhum ${tab === 'posts' ? 'post' : 'favorito'} ainda.</div>`;
-                return;
-            }
-
-            feed.innerHTML = posts.map(post => PostUI.renderPost(post, window.currentUser)).join('');
-        });
-
         // Ouvir novos posts em tempo real
         socket.on('newPost', (post) => {
             // Só adiciona se estivermos na aba de posts e o post for do dono do perfil
             if (window.currentTab === 'posts' && post.author.username === username) {
-                const feed = document.getElementById('posts-feed');
+                const feed = document.getElementById('feed-container');
                 
                 // Verifica se o post já existe no feed para evitar duplicatas
                 if (document.getElementById(`post-${post.id}`)) return;
@@ -339,7 +340,7 @@
                     feed.innerHTML = '';
                 }
 
-                // Adiciona o novo post no topo com uma pequena animação de fade se desejar
+                // Adiciona o novo post no topo
                 const postHtml = PostUI.renderPost(post, window.currentUser);
                 feed.insertAdjacentHTML('afterbegin', postHtml);
             }
@@ -347,7 +348,6 @@
 
         // Ouvir atualizações de posts (curtidas, etc)
         socket.on('postUpdate', (data) => {
-            // Pode haver múltiplos elementos para o mesmo post (feed e modal)
             const postElements = document.querySelectorAll(`[id="post-${data.id}"]`);
             postElements.forEach(postEl => {
                 if (data.likes_count !== undefined) {
@@ -365,7 +365,6 @@
             });
         });
 
-
         // Ouvir deleções de posts
         socket.on('postDeleted', (postId) => {
             const postEl = document.getElementById(`post-${postId}`);
@@ -379,23 +378,18 @@
 
     async function carregarPerfil() {
         try {
-            // 1. Carregar dados básicos do usuário
             const response = await fetch(`/api/users/${username}`, {
                 method: "GET",
                 credentials: "include"
             });
 
-            if (!response.ok) {
-                return;
-            }
+            if (!response.ok) return;
 
             const user = await response.json();
             profileUserId = user.id;
 
-            // Inicializa socket após ter o ID do usuário
             initSocket();
 
-            // Atualizar UI básica
             document.querySelector(".profile-name").textContent = user.username;
             document.querySelector(".profile-avatar").src = user.profile_image;
             document.querySelector(".profile-pronouns").textContent = user.pronouns || '';
@@ -405,14 +399,10 @@
                 document.getElementById("profile-banner").style.backgroundImage = `url('${user.background_image}')`;
             }
 
-            // 2. Verificar se é o próprio perfil ou outro usuário
             if (window.currentUser) {
-                // Atualizar avatares nos modais com a imagem do usuário logado
-                const avatarSrc = window.currentUser.profile_image;
-                
                 if (window.currentUser.id === user.id) {
                     document.getElementById("btn-edit").classList.remove("d-none");
-                    document.getElementById("btn-new-post").classList.remove("d-none");
+                    document.getElementById("profile-new-post-area").classList.remove("d-none");
                     document.getElementById("tab-bookmarks").classList.remove("d-none");
                 } else {
                     document.getElementById("btn-follow").classList.remove("d-none");
@@ -420,35 +410,30 @@
                 }
             }
 
-            // 3. Carregar Galerias
             carregarGalerias(user.id);
-
-            // 4. Carregar Amigos
             carregarAmigos(user.id);
 
-            // 5. Carregar Posts
-            carregarPosts(username);
+            // Inicializa o feed usando PostFeed
+            PostFeed.init('feed-container', 'user', username);
             
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
         }
     }
 
-    function abrirModalNovoPost() {
-        PostUI.abrirModalNovoPost();
-    }
-
-    async function enviarNovoPost() {
-        const textarea = document.getElementById('novo-post-textarea');
-        const btn = document.getElementById('btn-confirmar-novo-post');
-        const content = textarea.value.trim();
-        PostActions.enviarPost(content, window.selectedFiles, { type: 'post' }, btn, 'modalNovoPost');
-    }
+    // Configura o mini-form de post no perfil
+    document.addEventListener('DOMContentLoaded', () => {
+        PostUI.setupNewPostForm({
+            textareaId: 'feed-novo-post-textarea',
+            mediaInputId: 'feed-novo-post-media',
+            btnId: 'btn-feed-postar',
+            previewId: 'feed-novo-post-preview',
+            extraData: { type: 'post' }
+        });
+    });
 
     async function carregarPosts(targetUsername) {
-        if (socket) {
-            socket.emit('loadPosts', { username: targetUsername, tab: window.currentTab });
-        }
+        // Agora gerenciado pelo PostFeed
     }
 
     window.carregarPosts = carregarPosts;

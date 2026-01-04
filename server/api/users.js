@@ -251,13 +251,25 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
             if (user && user.background_image) {
                 await deleteFromFileServer({ fileUrl: user.background_image });
             }
-            // Converte para PNG usando sharp
-            const pngBuffer = await sharp(file.buffer).png().toBuffer();
+
+            let buffer = file.buffer;
+            let filename = 'background.png';
+            let mimetype = 'image/png';
+
+            // Se for GIF, mantém o formato para suportar animação
+            if (file.mimetype === 'image/gif') {
+                filename = 'background.gif';
+                mimetype = 'image/gif';
+            } else {
+                // Outros formatos converte para PNG
+                buffer = await sharp(file.buffer).png().toBuffer();
+            }
+
             background_image = await uploadToFileServer({
-                buffer: pngBuffer,
-                filename: 'background.png',
+                buffer,
+                filename,
                 folder: 'backgrounds',
-                mimetype: 'image/png'
+                mimetype
             });
         }
 

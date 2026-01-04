@@ -96,7 +96,7 @@
   --bs-tertiary-color-rgb: 33, 37, 41;
   --bs-tertiary-bg: #f8f9fa;
   --bs-tertiary-bg-rgb: 248, 249, 250;
-  --bs-heading-color: #3E3F29;
+  --bs-heading-color: var(--texto-principal);
   --bs-link-color: #3E3F29;
   --bs-link-color-rgb: 62, 63, 41;
   --bs-link-decoration: underline dotted;

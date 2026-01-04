@@ -87,9 +87,7 @@
         const profilePic = hasUser ? u.profile_image : '';
         const profileLink = hasUser ? `/${u.username}` : '#';
         const username = hasUser ? u.username : '';
-        const bgStyle = (hasUser && u.background_image) 
-            ? `background-image: url('${u.background_image}'), linear-gradient(135deg, #6c5ce7, var(--roxo)); background-size: cover; background-position: center;` 
-            : 'background: linear-gradient(135deg, #6c5ce7, var(--roxo));';
+        const bgStyle = 'background: linear-gradient(135deg, #6c5ce7, var(--roxo));';
     %>
     <a id="sidebar-profile-link" href="<%= profileLink %>" class="text-decoration-none w-100">
         <div class="user-card text-center mb-3 w-100" style="<%= bgStyle %>">

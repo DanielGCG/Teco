@@ -212,6 +212,8 @@ PostsRouter.get('/feed', async (req, res) => {
 PostsRouter.get('/user/:username', async (req, res) => {
     try {
         let username = req.params.username;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
 
         const user = await User.findOne({ where: { username: username } });
         if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
@@ -223,7 +225,9 @@ PostsRouter.get('/user/:username', async (req, res) => {
                 is_deleted: false 
             },
             include: POST_INCLUDES,
-            order: [['created_at', 'DESC']]
+            order: [['created_at', 'DESC']],
+            limit: limit,
+            offset: offset
         });
 
         res.json(posts);
@@ -362,6 +366,8 @@ PostsRouter.get('/:id', async (req, res) => {
 PostsRouter.get('/user/:username/bookmarks', async (req, res) => {
     try {
         let username = req.params.username;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
 
         const user = await User.findOne({ where: { username: username } });
         if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
@@ -379,7 +385,9 @@ PostsRouter.get('/user/:username/bookmarks', async (req, res) => {
                 required: true,
                 include: POST_INCLUDES
             }],
-            order: [['created_at', 'DESC']]
+            order: [['created_at', 'DESC']],
+            limit: limit,
+            offset: offset
         });
 
         const posts = bookmarks.map(b => b.Post);
