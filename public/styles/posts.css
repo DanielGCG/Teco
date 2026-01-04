@@ -55,6 +55,8 @@
     font-size: 15px;
     line-height: 20px;
     color: #0f1419;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 /* Links, Mentions, Hashtags */

@@ -42,8 +42,8 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
             return res.status(400).json({ error: 'O post deve ter texto ou mídia.' });
         }
 
-        if (content && content.length > 300) {
-            return res.status(400).json({ error: 'O texto deve ter no máximo 300 caracteres.' });
+        if (content && content.length > 400) {
+            return res.status(400).json({ error: 'O texto deve ter no máximo 400 caracteres.' });
         }
 
         const post = await Post.create({
@@ -94,8 +94,14 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                             type: 'MENTION',
                             title: 'Menção em Post',
                             body: `${req.user.username} mencionou você em um post.`,
-                            link: `/${req.user.username}?post=${post.id}`
+                            link: `/${req.user.username}/status/${post.id}`
                         });
+
+                        // Emitir via socket
+                        const io = req.app.get('io');
+                        if (io) {
+                            io.to(`user_${mentionedUser.id}`).emit('newNotification', { type: 'mention' });
+                        }
                     }
                 }
             }
@@ -136,8 +142,14 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                         type: notifType,
                         title: notifTitle,
                         body: notifBody,
-                        link: `/${req.user.username}?post=${post.id}`
+                        link: `/${req.user.username}/status/${post.id}`
                     });
+
+                    // Emitir via socket
+                    const io = req.app.get('io');
+                    if (io) {
+                        io.to(`user_${parentPost.user_id}`).emit('newNotification', { type: type });
+                    }
                 }
             }
         }
@@ -164,7 +176,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
 PostsRouter.get('/feed', async (req, res) => {
     try {
         const userId = req.user.id;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
         const type = req.query.type || 'for-you';
 
@@ -212,7 +224,7 @@ PostsRouter.get('/feed', async (req, res) => {
 PostsRouter.get('/user/:username', async (req, res) => {
     try {
         let username = req.params.username;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
 
         const user = await User.findOne({ where: { username: username } });
@@ -314,8 +326,14 @@ PostsRouter.post('/:id/like', async (req, res) => {
                     type: 'POST_LIKE',
                     title: 'Nova Curtida',
                     body: `${req.user.username} curtiu seu post.`,
-                    link: `/${post.author.username}`
+                    link: `/${post.author.username}/status/${post.id}`
                 });
+
+                // Emitir via socket
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`user_${post.user_id}`).emit('newNotification', { type: 'like' });
+                }
             }
             
             return res.json({ liked: true, likes_count: newCount });

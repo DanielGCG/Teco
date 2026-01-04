@@ -143,7 +143,7 @@ module.exports = (io) => {
         // ==================== Join Profile ====================
         socket.on('joinProfile', async (username) => {
             try {
-                // Limpa salas de perfil anteriores para este socket
+                // Limpa salas de perfil anteriores para este socket (comportamento exclusivo para página de perfil)
                 const rooms = Array.from(socket.rooms);
                 rooms.forEach(room => {
                     if (room.startsWith('profile_')) {
@@ -152,7 +152,6 @@ module.exports = (io) => {
                 });
 
                 socket.join(`profile_${username}`);
-                console.log(`[Socket] Cliente entrou no perfil de: ${username}`);
 
                 // Enviar status atual do dono do perfil para quem entrou
                 const { User } = require('../models');
@@ -163,6 +162,34 @@ module.exports = (io) => {
                 }
             } catch (err) {
                 console.error('[Socket] Erro ao entrar no perfil:', err);
+            }
+        });
+
+        // ==================== Join Followed (Feed) ====================
+        socket.on('joinFollowed', async () => {
+            try {
+                const auth = await authenticateSocket(socket);
+                if (!auth) return;
+
+                const { Follow, User } = require('../models');
+                const following = await Follow.findAll({
+                    where: { follower_id: auth.userId },
+                    include: [{ model: User, as: 'followed', attributes: ['username'] }]
+                });
+
+                following.forEach(f => {
+                    if (f.followed && f.followed.username) {
+                        socket.join(`profile_${f.followed.username}`);
+                    }
+                });
+                
+                // Também entra na sala do próprio perfil para ver seus próprios posts novos no feed
+                const me = await User.findByPk(auth.userId, { attributes: ['username'] });
+                if (me) socket.join(`profile_${me.username}`);
+
+                console.log(`[Socket] Usuário ${auth.userId} ouvindo atualizações de ${following.length} seguidos`);
+            } catch (err) {
+                console.error('[Socket] Erro ao entrar em salas de seguidos:', err);
             }
         });
 

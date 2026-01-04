@@ -1,39 +1,107 @@
 <link rel="stylesheet" href="/styles/posts.css">
 
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <!-- Tabs de Feed -->
-        <div class="d-flex border-bottom mb-3 rounded-top">
-            <button class="btn flex-grow-1 py-1 fw-bold feed-tab active" data-type="for-you" onclick="changeFeed('for-you')">For you</button>
-            <button class="btn flex-grow-1 py-1 fw-bold feed-tab" data-type="following" onclick="changeFeed('following')">Seguindo</button>
-        </div>
+<style>
+    .col-4 {
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+    }
+    .tabs-do-feed {
+        position: sticky;
+        flex-shrink: 0;
+        z-index: 5;
+        background-color: var(--fundo-global);
+        top: 0;
+    }
+    .area-imagem-do-dia {
+        background: transparent;
+        padding: 8px;
+    }
+    .imagem-do-dia-card {
+        position: relative;
+        aspect-ratio: 1/1;
+        width: 220px;
+        height: 220px;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    .imagem-do-dia-img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 12px;
+        object-fit: cover;
+    }
+    .imagem-do-dia-border {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        object-fit: cover;
+    }
+    .imagem-do-dia-text {
+        font-size: 0.95rem;
+    }
+</style>
 
-        <!-- Área de Novo Post -->
-        <div class="card mb-3 border-0 shadow-sm" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
-            <div class="card-body">
-                <div class="d-flex gap-3">
-                    <% const u = locals.loggedUser; %>
-                    <img src="<%= u ? u.profile_image : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
-                    <div class="flex-grow-1">
-                        <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está acontecendo?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
-                        <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
-                        <div class="d-flex justify-content-between align-items-center border-top">
-                            <div class="d-flex gap-2">
-                                <label for="feed-novo-post-media" class="btn btn-outline-primary btn-sm rounded-pill border-0">
-                                    <i class="bi bi-image"></i>
-                                </label>
-                                <input type="file" id="feed-novo-post-media" hidden multiple accept="image/*,video/*">
+<div class="container-xxl">
+    <div class="row justify-content-center">
+        <div class="col-4 d-flex flex-column rounded shadow-sm">
+            <h3 class="fw-bold">
+                <span class="marca-texto-roxo">Seu Feed</span>
+            </h3>
+            <div class="area-imagem-do-dia d-flex flex-column align-self-center">
+                <div id="imagem-do-dia" class="d-flex flex-column align-self-center text-center">
+                    <div class="imagem-do-dia-card">
+                        <img id="imagem-do-dia-img" class="imagem-do-dia-img" src="" alt="Imagem do Dia">
+                        <img id="imagem-do-dia-border" class="imagem-do-dia-border" src="" alt="Moldura" style="display:none">
+                    </div>
+                    <div id="imagem-do-dia-text" class="imagem-do-dia-text mt-2 text-center w-100"></div>
+                </div>
+                <a href="/imagemdodia" class="btn btn-link btn-sm mt-2 p-0">Ver mais Imagens do Dia</a>
+                <a href="/imagemdodia/sugerir" class="btn btn-link btn-sm p-0">Sugerir Imagem do Dia</a>
+            </div>
+        </div>
+        <div class="col-8">
+            <!-- Tabs de Feed -->
+            <div class="tabs-do-feed d-flex border-bottom mb-3 rounded-top">
+                <button class="btn flex-grow-1 py-1 fw-bold feed-tab active" data-type="for-you" onclick="changeFeed('for-you')">For you</button>
+                <button class="btn flex-grow-1 py-1 fw-bold feed-tab" data-type="following" onclick="changeFeed('following')">Seguindo</button>
+            </div>
+
+            <!-- Área de Novo Post -->
+            <div class="card mb-3 border-0 shadow-sm" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                <div class="card-body">
+                    <div class="d-flex gap-3">
+                        <% const u = locals.loggedUser; %>
+                        <img src="<%= u ? u.profile_image : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                        <div class="flex-grow-1">
+                            <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está acontecendo?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
+                            <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
+                            <div class="d-flex justify-content-between align-items-center border-top">
+                                <div class="d-flex gap-2">
+                                    <label for="feed-novo-post-media" class="btn btn-outline-primary btn-sm rounded-pill border-0">
+                                        <i class="bi bi-image"></i>
+                                    </label>
+                                    <input type="file" id="feed-novo-post-media" hidden multiple accept="image/*,video/*">
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span id="feed-novo-post-char-counter" class="text-muted small me-3">0/400</span>
+                                    <button id="btn-feed-postar" class="btn btn-primary rounded-pill px-4 fw-bold">Postar</button>
+                                </div>
                             </div>
-                            <button id="btn-feed-postar" class="btn btn-primary rounded-pill px-4 fw-bold">Postar</button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Feed de Posts -->
-        <div id="feed-container" class="rounded shadow-sm">
-            <!-- Posts serão carregados aqui -->
+            <!-- Feed de Posts -->
+            <div id="feed-container" class="rounded shadow-sm">
+                <!-- Posts serão carregados aqui -->
+            </div>
         </div>
     </div>
 </div>
@@ -66,5 +134,58 @@
             previewId: 'feed-novo-post-preview',
             extraData: { type: 'post' }
         });
+        // Inicializa Socket e listeners para novos posts (mantém o feed atualizado)
+        try {
+            const socket = SocketConnector.init();
+
+            function joinFollowed() {
+                socket.emit('joinFollowed');
+            }
+
+            SocketConnector.onReconnect(joinFollowed);
+            joinFollowed();
+
+            socket.on('newPost', (post) => {
+                PostFeed.reload();
+            });
+
+            socket.on('postUpdate', (data) => {
+                PostFeed.reload();
+            });
+
+            socket.on('postDeleted', (postId) => {
+                const postEl = document.getElementById(`post-${postId}`);
+                if (postEl) postEl.remove();
+            });
+        } catch (e) {
+            console.error('[Feed] Socket init failed:', e);
+        }
+        // Carrega Imagem do Dia
+        (async function loadImagemDoDia(){
+            try{
+                const res = await fetch('/api/imagemdodia', { credentials: 'include' });
+                if (!res.ok) return;
+                const img = await res.json();
+                if (!img || !img.url) return;
+
+                const container = document.getElementById('imagem-do-dia');
+                const imgEl = document.getElementById('imagem-do-dia-img');
+                const borderEl = document.getElementById('imagem-do-dia-border');
+                const txtEl = document.getElementById('imagem-do-dia-text');
+
+                imgEl.src = img.url;
+                txtEl.textContent = img.texto || '';
+                if (img.border_url) {
+                    borderEl.src = img.border_url;
+                    borderEl.style.display = '';
+                } else {
+                    borderEl.style.display = 'none';
+                }
+
+                container.style.display = '';
+            }catch(err){
+                console.error('[ImagemDoDia] erro:', err);
+            }
+        })();
     });
 </script>

@@ -42,21 +42,39 @@ FollowsRouter.post('/:userId', protect(0), validate(userIdSchema, 'params'), asy
             following_id: targetId
         });
 
-        // Notificação
-        await createNotification({
-            userId: targetId,
-            type: 'FOLLOW',
-            title: 'Novo Seguidor',
-            body: `${req.user.username} começou a te seguir`,
-            link: `/${req.user.username}`,
-            data: { followerId: followerId }
+        // Verifica se virou amizade (seguimento mútuo)
+        const isMutual = await Follow.findOne({
+            where: { follower_id: targetId, following_id: followerId }
         });
+
+        // Notificação
+        if (isMutual) {
+            await createNotification({
+                userId: targetId,
+                type: 'FRIEND_ACCEPTED',
+                title: 'Nova Amizade!',
+                body: `Você e ${req.user.username} agora são amigos!`,
+                link: `/${req.user.username}`,
+                data: { followerId: followerId }
+            });
+        } else {
+            await createNotification({
+                userId: targetId,
+                type: 'FOLLOW',
+                title: 'Novo Seguidor',
+                body: `${req.user.username} começou a te seguir`,
+                link: `/${req.user.username}`,
+                data: { followerId: followerId }
+            });
+        }
 
         // Emitir evento de socket
         const io = req.app.get('io');
         if (io) {
-            io.to(`user_${targetId}`).emit('newNotification', { type: 'follow' });
+            io.to(`user_${targetId}`).emit('newNotification', { type: isMutual ? 'friend' : 'follow' });
         }
+
+        // (evento emitido acima) socket já tratado
 
         res.status(201).json({ message: "Seguindo com sucesso", follow });
     } catch (err) {

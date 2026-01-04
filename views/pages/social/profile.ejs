@@ -17,7 +17,7 @@
         width: 320px;
         flex-shrink: 0;
         position: sticky;
-        top: 1rem;
+        top: 0;
         max-height: calc(100vh - 2rem);
         overflow-y: auto;
     }
@@ -175,7 +175,6 @@
     .friend-avatar {
         width: 40px;
         height: 40px;
-        border-radius: 50%;
         object-fit: cover;
     }
     .bio-container, .galerias-container, .amigos-container, .card-header {
@@ -268,7 +267,10 @@
                                     </label>
                                     <input type="file" id="feed-novo-post-media" hidden multiple accept="image/*,video/*">
                                 </div>
-                                <button id="btn-feed-postar" class="btn btn-primary rounded-pill px-4 fw-bold">Postar</button>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span id="feed-novo-post-char-counter" class="text-muted small me-3">0/400</span>
+                                    <button id="btn-feed-postar" class="btn btn-primary rounded-pill px-4 fw-bold">Postar</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -322,6 +324,12 @@
                     dot.className = `status-dot ${status}`;
                     dot.title = status.charAt(0).toUpperCase() + status.slice(1);
                 }
+            }
+
+            // Atualizar na lista de amigos
+            const friendDot = document.querySelector(`.friend-item[data-user-id="${userId}"] .status-dot`);
+            if (friendDot) {
+                friendDot.className = `status-dot ${status}`;
             }
         });
 
@@ -445,9 +453,9 @@
         try {
             const status = await FollowAPI.verificarStatus(targetId);
             const config = status.isMutual 
-                ? { text: 'Amigos', class: 'btn-outline-primary', action: FollowAPI.deixarDeSeguir }
+                ? { text: 'Amigos', class: 'btn-outline-primary', action: FollowAPI.deixarDeSeguir, confirmMsg: 'Deseja desfazer a amizade com este usuário?' }
                 : status.following 
-                    ? { text: 'Seguindo', class: 'btn-secondary', action: FollowAPI.deixarDeSeguir }
+                    ? { text: 'Seguindo', class: 'btn-secondary', action: FollowAPI.deixarDeSeguir, confirmMsg: 'Deseja parar de seguir este usuário?' }
                     : status.followedBy 
                         ? { text: 'Seguir de volta', class: 'btn-success', action: FollowAPI.seguir }
                         : { text: 'Seguir', class: 'btn-primary', action: FollowAPI.seguir };
@@ -458,9 +466,9 @@
             btn.onclick = async () => {
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-                await config.action(targetId, { showAlert: false });
+                await config.action(targetId, { showAlert: false, confirmMessage: config.confirmMsg });
                 await verificarSeguimento(targetId);
-                if (window.carregarAmigos) carregarAmigos(targetId);
+                if (window.carregarAmigos) carregarAmigos(profileUserId);
             };
         } catch (e) {
             btn.disabled = false;
@@ -498,8 +506,11 @@
             
             if (friends && friends.length > 0) {
                 list.innerHTML = friends.map(f => `
-                    <a href="/${f.username}" class="friend-item">
-                        <img src="${f.profile_image}" class="friend-avatar">
+                    <a href="/${f.username}" class="friend-item" data-user-id="${f.id}">
+                        <div class="position-relative">
+                            <img src="${f.profile_image}" class="friend-avatar rounded">
+                            <span class="status-dot ${f.status || 'offline'}" style="width: 12px; height: 12px; border-width: 1px; bottom: 2px; right: 2px;"></span>
+                        </div>
                         <span class="small">${f.username}</span>
                     </a>
                 `).join('');

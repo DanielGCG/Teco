@@ -191,7 +191,7 @@ window.PostUI = {
 
         document.getElementById('novo-post-textarea').value = '';
         document.getElementById('novo-post-preview').innerHTML = '';
-        document.getElementById('novo-post-char-counter').textContent = '0/300';
+        document.getElementById('novo-post-char-counter').textContent = '0/400';
         window.selectedFiles = [];
         modal.show();
     },
@@ -234,10 +234,38 @@ window.PostUI = {
     handleTextareaInput: function(e, counterId) {
         const len = e.target.value.length;
         const counter = document.getElementById(counterId);
-        if (counter) {
-            counter.textContent = `${len}/300`;
-            counter.classList.toggle('limit', len >= 300);
-        }    },
+        if (!counter) return;
+
+        counter.textContent = `${len}/400`;
+
+        counter.classList.remove('text-danger', 'text-warning', 'text-muted');
+        if (len >= 400) {
+            counter.classList.add('text-danger');
+        } else if (len >= 350) {
+            counter.classList.add('text-warning');
+        } else {
+            counter.classList.add('text-muted');
+        }
+
+        // Efeito visual simples: desabilitar botão se passar do limite
+        const container = e.target.closest('.modal-body, .card-body');
+        const btn = container ? container.querySelector('button[id^="btn-"]') : null;
+        if (btn) {
+            btn.disabled = len > 400;
+        }
+    },
+
+    // Faz textarea crescer conforme o conteúdo até um máximo de linhas
+    autoGrowTextarea: function(textarea, maxLines) {
+        if (!textarea) return;
+        textarea.style.height = 'auto';
+        const cs = window.getComputedStyle(textarea);
+        const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2 || 20;
+        const maxHeight = lineHeight * maxLines;
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        textarea.style.height = `${newHeight}px`;
+    },
 
     // Configura um formulário de novo post (inline ou modal)
     setupNewPostForm: function(config) {
@@ -250,24 +278,40 @@ window.PostUI = {
             mediaInput.onchange = (e) => this.handleMediaSelect(e, previewId);
         }
 
+        if (textarea) {
+            // Lógica do contador de caracteres e auto-grow do textarea
+            if (textareaId === 'feed-novo-post-textarea') {
+                textarea.oninput = (e) => {
+                    this.handleTextareaInput(e, 'feed-novo-post-char-counter');
+                    this.autoGrowTextarea(e.target, 10);
+                };
+                // Ajuste inicial de altura
+                this.autoGrowTextarea(textarea, 10);
+            }
+        }
+
         if (btn && textarea) {
             btn.onclick = async () => {
                 const content = textarea.value.trim();
                 if (!content && window.selectedFiles.length === 0 && extraData.type !== 'repost') return;
+                if (content.length > 400) return;
 
                 await PostActions.enviarPost(content, window.selectedFiles, extraData, btn, modalId);
                 
                 // Limpar campos após enviar
                 textarea.value = '';
+                textarea.style.height = '';
                 const preview = document.getElementById(previewId);
                 if (preview) preview.innerHTML = '';
                 window.selectedFiles = [];
                 
                 // Resetar contador se existir
-                const counterId = textareaId === 'novo-post-textarea' ? 'novo-post-char-counter' : null;
-                if (counterId) {
-                    const counter = document.getElementById(counterId);
-                    if (counter) counter.textContent = '0/300';
+                const counterId = textareaId === 'feed-novo-post-textarea' ? 'feed-novo-post-char-counter' : (textareaId === 'novo-post-textarea' ? 'novo-post-char-counter' : 'interacao-char-counter');
+                const counter = document.getElementById(counterId);
+                if (counter) {
+                    counter.textContent = '0/400';
+                    counter.classList.remove('text-danger', 'text-warning');
+                    counter.classList.add('text-muted');
                 }
             };
         }    }
@@ -438,9 +482,10 @@ window.PostFeed = {
     loading: false,
     hasMore: true,
     offset: 0,
-    limit: 10,
+    limit: 20,
     type: 'for-you',
     username: null,
+    initialized: false,
 
     init: function(containerId, type = 'for-you', username = null) {
         this.container = document.getElementById(containerId);
@@ -448,13 +493,32 @@ window.PostFeed = {
 
         this.type = type;
         this.username = username;
-        this.reload();
 
-        window.addEventListener('scroll', () => {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !this.loading && this.hasMore) {
-                this.loadMore();
-            }
-        });
+        if (!this.initialized) {
+            this.initialized = true;
+
+            // Usar IntersectionObserver para lazy loading (mais eficiente e funciona com overflow-y: auto)
+            const sentinel = document.createElement('div');
+            sentinel.className = 'feed-sentinel';
+            sentinel.style.height = '10px';
+            this.container.after(sentinel);
+
+            const mainEl = document.getElementById('conteudo-principal');
+            // Use #conteudo-principal as root only if it is actually scrollable; otherwise fall back to viewport (null).
+            const observerRoot = (mainEl && mainEl.scrollHeight > mainEl.clientHeight) ? mainEl : null;
+
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !this.loading && this.hasMore) {
+                    this.loadMore();
+                }
+            }, { 
+                root: observerRoot,
+                rootMargin: '800px'
+            });
+            observer.observe(sentinel);
+        }
+
+        this.reload();
     },
 
     switchFeed: function(type, username = null) {
@@ -512,7 +576,8 @@ window.PostFeed = {
             this.offset += posts.length;
             
             // Se carregou poucos posts e ainda tem espaço na tela, tenta carregar mais
-            if (this.hasMore && document.body.offsetHeight <= window.innerHeight) {
+            const scrollContainer = document.getElementById('conteudo-principal') || document.documentElement;
+            if (this.hasMore && this.container.offsetHeight < scrollContainer.clientHeight) {
                 this.loadMore();
             }
         } catch (e) {
