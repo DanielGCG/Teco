@@ -60,7 +60,7 @@ async function carregarCartinhasRecebidas() {
                 if (!usuario) return;
 
                 // Marcar como lida antes de abrir (aguardar para estado consistente)
-                if (!cartinha.lida) {
+                if (!cartinha.isread) {
                     try { await marcarComoLida(cartinhaId); } catch (e) { /* continue */ }
                 }
 
@@ -70,7 +70,7 @@ async function carregarCartinhasRecebidas() {
                     tipo: 'recebidas',
                     titulo: '📬 Lendo Cartinha',
                     badges: [
-                        { icone: cartinha.lida ? '✓' : '○', texto: cartinha.lida ? 'Lida' : 'Não lida', cor: cartinha.lida ? '#10b981' : '#6b7280' }
+                        { icone: cartinha.isread ? '✓' : '○', texto: cartinha.isread ? 'Lida' : 'Não lida', cor: cartinha.isread ? '#10b981' : '#6b7280' }
                     ],
                     acoes: [
                         {
@@ -82,8 +82,8 @@ async function carregarCartinhasRecebidas() {
                         },
                         {
                             id: 'favoritar',
-                            label: cartinha.favoritada ? '⭐ Favoritada' : '⭐ Favoritar',
-                            classe: cartinha.favoritada ? 'btn-warning' : 'btn-outline-warning',
+                            label: cartinha.isfavorited ? '⭐ Favoritada' : '⭐ Favoritar',
+                            classe: cartinha.isfavorited ? 'btn-warning' : 'btn-outline-warning',
                             atalho: 'F',
                             callback: () => toggleFavoritoCommon(cartinhaId, usuariosProcessados)
                         },
@@ -125,7 +125,7 @@ async function marcarComoLida(cartinhaId) {
 
         const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
         if (cartinha) {
-            cartinha.lida = true;
+            cartinha.isread = true;
             
             // Atualizar UI
             const cartaElement = document.getElementById(`carta-${cartinhaId}`);
@@ -145,7 +145,7 @@ async function marcarComoLida(cartinhaId) {
             if (usuario) {
                 const pilha = document.getElementById(`pilha-${usuario.userId}`);
                 if (pilha) {
-                    const naoLidas = usuario.cartinhas.filter(c => !c.lida).length;
+                    const naoLidas = usuario.cartinhas.filter(c => !c.isread).length;
                     const contador = pilha.querySelector('.contador-pilha');
                     if (contador) {
                         if (naoLidas > 0) {

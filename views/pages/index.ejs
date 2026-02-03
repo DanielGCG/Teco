@@ -77,7 +77,7 @@
                 <div class="card-body">
                     <div class="d-flex gap-3">
                         <% const u = locals.loggedUser; %>
-                        <img src="<%= u ? u.profile_image : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                        <img src="<%= u ? u.profileimage : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
                         <div class="flex-grow-1">
                             <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está acontecendo?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
                             <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
@@ -153,8 +153,8 @@
                 PostFeed.reload();
             });
 
-            socket.on('postDeleted', (postId) => {
-                const postEl = document.getElementById(`post-${postId}`);
+            socket.on('postDeleted', (publicid) => {
+                const postEl = document.getElementById(`post-${publicid}`);
                 if (postEl) postEl.remove();
             });
         } catch (e) {
@@ -166,7 +166,6 @@
                 const res = await fetch('/api/imagemdodia', { credentials: 'include' });
                 if (!res.ok) return;
                 const img = await res.json();
-                if (!img || !img.url) return;
 
                 const container = document.getElementById('imagem-do-dia');
                 const imgEl = document.getElementById('imagem-do-dia-img');
@@ -174,9 +173,9 @@
                 const txtEl = document.getElementById('imagem-do-dia-text');
 
                 imgEl.src = img.url;
-                txtEl.textContent = img.texto || '';
-                if (img.border_url) {
-                    borderEl.src = img.border_url;
+                txtEl.textContent = img.text;
+                if (img.border.url) {
+                    borderEl.src = img.border.url;
                     borderEl.style.display = '';
                 } else {
                     borderEl.style.display = 'none';

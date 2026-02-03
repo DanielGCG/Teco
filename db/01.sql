@@ -1,142 +1,478 @@
+CREATE DATABASE IF NOT EXISTS teco;
+USE teco;
+
 -- ==========================
--- TABELAS DE USUÁRIOS
+-- TABELAS DE USUÁRIO
 -- ==========================
-CREATE TABLE IF NOT EXISTS users (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    role TINYINT NOT NULL DEFAULT 0 COMMENT '0 = usuário comum, 1 = admin, 2 = dono',
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    background_image VARCHAR(255),
-    pronouns VARCHAR(12),
-    profile_image VARCHAR(255),
-    bio VARCHAR(160),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_access TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS role (
+    id TINYINT UNSIGNED PRIMARY KEY,
+    name VARCHAR(64)
 );
 
-CREATE TABLE IF NOT EXISTS user_sessions (
+INSERT INTO role (id, name) VALUES
+(1, 'dono'),
+(5, 'admin'),
+(10, 'moderador'),
+(11, 'botecor'),
+(20, 'usuário');
+
+CREATE TABLE IF NOT EXISTS user (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT UNSIGNED NOT NULL,
-    cookie_value VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    username VARCHAR(50) NOT NULL UNIQUE,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    roleId TINYINT UNSIGNED NOT NULL DEFAULT 20,
+    passwordhash VARCHAR(255) NOT NULL,
+    birthday DATE DEFAULT CURRENT_DATE,
+    pronouns VARCHAR(16),
+    bio VARCHAR(160),
+    backgroundimage VARCHAR(255),
+    profileimage VARCHAR(255),
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lastaccess TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (roleId) REFERENCES role(id) ON DELETE SET DEFAULT
 );
 
 DELIMITER //
-CREATE TRIGGER first_user_owner
-BEFORE INSERT ON users
+CREATE TRIGGER primeirousuarioadmin
+BEFORE INSERT ON user
 FOR EACH ROW
 BEGIN
-    IF (SELECT COUNT(*) FROM users) = 0 THEN
-        SET NEW.role = 2;
+    IF (SELECT COUNT(*) FROM user) = 0 THEN
+        SET NEW.roleId = 1;
     END IF;
 END;
 //
 DELIMITER ;
 
--- Adicionar índice para buscas de usuário eficientes
-ALTER TABLE users ADD INDEX idx_username_search (username);
+CREATE TABLE IF NOT EXISTS follow (
+    followerUserId INT UNSIGNED NOT NULL,
+    followedUserId INT UNSIGNED NOT NULL,
+    CHECK (followerUserId != followedUserId),
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (followerUserId, followedUserId),
+    FOREIGN KEY (followerUserId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (followedUserId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- ==========================
+-- TABELA DE SESSÃO
+-- ==========================
+CREATE TABLE IF NOT EXISTS session (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userId INT UNSIGNED NOT NULL,
+    cookie VARCHAR(255) NOT NULL,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expiresat TIMESTAMP NOT NULL,
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- ==========================
+-- TABELAS DE NOTIFICAÇÃO
+-- ==========================
+CREATE TABLE IF NOT EXISTS notification (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    targetUserId INT UNSIGNED NOT NULL,
+    type ENUM('system','everyone','followaccept', 'followarequest', 'dm', 'cutucado', 'postcomment', 'postlike', 'postrepost', 'info') NOT NULL DEFAULT 'info',
+    title VARCHAR(160) NOT NULL,
+    body TEXT,
+    link VARCHAR(255),
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expiresat TIMESTAMP DEFAULT NULL,
+    readat TIMESTAMP NULL,
+    FOREIGN KEY (targetUserId) REFERENCES user(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_notif_cleanup ON notification(targetUserId, readat);
+
+-- notificações everyone com mais de 7 dias serão apagadas automaticamente
+DELIMITER //
+CREATE EVENT IF NOT EXISTS deletanotificacoeveryone
+ON SCHEDULE EVERY 1 HOUR
+DO
+BEGIN
+    DELETE FROM notification
+    WHERE type = 'everyone' AND createdat < NOW() - INTERVAL 7 DAY;
+END;
+//
+DELIMITER ;
+
+-- notificações expiradas serão apagadas automaticamente
+DELIMITER //
+CREATE EVENT IF NOT EXISTS deletanotificacoesexpiradas
+ON SCHEDULE EVERY 1 HOUR
+DO
+BEGIN
+    DELETE FROM notification
+    WHERE expiresat IS NOT NULL AND expiresat < NOW();
+END;
+//
+DELIMITER ;
+
+-- mantemos apenas as últimas 5 notificações lidas por usuário
+DELIMITER //
+CREATE EVENT IF NOT EXISTS limpaanotificacoeslidas
+ON SCHEDULE EVERY 1 DAY
+DO
+BEGIN
+    DELETE FROM notification 
+    WHERE id IN (
+        SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY targetUserId ORDER BY createdat DESC) as rn 
+            FROM notification 
+            WHERE readat IS NOT NULL
+        ) as t 
+        WHERE rn > 5
+    );
+END;
+//
+DELIMITER ;
+
+-- ==========================
+-- TABELA DE RODINHA E POSTS
+-- ==========================
+CREATE TABLE IF NOT EXISTS rodinha (
+    userId INT UNSIGNED NOT NULL,
+    targetUserId INT UNSIGNED NOT NULL,
+    CHECK (userId != targetUserId),
+    PRIMARY KEY (userId, targetUserId),
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (targetUserId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS post (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    authorUserId INT UNSIGNED NOT NULL,
+    isrodinha BOOLEAN NOT NULL DEFAULT FALSE,
+    attachedPostId INT UNSIGNED DEFAULT NULL,
+    content TEXT,
+    type ENUM('post', 'repost', 'reply', 'comment') NOT NULL DEFAULT 'post',
+    likecount INT UNSIGNED NOT NULL DEFAULT 0,
+    replycount INT UNSIGNED NOT NULL DEFAULT 0,
+    repostcount INT UNSIGNED NOT NULL DEFAULT 0,
+    bookmarkcount INT UNSIGNED NOT NULL DEFAULT 0,
+    isedited BOOLEAN NOT NULL DEFAULT FALSE,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (authorUserId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (attachedPostId) REFERENCES post(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS postmedia (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    postId INT UNSIGNED NOT NULL,
+    type ENUM('image/gif','video') NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS postmention (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    postId INT UNSIGNED NOT NULL,
+    userId INT UNSIGNED NOT NULL,
+    FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE,
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- não podemos nos mencionar em posts feitos por nós mesmos
+DELIMITER //
+CREATE TRIGGER bloqueiarmencionarsimesmo
+BEFORE INSERT ON postmention
+FOR EACH ROW
+BEGIN
+    DECLARE postAuthorId INT UNSIGNED;
+    SELECT authorUserId INTO postAuthorId FROM post WHERE id = NEW.postId;
+    IF postAuthorId = NEW.userId THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Usuário não pode se mencionar em seus próprios posts.';
+    END IF;
+END;
+//
+DELIMITER ; 
+
+CREATE TABLE IF NOT EXISTS postlike (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userId INT UNSIGNED NOT NULL,
+    postId INT UNSIGNED NOT NULL,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (userId, postId),
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS postbookmark (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userId INT UNSIGNED NOT NULL,
+    postId INT UNSIGNED NOT NULL,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (userId, postId),
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE
+);
+
+-- trigger para atualizar contadores de like, reply e repostcount na tabela post
+DELIMITER //
+CREATE TRIGGER atualizacontadorespost_like
+AFTER INSERT ON postlike
+FOR EACH ROW
+BEGIN
+    UPDATE post SET likecount = likecount + 1 WHERE id = NEW.postId;
+END;
+//
+DELIMITER ;
+DELIMITER //
+CREATE TRIGGER atualizacontadorespost_delete_like
+AFTER DELETE ON postlike
+FOR EACH ROW
+BEGIN
+    UPDATE post SET likecount = likecount - 1 WHERE id = OLD.postId;
+END;
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER atualizacontadorespost_bookmark
+AFTER INSERT ON postbookmark
+FOR EACH ROW
+BEGIN
+    UPDATE post SET bookmarkcount = bookmarkcount + 1 WHERE id = NEW.postId;
+END;
+//
+DELIMITER ;
+DELIMITER //
+CREATE TRIGGER atualizacontadorespost_delete_bookmark
+AFTER DELETE ON postbookmark
+FOR EACH ROW
+BEGIN
+    UPDATE post SET bookmarkcount = bookmarkcount - 1 WHERE id = OLD.postId;
+END;
+//
+DELIMITER ; 
+
+-- ==========================
+-- TABELA DE GALERIA
+-- ==========================
+CREATE TABLE IF NOT EXISTS gallery (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(160) NOT NULL,
+    description TEXT,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    ispublic BOOLEAN NOT NULL DEFAULT FALSE,
+    coverurl VARCHAR(255),
+    backgroundurl VARCHAR(255),
+    backgroundfill VARCHAR(10) NOT NULL DEFAULT 'cover',
+    backgroundcolor VARCHAR(7) NOT NULL DEFAULT '#e2e1cf',
+    cardcolor VARCHAR(7) NOT NULL DEFAULT '#ffffff',
+    fontcolor VARCHAR(7) NOT NULL DEFAULT '#3E3F29',
+    fontfamily VARCHAR(50) NOT NULL DEFAULT 'Inter',
+    gridxsize INT NOT NULL DEFAULT 12,
+    gridysize INT NOT NULL DEFAULT 12,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    editedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    createdbyUserId INT UNSIGNED,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS gallerycontributor (
+    userId INT UNSIGNED NOT NULL,
+    galleryId INT UNSIGNED NOT NULL,
+    PRIMARY KEY (userId, galleryId),
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (galleryId) REFERENCES gallery(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS galleryitem (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    galleryId INT UNSIGNED NOT NULL,
+    type ENUM('image/gif','video','audio', 'text', 'embed') NOT NULL,
+    title VARCHAR(160),
+    showtitle BOOLEAN NOT NULL DEFAULT TRUE,
+    textbody TEXT,
+    coverurl VARCHAR(255),
+    covercolor VARCHAR(7),
+    contenturl VARCHAR(255),
+    objectfit VARCHAR(10) NOT NULL DEFAULT 'cover',
+    startpositionx INT,
+    startpositiony INT,
+    endpositionx INT,
+    endpositiony INT,
+    positionz INT NOT NULL DEFAULT 1,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    editedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    editedbyUserId INT UNSIGNED,
+    FOREIGN KEY (editedbyUserId) REFERENCES user(id) ON DELETE SET NULL,
+    FOREIGN KEY (galleryId) REFERENCES gallery(id) ON DELETE CASCADE
+);
+
+-- ==========================
+-- TABELA DE WATCHLIST
+-- ==========================
+CREATE TABLE IF NOT EXISTS movie (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(160) NOT NULL,
+    overview TEXT,
+    popularity FLOAT,
+    type VARCHAR(10) NOT NULL CHECK (type IN ('movie','tv')),
+    originallang VARCHAR(5) NOT NULL,
+    posterurl VARCHAR(255),
+    backdropurl VARCHAR(255),
+    releasedate DATE,
+    voteaverage FLOAT,
+    votecount INT,
+    voteboteco FLOAT,
+    iswatched BOOLEAN DEFAULT FALSE,
+    createdbyUserId INT UNSIGNED,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL
+);
+
+-- ==========================
+-- TABELAS DE IMAGEM DO DIA
+-- ==========================
+CREATE TABLE IF NOT EXISTS imagemdodiaborder (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    createdbyUserId INT UNSIGNED,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS imagemdodia (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    position INT NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    text VARCHAR(32) NOT NULL,
+    borderId INT UNSIGNED NOT NULL DEFAULT 1,
+    createdbyUserId INT UNSIGNED,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL,
+    FOREIGN KEY (borderId) REFERENCES imagemdodiaborder(id) ON DELETE CASCADE
+);
 
 -- ==========================
 -- TABELAS DE CHATS
 -- ==========================
-CREATE TABLE IF NOT EXISTS chats (
+CREATE TABLE IF NOT EXISTS chattopic (
+    name VARCHAR(64) PRIMARY KEY,
+    description VARCHAR(255) NULL
+);
+
+INSERT INTO chattopic (name, description) VALUES
+('Geral', 'Sem tópico definido, fale sobre o que quiser.'),
+('Fofoca', 'Todo mundo gosta!'),
+('UFRJ', 'Estão abertas as portas para a coitadolândia.');
+
+CREATE TABLE IF NOT EXISTS chat (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) UNIQUE,
-    tipo ENUM('public','dm') NOT NULL DEFAULT 'public',
-    criado_por INT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (criado_por) REFERENCES users(id) ON DELETE CASCADE
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    title VARCHAR(160) NOT NULL,
+    chatTopicName VARCHAR(64) NULL DEFAULT 'Geral',
+    lastChatMessageId INT UNSIGNED DEFAULT NULL,
+    lastmessageat TIMESTAMP NULL,
+    createdbyUserId INT UNSIGNED,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chatTopicName) REFERENCES chattopic(name) ON DELETE SET NULL,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS chat_participants (
-    chat_id INT UNSIGNED NOT NULL,
-    user_id INT UNSIGNED NOT NULL,
-    PRIMARY KEY (chat_id, user_id),
-    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS chat_messages (
+CREATE TABLE IF NOT EXISTS chatmessages (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    chat_id INT UNSIGNED NOT NULL,
-    user_id INT UNSIGNED NOT NULL,
-    mensagem TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    chatId INT UNSIGNED NOT NULL,
+    userId INT UNSIGNED NOT NULL,
+    message TEXT NOT NULL,
+    isedited BOOLEAN NOT NULL DEFAULT FALSE,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chatId) REFERENCES chat(id) ON DELETE CASCADE,
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS chat_reads (
-    chat_id INT UNSIGNED NOT NULL,
-    user_id INT UNSIGNED NOT NULL,
-    last_read_message_id INT UNSIGNED DEFAULT 0,
-    PRIMARY KEY (chat_id, user_id),
-    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-
--- ==========================
--- Observações importantes
--- ==========================
--- 1. DMs: a unicidade de chats DM entre dois usuários deve ser
---    controlada pelo backend antes de inserir na tabela 'chats'.
--- 2. Chats públicos: qualquer usuário pode ser adicionado à tabela
---    'chat_participants' normalmente.
--- 3. Cada usuário só pode aparecer uma vez por chat devido ao PRIMARY KEY.
-
-
--- ==========================
--- TABELAS DE CARTINHAS
--- ==========================
-
--- Tabela principal de cartinhas
-CREATE TABLE IF NOT EXISTS cartinhas (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    remetente_id INT UNSIGNED NOT NULL COMMENT 'Quem enviou a cartinha',
-    destinatario_id INT UNSIGNED NOT NULL COMMENT 'Quem recebeu a cartinha',
-    titulo VARCHAR(40) NOT NULL COMMENT 'Máximo 40 caracteres',
-    conteudo VARCHAR(560) NOT NULL COMMENT 'Máximo 560 caracteres',
-    data_envio TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    data_lida TIMESTAMP NULL COMMENT 'Quando foi marcada como lida',
-    lida BOOLEAN NOT NULL DEFAULT FALSE,
-    favoritada BOOLEAN NOT NULL DEFAULT FALSE,
-    data_favoritada TIMESTAMP NULL COMMENT 'Quando foi favoritada',
-    
-    FOREIGN KEY (remetente_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (destinatario_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Índices essenciais
-    INDEX idx_destinatario_lida (destinatario_id, lida),
-    INDEX idx_destinatario_favoritada (destinatario_id, favoritada)
-);
-
--- ==========================
--- TRIGGER SIMPLES
--- ==========================
-
--- Trigger para atualizar data_lida quando marcar como lida
 DELIMITER //
-CREATE TRIGGER cartinha_lida_update
-BEFORE UPDATE ON cartinhas
+CREATE TRIGGER update_chat_metadata
+AFTER INSERT ON chatmessages
 FOR EACH ROW
 BEGIN
-    -- Se está marcando como lida pela primeira vez
-    IF OLD.lida = FALSE AND NEW.lida = TRUE AND OLD.data_lida IS NULL THEN
-        SET NEW.data_lida = CURRENT_TIMESTAMP;
-    END IF;
-    
-    -- Se está favoritando pela primeira vez
-    IF OLD.favoritada = FALSE AND NEW.favoritada = TRUE AND OLD.data_favoritada IS NULL THEN
-        SET NEW.data_favoritada = CURRENT_TIMESTAMP;
-    END IF;
-    
-    -- Se está desfavoritando
-    IF OLD.favoritada = TRUE AND NEW.favoritada = FALSE THEN
-        SET NEW.data_favoritada = NULL;
+    UPDATE chat 
+    SET lastChatMessageId = NEW.id, 
+        lastmessageat = NEW.createdat 
+    WHERE id = NEW.chatId;
+END;
+//
+DELIMITER ;
+
+INSERT INTO chat (publicid, title, chatTopicName) VALUES
+('e4e17c9d-15b5-451e-8dee-748956144ed2', 'Geral', 'Geral');
+
+-- ==========================
+-- TABELAS DE DMS
+-- ==========================
+CREATE TABLE IF NOT EXISTS dm (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    userId1 INT UNSIGNED NOT NULL,
+    userId2 INT UNSIGNED NOT NULL,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniquedm (userId1, userId2),
+    CHECK (userId1 != userId2),
+    FOREIGN KEY (userId1) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (userId2) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- evitar que duas dms sejam criadas entre os mesmos usuários
+DELIMITER //
+CREATE TRIGGER evitarduplicadms
+BEFORE INSERT ON dm
+FOR EACH ROW
+BEGIN
+    IF EXISTS (SELECT 1 FROM dm WHERE (userId1 = NEW.userId1 AND userId2 = NEW.userId2) OR (userId1 = NEW.userId2 AND userId2 = NEW.userId1)) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'DM entre esses usuários já existe.';
     END IF;
 END;
 //
 DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS dmmessage (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    dmId INT UNSIGNED NOT NULL,
+    userId INT UNSIGNED NOT NULL,
+    message TEXT NOT NULL,
+    isedited BOOLEAN NOT NULL DEFAULT FALSE,
+    isread BOOLEAN NOT NULL DEFAULT FALSE,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (dmId) REFERENCES dm(id) ON DELETE CASCADE,
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- ==========================
+-- TABELA DE CARTINHAS
+-- ==========================
+CREATE TABLE IF NOT EXISTS cartinha (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    senderUserId INT UNSIGNED,
+    recipientUserId INT UNSIGNED NOT NULL,
+    title VARCHAR(160) NOT NULL,
+    body TEXT,
+    contenturl VARCHAR(255),
+    isanonymous BOOLEAN NOT NULL DEFAULT FALSE,
+    isread BOOLEAN NOT NULL DEFAULT FALSE,
+    isfavorited BOOLEAN NOT NULL DEFAULT FALSE,
+    readat TIMESTAMP NULL,
+    favoritedat TIMESTAMP NULL,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (senderUserId) REFERENCES user(id) ON DELETE SET NULL,
+    FOREIGN KEY (recipientUserId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- trigger para deletar cartinhas lidas não favoritadas com mais de 30 dias
+DELIMITER //
+CREATE EVENT IF NOT EXISTS deletacartinhaslidas
+ON SCHEDULE EVERY 1 DAY
+DO
+BEGIN
+    DELETE FROM cartinha
+    WHERE isread = TRUE AND isfavorited = FALSE AND readat < NOW() - INTERVAL 30 DAY;
+END;
+//
+DELIMITER ;
+
+-- Adicionar FK circular do chat após a criação das tabelas
+ALTER TABLE chat ADD CONSTRAINT fk_last_message 
+FOREIGN KEY (lastChatMessageId) REFERENCES chatmessages(id) ON DELETE SET NULL;

@@ -24,9 +24,11 @@
         <div class="mb-3 text-start">
             <label for="editRole" class="form-label">Função</label>
             <select id="editRole" class="form-select">
-                <option value="0">Usuário</option>
-                <option value="1">Administrador</option>
-                <option value="2">Dono</option>
+                <option value="20">Usuário</option>
+                <option value="11">Botecor</option>
+                <option value="10">Moderador</option>
+                <option value="5">Administrador</option>
+                <option value="1">Dono</option>
             </select>
         </div>
 
@@ -75,17 +77,18 @@ async function carregarUsuarios() {
         userList.innerHTML = "";
 
         users.forEach(user => {
-        const card = document.createElement("div");
-        card.classList.add("card", "mb-2", "cursor-pointer"); // adicionei cursor-pointer para indicar clique
-        const roleText = user.role === 2 ? 'Dono' : user.role === 1 ? 'Administrador' : 'Usuário';
-        card.innerHTML = `
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${user.username}</strong><br>
-                    <small>${roleText} | Último acesso: ${user.last_access || '-'}</small>
+            const card = document.createElement("div");
+            card.classList.add("card", "mb-2", "cursor-pointer"); 
+            const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Botecor', 20: 'Usuário' };
+            const roleText = roleNames[user.roleId] || 'Usuário';
+            card.innerHTML = `
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${user.username}</strong><br>
+                        <small>${roleText} | Último acesso: ${user.lastaccess ? new Date(user.lastaccess).toLocaleString() : '-'}</small>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
 
         // Adiciona o evento de clique no card
         card.addEventListener("click", () => abrirModalEdicao(user.id));
@@ -107,13 +110,13 @@ function abrirModalEdicao(userId) {
     }
 
     // Impede editar a si mesmo (exceto Dono)
-    if (currentLoggedUser && currentLoggedUser.id === user.id && currentLoggedUser.role < 2) {
+    if (currentLoggedUser && currentLoggedUser.id === user.id && currentLoggedUser.roleId > 1) {
         mostrarAviso("Você não pode editar seu próprio usuário!");
         return;
     }
 
     // Impede editar usuários de nível igual ou superior (exceto se for o próprio Dono editando a si mesmo)
-    if (currentLoggedUser && user.role >= currentLoggedUser.role && user.id !== currentLoggedUser.id) {
+    if (currentLoggedUser && user.roleId <= currentLoggedUser.roleId && user.id !== currentLoggedUser.id) {
         mostrarAviso("Você não pode editar usuários de nível igual ou superior ao seu!");
         return;
     }
@@ -121,15 +124,20 @@ function abrirModalEdicao(userId) {
     currentUser = user;
 
     document.getElementById("editUsername").value = user.username;
-    document.getElementById("editRole").value = user.role;
+    document.getElementById("editRole").value = user.roleId;
     document.getElementById("editBio").value = user.bio;
-    document.getElementById("editUserProfile").src = user.profile_image;
+    document.getElementById("editUserProfile").src = user.profileimage;
 
     // Desabilita opções de role iguais ou superiores ao usuário logado
     const roleSelect = document.getElementById("editRole");
     Array.from(roleSelect.options).forEach(option => {
         const optionRole = parseInt(option.value);
-        if (currentLoggedUser && optionRole >= currentLoggedUser.role) {
+        if (currentLoggedUser && optionRole <= currentLoggedUser.roleId && currentLoggedUser.roleId !== 1) {
+            option.disabled = true;
+        } else {
+            option.disabled = false;
+        }
+    });
             option.disabled = true;
         } else {
             option.disabled = false;
@@ -145,7 +153,7 @@ document.getElementById("saveUserBtn").addEventListener("click", async () => {
     if (!currentUser) return;
 
     const username = document.getElementById("editUsername").value.trim();
-    const role = parseInt(document.getElementById("editRole").value);
+    const roleId = parseInt(document.getElementById("editRole").value);
     const bio = document.getElementById("editBio").value.trim();
 
     try {
@@ -153,7 +161,7 @@ document.getElementById("saveUserBtn").addEventListener("click", async () => {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ username, role, bio })
+            body: JSON.stringify({ username, roleId, bio })
         });
 
         const data = await res.json();

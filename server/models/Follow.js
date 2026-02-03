@@ -3,58 +3,34 @@ const sequelize = require('../config/database');
 const User = require('./User');
 
 const Follow = sequelize.define('Follow', {
-    id: {
+    followerUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
         primaryKey: true,
-        autoIncrement: true
-    },
-    follower_id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: false,
-        comment: 'Quem segue',
+        field: 'followerUserId',
         references: {
-            model: User,
+            model: 'user',
             key: 'id'
         }
     },
-    following_id: {
+    followedUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,
-        comment: 'Quem é seguido',
+        primaryKey: true,
+        field: 'followedUserId',
         references: {
-            model: User,
+            model: 'user',
             key: 'id'
         }
     },
-    created_at: {
+    createdat: {
         type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
+        defaultValue: DataTypes.NOW,
+        field: 'createdat'
     }
 }, {
-    tableName: 'follows',
-    timestamps: false,
-    indexes: [
-        {
-            name: 'unique_follow',
-            unique: true,
-            fields: ['follower_id', 'following_id']
-        },
-        {
-            name: 'idx_follower',
-            fields: ['follower_id']
-        },
-        {
-            name: 'idx_following',
-            fields: ['following_id']
-        }
-    ]
+    tableName: 'follow',
+    timestamps: false
 });
-
-// Relacionamentos
-User.hasMany(Follow, { foreignKey: 'follower_id', as: 'following', onDelete: 'CASCADE' });
-User.hasMany(Follow, { foreignKey: 'following_id', as: 'followers', onDelete: 'CASCADE' });
-
-Follow.belongsTo(User, { foreignKey: 'follower_id', as: 'follower' });
-Follow.belongsTo(User, { foreignKey: 'following_id', as: 'followed' });
 
 module.exports = Follow;

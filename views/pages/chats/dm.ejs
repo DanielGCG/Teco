@@ -274,12 +274,16 @@
         allMessages = [];
         
         socket.emit('joinChat', chatId);
-        socket.emit('getMessages', { chatId, page: 1 });
+        socket.emit('getMessages', { chatId, page: 1, type: 'dm' });
     }
 
     ChatUtils.setupMessageInput(chatInput, sendBtn, (mensagem) => {
         if (!selectedChatId) return;
-        socket.emit('sendMessage', { chatId: selectedChatId, mensagem });
+        socket.emit('sendMessage', { 
+            chatId: selectedChatId, 
+            mensagem,
+            type: 'dm'
+        });
     });
 
     // ---------------- Socket.IO Events ----------------
@@ -295,11 +299,11 @@
         const { chatId, messages } = data;
         const msgs = messages.map(msg => ({
             id: msg.id,
-            username: msg.User?.username || 'Usuário',
-            mensagem: msg.mensagem,
+            username: msg.Sender?.username || msg.username || 'Usuário',
+            message: msg.message,
             isMine: msg.isMine,
-            createdAt: msg.created_at,
-            seen: msg.isRead || false
+            createdat: msg.createdat,
+            isread: msg.isread || false
         }));
 
         // Sempre carregamento inicial simplificado
@@ -317,7 +321,7 @@
 
     socket.on('newMessage', (data) => {
         // Ignora eventos sem dados (usado apenas para atualizar contagem de notificações)
-        if (!data || !data.chatId || !data.message?.mensagem) return;
+        if (!data || !data.chatId || !data.message?.message) return;
         
         const { chatId, message } = data;
         
@@ -325,11 +329,11 @@
             // Adiciona mensagem ao chat atual
             const newMsg = {
                 id: message.id,
-                mensagem: message.mensagem,
+                message: message.message,
                 username: message.username,
                 isMine: message.username === currentUser.username,
-                createdAt: message.created_at || new Date().toISOString(),
-                seen: false
+                createdat: message.createdat || new Date().toISOString(),
+                isread: false
             };
             
             allMessages.push(newMsg);

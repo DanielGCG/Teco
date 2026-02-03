@@ -177,14 +177,14 @@
                     const fragment = document.createDocumentFragment();
                     
                     data.notifications.forEach(notification => {
-                        const isUnread = !notification.read_at;
-                        const timeAgo = getTimeAgo(notification.created_at);
+                        const isUnread = !notification.readat;
+                        const timeAgo = getTimeAgo(notification.createdat);
                         const { icon = 'bi-bell', color = 'text-primary' } = iconMap[notification.type] || {};
 
                         // Container principal
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `notification-item ${isUnread ? 'unread' : ''} px-3 py-2`;
-                        itemDiv.dataset.id = notification.id;
+                        itemDiv.dataset.id = notification.publicid;
                         itemDiv.dataset.link = notification.link || '#';
                         itemDiv.style.cursor = 'pointer';
                         

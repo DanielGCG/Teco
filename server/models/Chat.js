@@ -1,6 +1,19 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./User');
+
+const ChatTopic = sequelize.define('ChatTopic', {
+    name: {
+        type: DataTypes.STRING(64),
+        primaryKey: true
+    },
+    description: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    }
+}, {
+    tableName: 'chattopic',
+    timestamps: false
+});
 
 const Chat = sequelize.define('Chat', {
     id: {
@@ -8,34 +21,186 @@ const Chat = sequelize.define('Chat', {
         primaryKey: true,
         autoIncrement: true
     },
-    nome: {
-        type: DataTypes.STRING(100),
-        unique: true
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
-    tipo: {
-        type: DataTypes.ENUM('public', 'dm'),
-        defaultValue: 'public',
+    title: {
+        type: DataTypes.STRING(160),
         allowNull: false
     },
-    criado_por: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: false,
+    chatTopicName: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        defaultValue: 'Geral',
         references: {
-            model: User,
+            model: 'chattopic',
+            key: 'name'
+        }
+    },
+    lastChatMessageId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true
+    },
+    lastmessageat: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    createdbyUserId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true,
+        references: {
+            model: 'user',
             key: 'id'
         }
     },
-    created_at: {
+    createdat: {
         type: DataTypes.DATE,
+        allowNull: false,
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'chats',
+    tableName: 'chat',
     timestamps: false
 });
 
-// Relacionamento
-User.hasMany(Chat, { foreignKey: 'criado_por', as: 'chats_criados', onDelete: 'CASCADE' });
-Chat.belongsTo(User, { foreignKey: 'criado_por', as: 'criador' });
+Chat.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.id;
+    return values;
+};
 
-module.exports = Chat;
+const ChatMessage = sequelize.define('ChatMessage', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    chatId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'chat',
+            key: 'id'
+        }
+    },
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'id'
+        }
+    },
+    message: {
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    isedited: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    createdat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    }
+}, {
+    tableName: 'chatmessages',
+    timestamps: false
+});
+
+const DM = sequelize.define('DM', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
+    },
+    userId1: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'id'
+        }
+    },
+    userId2: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'id'
+        }
+    },
+    createdat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    }
+}, {
+    tableName: 'dm',
+    timestamps: false
+});
+
+DM.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.id;
+    return values;
+};
+
+const DMMessage = sequelize.define('DMMessage', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    dmId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'dm',
+            key: 'id'
+        }
+    },
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'id'
+        }
+    },
+    message: {
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    isedited: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    isread: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    createdat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    }
+}, {
+    tableName: 'dmmessage',
+    timestamps: false
+});
+
+module.exports = { ChatTopic, Chat, ChatMessage, DM, DMMessage };

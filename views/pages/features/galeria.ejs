@@ -53,7 +53,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Nome/Legenda (Opcional)</label>
-                            <input type="text" class="form-control" name="name" placeholder="Ex: Férias de Verão">
+                            <input type="text" class="form-control" name="title" placeholder="Ex: Férias de Verão">
                         </div>
                         <div class="mb-3 p-3 bg-light rounded border" id="upload-progress-wrapper" style="display:none;">
                             <div class="d-flex justify-content-between mb-1">
@@ -94,7 +94,7 @@
                                 <div class="mb-3"><label class="form-label">Nome</label><input type="text" class="form-control" name="name" id="config-name" required></div>
                                 <div class="mb-3"><label class="form-label">Descrição</label><textarea class="form-control" name="description" id="config-description" rows="3"></textarea></div>
                                 <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" name="is_public" id="config-is-public">
+                                    <input class="form-check-input" type="checkbox" name="ispublic" id="config-is-public">
                                     <label class="form-check-label fw-bold ms-2" for="config-is-public">Público</label>
                                 </div>
                                 <div id="collaborators-section">
@@ -127,13 +127,13 @@
                                     <small id="status-bg" class="text-danger d-none mt-1">Será removido ao salvar</small>
                                 </div>
                                 <div class="row g-2 mb-3">
-                                    <div class="col-4"><label class="form-label small">Fundo</label><input type="color" class="form-control form-control-color w-100 preview-trigger" name="background_color" id="config-bg-color"></div>
-                                    <div class="col-4"><label class="form-label small">Texto</label><input type="color" class="form-control form-control-color w-100 preview-trigger" name="font_color" id="config-font-color"></div>
-                                    <div class="col-4"><label class="form-label small">Cartões</label><input type="color" class="form-control form-control-color w-100 preview-trigger" name="card_color" id="config-card-color"></div>
+                                    <div class="col-4"><label class="form-label small">Fundo</label><input type="color" class="form-control form-control-color w-100 preview-trigger" name="backgroundcolor" id="config-bg-color"></div>
+                                    <div class="col-4"><label class="form-label small">Texto</label><input type="color" class="form-control form-control-color w-100 preview-trigger" name="fontcolor" id="config-font-color"></div>
+                                    <div class="col-4"><label class="form-label small">Cartões</label><input type="color" class="form-control form-control-color w-100 preview-trigger" name="cardcolor" id="config-card-color"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small">Colunas</label>
-                                    <select class="form-select preview-trigger" name="grid_columns" id="config-grid-columns">
+                                    <select class="form-select preview-trigger" name="gridxsize" id="config-grid-columns">
                                         <option value="8">8</option>
                                         <option value="10">10</option>
                                         <option value="12" selected>12 (Padrão)</option>
@@ -143,14 +143,14 @@
                                 </div>
                                 <div class="mb-3" id="group-bg-fill">
                                     <label class="form-label small">Preenchimento do Fundo</label>
-                                    <select class="form-select preview-trigger" name="background_fill" id="config-bg-fill">
+                                    <select class="form-select preview-trigger" name="backgroundfill" id="config-bg-fill">
                                         <option value="cover">Cobrir (Fill)</option><option value="repeat">Repetir (Pattern)</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small">Fonte Google (Nome)</label>
                                     <div class="input-group">
-                                        <input list="fonts-list" type="text" class="form-control preview-trigger" name="font_family" id="config-font-family" placeholder="Ex: Montserrat, Roboto:700">
+                                        <input list="fonts-list" type="text" class="form-control preview-trigger" name="fontfamily" id="config-font-family" placeholder="Ex: Montserrat, Roboto:700">
                                         <button class="btn btn-outline-secondary" type="button" id="btn-show-fonts" title="Ver fontes" onclick="GaleriaManager.showFontOptions()"><i class="bi bi-chevron-down"></i></button>
                                     </div>
                                     <datalist id="fonts-list">
@@ -205,15 +205,15 @@
                         <input type="hidden" name="item_id" id="edit-item-id">
                         <div class="mb-3">
                             <label class="form-label">Nome / Legenda</label>
-                            <input type="text" class="form-control" name="name" id="edit-item-name">
+                            <input type="text" class="form-control" name="title" id="edit-item-name">
                         </div>
                         <div class="mb-3 form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="edit-item-showtitle" name="show_title">
+                            <input class="form-check-input" type="checkbox" id="edit-item-showtitle" name="showtitle">
                             <label class="form-check-label" for="edit-item-showtitle">Mostrar título</label>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Ajuste de Imagem</label>
-                            <select class="form-select" name="object_fit" id="edit-item-fit">
+                            <select class="form-select" name="objectfit" id="edit-item-fit">
                                 <option value="cover">Cobrir (Fill)</option>
                                 <option value="contain">Conter (Fit)</option>
                             </select>
@@ -222,7 +222,7 @@
                             <label class="form-label">Z-index (Ordem de sobreposição)</label>
                             <div class="input-group">
                                 <button type="button" class="btn btn-outline-secondary" onclick="GaleriaManager.changeModalZ(-1)"><i class="bi bi-dash-lg"></i></button>
-                                <input type="number" class="form-control text-center" name="z_index" id="edit-item-zindex" value="0" min="0">
+                                <input type="number" class="form-control text-center" name="positionz" id="edit-item-zindex" value="0" min="0">
                                 <button type="button" class="btn btn-outline-secondary" onclick="GaleriaManager.changeModalZ(1)"><i class="bi bi-plus-lg"></i></button>
                             </div>
                             <div class="form-text small text-muted">Ajuste a ordem visual na grade.</div>

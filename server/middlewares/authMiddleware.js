@@ -8,9 +8,9 @@ const setUserCookie = (res, user) => {
     const userInfo = JSON.stringify({
         id: userData.id,
         username: userData.username,
-        profile_image: userData.profile_image,
-        background_image: userData.background_image,
-        role: userData.role
+        profileimage: userData.profileimage,
+        backgroundimage: userData.backgroundimage,
+        roleId: userData.roleId
     });
     res.cookie('teco_user', Buffer.from(userInfo).toString('base64'), { 
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -22,10 +22,11 @@ const setUserCookie = (res, user) => {
 };
 
 // authMiddleware(minRole, refresh = true)
-const authMiddleware = (minRole = 0, refresh = true) => {
+const authMiddleware = (minRole = 20, refresh = true) => {
     return async (req, res, next) => {
+        let isPublic = false;
         try {
-            const isPublic = PUBLIC_ROUTES.includes(req.path);
+            isPublic = PUBLIC_ROUTES.includes(req.path);
             const cookieValue = req.cookies?.session;
 
             // Se não houver cookie e for rota pública, segue sem usuário
@@ -45,12 +46,12 @@ const authMiddleware = (minRole = 0, refresh = true) => {
             // Busca sessão válida
             const session = await UserSession.findOne({
                 where: {
-                    cookie_value: cookieValue,
-                    expires_at: { [Op.gt]: new Date() }
+                    cookie: cookieValue,
+                    expiresat: { [Op.gt]: new Date() }
                 },
                 include: [{
                     model: User,
-                    attributes: ['id', 'username', 'role', 'profile_image', 'background_image']
+                    attributes: ['id', 'publicid', 'username', 'roleId', 'profileimage', 'backgroundimage']
                 }]
             });
 
@@ -67,18 +68,19 @@ const authMiddleware = (minRole = 0, refresh = true) => {
 
             const user = session.User;
 
-            // Verifica role mínima (apenas se não for rota pública ou se minRole > 0)
-            if (!isPublic && user.role < minRole) {
+            // Verifica role mínima (apenas se não for rota pública ou se minRole < 20)
+            // 1=dono, 5=admin, 10=moderador, 11=botecor, 20=usuário
+            if (!isPublic && user.roleId > minRole) {
                 if (res && res.status) {
                     return res.status(403).json({ message: "Acesso negado" });
                 }
                 return next(new Error("Acesso negado"));
             }
 
-            // Atualiza expires_at se refresh ativado
+            // Atualiza expiresat se refresh ativado
             if (refresh) {
                 const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-                await session.update({ expires_at: newExpires });
+                await session.update({ expiresat: newExpires });
             }
 
             // Anexa informações do usuário
@@ -86,9 +88,9 @@ const authMiddleware = (minRole = 0, refresh = true) => {
             req.user = {
                 id: userData.id,
                 username: userData.username,
-                role: userData.role,
-                profile_image: userData.profile_image,
-                background_image: userData.background_image
+                roleId: userData.roleId,
+                profileimage: userData.profileimage,
+                backgroundimage: userData.backgroundimage
             };
 
             if (res.locals) {
@@ -117,7 +119,7 @@ const limparSessoesExpiradas = async () => {
     try {
         const result = await UserSession.destroy({
             where: {
-                expires_at: { [Op.lt]: new Date() }
+                expiresat: { [Op.lt]: new Date() }
             }
         });
 

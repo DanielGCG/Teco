@@ -257,7 +257,7 @@
     line-height: 1;
 }
 
-.titulo-sucesso {
+.title-sucesso {
     color: var(--texto-secundario);
     font-weight: 700;
     margin: 1rem 0;
@@ -672,7 +672,7 @@
                 this.usuarioAtual = {
                     id: null,
                     username: 'Você',
-                    profile_image: null
+                    profileimage: null
                 };
             }
         }
@@ -698,11 +698,11 @@
 
             // Contadores de caracteres
             document.getElementById('titulo').addEventListener('input', (e) => {
-                this.atualizarContador('titulo', e.target.value.length, 40);
+                this.atualizarContador('titulo', e.target.value.length, 160);
             });
 
             document.getElementById('conteudo').addEventListener('input', (e) => {
-                this.atualizarContador('conteudo', e.target.value.length, 560);
+                this.atualizarContador('conteudo', e.target.value.length, 2000);
             });
 
             // Botões de ação
@@ -773,7 +773,7 @@
                 this.destinatarioSelecionado = {
                     id: parseInt(paraUserId),
                     username: decodeURIComponent(paraUsername),
-                    profile_image: null,
+                    profileimage: null,
                     status: 'online'
                 };
                 
@@ -826,7 +826,7 @@
             // Adiciona o usuário atual flutuando no topo, se estiver na lista
             let usuariosFiltrados = this.usuarios.map(usuario => ({
                 ...usuario,
-                profile_image: usuario.profile_image
+                profileimage: usuario.profileimage
             }));
 
             let usuarioAtual = this.usuarioAtual;
@@ -837,7 +837,7 @@
                 if (existe) {
                     html += `
                     <div class="sugestao-usuario sugestao-atual" data-usuario-id="${usuarioAtual.id}" style="position:sticky;top:0;z-index:2;background:#f8f9fa;border-bottom:1px solid #eee;">
-                        <img src="${usuarioAtual.profile_image}" alt="${usuarioAtual.username}" class="avatar-sugestao">
+                        <img src="${usuarioAtual.profileimage}" alt="${usuarioAtual.username}" class="avatar-sugestao">
                         <div class="info-usuario">
                             <div class="nome-usuario">${usuarioAtual.username} <span class="badge bg-primary ms-1">Você</span></div>
                             <div class="status-usuario">${this.formatarStatus(usuarioAtual.status || 'online')}</div>
@@ -851,7 +851,7 @@
 
             html += usuariosFiltrados.map(usuario => `
                 <div class="sugestao-usuario" data-usuario-id="${usuario.id}">
-                    <img src="${usuario.profile_image}" alt="${usuario.username}" class="avatar-sugestao">
+                    <img src="${usuario.profileimage}" alt="${usuario.username}" class="avatar-sugestao">
                     <div class="info-usuario">
                         <div class="nome-usuario">${usuario.username}</div>
                         <div class="status-usuario">${this.formatarStatus(usuario.status)}</div>
@@ -924,8 +924,8 @@
                 if (rascunho) {
                     const dados = JSON.parse(rascunho);
                     
-                    if (dados.titulo) document.getElementById('titulo').value = dados.titulo;
-                    if (dados.conteudo) document.getElementById('conteudo').value = dados.conteudo;
+                    if (dados.title) document.getElementById('titulo').value = dados.title;
+                    if (dados.body) document.getElementById('conteudo').value = dados.body;
                     if (dados.destinatarioId) {
                         // Buscar destinatário salvo
                         this.buscarUsuarioPorId(dados.destinatarioId);
@@ -1044,13 +1044,13 @@
                         <div class="rascunho-para">
                             <strong>Para:</strong> ${this.escapeHtml(rascunho.destinatarioNome || 'Não definido')}
                         </div>
-                        ${rascunho.titulo ? `
+                        ${rascunho.title ? `
                             <div class="rascunho-titulo">
-                                <strong>Título:</strong> ${this.escapeHtml(rascunho.titulo)}
+                                <strong>Título:</strong> ${this.escapeHtml(rascunho.title)}
                             </div>
                         ` : ''}
-                        ${rascunho.conteudo ? `
-                            <div class="rascunho-preview">${this.escapeHtml(rascunho.conteudo.substring(0, 150))}${rascunho.conteudo.length > 150 ? '...' : ''}</div>
+                        ${rascunho.body ? `
+                            <div class="rascunho-preview">${this.escapeHtml(rascunho.body.substring(0, 150))}${rascunho.body.length > 150 ? '...' : ''}</div>
                         ` : ''}
                     </div>
                     
@@ -1088,8 +1088,8 @@
                 }
                 
                 // Aplicar rascunho
-                document.getElementById('titulo').value = rascunho.titulo || '';
-                document.getElementById('conteudo').value = rascunho.conteudo || '';
+                document.getElementById('titulo').value = rascunho.title || '';
+                document.getElementById('conteudo').value = rascunho.body || '';
                 
                 if (rascunho.destinatarioId && rascunho.destinatarioNome) {
                     document.getElementById('destinatario').value = rascunho.destinatarioNome;
@@ -1322,9 +1322,9 @@
                 btnConfirmar.disabled = true;
 
                 const dados = {
-                    destinatario_username: this.destinatarioSelecionado?.username,
-                    titulo: document.getElementById('titulo').value.trim(),
-                    conteudo: document.getElementById('conteudo').value.trim()
+                    recipientusername: this.destinatarioSelecionado?.username,
+                    title: document.getElementById('titulo').value.trim(),
+                    body: document.getElementById('conteudo').value.trim()
                 };
 
                 const response = await fetch('/api/cartinhas', {
@@ -1367,7 +1367,7 @@
                     
                     // Limpar rascunho legado e oferece limpar rascunhos relacionados
                     localStorage.removeItem('cartinha_rascunho');
-                    this.oferecerLimpezaRascunhos(dados.titulo, dados.conteudo);
+                    this.oferecerLimpezaRascunhos(dados.title, dados.body);
                     
                     // Animação de envelope voando
                     this.animarEnvio();
@@ -1403,10 +1403,10 @@
         // Procurar rascunhos similares para oferecer limpeza
         const rascunhos = this.carregarTodosRascunhos();
         const rascunhosSimilares = rascunhos.filter(r => 
-            r.titulo === titulo || 
-            r.conteudo === conteudo ||
-            (titulo && r.titulo.includes(titulo)) ||
-            (conteudo && r.conteudo.includes(conteudo.substring(0, 50)))
+            r.title === titulo || 
+            r.body === conteudo ||
+            (titulo && r.title.includes(titulo)) ||
+            (conteudo && r.body.includes(conteudo.substring(0, 50)))
         );
         
         if (rascunhosSimilares.length > 0) {

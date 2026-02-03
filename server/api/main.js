@@ -19,16 +19,16 @@ const GaleriaRouter = require("./galeria-api");
 router.use("/users", UsersRouter);
 
 // Rotas protegidas (requer autenticação)
-router.use("/chats", authMiddleware(0), ChatsRouter);
-router.use("/dm", authMiddleware(0), DMsRouter);
-router.use("/cartinhas", authMiddleware(0), CartinhasRouter);
-router.use("/watchlist", authMiddleware(0), WatchlistRouter);
-router.use("/friends", authMiddleware(0), FriendsRouter);
-router.use("/follows", authMiddleware(0), FollowsRouter);
-router.use("/posts", authMiddleware(0), PostsRouter);
-router.use("/notifications", authMiddleware(0), NotificationsRouter);
-router.use("/imagemdodia", authMiddleware(0), ImagemDoDiaRouter);
-router.use("/galeria", authMiddleware(0), GaleriaRouter);
-router.use("/admin", authMiddleware(1), AdminRouter);
+router.use("/chats", authMiddleware(20), ChatsRouter);
+router.use("/dms", authMiddleware(20), DMsRouter);
+router.use("/cartinhas", authMiddleware(20), CartinhasRouter);
+router.use("/watchlist", authMiddleware(20), WatchlistRouter);
+router.use("/friends", authMiddleware(20), FriendsRouter);
+router.use("/follows", authMiddleware(20), FollowsRouter);
+router.use("/posts", authMiddleware(20), PostsRouter);
+router.use("/notifications", authMiddleware(20), NotificationsRouter);
+router.use("/imagemdodia", authMiddleware(20), ImagemDoDiaRouter);
+router.use("/galeria", authMiddleware(20), GaleriaRouter);
+router.use("/admin", authMiddleware(5), AdminRouter);
 
 module.exports = router;

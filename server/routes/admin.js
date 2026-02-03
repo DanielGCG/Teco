@@ -17,8 +17,8 @@ AdminRouter.get('', async (req, res) => {
 
 AdminRouter.get('/criar-chat', async (req, res) => {
     const locals = {
-        title: `Criar Chat/DM`,
-        description: "Crie novos chats/DMs",
+        title: `Gerenciar Chats & DMs`,
+        description: "Crie, edite ou remova chats e conversas diretas",
         version: process.env.VERSION,
     }
     res.render('pages/admin/criar-chat', {
@@ -29,16 +29,7 @@ AdminRouter.get('/criar-chat', async (req, res) => {
 });
 
 AdminRouter.get('/editar-chat', async (req, res) => {
-    const locals = {
-        title: `Editar Chat/DM`,
-        description: "Edite chats/DMs existentes",
-        version: process.env.VERSION,
-    }
-    res.render('pages/admin/editar-chat', {
-        layout: 'layouts/main',
-        locals: locals,
-        HOST: process.env.HOST
-    })
+    res.redirect('/admin/criar-chat');
 });
 
 AdminRouter.get('/editar-usuario', async (req, res) => {

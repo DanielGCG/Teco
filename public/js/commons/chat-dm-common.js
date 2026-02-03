@@ -45,20 +45,20 @@ const ChatUtils = (() => {
 
         // Conteúdo
         const contentEl = document.createElement('span');
-        contentEl.textContent = message.mensagem || message.text;
+        contentEl.textContent = message.message;
         msgDiv.appendChild(contentEl);
 
         // Tempo e checks de visualização
-        if (showTime && message.createdAt) {
+        if (showTime && message.createdat) {
             const metaEl = document.createElement('div');
             metaEl.className = 'msg-meta';
-            metaEl.textContent = formatTime(message.createdAt);
+            metaEl.textContent = formatTime(message.createdat);
             
             // Adiciona check de visualização para mensagens próprias em DMs
-            if (isMine && message.seen !== undefined) {
+            if (isMine && message.isread !== undefined) {
                 const checkEl = document.createElement('span');
-                checkEl.className = `msg-check ${message.seen ? 'read' : ''}`;
-                checkEl.textContent = message.seen ? '✓✓' : '✓';
+                checkEl.className = `msg-check ${message.isread ? 'read' : ''}`;
+                checkEl.textContent = message.isread ? '✓✓' : '✓';
                 metaEl.appendChild(checkEl);
             }
             

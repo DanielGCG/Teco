@@ -1,5 +1,5 @@
 <div class="container">
-    <h2 class="mb-4"><span class="marca-texto-roxo">Painel de Administração de Chats</span></h2>
+    <h2 class="mb-4"><span class="marca-texto-roxo">Gerenciar Chats & DMs</span></h2>
 
     <!-- Mensagens de alerta -->
     <div id="alertsContainer"></div>
@@ -12,11 +12,12 @@
                     <h5 class="mb-0"><span class="marca-texto-verde">Criar Chat Público</span></h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">Crie um chat público visível para todos os usuários.</p>
-                    <div class="input-group mb-2">
-                        <input type="text" id="publicChatName" class="form-control" placeholder="Nome do chat">
-                        <button class="btn btn-primary" id="createPublicChatBtn">
-                            <i class="fas fa-plus-circle me-1"></i> Criar
+                    <p class="text-muted mb-3">Crie um chat público visível para todos.</p>
+                    <div class="mb-2">
+                        <input type="text" id="publicChatName" class="form-control mb-2" placeholder="Nome do chat">
+                        <select id="publicChatTopic" class="form-select mb-2"></select>
+                        <button class="btn btn-primary w-100" id="createPublicChatBtn">
+                            <i class="fas fa-plus-circle me-1"></i> Criar Chat
                         </button>
                     </div>
                 </div>
@@ -32,12 +33,8 @@
                 <div class="card-body">
                     <p class="text-muted mb-3">Crie uma conversa direta entre dois usuários.</p>
                     <div id="adminDmPanel">
-                        <select id="adminUser1" class="form-select mb-2">
-                            <option value="">Carregando usuários...</option>
-                        </select>
-                        <select id="adminUser2" class="form-select mb-2">
-                            <option value="">Carregando usuários...</option>
-                        </select>
+                        <select id="adminUser1" class="form-select mb-2"></select>
+                        <select id="adminUser2" class="form-select mb-2"></select>
                         <button class="btn btn-success w-100" id="createAdminDmBtn">
                             <i class="fas fa-comments me-1"></i> Criar DM
                         </button>
@@ -48,391 +45,308 @@
     </div>
 
     <!-- Lista de chats -->
+    <div id="chatSearchContainer" class="mb-3" style="display:none;">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" id="chatSearchInput" class="form-control" placeholder="Buscar por título ou participante...">
+        </div>
+    </div>
+
     <div class="chat-list mb-4" id="chatList">
         <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando...</span>
-            </div>
-            <p class="text-muted mt-2">Carregando lista de chats...</p>
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">Carregando...</p>
         </div>
     </div>  
 </div>
 
-<script>
-// ==================== Função para listar chats ====================
-async function carregarChats() {
-    try {
-        const res = await fetch(`/api/admin/chats`, { credentials: "include" });
-        if (!res.ok) throw new Error("Erro ao carregar chats");
-        const data = await res.json();
-        
-        // Log para debug
-        console.log("Dados recebidos:", data);
+<!-- Modal de edição -->
+<div class="modal fade" id="editChatModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Administrar Conversa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="editChatFields">
+          <div class="mb-3" id="editChatNameGroup">
+            <label for="editChatName" class="form-label">Nome do chat</label>
+            <input type="text" id="editChatName" class="form-control">
+          </div>
+          <div class="mb-3" id="editParticipantsContainer" style="display:none;">
+            <label class="form-label">Participantes</label>
+            <select id="editParticipant1" class="form-select mb-2"></select>
+            <select id="editParticipant2" class="form-select mb-2"></select>
+          </div>
+        </div>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Cuidado:</strong> Excluir um chat removerá todas as mensagens permanentemente.
+        </div>
+        <button class="btn btn-danger w-100" id="deleteChatBtn">
+            <i class="fas fa-trash-alt me-1"></i> Excluir Chat/DM
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="saveChatBtn">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        // Verifica se os dados estão no formato esperado
-        const chats = data.chats || data;
+<style>
+    .chat-card { cursor: pointer; transition: all 0.2s ease-in-out; margin-bottom: 12px; }
+    .chat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .border-primary { border-left: 4px solid #007bff !important; }
+    .border-success { border-left: 4px solid #28a745 !important; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .alert { animation: fadeIn 0.5s; }
+</style>
+
+<script>
+// ==================== Estado Global ====================
+const state = {
+    currentChat: null,
+    loggedUser: null,
+    searchTimeout: null
+};
+
+// ==================== Utilitários UI ====================
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+    `;
+    document.querySelector(".container").prepend(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+// ==================== Carregamento de Dados ====================
+async function carregarChats() {
+    const chatList = document.getElementById("chatList");
+    try {
+        const search = document.getElementById("chatSearchInput")?.value || "";
+        const res = await fetch(`/api/admin/chats?search=${encodeURIComponent(search)}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Erro ao carregar");
         
-        if (!chats || !Array.isArray(chats) || chats.length === 0) {
-            const chatList = document.getElementById("chatList");
-            chatList.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Nenhum chat encontrado. Crie um novo chat abaixo.
-                </div>
-            `;
+        const data = await res.json();
+        const chats = data.chats || [];
+        
+        if (chats.length === 0) {
+            chatList.innerHTML = `<div class="alert alert-info">Nenhuma conversa encontrada.</div>`;
             return;
         }
 
-        const chatList = document.getElementById("chatList");
-        chatList.innerHTML = "<h5 class='mb-3'><span class='marca-texto-verde'>Chats Existentes</span></h5>";
+        chatList.innerHTML = "<h5 class='mb-3'><span class='marca-texto-verde'>Gerenciar Conversas</span></h5>";
+        document.getElementById("chatSearchContainer").style.display = "block";
 
         chats.forEach(chat => {
-            // Formatação da data
-            const dataFormatada = chat.ultima_mensagem ? new Date(chat.ultima_mensagem).toLocaleString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }) : 'Sem mensagens';
-
+            const date = chat.lastmessageat ? new Date(chat.lastmessageat).toLocaleString('pt-BR') : 'Sem atividade';
             const card = document.createElement("div");
-            card.classList.add("card", "mb-2", "chat-card");
-            
-            // Adicionar classes baseadas no tipo
-            if (chat.tipo === 'public') {
-                card.classList.add('border-primary');
-            } else if (chat.tipo === 'dm') {
-                card.classList.add('border-success');
-            }
-            
-            // Determinar os participantes
-            const participantes = chat.participantes ?? [];
-            const participantesStr = participantes.map(p => p.username).join(", ");
+            card.className = `card mb-2 chat-card border-${chat.type === 'public' ? 'primary' : 'success'}`;
             
             card.innerHTML = `
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="card-title mb-0">${chat.nome || 'DM'}</h6>
-                        <span class="badge ${chat.tipo === 'public' ? 'bg-primary' : 'bg-success'}">${chat.tipo}</span>
+                    <div class="d-flex justify-content-between">
+                        <h6 class="card-title">${chat.title}</h6>
+                        <span class="badge bg-${chat.type === 'public' ? 'primary' : 'success'}" style="color: white !important">${chat.type.toUpperCase()}</span>
                     </div>
-                    <p class="card-text">
-                        <small class="text-muted">
-                            Criado por: ${chat.criado_por_username || 'Desconhecido'} | 
-                            ${chat.total_participantes ? `Participantes: ${chat.total_participantes}` : ''} 
-                            ${chat.total_mensagens ? `| Mensagens: ${chat.total_mensagens}` : ''}
-                        </small>
-                    </p>
-                    <p class="card-text">
-                        <small>Participantes: ${participantesStr}</small>
-                        <br>
-                        <small class="text-muted">Última atividade: ${dataFormatada}</small>
-                    </p>
+                    <small class="text-muted d-block">
+                        Assunto: ${chat.topic} | Criador: ${chat.creatorusername} | Msg: ${chat.messagecount}
+                    </small>
+                    <small class="text-muted">Atividade: ${date}</small>
+                    <div class="mt-2 text-end">
+                        <button class="btn btn-sm btn-outline-primary edit-btn">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="/chat/${chat.publicid}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
                 </div>
             `;
-            card.addEventListener("click", () => {
-                if (chat.tipo === 'public') {
-                    window.location.href = `/chat/${chat.nome}`;
-                } else {
-                    window.location.href = `/dms`;
-                }
-            });
+
+            card.querySelector(".edit-btn").onclick = (e) => {
+                e.stopPropagation();
+                abrirModalEdicao(chat);
+            };
+
             chatList.appendChild(card);
         });
     } catch (err) {
-        console.error("Erro ao carregar chats:", err);
-        const chatList = document.getElementById("chatList");
-        chatList.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                Erro ao carregar chats: ${err.message}
-            </div>
-        `;
+        chatList.innerHTML = `<div class="alert alert-danger">Erro: ${err.message}</div>`;
     }
 }
 
-// ==================== Criar chat público ====================
-document.getElementById("createPublicChatBtn").addEventListener("click", async () => {
-    const nome = document.getElementById("publicChatName").value.trim();
-    if (!nome) return alert("Digite um nome para o chat público");
+// ==================== Ações de Chat ====================
+async function abrirModalEdicao(chat) {
+    state.currentChat = chat;
+    document.getElementById("editChatName").value = chat.title || "";
+    
+    const isDM = chat.type === 'dm';
+    const isOwner = state.loggedUser?.roleId === 1;
 
-    try {
-        // Desabilitar botão para evitar cliques duplos
-        const btn = document.getElementById("createPublicChatBtn");
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = "Criando...";
-        
-        // Log para debug
-        console.log("Criando chat público:", nome);
-        
-        // Tentar endpoint admin
-        let res = await fetch(`/api/admin/chats/public`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ nome })
-        }).catch(err => {
-            console.warn("Erro no primeiro endpoint, tentando alternativo:", err);
-            return { ok: false };
-        });
-        
-        // Se falhar, tentar endpoint alternativo
-        if (!res.ok) {
-            res = await fetch(`/api/chats`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ 
-                    nome: nome,
-                    tipo: "public" 
-                })
-            });
-        }
-        
-        const data = await res.json().catch(err => {
-            console.error("Erro ao parsear resposta:", err);
-            return { message: "Erro ao processar resposta do servidor" };
-        });
-        
-        if (res.ok) {
-            // Mostrar mensagem de sucesso
-            const alertDiv = document.createElement("div");
-            alertDiv.className = "alert alert-success alert-dismissible fade show";
-            alertDiv.innerHTML = `
-                <strong>Sucesso!</strong> Chat público "${nome}" criado com sucesso.
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-            `;
-            document.querySelector(".container").prepend(alertDiv);
-            
-            // Limpar campo
-            document.getElementById("publicChatName").value = "";
-            
-            // Recarregar lista
-            carregarChats();
-            
-            // Remover alerta após 5 segundos
-            setTimeout(() => alertDiv.remove(), 5000);
-        } else {
-            alert("Erro: " + (data.message || "Falha ao criar chat público"));
-        }
-    } catch (err) {
-        console.error("Erro ao criar chat público:", err);
-        alert("Erro: " + err.message);
-    } finally {
-        // Re-habilitar botão
-        const btn = document.getElementById("createPublicChatBtn");
-        btn.disabled = false;
-        btn.textContent = "Criar";
+    document.getElementById("editChatNameGroup").style.display = !isDM ? "block" : "none";
+    document.getElementById("editParticipantsContainer").style.display = isDM ? "block" : "none";
+    document.getElementById("editChatFields").style.display = isOwner ? "block" : "none";
+    document.getElementById("saveChatBtn").style.display = isOwner ? "block" : "none";
+
+    if (isDM && isOwner) {
+        await carregarUsuariosAdmin();
+        const u1 = document.getElementById("editParticipant1");
+        const u2 = document.getElementById("editParticipant2");
+        if (u1) u1.value = chat.participants[0]?.id || "";
+        if (u2) u2.value = chat.participants[1]?.id || "";
     }
+    
+    new bootstrap.Modal(document.getElementById('editChatModal')).show();
+}
+
+document.getElementById("saveChatBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("saveChatBtn");
+    try {
+        btn.disabled = true;
+        const body = { 
+            title: document.getElementById("editChatName").value.trim(),
+            type: state.currentChat.type,
+            participants: state.currentChat.type === 'dm' ? [
+                document.getElementById("editParticipant1").value,
+                document.getElementById("editParticipant2").value
+            ] : []
+        };
+
+        const res = await fetch(`/api/admin/chats/${state.currentChat.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            credentials: "include"
+        });
+
+        if (res.ok) {
+            showAlert("Atualizado com sucesso!");
+            carregarChats();
+            bootstrap.Modal.getInstance(document.getElementById('editChatModal')).hide();
+        } else {
+            const d = await res.json();
+            alert(d.message);
+        }
+    } catch (e) { alert(e.message); }
+    finally { btn.disabled = false; }
 });
 
-// ==================== Carregar usuários para admin ====================
-async function carregarUsuariosAdmin() {
+document.getElementById("deleteChatBtn").addEventListener("click", async () => {
+    if (!confirm("Excluir permanentemente?")) return;
     try {
-        // Primeiro tenta endpoint admin
-        let users = [];
-        let res = await fetch(`/api/admin/users`, { credentials: "include" });
-        
-        if (!res.ok) {
-            console.log("Tentando endpoint alternativo para usuários");
-            // Se falhar, tenta endpoint alternativo
-            res = await fetch(`/api/chats/users`, { credentials: "include" });
-            if (!res.ok) throw new Error("Erro ao carregar usuários");
-        }
-        
-        const data = await res.json();
-        console.log("Dados de usuários recebidos:", data);
-        
-        // Verifica formato da resposta
-        if (Array.isArray(data)) {
-            users = data;
-        } else if (data.users && Array.isArray(data.users)) {
-            users = data.users;
-        } else {
-            throw new Error("Formato de dados de usuários inválido");
-        }
-
-        const select1 = document.getElementById("adminUser1");
-        const select2 = document.getElementById("adminUser2");
-        select1.innerHTML = `<option value="">Selecione o Usuário 1</option>`;
-        select2.innerHTML = `<option value="">Selecione o Usuário 2</option>`;
-
-        users.forEach(u => {
-            const option1 = document.createElement("option");
-            option1.value = u.id;
-            option1.textContent = u.username;
-            select1.appendChild(option1);
-
-            const option2 = document.createElement("option");
-            option2.value = u.id;
-            option2.textContent = u.username;
-            select2.appendChild(option2);
+        const res = await fetch(`/api/admin/chats/${state.currentChat.id}?type=${state.currentChat.type}`, {
+            method: "DELETE",
+            credentials: "include"
         });
-    } catch (err) {
-        console.error("Erro ao carregar usuários:", err);
-        // Mostrar mensagem de erro na interface
-        document.getElementById("adminDmPanel").innerHTML = `
-            <div class="alert alert-danger">
-                Erro ao carregar usuários: ${err.message}
-                <button class="btn btn-sm btn-outline-danger float-end" onclick="carregarUsuariosAdmin()">Tentar novamente</button>
-            </div>
-        `;
-    }
-}
+        if (res.ok) {
+            showAlert("Excluído!");
+            carregarChats();
+            bootstrap.Modal.getInstance(document.getElementById('editChatModal')).hide();
+        }
+    } catch (e) { alert(e.message); }
+});
 
-// ==================== Criar DM como admin ====================
+// ==================== Criação de Chat/DM ====================
+document.getElementById("createPublicChatBtn").addEventListener("click", async () => {
+    const title = document.getElementById("publicChatName").value.trim();
+    const topic = document.getElementById("publicChatTopic").value;
+    if (!title) return alert("Digite um nome");
+
+    const btn = document.getElementById("createPublicChatBtn");
+    try {
+        btn.disabled = true;
+        const res = await fetch(`/api/admin/chats/public`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, topic }),
+            credentials: "include"
+        });
+        if (res.ok) {
+            showAlert("Chat criado!");
+            document.getElementById("publicChatName").value = "";
+            carregarChats();
+        }
+    } catch (e) { alert(e.message); }
+    finally { btn.disabled = false; }
+});
+
 document.getElementById("createAdminDmBtn").addEventListener("click", async () => {
     const user1 = document.getElementById("adminUser1").value;
     const user2 = document.getElementById("adminUser2").value;
+    if (!user1 || !user2 || user1 === user2) return alert("Selecione usuários diferentes");
 
-    if (!user1 || !user2) return alert("Selecione ambos os usuários");
-    if (user1 === user2) return alert("Usuários devem ser diferentes");
-
+    const btn = document.getElementById("createAdminDmBtn");
     try {
-        // Desabilitar botão para evitar cliques duplos
-        const btn = document.getElementById("createAdminDmBtn");
-        const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = "Criando...";
-        
-        // Obter nomes para mensagem
-        const user1Name = document.getElementById("adminUser1").options[document.getElementById("adminUser1").selectedIndex].text;
-        const user2Name = document.getElementById("adminUser2").options[document.getElementById("adminUser2").selectedIndex].text;
-        
-        // Log para debug
-        console.log(`Criando DM entre: ${user1Name} (${user1}) e ${user2Name} (${user2})`);
-        
-        // Preparar diferentes formatos de payload para tentar compatibilidade
-        const payloads = [
-            { otherUserId: user2, creatorId: user1 },
-            { participants: [user1, user2] },
-            { participantes: [user1, user2] },
-            { tipo: "dm", participants: [user1, user2] }
-        ];
-        
-        // Tentar endpoint admin
-        let res = null;
-        let data = null;
-        
-        // Primeiro tenta com o endpoint principal
-        res = await fetch(`/api/admin/chats/dm`, {
+        const res = await fetch(`/api/admin/chats/dm`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payloads[0])
-        }).catch(err => {
-            console.warn("Erro no endpoint principal de DM, tentando alternativas:", err);
-            return { ok: false };
+            body: JSON.stringify({ otherUserId: user2, creatorId: user1 }),
+            credentials: "include"
         });
-        
-        // Se falhar, tenta endpoints alternativos
-        if (!res.ok) {
-            for (let i = 0; i < payloads.length && !res?.ok; i++) {
-                try {
-                    console.log(`Tentando endpoint alternativo ${i+1} com payload:`, payloads[i]);
-                    
-                    // Tenta diferentes endpoints
-                    const urls = [
-                        `/api/admin/chats/dm`,
-                        `/api/chats/dm`,
-                        `/api/chats`
-                    ];
-                    
-                    for (const url of urls) {
-                        res = await fetch(url, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            credentials: "include",
-                            body: JSON.stringify(payloads[i])
-                        }).catch(() => ({ ok: false }));
-                        
-                        if (res.ok) break;
-                    }
-                } catch (innerErr) {
-                    console.warn(`Falha na tentativa ${i+1}:`, innerErr);
-                }
-            }
-        }
-        
-        // Processar resultado
-        if (res && res.ok) {
-            data = await res.json().catch(() => ({ success: true }));
-            
-            // Mostrar mensagem de sucesso
-            const alertDiv = document.createElement("div");
-            alertDiv.className = "alert alert-success alert-dismissible fade show";
-            alertDiv.innerHTML = `
-                <strong>Sucesso!</strong> DM criada entre ${user1Name} e ${user2Name}.
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-            `;
-            document.querySelector(".container").prepend(alertDiv);
-            
-            // Recarregar lista
+        if (res.ok) {
+            showAlert("DM criada!");
             carregarChats();
-            
-            // Remover alerta após 5 segundos
-            setTimeout(() => alertDiv.remove(), 5000);
         } else {
-            data = await res?.json?.().catch(() => ({ message: "Erro desconhecido" }));
-            console.error("Erro ao criar DM:", data);
-            alert("Erro: " + (data?.message || "Falha ao criar DM"));
+            const d = await res.json();
+            alert(d.message);
         }
-    } catch (err) {
-        console.error("Erro ao criar DM:", err);
-        alert("Erro: " + err.message);
-    } finally {
-        // Re-habilitar botão
-        const btn = document.getElementById("createAdminDmBtn");
-        btn.disabled = false;
-        btn.textContent = "Criar DM";
-    }
+    } catch (e) { alert(e.message); }
+    finally { btn.disabled = false; }
 });
+
+// ==================== Carregamento de Auxiliares ====================
+async function carregarTopicos() {
+    try {
+        const res = await fetch(`/api/admin/chats/topics`, { credentials: "include" });
+        const topics = await res.json();
+        const select = document.getElementById("publicChatTopic");
+        select.innerHTML = topics.map(t => `<option value="${t.name}" ${t.name==='Geral'?'selected':''}>Assunto: ${t.name}</option>`).join("");
+    } catch (e) {}
+}
+
+async function carregarUsuariosAdmin() {
+    try {
+        const res = await fetch(`/api/admin/users`, { credentials: "include" });
+        const data = await res.json();
+        const users = data.users || data;
+        
+        const selects = ["adminUser1", "adminUser2", "editParticipant1", "editParticipant2"];
+        selects.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const currentVal = el.value;
+            el.innerHTML = '<option value="">Selecione...</option>' + 
+                users.map(u => `<option value="${u.id}">${u.username}</option>`).join("");
+            el.value = currentVal;
+        });
+    } catch (e) {}
+}
+
+async function buscarUsuarioLogado() {
+    try {
+        const res = await fetch('/api/users/me', { credentials: "include" });
+        if (res.ok) state.loggedUser = await res.json();
+    } catch (e) {}
+}
 
 // ==================== Inicialização ====================
 window.addEventListener("DOMContentLoaded", () => {
-    // Adicionar estilo aos cards
-    const style = document.createElement('style');
-    style.textContent = `
-        .chat-card {
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            margin-bottom: 12px;
-        }
-        .chat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .border-primary {
-            border-left: 4px solid #007bff !important;
-        }
-        .border-success {
-            border-left: 4px solid #28a745 !important;
-        }
-        .alert {
-            animation: fadeIn 0.5s;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .container {
-            position: relative;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    console.log("Página de criação de chats carregada");
+    // Busca em tempo real
+    document.getElementById("chatSearchInput")?.addEventListener("input", () => {
+        clearTimeout(state.searchTimeout);
+        state.searchTimeout = setTimeout(carregarChats, 500);
+    });
+
+    buscarUsuarioLogado();
     carregarChats();
     carregarUsuariosAdmin();
-    
-    // Ativar tooltips
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    }
+    carregarTopicos();
 });
 </script>
 

@@ -9,7 +9,7 @@ const getNotificationsSchema = z.object({
 });
 
 const notificationIdSchema = z.object({
-    id: z.coerce.number().int().positive()
+    id: z.string()
 });
 
 module.exports = {

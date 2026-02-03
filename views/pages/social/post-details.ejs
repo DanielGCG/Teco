@@ -72,7 +72,7 @@
         try {
             // Configurar avatar do usuário logado se existir
             if (window.currentUser) {
-                document.getElementById('current-user-avatar').src = window.currentUser.profile_image;
+                document.getElementById('current-user-avatar').src = window.currentUser.profileimage;
                 document.getElementById('reply-box').style.display = 'flex';
             }
 
@@ -115,8 +115,8 @@
 
     function renderMainPost(post) {
         const container = document.getElementById('main-post-container');
-        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.user_id === window.currentUser.id);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.user_id === window.currentUser.id);
+        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.userId === window.currentUser.id);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.userId === window.currentUser.id);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -127,20 +127,34 @@
                </div>`
             : '';
 
-        const date = new Date(post.created_at);
+        const date = new Date(post.createdat);
         const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateStr = date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
 
-        const deleteBtn = (window.currentUser && window.currentUser.id === post.user_id) 
+        const deleteBtn = (window.currentUser && window.currentUser.id === post.userId) 
             ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar(${post.id})" title="Deletar">
                 <i class="bi bi-trash"></i>
                </button>` 
             : '';
 
-        container.innerHTML = `
+        let deletedParentHtml = '';
+        const isQuote = post.type === 'reply';
+        const isComment = post.type === 'comment';
+
+        if ((isQuote || isComment) && !post.attachedPostId) {
+            deletedParentHtml = `
+                <div class="post-card deleted-post p-3 border-bottom bg-light">
+                    <div class="post-content text-muted fst-italic">
+                        <i class="bi bi-info-circle"></i> O post referenciado foi excluído.
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = deletedParentHtml + `
             <div class="main-post p-3 border-bottom" id="post-${post.id}">
                 <div class="d-flex gap-3 mb-2">
-                    <img src="${post.author.profile_image}" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                    <img src="${post.author.profileimage}" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
                     <div class="d-flex flex-column">
                         <a href="/${post.author.username}" class="post-author-name fw-bold text-decoration-none">${post.author.username}</a>
                         <span class="text-muted small">${post.author.username}</span>
@@ -152,8 +166,8 @@
                     ${timeStr} · ${dateStr}
                 </div>
                 <div class="post-stats d-flex gap-3 py-2 border-top border-bottom">
-                    <a href="#" class="stat-item text-decoration-none"><strong>${post.reposts_count || 0}</strong> <span class="text-muted">Reposts</span></a>
-                    <a href="#" class="stat-item text-decoration-none"><strong>${post.likes_count || 0}</strong> <span class="text-muted">Curtidas</span></a>
+                    <a href="#" class="stat-item text-decoration-none"><strong>${post.repostcount || 0}</strong> <span class="text-muted">Reposts</span></a>
+                    <a href="#" class="stat-item text-decoration-none"><strong>${post.likecount || 0}</strong> <span class="text-muted">Curtidas</span></a>
                 </div>
                 <div class="post-actions d-flex justify-content-around py-2">
                     <button class="post-action reply d-flex align-items-center" onclick="document.getElementById('reply-textarea').focus()" title="Responder">
@@ -196,8 +210,8 @@
         if (!content && window.selectedFiles.length === 0) return;
 
         await PostActions.enviarPost(content, window.selectedFiles, { 
-            type: 'reply', 
-            parent_id: postId 
+            type: 'comment', 
+            attachedPostId: postId 
         }, btn);
 
         textarea.value = '';

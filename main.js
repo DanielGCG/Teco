@@ -42,8 +42,8 @@ servidor.set('io', io);
 
 servidor.use('/api', require('./server/api/main'));
 
-// Rotas principais - Nivel de acesso 0
-servidor.use('/', authMiddleware(0), require('./server/routes/main'));
+// Rotas principais - Nivel de acesso 20 (usuário)
+servidor.use('/', authMiddleware(20), require('./server/routes/main'));
 
 // Fallback 404 handler (deve ficar após todas as rotas)
 servidor.use((req, res) => {

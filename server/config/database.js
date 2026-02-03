@@ -16,7 +16,7 @@ const sequelize = new Sequelize(
         },
         define: {
             timestamps: false, // Desativa createdAt e updatedAt automáticos
-            underscored: true // Usa snake_case ao invés de camelCase
+            underscored: false // Mantém os nomes das colunas como definidos nos modelos
         }
     }
 );

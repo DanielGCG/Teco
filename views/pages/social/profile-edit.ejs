@@ -162,7 +162,7 @@
                     <div class="col-md-6 mb-4">
                       <label class="form-label fw-bold">Foto de Perfil</label>
                       <div class="mb-2">
-                        <input type="url" class="form-control form-control-sm mb-2" id="profile_image" name="profile_image" placeholder="URL da imagem">
+                        <input type="url" class="form-control form-control-sm mb-2" id="profileimage" name="profileimage" placeholder="URL da imagem">
                         <div class="upload-zone" onclick="document.getElementById('profile_file').click()">
                           <i class="bi bi-cloud-arrow-up fs-4 d-block"></i>
                           <span class="small">Clique para upload</span>
@@ -174,7 +174,7 @@
                     <div class="col-md-6 mb-4">
                       <label class="form-label fw-bold">Imagem de Fundo</label>
                       <div class="mb-2">
-                        <input type="url" class="form-control form-control-sm mb-2" id="background_image" name="background_image" placeholder="URL da imagem">
+                        <input type="url" class="form-control form-control-sm mb-2" id="backgroundimage" name="backgroundimage" placeholder="URL da imagem">
                         <div class="upload-zone" onclick="document.getElementById('background_file').click()">
                           <i class="bi bi-image fs-4 d-block"></i>
                           <span class="small">Clique para upload</span>
@@ -253,14 +253,14 @@ function atualizarPreviews(user) {
   const previewPf = document.getElementById('preview-pf');
   const previewUser = document.getElementById('preview-username-text');
 
-  if(user.background_image){
-    previewBg.style.backgroundImage = `url('${user.background_image}')`;
-    document.getElementById('background_image').value = user.background_image;
+  if(user.backgroundimage){
+    previewBg.style.backgroundImage = `url('${user.backgroundimage}')`;
+    document.getElementById('backgroundimage').value = user.backgroundimage;
   }
 
-  if(user.profile_image){
-    previewPf.src = user.profile_image;
-    document.getElementById('profile_image').value = user.profile_image;
+  if(user.profileimage){
+    previewPf.src = user.profileimage;
+    document.getElementById('profileimage').value = user.profileimage;
   }
 
   const username = user.username || '';
@@ -309,14 +309,14 @@ document.getElementById('pronouns').addEventListener('input', function() {
 });
 
 // Atualiza prévia da URL da imagem de fundo
-document.getElementById('background_image').addEventListener('input', function() {
+document.getElementById('backgroundimage').addEventListener('input', function() {
   if (this.value) {
     document.getElementById('preview-bg').style.backgroundImage = `url('${this.value}')`;
   }
 });
 
 // Atualiza prévia da URL da foto de perfil
-document.getElementById('profile_image').addEventListener('input', function() {
+document.getElementById('profileimage').addEventListener('input', function() {
   if (this.value) {
     document.getElementById('preview-pf').src = this.value;
   }
@@ -353,8 +353,8 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
   const rawUsername = document.getElementById('username').value;
   // Garante que o username enviado comece com @
   formData.append('username', '@' + normalizarUsername(rawUsername));
-  formData.append('background_image', document.getElementById('background_image').value);
-  formData.append('profile_image', document.getElementById('profile_image').value);
+  formData.append('backgroundimage', document.getElementById('backgroundimage').value);
+  formData.append('profileimage', document.getElementById('profileimage').value);
   formData.append('bio', document.getElementById('bio').value);
   formData.append('pronouns', document.getElementById('pronouns').value);
 
@@ -376,8 +376,8 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
       mostrarAviso(data.message || "Perfil atualizado com sucesso!");
       
       // Atualiza com as URLs permanentes retornadas pelo servidor
-      if(data.background_image) document.getElementById('background_image').value = data.background_image;
-      if(data.profile_image) document.getElementById('profile_image').value = data.profile_image;
+      if(data.backgroundimage) document.getElementById('backgroundimage').value = data.backgroundimage;
+      if(data.profileimage) document.getElementById('profileimage').value = data.profileimage;
       
       // Limpa inputs de arquivo
       document.getElementById('background_file').value = '';

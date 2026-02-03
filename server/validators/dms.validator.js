@@ -4,7 +4,7 @@ const { sanitizeString } = require('../utils/sanitize');
 // ==================== Validadores de Conversas (DMs) ====================
 
 const dmIdSchema = z.object({
-    dmId: z.coerce.number().int().positive()
+    dmId: z.string().uuid("ID da conversa inválido")
 });
 
 const getMessagesSchema = z.object({

@@ -3,11 +3,18 @@ const sequelize = require('../config/database');
 
 const Filme = sequelize.define('Filme', {
     id: {
-        type: DataTypes.BIGINT,
-        primaryKey: true
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     title: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(160),
         allowNull: false
     },
     overview: {
@@ -16,96 +23,61 @@ const Filme = sequelize.define('Filme', {
     popularity: {
         type: DataTypes.FLOAT
     },
-    media_type: {
+    type: {
         type: DataTypes.STRING(10),
         allowNull: false,
         validate: {
             isIn: [['movie', 'tv']]
         }
     },
-    original_language: {
+    originallang: {
         type: DataTypes.STRING(5),
         allowNull: false
     },
-    poster_path: {
-        type: DataTypes.STRING(128)
+    posterurl: {
+        type: DataTypes.STRING(255)
     },
-    backdrop_path: {
-        type: DataTypes.STRING(128)
+    backdropurl: {
+        type: DataTypes.STRING(255)
     },
-    release_date: {
+    releasedate: {
         type: DataTypes.DATEONLY
     },
-    vote_average: {
+    voteaverage: {
         type: DataTypes.FLOAT
     },
-    vote_count: {
+    votecount: {
         type: DataTypes.INTEGER
     },
-    watched: {
+    voteboteco: {
+        type: DataTypes.FLOAT
+    },
+    iswatched: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    custom_rating: {
-        type: DataTypes.FLOAT,
-        allowNull: true
-    },
-    user_id: {
+    createdbyUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: true,
         references: {
-            model: 'users',
-            key: 'id'
-        }
-    }
-}, {
-    tableName: 'wl_filme',
-    timestamps: false,
-    indexes: [
-        { fields: ['title'] },
-        { fields: ['release_date'] },
-        { fields: ['popularity'] }
-    ]
-});
-
-const Genero = sequelize.define('Genero', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true
-    },
-    name: {
-        type: DataTypes.STRING(50),
-        allowNull: false
-    }
-}, {
-    tableName: 'wl_genero',
-    timestamps: false
-});
-
-const FilmeGenero = sequelize.define('FilmeGenero', {
-    filme_id: {
-        type: DataTypes.BIGINT,
-        primaryKey: true,
-        references: {
-            model: Filme,
+            model: 'user',
             key: 'id'
         }
     },
-    genero_id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        references: {
-            model: Genero,
-            key: 'id'
-        }
+    createdat: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'wl_filme_genero',
+    tableName: 'movie',
     timestamps: false
 });
 
-// Relacionamentos N:N
-Filme.belongsToMany(Genero, { through: FilmeGenero, foreignKey: 'filme_id', otherKey: 'genero_id', as: 'generos' });
-Genero.belongsToMany(Filme, { through: FilmeGenero, foreignKey: 'genero_id', otherKey: 'filme_id', as: 'filmes' });
+Filme.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.id;
+    delete values.createdbyUserId;
+    return values;
+};
 
-module.exports = { Filme, Genero, FilmeGenero };
+module.exports = { Filme };

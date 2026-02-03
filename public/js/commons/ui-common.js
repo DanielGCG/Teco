@@ -20,7 +20,7 @@ if (typeof window.UIUtils !== 'undefined') {
     function createAvatarWithStatus(user, size = 40) {
         if (!user) return `<div style="width:${size}px;height:${size}px;"></div>`;
         
-        const profileImage = user.profile_image;
+        const profileImage = user.profileimage;
         const statusColor = getStatusColor(user.status || 'offline');
         
         return `

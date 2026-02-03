@@ -3,59 +3,76 @@ const sequelize = require('../config/database');
 
 const ImagemDoDia = sequelize.define('ImagemDoDia', {
     id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.INTEGER.UNSIGNED,
         autoIncrement: true,
         primaryKey: true
     },
+    position: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
     url: {
-        type: DataTypes.STRING(256),
+        type: DataTypes.STRING(255),
         allowNull: false
     },
-    border_url: {
-        type: DataTypes.STRING(256),
-        allowNull: false
-    },
-    texto: {
+    text: {
         type: DataTypes.STRING(32),
         allowNull: false
     },
-    user_id: {
+    borderId: {
         type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: true
+        allowNull: false,
+        defaultValue: 1,
+        references: {
+            model: 'imagemdodiaborder',
+            key: 'id'
+        }
     },
-    created_at: {
+    createdbyUserId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'id'
+        }
+    },
+    createdat: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
-    },
-    start_at: {
-        type: DataTypes.DATE,
-        allowNull: true
     }
 }, {
-    tableName: 'br_imagemdodia',
+    tableName: 'imagemdodia',
     timestamps: false
 });
 
 const ImagemDoDiaBorder = sequelize.define('ImagemDoDiaBorder', {
     id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.INTEGER.UNSIGNED,
         autoIncrement: true,
         primaryKey: true
     },
-    url: {
-        type: DataTypes.STRING(256),
-        allowNull: false
-    },
-    nome: {
+    name: {
         type: DataTypes.STRING(64),
         allowNull: false
     },
-    created_at: {
+    url: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+    },
+    createdbyUserId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'id'
+        }
+    },
+    createdat: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'br_imagemdodia_borders',
+    tableName: 'imagemdodiaborder',
     timestamps: false
 });
 

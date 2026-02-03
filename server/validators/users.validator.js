@@ -31,8 +31,8 @@ const updateProfileSchema = z.object({
         .max(12, "Pronomes devem ter no máximo 12 caracteres")
         .optional()
         .transform(val => val ? sanitizeString(val) : undefined),
-    background_image: z.string().url().optional().or(z.literal('')),
-    profile_image: z.string().url().optional().or(z.literal('')),
+    backgroundimage: z.string().url().optional().or(z.literal('')),
+    profileimage: z.string().url().optional().or(z.literal('')),
     bio: z.string()
         .max(160, "Bio deve ter no máximo 160 caracteres")
         .optional()

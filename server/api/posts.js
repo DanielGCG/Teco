@@ -9,23 +9,23 @@ const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServe
 const upload = multer({ storage: multer.memoryStorage() });
 
 const POST_INCLUDES = [
-    { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] },
+    { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
     { model: PostMedia, as: 'media' },
-    { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username'] }] },
-    { model: PostBookmark, as: 'bookmarks', attributes: ['user_id'] },
-    { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] },
+    { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
+    { model: PostBookmark, as: 'bookmarks', attributes: ['userId'] },
+    { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
     { 
         model: Post, 
         as: 'parent', 
         include: [
-            { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] },
+            { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
             { model: PostMedia, as: 'media' },
-            { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] },
+            { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
             {
                 model: Post,
                 as: 'parent',
                 include: [
-                    { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] }
+                    { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] }
                 ]
             }
         ] 
@@ -35,7 +35,9 @@ const POST_INCLUDES = [
 // POST /posts - Criar um post (ou reply/repost)
 PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
     try {
-        const { content, parent_id, type } = req.body;
+        const { content, type } = req.body;
+        // Frontend deve enviar como attachedPostId
+        const attachedPostId = req.body.attachedPostId;
         const userId = req.user.id;
 
         if (!content && (!req.files || req.files.length === 0) && type !== 'repost') {
@@ -47,11 +49,20 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
         }
 
         const post = await Post.create({
-            user_id: userId,
+            authorUserId: userId,
             content: content,
-            parent_id: parent_id,
+            attachedPostId: attachedPostId,
             type: type
         });
+
+        // Incrementar contadores no post pai se for reply ou repost
+        if (attachedPostId) {
+            if (type === 'repost' || type === 'reply') {
+                await Post.increment('repostcount', { where: { id: attachedPostId } });
+            } else if (type === 'comment') {
+                await Post.increment('replycount', { where: { id: attachedPostId } });
+            }
+        }
 
         // Processar mídia
         if (req.files && req.files.length > 0) {
@@ -62,9 +73,9 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                     mimetype: file.mimetype,
                     folder: 'posts'
                 });
-                const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+                const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image/gif';
                 await PostMedia.create({
-                    post_id: post.id,
+                    postId: post.id,
                     url: mediaUrl,
                     type: mediaType
                 });
@@ -75,23 +86,22 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
         if (content) {
             const usernames = content.match(/@(\w+)/g);
             if (usernames) {
-                const uniqueUsernames = [...new Set(usernames)];
+                const uniqueUsernames = [...new Set(usernames.map(u => u.substring(1)))];
                 const mentionedUsers = await User.findAll({
                     where: { username: uniqueUsernames }
                 });
 
                 for (const mentionedUser of mentionedUsers) {
                     await PostMention.create({
-                        post_id: post.id,
-                        user_id: mentionedUser.id,
-                        mentioned_username: mentionedUser.username
+                        postId: post.id,
+                        userId: mentionedUser.id
                     });
 
                     // Notificar usuário mencionado
                     if (mentionedUser.id !== userId) {
                         await createNotification({
                             userId: mentionedUser.id,
-                            type: 'MENTION',
+                            type: 'info', // 'MENTION' não está no ENUM do SQL, usando 'info'
                             title: 'Menção em Post',
                             body: `${req.user.username} mencionou você em um post.`,
                             link: `/${req.user.username}/status/${post.id}`
@@ -108,37 +118,38 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
         }
 
         // Se for um reply ou repost, notificar o autor do post original e atualizar contadores
-        if (parent_id) {
-            const parentPost = await Post.findByPk(parent_id, {
+        if (attachedPostId) {
+            const parentPost = await Post.findByPk(attachedPostId, {
                 include: [{ model: User, as: 'author', attributes: ['username'] }]
             });
             if (parentPost) {
-                if (type === 'reply') {
-                    await parentPost.increment('replies_count');
-                } else if (type === 'repost') {
-                    await parentPost.increment('reposts_count');
-                }
-
+                // Já incrementamos no banco lá no início, então apenas emitimos o valor atual
+                
                 // Emitir atualização do pai via socket
                 const io = req.app.get('io');
                 if (io) {
                     io.to(`profile_${parentPost.author.username}`).emit('postUpdate', { 
                         id: parentPost.id, 
-                        replies_count: type === 'reply' ? parentPost.replies_count + 1 : parentPost.replies_count,
-                        reposts_count: type === 'repost' ? parentPost.reposts_count + 1 : parentPost.reposts_count
+                        replycount: parentPost.replycount,
+                        repostcount: parentPost.repostcount
                     });
                 }
 
-                if (parentPost.user_id !== userId) {
+                if (parentPost.authorUserId !== userId) {
 
-                    const notifType = type === 'reply' ? 'POST_REPLY' : 'POST_REPOST';
-                    const notifTitle = type === 'reply' ? 'Nova Resposta' : 'Novo Repost';
-                    const notifBody = type === 'reply' 
-                        ? `${req.user.username} respondeu ao seu post.`
-                        : `${req.user.username} repostou seu post.`;
+                    const notifType = (type === 'repost' || type === 'reply') ? 'postrepost' : 'postcomment';
+                    const notifTitle = (type === 'repost' || type === 'reply') ? 'Novo Repost' : 'Nova Resposta';
+                    let notifBody;
+                    if (type === 'repost') {
+                        notifBody = `${req.user.username} repostou seu post.`;
+                    } else if (type === 'reply') {
+                        notifBody = `${req.user.username} repostou seu post com comentário.`;
+                    } else {
+                        notifBody = `${req.user.username} respondeu ao seu post.`;
+                    }
                     
                     await createNotification({
-                        userId: parentPost.user_id,
+                        userId: parentPost.authorUserId,
                         type: notifType,
                         title: notifTitle,
                         body: notifBody,
@@ -148,7 +159,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                     // Emitir via socket
                     const io = req.app.get('io');
                     if (io) {
-                        io.to(`user_${parentPost.user_id}`).emit('newNotification', { type: type });
+                        io.to(`user_${parentPost.authorUserId}`).emit('newNotification', { type: type });
                     }
                 }
             }
@@ -182,25 +193,24 @@ PostsRouter.get('/feed', async (req, res) => {
 
         // Buscar IDs de quem o usuário segue
         const following = await Follow.findAll({
-            where: { follower_id: userId },
-            attributes: ['following_id']
+            where: { followerUserId: userId },
+            attributes: ['followedUserId']
         });
-        const followingIds = following.map(f => f.following_id);
+        const followingIds = following.map(f => f.followedUserId);
         
         // Incluir o próprio usuário no feed
         followingIds.push(userId);
 
         let where = {
-            is_deleted: false,
-            type: { [Op.ne]: 'reply' }
+            type: { [Op.ne]: 'comment' }
         };
 
         if (type === 'following') {
-            where.user_id = { [Op.in]: followingIds };
+            where.authorUserId = { [Op.in]: followingIds };
         } else {
             // for-you: posts de quem segue + posts públicos (tipo 'post')
             where[Op.or] = [
-                { user_id: { [Op.in]: followingIds } },
+                { authorUserId: { [Op.in]: followingIds } },
                 { type: 'post' }
             ];
         }
@@ -208,7 +218,7 @@ PostsRouter.get('/feed', async (req, res) => {
         const posts = await Post.findAll({
             where,
             include: POST_INCLUDES,
-            order: [['created_at', 'DESC']],
+            order: [['createdat', 'DESC']],
             limit: limit,
             offset: offset
         });
@@ -232,12 +242,11 @@ PostsRouter.get('/user/:username', async (req, res) => {
 
         const posts = await Post.findAll({
             where: { 
-                user_id: user.id, 
-                type: { [Op.ne]: 'reply' },
-                is_deleted: false 
+                authorUserId: user.id, 
+                type: { [Op.ne]: 'comment' }
             },
             include: POST_INCLUDES,
-            order: [['created_at', 'DESC']],
+            order: [['createdat', 'DESC']],
             limit: limit,
             offset: offset
         });
@@ -254,17 +263,19 @@ PostsRouter.get('/:id/replies', async (req, res) => {
     try {
         const replies = await Post.findAll({
             where: { 
-                parent_id: req.params.id, 
-                type: 'reply',
-                is_deleted: false 
+                attachedPostId: req.params.id, 
+                type: 'comment'
             },
             include: [
-                { model: User, as: 'author', attributes: ['username', 'profile_image'] },
+                { model: User, as: 'author', attributes: ['username', 'profileimage'] },
                 { model: PostMedia, as: 'media' },
                 { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username'] }] },
                 { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] }
             ],
-            order: [['created_at', 'ASC']]
+            order: [
+                ['likecount', 'DESC'],
+                ['createdat', 'ASC']
+            ]
         });
         res.json(replies);
     } catch (error) {
@@ -279,7 +290,7 @@ PostsRouter.post('/:id/like', async (req, res) => {
         const userId = req.user.id;
 
         const existingLike = await PostLike.findOne({
-            where: { post_id: postId, user_id: userId }
+            where: { postId: postId, userId: userId }
         });
 
         const post = await Post.findByPk(postId, {
@@ -290,40 +301,36 @@ PostsRouter.post('/:id/like', async (req, res) => {
 
         if (existingLike) {
             await existingLike.destroy();
-            if (post.likes_count > 0) {
-                await post.decrement('likes_count');
-            }
-            const newCount = Math.max(0, post.likes_count - 1);
+            await post.reload();
             
             // Emitir atualização via socket
             const io = req.app.get('io');
             if (io) {
                 io.to(`profile_${post.author.username}`).emit('postUpdate', { 
                     id: post.id, 
-                    likes_count: newCount 
+                    likecount: post.likecount 
                 });
             }
 
-            return res.json({ liked: false, likes_count: newCount });
+            return res.json({ liked: false, likecount: post.likecount });
         } else {
-            await PostLike.create({ post_id: postId, user_id: userId });
-            await post.increment('likes_count');
-            const newCount = post.likes_count + 1;
+            await PostLike.create({ postId: postId, userId: userId });
+            await post.reload();
             
             // Emitir atualização via socket
             const io = req.app.get('io');
             if (io) {
                 io.to(`profile_${post.author.username}`).emit('postUpdate', { 
                     id: post.id, 
-                    likes_count: newCount 
+                    likecount: post.likecount 
                 });
             }
 
             // Notificar autor do post
-            if (post.user_id !== userId) {
+            if (post.authorUserId !== userId) {
                 await createNotification({
-                    userId: post.user_id,
-                    type: 'POST_LIKE',
+                    userId: post.authorUserId,
+                    type: 'info',
                     title: 'Nova Curtida',
                     body: `${req.user.username} curtiu seu post.`,
                     link: `/${post.author.username}/status/${post.id}`
@@ -332,11 +339,11 @@ PostsRouter.post('/:id/like', async (req, res) => {
                 // Emitir via socket
                 const io = req.app.get('io');
                 if (io) {
-                    io.to(`user_${post.user_id}`).emit('newNotification', { type: 'like' });
+                    io.to(`user_${post.authorUserId}`).emit('newNotification', { type: 'like' });
                 }
             }
             
-            return res.json({ liked: true, likes_count: newCount });
+            return res.json({ liked: true, likecount: post.likecount });
         }
 
     } catch (error) {
@@ -351,17 +358,17 @@ PostsRouter.get('/:id', async (req, res) => {
         const post = await Post.findByPk(req.params.id, {
             include: POST_INCLUDES
         });
-        if (!post || post.is_deleted) return res.status(404).json({ error: 'Post não encontrado ou deletado.' });
+        if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
 
         // Buscar ancestralidade (pais)
         const ancestry = [];
-        let currentParentId = post.parent_id;
+        let currentParentId = post.attachedPostId;
         let depth = 0;
         
         while (currentParentId && depth < 10) {
             const parent = await Post.findByPk(currentParentId, {
                 include: [
-                    { model: User, as: 'author', attributes: ['username', 'profile_image', 'pronouns'] },
+                    { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns'] },
                     { model: PostMedia, as: 'media' },
                     { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] }
                 ]
@@ -369,7 +376,7 @@ PostsRouter.get('/:id', async (req, res) => {
             
             if (!parent) break;
             ancestry.unshift(parent);
-            currentParentId = parent.parent_id;
+            currentParentId = parent.attachedPostId;
             depth++;
         }
 
@@ -396,14 +403,13 @@ PostsRouter.get('/user/:username/bookmarks', async (req, res) => {
         }
 
         const bookmarks = await PostBookmark.findAll({
-            where: { user_id: user.id },
+            where: { userId: user.id },
             include: [{
                 model: Post,
-                where: { is_deleted: false },
                 required: true,
                 include: POST_INCLUDES
             }],
-            order: [['created_at', 'DESC']],
+            order: [['createdat', 'DESC']],
             limit: limit,
             offset: offset
         });
@@ -423,15 +429,20 @@ PostsRouter.post('/:id/bookmark', async (req, res) => {
         const userId = req.user.id;
 
         const existingBookmark = await PostBookmark.findOne({
-            where: { post_id: postId, user_id: userId }
+            where: { postId: postId, userId: userId }
         });
+
+        const post = await Post.findByPk(postId);
+        if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
 
         if (existingBookmark) {
             await existingBookmark.destroy();
-            return res.json({ bookmarked: false });
+            await post.reload();
+            return res.json({ bookmarked: false, bookmarkcount: post.bookmarkcount });
         } else {
-            await PostBookmark.create({ post_id: postId, user_id: userId });
-            return res.json({ bookmarked: true });
+            await PostBookmark.create({ postId: postId, userId: userId });
+            await post.reload();
+            return res.json({ bookmarked: true, bookmarkcount: post.bookmarkcount });
         }
     } catch (error) {
         console.error('[Posts] Erro ao favoritar:', error);
@@ -446,47 +457,45 @@ PostsRouter.delete('/:id', async (req, res) => {
         if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
 
         // Apenas o autor pode deletar
-        if (post.user_id !== req.user.id) {
+        if (post.authorUserId !== req.user.id) {
             return res.status(403).json({ error: 'Você não tem permissão para deletar este post.' });
         }
 
-        // Se for um reply ou repost, decrementar contador do pai
-        if (post.parent_id) {
-            const parentPost = await Post.findByPk(post.parent_id);
-            if (parentPost) {
-                if (post.type === 'reply' && parentPost.replies_count > 0) {
-                    await parentPost.decrement('replies_count');
-                } else if (post.type === 'repost' && parentPost.reposts_count > 0) {
-                    await parentPost.decrement('reposts_count');
+        // Se for um reply ou repost, vamos decrementar o contador do pai manualmente
+        if (post.attachedPostId) {
+            if (post.type === 'repost' || post.type === 'reply') {
+                await Post.decrement('repostcount', { where: { id: post.attachedPostId } });
+            } else if (post.type === 'comment') {
+                await Post.decrement('replycount', { where: { id: post.attachedPostId } });
+            }
+
+            // Notificar atualização do pai via socket
+            const parent = await Post.findByPk(post.attachedPostId, {
+                include: [{ model: User, as: 'author', attributes: ['username'] }]
+            });
+            if (parent && parent.author) {
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`profile_${parent.author.username}`).emit('postUpdate', {
+                        id: parent.id,
+                        replycount: parent.replycount,
+                        repostcount: parent.repostcount
+                    });
                 }
             }
         }
 
-        // Verificar se existem reposts ou replies que dependem deste post
-        const childrenCount = await Post.count({ where: { parent_id: post.id } });
-
         // Buscar mídias para deletar do servidor de arquivos
-        const media = await PostMedia.findAll({ where: { post_id: post.id } });
+        const media = await PostMedia.findAll({ where: { postId: post.id } });
         for (const m of media) {
             await deleteFromFileServer({ fileUrl: m.url });
         }
 
-        // Deletar registros de mídia do banco (independente de ser soft ou hard delete)
-        await PostMedia.destroy({ where: { post_id: post.id } });
-
         // Buscar autor para emitir via socket
-        const author = await User.findByPk(post.user_id);
+        const author = await User.findByPk(post.authorUserId);
 
-        if (childrenCount > 0) {
-            // Soft delete: mantém o registro para não quebrar a integridade das correntes
-            await post.update({
-                content: null,
-                is_deleted: true
-            });
-        } else {
-            // Hard delete: remove completamente se ninguém depender dele
-            await post.destroy();
-        }
+        // Hard delete: remove completamente (o banco cuida dos ON DELETE CASCADE para mídia, likes, etc.)
+        await post.destroy();
 
         // Emitir deleção via socket
         const io = req.app.get('io');

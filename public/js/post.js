@@ -25,16 +25,25 @@ window.PostUI = {
 
     // Renderiza o HTML de um post
     renderPost: function(post, currentUser, isThread = false) {
-        if (post.is_deleted) {
-            return `
-                <div class="post-card deleted-post p-3 border-bottom">
-                    <div class="post-content text-muted fst-italic">Este post foi deletado pelo autor.</div>
+        // Lógica de Post Referenciado Excluído:
+        // 1. É um Thread/Comentário e o pai sumiu.
+        // 2. É um Repost com conteúdo (Quote) e o pai sumiu.
+        let deletedParentHtml = '';
+        const isQuote = post.type === 'reply';
+        const isComment = post.type === 'comment';
+
+        if ((isQuote || isComment) && !post.attachedPostId && !isThread) {
+            deletedParentHtml = `
+                <div class="post-card deleted-post p-2 px-3 border-bottom bg-light">
+                    <div class="post-content text-muted small fst-italic">
+                        <i class="bi bi-info-circle"></i> O post referenciado foi excluído.
+                    </div>
                 </div>
             `;
         }
 
-        const isLiked = post.likes && post.likes.some(l => currentUser && l.user_id === currentUser.id);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.user_id === currentUser.id);
+        const isLiked = post.likes && post.likes.some(l => currentUser && l.userId === currentUser.id);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.userId === currentUser.id);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -46,40 +55,32 @@ window.PostUI = {
             : '';
 
         let repostHtml = '';
-        if (post.type === 'repost' && post.parent && !isThread) {
-            if (post.parent.is_deleted) {
-                repostHtml = `
-                    <div class="repost-container deleted p-2 mt-2 border rounded">
-                        <div class="post-content text-muted small fst-italic">Este post foi deletado.</div>
-                    </div>
-                `;
-            } else {
-                const parentMediaCount = post.parent.media ? Math.min(post.parent.media.length, 4) : 0;
-                const parentMediaHtml = parentMediaCount > 0 
-                    ? `<div class="post-media-grid grid-${parentMediaCount}">
-                        ${post.parent.media.slice(0, 4).map(m => m.type === 'video' 
-                            ? `<video src="${m.url}" class="post-media-item" controls></video>` 
-                            : `<img src="${m.url}" class="post-media-item" loading="lazy" onclick="event.stopPropagation(); window.open('${m.url}')">`).join('')}
-                       </div>`
-                    : '';
+        if ((post.type === 'repost' || post.type === 'reply') && post.parent && !isThread) {
+            const parentMediaCount = post.parent.media ? Math.min(post.parent.media.length, 4) : 0;
+            const parentMediaHtml = parentMediaCount > 0 
+                ? `<div class="post-media-grid grid-${parentMediaCount}">
+                    ${post.parent.media.slice(0, 4).map(m => m.type === 'video' 
+                        ? `<video src="${m.url}" class="post-media-item" controls></video>` 
+                        : `<img src="${m.url}" class="post-media-item" loading="lazy" onclick="event.stopPropagation(); window.open('${m.url}')">`).join('')}
+                    </div>`
+                : '';
 
-                const parentUsername = post.parent.author.username;
+            const parentUsername = post.parent.author.username;
 
-                repostHtml = `
-                    <div class="repost-container p-2 mt-2 border rounded" onclick="event.stopPropagation(); PostUI.abrirModal(${post.parent.id}, '${parentUsername}')">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <img src="${post.parent.author.profile_image}" class="rounded object-fit-cover" style="width: 20px; height: 20px;">
-                            <span class="post-author-name fw-bold small">${parentUsername}</span>
-                            <span class="text-muted small">· ${new Date(post.parent.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div class="post-content small mb-0">${this.formatContent(post.parent.content, post.parent.mentions)}</div>
-                        ${parentMediaHtml}
+            repostHtml = `
+                <div class="repost-container p-2 mt-2 border rounded" onclick="event.stopPropagation(); PostUI.abrirModal(${post.parent.id}, '${parentUsername}')">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <img src="${post.parent.author.profileimage}" class="rounded object-fit-cover" style="width: 20px; height: 20px;">
+                        <span class="post-author-name fw-bold small">${parentUsername}</span>
+                        <span class="text-muted small">· ${new Date(post.parent.createdat).toLocaleDateString()}</span>
                     </div>
-                `;
-            }
+                    <div class="post-content small mb-0">${this.formatContent(post.parent.content, post.parent.mentions)}</div>
+                    ${parentMediaHtml}
+                </div>
+            `;
         }
 
-        const deleteBtn = (currentUser && currentUser.id === post.user_id) 
+        const deleteBtn = (currentUser && currentUser.id === post.authorUserId) 
             ? `<button class="post-action delete d-flex align-items-center" onclick="event.stopPropagation(); PostActions.deletar(${post.id})" title="Deletar">
                 <i class="bi bi-trash"></i>
                </button>` 
@@ -90,29 +91,29 @@ window.PostUI = {
 
         const authorUsername = post.author.username;
 
-        return `
+        return deletedParentHtml + `
             <div class="${cardClass}" id="post-${post.id}" onclick="PostUI.abrirModal(${post.id}, '${authorUsername}')">
                 <div class="flex-shrink-0 position-relative">
-                    <img src="${post.author.profile_image}" class="rounded object-fit-cover" style="width: 48px; height: 48px; z-index: 2; position: relative;">
+                    <img src="${post.author.profileimage}" class="rounded object-fit-cover" style="width: 48px; height: 48px; z-index: 2; position: relative;">
                     ${threadLine}
                 </div>
                 <div class="flex-grow-1 min-width-0">
                     <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
                         <a href="/${authorUsername}" class="post-author-name fw-bold text-decoration-none" onclick="event.stopPropagation()">${authorUsername}</a>
-                        <span class="text-muted">· ${new Date(post.created_at).toLocaleDateString()}</span>
+                        <span class="text-muted">· ${new Date(post.createdat).toLocaleDateString()}</span>
                     </div>
                     <div class="post-content mb-2 text-break">${this.formatContent(post.content, post.mentions)}</div>
                     ${mediaHtml}
                     ${repostHtml}
                     <div class="post-actions d-flex justify-content-between mt-2">
                         <button class="post-action reply d-flex align-items-center gap-1" onclick="event.stopPropagation(); PostUI.abrirModal(${post.id}, '${authorUsername}', true)" title="Responder">
-                            <i class="bi bi-chat"></i> <span>${post.replies_count || 0}</span>
+                            <i class="bi bi-chat"></i> <span>${post.replycount || 0}</span>
                         </button>
                         <button class="post-action repost d-flex align-items-center gap-1 ${post.type === 'repost' ? 'reposted' : ''}" onclick="event.stopPropagation(); PostUI.abrirModalInteracao(${post.id}, 'repost')" title="Repostar">
-                            <i class="bi bi-arrow-repeat"></i> <span>${post.reposts_count || 0}</span>
+                            <i class="bi bi-arrow-repeat"></i> <span>${post.repostcount || 0}</span>
                         </button>
                         <button class="post-action like d-flex align-items-center gap-1 ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); PostActions.like(${post.id})" title="Curtir">
-                            <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span>${post.likes_count || 0}</span>
+                            <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span>${post.likecount || 0}</span>
                         </button>
                         <button class="post-action bookmark d-flex align-items-center gap-1 ${isBookmarked ? 'bookmarked' : ''}" onclick="event.stopPropagation(); PostActions.toggleBookmark(${post.id})" title="Salvar">
                             <i class="bi ${isBookmarked ? 'bi-bookmark-fill' : 'bi-bookmark'}"></i>
@@ -337,7 +338,7 @@ window.PostActions = {
                     btn.classList.remove('liked');
                     icon.classList.replace('bi-heart-fill', 'bi-heart');
                 }
-                if (span) span.textContent = data.likes_count;
+                if (span) span.textContent = data.likecount !== undefined ? data.likecount : span.textContent;
             });
         } catch (e) {
             console.error('Erro ao curtir:', e);
@@ -353,12 +354,18 @@ window.PostActions = {
             const buttons = document.querySelectorAll(`#post-${postId} .post-action.bookmark`);
             buttons.forEach(btn => {
                 const icon = btn.querySelector('i');
+                const span = btn.querySelector('span');
+
                 if (data.bookmarked) {
                     btn.classList.add('bookmarked');
                     icon.classList.replace('bi-bookmark', 'bi-bookmark-fill');
                 } else {
                     btn.classList.remove('bookmarked');
                     icon.classList.replace('bi-bookmark-fill', 'bi-bookmark');
+                }
+                
+                if (span && data.bookmarkcount !== undefined) {
+                    span.textContent = data.bookmarkcount;
                 }
             });
 
@@ -420,10 +427,16 @@ window.PostActions = {
     // Enviar interação (reply/repost)
     enviarInteracao: async function() {
         const postId = document.getElementById('interacao-post-id').value;
-        const type = document.getElementById('interacao-type').value;
+        let type = document.getElementById('interacao-type').value;
         const content = document.getElementById('interacao-textarea').value.trim();
         const btn = document.getElementById('btn-confirmar-interacao');
-        this.enviarPost(content, window.selectedFiles, { parent_id: postId, type }, btn, 'modalPostInteracao');
+
+        // Lógica do Twitter: ao adicionar conteúdo no modal de Repost, ele se torna um Reply (Quote)
+        if (type === 'repost' && (content || window.selectedFiles.length > 0)) {
+            type = 'reply';
+        }
+
+        this.enviarPost(content, window.selectedFiles, { attachedPostId: postId, type }, btn, 'modalPostInteracao');
     },
 
     // Enviar novo post
@@ -460,8 +473,8 @@ window.PostActions = {
                     window.PostFeed.reload();
                 }
 
-                // Se estivermos na página de detalhes do post (parent_id existe), recarrega as respostas
-                if (extraData.parent_id && typeof carregarRespostas === 'function') {
+                // Se estivermos na página de detalhes do post (attachedPostId existe), recarrega as respostas
+                if (extraData.attachedPostId && typeof carregarRespostas === 'function') {
                     carregarRespostas();
                 }
             } else {

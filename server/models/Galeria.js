@@ -3,162 +3,187 @@ const sequelize = require('../config/database');
 
 const Galeria = sequelize.define('Galeria', {
     id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
     },
     name: {
-        type: DataTypes.STRING(100),
+        type: DataTypes.STRING(160),
         allowNull: false
     },
     description: {
-        type: DataTypes.TEXT
+        type: DataTypes.TEXT,
+        allowNull: true
     },
-    cover_url: {
-        type: DataTypes.STRING(255)
-    },
-    user_id: {
-        type: DataTypes.INTEGER.UNSIGNED,
+    publicid: {
+        type: DataTypes.STRING(36),
         allowNull: false,
-        references: {
-            model: 'users',
-            key: 'id'
-        }
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
-    is_public: {
+    ispublic: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: false
     },
-    background_url: {
-        type: DataTypes.STRING(255)
+    coverurl: {
+        type: DataTypes.STRING(255),
+        allowNull: true
     },
-    background_fill: {
+    backgroundurl: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    backgroundfill: {
         type: DataTypes.STRING(10),
+        allowNull: false,
         defaultValue: 'cover'
     },
-    background_color: {
+    backgroundcolor: {
         type: DataTypes.STRING(7),
+        allowNull: false,
         defaultValue: '#e2e1cf'
     },
-    font_color: {
+    cardcolor: {
         type: DataTypes.STRING(7),
-        defaultValue: '#3E3F29'
-    },
-    card_color: {
-        type: DataTypes.STRING(7),
+        allowNull: false,
         defaultValue: '#ffffff'
     },
-    grid_columns: {
-        type: DataTypes.INTEGER,
-        defaultValue: 12
+    fontcolor: {
+        type: DataTypes.STRING(7),
+        allowNull: false,
+        defaultValue: '#3E3F29'
     },
-    font_family: {
+    fontfamily: {
         type: DataTypes.STRING(50),
+        allowNull: false,
         defaultValue: 'Inter'
     },
-    created_at: {
+    gridxsize: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 12
+    },
+    gridysize: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 12
+    },
+    createdat: {
         type: DataTypes.DATE,
+        allowNull: false,
         defaultValue: DataTypes.NOW
+    },
+    editedat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    },
+    createdbyUserId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true
     }
 }, {
-    tableName: 'galleries',
+    tableName: 'gallery',
     timestamps: false
 });
 
 const GaleriaItem = sequelize.define('GaleriaItem', {
     id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
     },
-    gallery_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: Galeria,
-            key: 'id'
-        }
-    },
-    cover_url: {
-        type: DataTypes.STRING(255),
-        allowNull: true
-    },
-    content_url: {
-        type: DataTypes.STRING(255),
+    galleryId: {
+        type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false
     },
-    mimetype: {
-        type: DataTypes.STRING(100),
+    type: {
+        type: DataTypes.ENUM('image/gif', 'video', 'audio', 'text', 'embed'),
+        allowNull: false
+    },
+    title: {
+        type: DataTypes.STRING(160),
         allowNull: true
     },
-    name: {
-        type: DataTypes.STRING(100)
-    },
-    grid_w: {
-        type: DataTypes.INTEGER,
-        defaultValue: 1
-    },
-    grid_h: {
-        type: DataTypes.INTEGER,
-        defaultValue: 1
-    },
-    col_start: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-    },
-    row_start: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-    },
-    user_id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: false,
-        references: {
-            model: 'users',
-            key: 'id'
-        }
-    },
-    z_index: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    show_title: {
+    showtitle: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: true
     },
-    object_fit: {
+    textbody: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    coverurl: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    covercolor: {
+        type: DataTypes.STRING(7),
+        allowNull: true
+    },
+    contenturl: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    objectfit: {
         type: DataTypes.STRING(10),
+        allowNull: false,
         defaultValue: 'cover'
     },
-    created_at: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
-    }
-}, {
-    tableName: 'gallery_items',
-    timestamps: false
-});
-
-const GaleriaPermissao = sequelize.define('GaleriaPermissao', {
-    gallery_id: {
+    startpositionx: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
-        references: {
-            model: Galeria,
-            key: 'id'
-        }
+        allowNull: true
     },
-    user_id: {
+    startpositiony: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    endpositionx: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    endpositiony: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    positionz: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1
+    },
+    createdat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    },
+    editedat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    },
+    editedbyUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
-        primaryKey: true,
-        references: {
-            model: 'users',
-            key: 'id'
-        }
+        allowNull: true
     }
 }, {
-    tableName: 'gallery_permissions',
+    tableName: 'galleryitem',
     timestamps: false
 });
 
-module.exports = { Galeria, GaleriaItem, GaleriaPermissao };
+const GaleriaContributor = sequelize.define('GaleriaContributor', {
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true
+    },
+    galleryId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true
+    }
+}, {
+    tableName: 'gallerycontributor',
+    timestamps: false
+});
+
+module.exports = { Galeria, GaleriaItem, GaleriaContributor };

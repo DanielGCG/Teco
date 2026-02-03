@@ -25,7 +25,7 @@ ChatsRouter.get('/:id', async (req, res) => {
         chatName: chatName,
         loggedUser: req.user
     }
-    res.render('pages/chats/chats', {
+    res.render('pages/chats/chat', {
         layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST

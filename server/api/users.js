@@ -25,7 +25,7 @@ const {
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper para proteger rotas específicas dentro deste router
-const protect = (minRole = 0) => {
+const protect = (minRole = 20) => {
     return authMiddleware(minRole);
 };
 
@@ -44,12 +44,12 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
     try {
         const session = await UserSession.findOne({
             where: {
-                cookie_value: cookie,
-                expires_at: { [Op.gt]: new Date() }
+                cookie: cookie,
+                expiresat: { [Op.gt]: new Date() }
             },
             include: [{
                 model: User,
-                attributes: ['id', 'username', 'role']
+                attributes: ['id', 'username', 'roleId']
             }]
         });
 
@@ -60,7 +60,7 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
             user: { 
                 id: session.User.id, 
                 username: session.User.username, 
-                role: session.User.role 
+                roleId: session.User.roleId 
             } 
         });
     } catch (err) {
@@ -93,7 +93,7 @@ UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
 
         await User.create({
             username,
-            password_hash: hashedPassword,
+            passwordhash: hashedPassword,
             bio: bio
         });
 
@@ -111,10 +111,10 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
     try {
         const user = await User.findOne({ 
             where: { username },
-            attributes: ['id', 'username', 'password_hash', 'profile_image', 'background_image', 'role']
+            attributes: ['id', 'username', 'passwordhash', 'profileimage', 'backgroundimage', 'roleId']
         });
 
-        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+        if (!user || !(await bcrypt.compare(password, user.passwordhash))) {
             return res.status(401).json({ message: "Credenciais inválidas" });
         }
 
@@ -123,21 +123,21 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
 
         const existingSession = await UserSession.findOne({
             where: {
-                user_id: userId,
-                expires_at: { [Op.gt]: new Date() }
+                userId: userId,
+                expiresat: { [Op.gt]: new Date() }
             }
         });
 
         let cookieValue;
         if (existingSession) {
-            cookieValue = existingSession.cookie_value;
-            await existingSession.update({ expires_at: expiresAt });
+            cookieValue = existingSession.cookie;
+            await existingSession.update({ expiresat: expiresAt });
         } else {
             cookieValue = crypto.randomBytes(32).toString('hex');
             await UserSession.create({
-                user_id: userId,
-                cookie_value: cookieValue,
-                expires_at: expiresAt
+                userId: userId,
+                cookie: cookieValue,
+                expiresat: expiresAt
             });
         }
 
@@ -165,8 +165,8 @@ UsersRouter.post('/logout', async (req, res) => {
     try {
         await UserSession.destroy({
             where: {
-                cookie_value: cookieValue,
-                user_id: req.user.id
+                cookie: cookieValue,
+                userId: req.user.id
             }
         });
     } catch (err) {
@@ -180,10 +180,10 @@ UsersRouter.post('/logout', async (req, res) => {
 // ==================== Rotas protegidas ====================
 
 // Perfil próprio
-UsersRouter.get('/me', protect(0), async (req, res) => {
+UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['id', 'username', 'role', 'background_image', 'profile_image', 'bio', 'pronouns']
+            attributes: ['id', 'publicid', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'pronouns']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
@@ -196,8 +196,8 @@ UsersRouter.get('/me', protect(0), async (req, res) => {
 });
 
 // Atualizar perfil próprio
-UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
-    let { username, background_image, profile_image, bio, pronouns } = req.body;
+UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
+    let { username, backgroundimage, profileimage, bio, pronouns } = req.body;
 
     // Força @ no início
     if (!username.startsWith('@')) {
@@ -229,13 +229,13 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         if (req.files && req.files['profile_file']) {
             const file = req.files['profile_file'][0];
             // Deletar foto de perfil antiga se existir
-            const user = await User.findByPk(req.user.id, { attributes: ['profile_image'] });
-            if (user && user.profile_image) {
-                await deleteFromFileServer({ fileUrl: user.profile_image });
+            const user = await User.findByPk(req.user.id, { attributes: ['profileimage'] });
+            if (user && user.profileimage) {
+                await deleteFromFileServer({ fileUrl: user.profileimage });
             }
             // Converte para PNG usando sharp
             const pngBuffer = await sharp(file.buffer).png().toBuffer();
-            profile_image = await uploadToFileServer({
+            profileimage = await uploadToFileServer({
                 buffer: pngBuffer,
                 filename: 'profile.png',
                 folder: 'profiles',
@@ -247,9 +247,9 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         if (req.files && req.files['background_file']) {
             const file = req.files['background_file'][0];
             // Deletar imagem de fundo antiga se existir
-            const user = await User.findByPk(req.user.id, { attributes: ['background_image'] });
-            if (user && user.background_image) {
-                await deleteFromFileServer({ fileUrl: user.background_image });
+            const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });
+            if (user && user.backgroundimage) {
+                await deleteFromFileServer({ fileUrl: user.backgroundimage });
             }
 
             let buffer = file.buffer;
@@ -265,7 +265,7 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
                 buffer = await sharp(file.buffer).png().toBuffer();
             }
 
-            background_image = await uploadToFileServer({
+            backgroundimage = await uploadToFileServer({
                 buffer,
                 filename,
                 folder: 'backgrounds',
@@ -274,7 +274,7 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         }
 
         await User.update(
-            { username, background_image, profile_image, bio, pronouns },
+            { username, backgroundimage, profileimage, bio, pronouns },
             { where: { id: req.user.id } }
         );
 
@@ -282,7 +282,7 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
         const updatedUser = await User.findByPk(req.user.id);
         setUserCookie(res, updatedUser);
 
-        res.json({ message: "Perfil atualizado com sucesso", username, background_image, profile_image, bio, pronouns });
+        res.json({ message: "Perfil atualizado com sucesso", username, backgroundimage, profileimage, bio, pronouns });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao atualizar perfil" });
@@ -290,25 +290,25 @@ UsersRouter.put('/me', protect(0), upload.fields([{ name: 'profile_file', maxCou
 });
 
 // Atualizar senha do próprio usuário
-UsersRouter.put('/me/password', protect(0), validate(updatePasswordSchema), async (req, res) => {
+UsersRouter.put('/me/password', protect(20), validate(updatePasswordSchema), async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['id', 'password_hash']
+            attributes: ['id', 'passwordhash']
         });
 
         if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        const valid = await bcrypt.compare(currentPassword, user.password_hash);
+        const valid = await bcrypt.compare(currentPassword, user.passwordhash);
         if (!valid) {
             return res.status(401).json({ message: "Senha atual incorreta" });
         }
 
         const hash = await bcrypt.hash(newPassword, 10);
-        await user.update({ password_hash: hash });
+        await user.update({ passwordhash: hash });
 
         res.json({ message: "Senha atualizada com sucesso" });
     } catch(err) {
@@ -318,7 +318,7 @@ UsersRouter.put('/me/password', protect(0), validate(updatePasswordSchema), asyn
 });
 
 // GET /users/buscar - Buscar usuários por nome
-UsersRouter.get('/buscar', protect(0), validate(searchUsersSchema, 'query'), async (req, res) => {
+UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), async (req, res) => {
     const { q = '', page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
 
@@ -330,7 +330,7 @@ UsersRouter.get('/buscar', protect(0), validate(searchUsersSchema, 'query'), asy
                 username: { [Op.like]: searchTerm },
                 id: { [Op.ne]: req.user.id }
             },
-            attributes: ['id', 'username', 'profile_image'],
+            attributes: ['id', 'publicid', 'username', 'profileimage'],
             order: [
                 [
                     // Ordena: exato, começa com, depois resto
@@ -364,13 +364,13 @@ UsersRouter.get('/buscar', protect(0), validate(searchUsersSchema, 'query'), asy
 });
 
 // GET /users/:username - Obter perfil de usuário por username
-UsersRouter.get('/:username', protect(0), async (req, res) => {
+UsersRouter.get('/:username', protect(20), async (req, res) => {
     try {
         let username = req.params.username;
 
         const user = await User.findOne({
             where: { username: username },
-            attributes: ['id', 'username', 'background_image', 'profile_image', 'bio', 'pronouns', 'created_at', 'last_access']
+            attributes: ['id', 'publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'createdat', 'lastaccess']
         });
         if (!user) return res.status(404).json({
             message: "Usuário não encontrado"

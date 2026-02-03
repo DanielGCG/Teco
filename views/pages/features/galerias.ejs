@@ -35,7 +35,7 @@
                             <input type="file" class="form-control" name="cover" accept="image/*,video/*">
                         </div>
                         <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" name="is_public" id="isPublicSwitch">
+                            <input class="form-check-input" type="checkbox" name="ispublic" id="isPublicSwitch">
                             <label class="form-check-label" for="isPublicSwitch">Público (todos podem modificar)</label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Criar</button>
@@ -66,8 +66,8 @@
                 container.innerHTML = data.galleries.map(g => `
                     <div class="imagem">
                         <a href="/galeria/${g.id}">
-                            <!-- CORREÇÃO: g.capa_url -> g.cover_url e g.nome -> g.name -->
-                            <img src="${g.cover_url}" alt="${g.name}" onerror="this.src='/images/placeholder-album.png'">
+                            <!-- CORREÇÃO: g.capa_url -> g.coverurl e g.nome -> g.name -->
+                            <img src="${g.coverurl}" alt="${g.name}" onerror="this.src='/images/placeholder-album.png'">
                             <div class="texto-hover">
                                 <div>${g.name}</div>
                                 <small>por <a href="/${g.owner ? g.owner.username : ''}" class="text-white text-decoration-underline" onclick="event.stopPropagation()">${g.owner ? g.owner.username : 'Desconhecido'}</a></small>
@@ -92,8 +92,8 @@
         const form = e.target;
         const formData = new FormData(form);
         
-        // Garante que is_public seja string 'true' ou 'false'
-        formData.set('is_public', form.is_public.checked ? 'true' : 'false');
+        // Garante que ispublic seja string 'true' ou 'false'
+        formData.set('ispublic', form.ispublic.checked ? 'true' : 'false');
         
         try {
             const res = await fetch('/api/galeria', {

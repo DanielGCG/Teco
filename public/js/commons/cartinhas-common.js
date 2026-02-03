@@ -112,7 +112,7 @@ class ModalCartinha {
 
         const headerConfig = configs[config.tipo] || configs.recebidas;
         
-        title.textContent = config.titulo || headerConfig.titulo;
+        title.textContent = config.title || headerConfig.title;
         header.style.background = config.corHeader || headerConfig.cor;
         atalhos.innerHTML = config.atalhos || headerConfig.atalhos;
     }
@@ -175,10 +175,10 @@ class ModalCartinha {
             <div class="mb-3">
                 <!-- Cabeçalho da carta -->
                 <div class="d-flex align-items-center mb-3 p-2" style="background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${cores.badge};">
-                    <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
+                    <img src="${usuario.profileimage}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
                     <div>
                         <strong style="font-size: 1rem; color: #2d3436;">${labelNome}${nomeExibido}</strong>
-                        <div><small class="text-muted">📅 ${formatarData(cartinha.dataEnvio)}</small></div>
+                        <div><small class="text-muted">📅 ${formatarData(cartinha.createdat)}</small></div>
                     </div>
                     <div class="ms-auto">
                         ${badgesHTML}
@@ -193,12 +193,12 @@ class ModalCartinha {
                 
                 <!-- Título da carta -->
                 <h3 style="font-family: 'Montserrat', sans-serif; color: #2d3436; margin-bottom: 1rem; padding-left: 1rem; font-weight: 600; font-size: 1.1rem;">
-                    ${cartinha.titulo}
+                    ${cartinha.title}
                 </h3>
                 
                 <!-- Conteúdo da carta -->
                 <div style="font-family: 'Montserrat', sans-serif; font-size: 0.95rem; line-height: 1.6; color: #636e72; padding-left: 1rem; white-space: pre-wrap;">
-                    ${cartinha.conteudo}
+                    ${cartinha.body}
                 </div>
                 
                 <!-- Assinatura -->
@@ -329,7 +329,7 @@ function renderizarPilhasCartinhas(usuariosProcessados, containerSelector = '.co
     let html = '';
 
     usuariosProcessados.forEach((usuario, usuarioIndex) => {
-        const cartasNaoLidas = usuario.cartinhas.filter(c => !c.lida).length;
+        const cartasNaoLidas = usuario.cartinhas.filter(c => !c.isread).length;
 
         let classPosicao = '';
         if (usuarioIndex === 0) classPosicao = 'ativa';
@@ -534,13 +534,13 @@ function renderizarCartinhas(usuariosProcessados, hooks = {}) {
     }
 
     usuariosProcessados.forEach(u => {
-        u.naoLidas = u.cartinhas.filter(c => !c.lida).length;
+        u.naoLidas = u.cartinhas.filter(c => !c.isread).length;
     });
 
     usuariosProcessados.sort((a, b) => {
         if (a.naoLidas !== b.naoLidas) return b.naoLidas - a.naoLidas;
-        const dataA = new Date(a.cartinhas[0]?.dataEnvio || 0);
-        const dataB = new Date(b.cartinhas[0]?.dataEnvio || 0);
+        const dataA = new Date(a.cartinhas[0]?.createdat || 0);
+        const dataB = new Date(b.cartinhas[0]?.createdat || 0);
         return dataB - dataA;
     });
 
@@ -703,13 +703,13 @@ async function toggleFavoritoCommon(cartinhaId, usuarios = []) {
 
         // atualizar dados locais se fornecidos
         const cartinha = encontrarCartinha(cartinhaId, usuarios);
-        if (cartinha) cartinha.favoritada = result.favoritada;
+        if (cartinha) cartinha.isfavorited = result.isfavorited;
 
         // atualizar botão no modal se presente
         const favoritarBtn = document.getElementById('acao-favoritar');
         if (favoritarBtn) {
-            favoritarBtn.textContent = result.favoritada ? '⭐ Favoritada' : '⭐ Favoritar';
-            favoritarBtn.className = result.favoritada ? 'btn btn-warning' : 'btn btn-outline-warning';
+            favoritarBtn.textContent = result.isfavorited ? '⭐ Favoritada' : '⭐ Favoritar';
+            favoritarBtn.className = result.isfavorited ? 'btn btn-warning' : 'btn btn-outline-warning';
         }
 
         // atualizar selo/estado visual na carta se existe no DOM
@@ -717,11 +717,11 @@ async function toggleFavoritoCommon(cartinhaId, usuarios = []) {
         if (cartaEl) {
             const selo = cartaEl.querySelector('.selo');
             if (selo) {
-                if (result.favoritada) selo.classList.add('favorita'); else selo.classList.remove('favorita');
+                if (result.isfavorited) selo.classList.add('favorita'); else selo.classList.remove('favorita');
             }
         }
 
-        mostrarFeedback(result.favoritada ? '⭐ Cartinha favoritada!' : '👀 Cartinha desfavoritada', 'success');
+        mostrarFeedback(result.isfavorited ? '⭐ Cartinha favoritada!' : '👀 Cartinha desfavoritada', 'success');
         return result;
     } catch (error) {
         console.error('Erro ao alterar status de favorito (common):', error);
@@ -784,7 +784,7 @@ function inicializarNavegacaoTeclado(atalhosPagina = {}) {
 
 // ==================== Construtor de HTML de cartinha ====================
 function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, realIndex) {
-    const dataFormatada = formatarData(cartinha.dataEnvio);
+    const dataFormatada = formatarData(cartinha.createdat);
     if (!Number.isInteger(realIndex)) realIndex = posicao;
     const posicaoReal = realIndex + 1;
     const posicaoClasse = posicao === 0 ? 'topo' : posicao === 1 ? 'meio' : 'fundo';
@@ -794,16 +794,16 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, re
         recebidas: {
             badgeTexto: `De: ${usuario.username}`,
             badgeClass: '',
-            seloTexto: cartinha.lida ? 'LIDA' : 'NOVA',
-            seloClass: !cartinha.lida ? 'nova' : '',
+            seloTexto: cartinha.isread ? 'LIDA' : 'NOVA',
+            seloClass: !cartinha.isread ? 'nova' : '',
             indicadorHTML: '',
             dataLabel: 'Recebida em'
         },
         enviadas: {
             badgeTexto: `Para: ${usuario.username}`,
-            badgeClass: cartinha.lida ? 'lida' : '',
-            seloTexto: cartinha.lida ? 'LIDA' : 'ENVIADA',
-            seloClass: !cartinha.lida ? 'nova' : '',
+            badgeClass: cartinha.isread ? 'lida' : '',
+            seloTexto: cartinha.isread ? 'LIDA' : 'ENVIADA',
+            seloClass: !cartinha.isread ? 'nova' : '',
             indicadorHTML: '',
             dataLabel: 'Enviada em'
         },
@@ -841,7 +841,7 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, re
             
             <div class="envelope-header">
                 <div class="remetente-info">
-                    <img src="${usuario.profile_image}" alt="Avatar" class="avatar-carta">
+                    <img src="${usuario.profileimage}" alt="Avatar" class="avatar-carta">
                     <div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <span class="contador-cartas">
@@ -855,8 +855,8 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, re
             </div>
 
             <div class="cartinha-papel papel-linhas">
-                <h3 class="titulo-carta">${cartinha.titulo || ''}</h3>
-                <div class="conteudo-carta">${cortarTexto(cartinha.conteudo || '', 120)}</div>
+                <h3 class="titulo-carta">${cartinha.title || ''}</h3>
+                <div class="conteudo-carta">${cortarTexto(cartinha.body || '', 120)}</div>
                 <div class="data-carta">${config.dataLabel} ${dataFormatada}</div>
             </div>
 

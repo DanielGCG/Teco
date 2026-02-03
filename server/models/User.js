@@ -1,50 +1,79 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+const Role = sequelize.define('Role', {
+    id: {
+        type: DataTypes.TINYINT.UNSIGNED,
+        primaryKey: true
+    },
+    name: {
+        type: DataTypes.STRING(64)
+    }
+}, {
+    tableName: 'role',
+    timestamps: false
+});
+
 const User = sequelize.define('User', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
     },
-    role: {
-        type: DataTypes.TINYINT,
-        defaultValue: 0,
-        comment: '0 = usuário comum, 1 = admin, 2 = dono'
-    },
     username: {
         type: DataTypes.STRING(50),
         allowNull: false,
         unique: true
     },
-    pronouns: {
-        type: DataTypes.STRING(12),
-        allowNull: true
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
-    password_hash: {
+    roleId: {
+        type: DataTypes.TINYINT.UNSIGNED,
+        allowNull: false,
+        defaultValue: 20,
+        references: {
+            model: Role,
+            key: 'id'
+        }
+    },
+    passwordhash: {
         type: DataTypes.STRING(255),
         allowNull: false
     },
-    background_image: {
-        type: DataTypes.STRING(255)
+    birthday: {
+        type: DataTypes.DATEONLY,
+        defaultValue: DataTypes.NOW
     },
-    profile_image: {
-        type: DataTypes.STRING(255)
+    pronouns: {
+        type: DataTypes.STRING(16),
+        allowNull: true
     },
     bio: {
         type: DataTypes.STRING(160),
         defaultValue: ''
     },
-    created_at: {
+    backgroundimage: {
+        type: DataTypes.STRING(255)
+    },
+    profileimage: {
+        type: DataTypes.STRING(255)
+    },
+    createdat: {
         type: DataTypes.DATE,
+        allowNull: false,
         defaultValue: DataTypes.NOW
     },
-    last_access: {
+    lastaccess: {
         type: DataTypes.DATE,
+        allowNull: false,
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'users',
+    tableName: 'user',
     timestamps: false,
     indexes: [
         {
@@ -53,5 +82,8 @@ const User = sequelize.define('User', {
         }
     ]
 });
+
+// Relacionamento
+User.belongsTo(Role, { foreignKey: 'roleId' });
 
 module.exports = User;

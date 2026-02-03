@@ -1,25 +1,35 @@
 const express = require("express");
 const AdminChatsRouter = express.Router();
-const { Chat, ChatMessage, ChatParticipant, User } = require("../../models");
+const { Chat, ChatMessage, DM, DMMessage, User, ChatTopic } = require("../../models");
 const { Op, fn, col, literal } = require("sequelize");
 
 // ==================== Endpoints Administrativos de Chats ====================
 
+// GET /admin/chats/topics - Listar todos os tópicos disponíveis
+AdminChatsRouter.get('/topics', async (req, res) => {
+    try {
+        const topics = await ChatTopic.findAll({ order: [['name', 'ASC']] });
+        res.json(topics);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao carregar tópicos" });
+    }
+});
+
 // GET /admin/chats/estatisticas - Estatísticas gerais de chats
 AdminChatsRouter.get('/estatisticas', async (req, res) => {
     try {
-        const totalChats = await Chat.count();
-        const totalDms = await Chat.count({ where: { tipo: 'dm' } });
-        const totalPublicos = await Chat.count({ where: { tipo: 'public' } });
-        const totalMensagens = await ChatMessage.count();
-        const usuariosAtivos = await ChatParticipant.count({ distinct: true, col: 'user_id' });
+        const totalPublicos = await Chat.count();
+        const totalDms = await DM.count();
+        const totalMensagensChat = await ChatMessage.count();
+        const totalMensagensDm = await DMMessage.count();
 
         res.json({
-            total_chats: totalChats,
-            total_dms: totalDms,
-            total_publicos: totalPublicos,
-            total_mensagens: totalMensagens,
-            usuarios_ativos: usuariosAtivos
+            chatcount: totalPublicos,
+            dmcount: totalDms,
+            messagecount: totalMensagensChat + totalMensagensDm,
+            messagecount_chat: totalMensagensChat,
+            messagecount_dm: totalMensagensDm
         });
     } catch (err) {
         console.error(err);
@@ -29,17 +39,17 @@ AdminChatsRouter.get('/estatisticas', async (req, res) => {
 
 // POST /admin/chats/public - Criar um novo chat público
 AdminChatsRouter.post('/public', async (req, res) => {
-    const { nome } = req.body;
+    const { title, topic } = req.body;
 
-    if (!nome || nome.trim() === '') {
-        return res.status(400).json({ message: "Nome do chat é obrigatório" });
+    if (!title || title.trim() === '') {
+        return res.status(400).json({ message: "Título do chat é obrigatório" });
     }
 
     try {
         const chat = await Chat.create({
-            nome: nome.trim(),
-            tipo: 'public',
-            criado_por: req.user.id
+            title: title.trim(),
+            chatTopicName: topic || 'Geral',
+            createdbyUserId: req.user.id
         });
 
         res.status(201).json({ message: "Chat público criado com sucesso", chat });
@@ -51,20 +61,10 @@ AdminChatsRouter.post('/public', async (req, res) => {
 
 // POST /admin/chats/dm - Criar uma DM entre dois usuários
 AdminChatsRouter.post('/dm', async (req, res) => {
-    let { otherUserId, creatorId, participants, participantes } = req.body;
+    let { otherUserId, creatorId } = req.body;
     
-    let user1Id, user2Id;
-
-    if (participants && Array.isArray(participants) && participants.length >= 2) {
-        user1Id = participants[0];
-        user2Id = participants[1];
-    } else if (participantes && Array.isArray(participantes) && participantes.length >= 2) {
-        user1Id = participantes[0];
-        user2Id = participantes[1];
-    } else {
-        user1Id = creatorId || req.user.id;
-        user2Id = otherUserId;
-    }
+    const user1Id = creatorId || req.user.id;
+    const user2Id = otherUserId;
 
     if (!user1Id || !user2Id) {
         return res.status(400).json({ message: "IDs dos usuários são obrigatórios" });
@@ -84,134 +84,115 @@ AdminChatsRouter.post('/dm', async (req, res) => {
         }
 
         // Verificar se já existe uma DM entre eles
-        const myChats = await ChatParticipant.findAll({
-            where: { user_id: user1Id },
-            attributes: ['chat_id']
+        const existingDM = await DM.findOne({
+            where: {
+                [Op.or]: [
+                    { userId1: user1Id, userId2: user2Id },
+                    { userId1: user2Id, userId2: user1Id }
+                ]
+            }
         });
 
-        const otherUserChats = await ChatParticipant.findAll({
-            where: { user_id: user2Id },
-            attributes: ['chat_id']
-        });
-
-        const myChatIds = myChats.map(c => c.chat_id);
-        const otherChatIds = otherUserChats.map(c => c.chat_id);
-        const commonChatIds = myChatIds.filter(id => otherChatIds.includes(id));
-
-        let existingChat = null;
-        if (commonChatIds.length > 0) {
-            existingChat = await Chat.findOne({
-                where: {
-                    id: { [Op.in]: commonChatIds },
-                    tipo: 'dm'
-                }
-            });
-        }
-
-        if (existingChat) {
+        if (existingDM) {
             return res.status(409).json({ 
                 message: "Conversa já existe", 
-                chat: existingChat 
+                dm: existingDM 
             });
         }
 
         // Criar novo chat DM
-        const chat = await Chat.create({
-            tipo: 'dm',
-            criado_por: user1Id
+        const dm = await DM.create({
+            userId1: user1Id,
+            userId2: user2Id
         });
 
-        // Adicionar ambos como participantes
-        await ChatParticipant.bulkCreate([
-            { chat_id: chat.id, user_id: user1Id },
-            { chat_id: chat.id, user_id: user2Id }
-        ]);
-
-        res.status(201).json({ message: "DM criada com sucesso", chat });
+        res.status(201).json({ message: "DM criada com sucesso", dm });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao criar DM" });
     }
 });
 
-// GET /admin/chats - Listar todos os chats com informações detalhadas
+// GET /admin/chats - Listar todos os chats (Públicos e DM)
 AdminChatsRouter.get('/', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const tipo = req.query.tipo; // 'dm' ou 'public'
-    const search = req.query.search; // busca por nome ou participantes
-
+    const tipo = req.query.tipo; 
+    const search = req.query.search;
     const offset = (page - 1) * limit;
 
     try {
-        // Construir filtros
-        const where = {};
-        
-        if (tipo) {
-            where.tipo = tipo;
+        let results = [];
+
+        // 1. Buscar Chats Públicos
+        if (!tipo || tipo === 'public') {
+            const publicChats = await Chat.findAll({
+                where: search ? { title: { [Op.like]: `%${search}%` } } : {},
+                include: [{ model: User, as: 'creator', attributes: ['username'] }],
+                order: [['createdat', 'DESC']]
+            });
+
+            for (let chat of publicChats) {
+                const messageCount = await ChatMessage.count({ where: { chatId: chat.id } });
+                const lastMsg = await ChatMessage.findOne({ where: { chatId: chat.id }, order: [['createdat', 'DESC']] });
+
+                results.push({
+                    id: chat.id,
+                    publicid: chat.publicid,
+                    title: chat.title,
+                    type: 'public',
+                    topic: chat.chatTopicName,
+                    creatorusername: chat.creator?.username || 'Sistema',
+                    messagecount: messageCount,
+                    lastmessageat: lastMsg?.createdat || chat.createdat,
+                    participants: []
+                });
+            }
         }
 
-        if (search && search.trim() !== '') {
-            where.nome = { [Op.like]: `%${search}%` };
+        // 2. Buscar DMs
+        if (!tipo || tipo === 'dm') {
+            const dms = await DM.findAll({
+                include: [
+                    { model: User, as: 'user1', attributes: ['username'] },
+                    { model: User, as: 'user2', attributes: ['username'] }
+                ],
+                order: [['createdat', 'DESC']]
+            });
+
+            for (let dm of dms) {
+                // Filtro manual de busca por username em DM
+                if (search && !dm.user1.username.toLowerCase().includes(search.toLowerCase()) && 
+                            !dm.user2.username.toLowerCase().includes(search.toLowerCase())) continue;
+
+                const messageCount = await DMMessage.count({ where: { dmId: dm.id } });
+                const lastMsg = await DMMessage.findOne({ where: { dmId: dm.id }, order: [['createdat', 'DESC']] });
+
+                results.push({
+                    id: dm.id,
+                    publicid: dm.publicid,
+                    title: `${dm.user1.username} & ${dm.user2.username}`,
+                    type: 'dm',
+                    topic: 'Privado',
+                    creatorusername: dm.user1.username,
+                    messagecount: messageCount,
+                    lastmessageat: lastMsg?.createdat || dm.createdat,
+                    participants: [
+                        { id: dm.userId1, username: dm.user1.username },
+                        { id: dm.userId2, username: dm.user2.username }
+                    ]
+                });
+            }
         }
 
-        // Query simplificada - buscar chats básicos primeiro
-        const { count, rows: chats } = await Chat.findAndCountAll({
-            where,
-            include: [{
-                model: User,
-                as: 'criador',
-                attributes: ['username']
-            }],
-            order: [['created_at', 'DESC']],
-            limit,
-            offset
-        });
-
-        // Buscar estatísticas para cada chat
-        for (let chat of chats) {
-            // Contar participantes
-            const participantCount = await ChatParticipant.count({
-                where: { chat_id: chat.id }
-            });
-            
-            // Contar mensagens
-            const messageCount = await ChatMessage.count({
-                where: { chat_id: chat.id }
-            });
-            
-            // Última mensagem
-            const lastMessage = await ChatMessage.findOne({
-                where: { chat_id: chat.id },
-                order: [['created_at', 'DESC']],
-                attributes: ['created_at']
-            });
-
-            // Buscar participantes
-            const participantes = await User.findAll({
-                include: [{
-                    model: ChatParticipant,
-                    where: { chat_id: chat.id },
-                    attributes: []
-                }],
-                attributes: ['id', 'username'],
-                raw: true
-            });
-            
-            chat.dataValues.total_participantes = participantCount;
-            chat.dataValues.total_mensagens = messageCount;
-            chat.dataValues.ultima_mensagem = lastMessage?.created_at || null;
-            chat.dataValues.participantes = participantes;
-            chat.dataValues.criado_por_username = chat.criador.username;
-        }
-
-        const totalPages = Math.ceil(count / limit);
+        // Ordenar por última atividade globalmente
+        results.sort((a, b) => new Date(b.lastmessageat) - new Date(a.lastmessageat));
 
         res.json({
-            chats,
+            chats: results.slice(offset, offset + limit),
             currentPage: page,
-            totalPages,
-            totalItems: count
+            totalPages: Math.ceil(results.length / limit),
+            totalItems: results.length
         });
     } catch (err) {
         console.error(err);
@@ -219,76 +200,96 @@ AdminChatsRouter.get('/', async (req, res) => {
     }
 });
 
-// GET /admin/chats/:chatId - Detalhes de um chat específico
-AdminChatsRouter.get('/:chatId', async (req, res) => {
-    const chatId = req.params.chatId;
+// GET /admin/chats/:id - Detalhes de um chat ou DM
+AdminChatsRouter.get('/:id', async (req, res) => {
+    const id = req.params.id;
+    const type = req.query.type; // 'public' ou 'dm'
 
     try {
-        // Buscar informações do chat
-        const chat = await Chat.findByPk(chatId, {
-            include: [{
-                model: User,
-                as: 'criador',
-                attributes: ['username']
-            }]
-        });
+        if (type === 'public') {
+            const chat = await Chat.findByPk(id, {
+                include: [{ model: User, as: 'creator', attributes: ['username'] }]
+            });
+            if (!chat) return res.status(404).json({ message: "Chat não encontrado" });
+            
+            res.json({
+                ...chat.toJSON(),
+                type: 'public',
+                creatorusername: chat.creator?.username || 'Sistema',
+                participants: []
+            });
+        } else {
+            const dm = await DM.findByPk(id, {
+                include: [
+                    { model: User, as: 'user1', attributes: ['username'] },
+                    { model: User, as: 'user2', attributes: ['username'] }
+                ]
+            });
+            if (!dm) return res.status(404).json({ message: "DM não encontrada" });
 
-        if (!chat) {
-            return res.status(404).json({ message: "Chat não encontrado" });
+            res.json({
+                ...dm.toJSON(),
+                type: 'dm',
+                title: `${dm.user1.username} & ${dm.user2.username}`,
+                participants: [
+                    { id: dm.userId1, username: dm.user1.username },
+                    { id: dm.userId2, username: dm.user2.username }
+                ]
+            });
         }
-
-        // Buscar participantes
-        const participantes = await ChatParticipant.findAll({
-            where: { chat_id: chatId },
-            include: [{
-                model: User,
-                attributes: ['id', 'username', 'profile_image']
-            }]
-        });
-
-        // Buscar estatísticas de mensagens
-        const msgStats = await ChatMessage.findOne({
-            where: { chat_id: chatId },
-            attributes: [
-                [fn('COUNT', col('id')), 'total_mensagens'],
-                [fn('MIN', col('created_at')), 'primeira_mensagem'],
-                [fn('MAX', col('created_at')), 'ultima_mensagem']
-            ],
-            raw: true
-        });
-
-        const response = {
-            ...chat.toJSON(),
-            criado_por_username: chat.criador.username,
-            participantes: participantes.map(p => p.User),
-            estatisticas_mensagens: msgStats
-        };
-
-        res.json(response);
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao carregar detalhes do chat" });
+        res.status(500).json({ message: "Erro ao buscar detalhes" });
     }
 });
 
-// DELETE /admin/chats/:chatId - Deletar um chat
-AdminChatsRouter.delete('/:chatId', async (req, res) => {
-    const chatId = req.params.chatId;
+// DELETE /admin/chats/:id - Deletar um chat ou DM
+AdminChatsRouter.delete('/:id', async (req, res) => {
+    const id = req.params.id;
+    const type = req.query.type;
 
     try {
-        const chat = await Chat.findByPk(chatId);
-        
-        if (!chat) {
-            return res.status(404).json({ message: "Chat não encontrado" });
+        if (type === 'public') {
+            const chat = await Chat.findByPk(id);
+            if (!chat) return res.status(404).json({ message: "Chat não encontrado" });
+            await chat.destroy();
+        } else {
+            const dm = await DM.findByPk(id);
+            if (!dm) return res.status(404).json({ message: "DM não encontrada" });
+            await dm.destroy();
         }
-
-        // Deletar chat (CASCADE via modelo vai deletar mensagens e participantes)
-        await chat.destroy();
-
-        res.json({ message: "Chat deletado com sucesso" });
+        res.json({ message: "Deletado com sucesso" });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Erro ao deletar chat" });
+        res.status(500).json({ message: "Erro ao deletar" });
+    }
+});
+
+// PUT /admin/chats/:id - Atualizar um chat ou DM
+AdminChatsRouter.put('/:id', async (req, res) => {
+    const id = req.params.id;
+    const { title, type, participants } = req.body;
+
+    try {
+        if (type === 'public') {
+            const chat = await Chat.findByPk(id);
+            if (!chat) return res.status(404).json({ message: "Chat não encontrado" });
+            if (title) chat.title = title;
+            await chat.save();
+        } else if (type === 'dm') {
+            const dm = await DM.findByPk(id);
+            if (!dm) return res.status(404).json({ message: "DM não encontrada" });
+            
+            if (participants && participants.length === 2) {
+                dm.userId1 = participants[0];
+                dm.userId2 = participants[1];
+                await dm.save();
+            }
+        }
+        res.json({ message: "Atualizado com sucesso" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao atualizar" });
     }
 });
 
@@ -310,10 +311,10 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
         }
 
         // Construir filtros
-        const where = { chat_id: chatId };
+        const where = { chatId: chatId };
 
         if (search) {
-            where.mensagem = { [Op.like]: `%${search}%` };
+            where.message = { [Op.like]: `%${search}%` };
         }
 
         // Buscar mensagens
@@ -323,7 +324,7 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
                 model: User,
                 attributes: ['id', 'username']
             }],
-            order: [['created_at', 'DESC']],
+            order: [['createdat', 'DESC']],
             limit,
             offset
         });
@@ -333,9 +334,9 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
         res.json({
             mensagens: mensagens.map(m => ({
                 id: m.id,
-                mensagem: m.mensagem,
-                created_at: m.created_at,
-                user_id: m.User.id,
+                message: m.message,
+                createdat: m.createdat,
+                userId: m.User.id,
                 username: m.User.username
             })),
             currentPage: page,
@@ -383,7 +384,7 @@ AdminChatsRouter.delete('/mensagens/remover', async (req, res) => {
 // PUT /admin/chats/:chatId - Atualizar informações do chat
 AdminChatsRouter.put('/:chatId', async (req, res) => {
     const chatId = req.params.chatId;
-    const { nome, tipo } = req.body;
+    const { title, chatTopicName } = req.body;
 
     try {
         const chat = await Chat.findByPk(chatId);
@@ -393,8 +394,8 @@ AdminChatsRouter.put('/:chatId', async (req, res) => {
         }
 
         const updates = {};
-        if (nome !== undefined) updates.nome = nome;
-        if (tipo !== undefined) updates.tipo = tipo;
+        if (title !== undefined) updates.title = title;
+        if (chatTopicName !== undefined) updates.chatTopicName = chatTopicName;
 
         await chat.update(updates);
 
@@ -427,14 +428,14 @@ AdminChatsRouter.post('/:chatId/participantes', async (req, res) => {
 
         // Verificar se já é participante
         const existing = await ChatParticipant.findOne({
-            where: { chat_id: chatId, user_id: userId }
+            where: { chatId: chatId, userId: userId }
         });
 
         if (existing) {
             return res.status(409).json({ message: "Usuário já é participante" });
         }
 
-        await ChatParticipant.create({ chat_id: chatId, user_id: userId });
+        await ChatParticipant.create({ chatId: chatId, userId: userId });
 
         res.json({ message: "Participante adicionado com sucesso" });
     } catch (err) {
@@ -449,7 +450,7 @@ AdminChatsRouter.delete('/:chatId/participantes/:userId', async (req, res) => {
 
     try {
         const participant = await ChatParticipant.findOne({
-            where: { chat_id: chatId, user_id: userId }
+            where: { chatId: chatId, userId: userId }
         });
 
         if (!participant) {

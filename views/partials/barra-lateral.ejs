@@ -56,12 +56,22 @@
 }
 
 .nav-group-label {
+    display: flex;
+    align-items: center;
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: rgba(0, 0, 0, 0.4);
     padding: 0.8rem 1rem 0.3rem;
     font-weight: 700;
+}
+
+.nav-group-label::before,
+.nav-group-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 /* Botões da barra lateral */
@@ -84,7 +94,7 @@
         // A opção certeira: usamos loggedUser que é garantido pelo authMiddleware
         const u = locals.loggedUser;
         const hasUser = !!u;
-        const profilePic = hasUser ? u.profile_image : '';
+        const profilePic = hasUser ? u.profileimage : '';
         const profileLink = hasUser ? `/${u.username}` : '#';
         const username = hasUser ? u.username : '';
         const bgStyle = 'background: linear-gradient(135deg, #6c5ce7, var(--roxo));';
@@ -112,7 +122,7 @@
     <hr class="w-100 mt-0">
     <!-- Links ou botões da barra lateral -->
     <div class="sidebar-buttons d-flex flex-column align-items-center w-100">
-        <% if (u && u.role >= 1) { %>
+        <% if (u && u.roleId <= 5) { %>
             <button class="btn btn-warning mb-2 w-100" id="admin-panel-btn" onclick="window.location.href='/admin'">Painel admin</button>
         <% } %>
         <button class="btn btn-outline-danger mb-2 w-100" id="logoutBtn">Sair</button>
@@ -125,11 +135,6 @@
 </div>
 
 <script>
-/**
- * Hidratação do Perfil:
- * O SSR já deve renderizar o perfil, mas este script garante que, caso o SSR falhe
- * ou o cookie mude, a interface seja atualizada sem recarregar a página.
- */
 function renderizarPerfil(user) {
     if (!user) return;
 
@@ -141,11 +146,11 @@ function renderizarPerfil(user) {
 
     if (profileLink) profileLink.href = `/${user.username}`;
     if (userName) userName.textContent = user.username;
-    if (userAvatar && user.profile_image) userAvatar.src = user.profile_image;
+    if (userAvatar && user.profileimage) userAvatar.src = user.profileimage;
 
     if (userCard) {
-        if (user.background_image) {
-            userCard.style.backgroundImage = `url('${user.background_image}'), linear-gradient(135deg, #6c5ce7, var(--roxo))`;
+        if (user.backgroundimage) {
+            userCard.style.backgroundImage = `url('${user.backgroundimage}'), linear-gradient(135deg, #6c5ce7, var(--roxo))`;
             userCard.style.backgroundSize = 'cover';
             userCard.style.backgroundPosition = 'center';
         } else {
@@ -154,7 +159,7 @@ function renderizarPerfil(user) {
     }
 
     // Botão Admin (se necessário)
-    if (user.role >= 1 && !document.getElementById('admin-panel-btn')) {
+    if (user.roleId <= 5 && !document.getElementById('admin-panel-btn')) {
         const adminBtn = document.createElement("button");
         adminBtn.id = 'admin-panel-btn';
         adminBtn.className = "btn btn-warning mb-2 w-100";

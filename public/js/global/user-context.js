@@ -49,7 +49,7 @@ window.UserContext = (() => {
     return {
         get: () => currentUser,
         isLoggedIn: () => !!currentUser,
-        isAdmin: () => currentUser && currentUser.role >= 1,
+        isAdmin: () => currentUser && currentUser.roleId <= 5,
         refresh: async () => {
             try {
                 const res = await fetch('/api/users/me');

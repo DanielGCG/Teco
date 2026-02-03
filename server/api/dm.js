@@ -1,6 +1,6 @@
 const express = require("express");
 const DMsRouter = express.Router();
-const { Chat, ChatMessage, ChatRead, ChatParticipant, User, Follow, sequelize } = require("../models");
+const { DM, DMMessage, User, Follow, sequelize } = require("../models");
 const socketRouter = require("../routes/socket.router");
 const validate = require("../middlewares/validate");
 const { Op } = require("sequelize");
@@ -25,99 +25,70 @@ function getUserStatus(userId) {
 // GET /dms - Lista todas as DMs do usuário
 DMsRouter.get('/', async (req, res) => {
     try {
-        // Busca apenas chats tipo 'dm' do usuário
-        const myParticipations = await ChatParticipant.findAll({
-            where: { user_id: req.user.id },
-            attributes: ['chat_id']
-        });
-
-        const chatIds = myParticipations.map(p => p.chat_id);
-
-        const dms = await Chat.findAll({
+        const userId = req.user.id;
+        
+        const dms = await DM.findAll({
             where: {
-                id: { [Op.in]: chatIds },
-                tipo: 'dm'
-            }
+                [Op.or]: [
+                    { userId1: userId },
+                    { userId2: userId }
+                ]
+            },
+            include: [
+                { model: User, as: 'user1', attributes: ['id', 'publicid', 'username', 'profileimage', 'bio'] },
+                { model: User, as: 'user2', attributes: ['id', 'publicid', 'username', 'profileimage', 'bio'] }
+            ]
         });
 
         const dmList = [];
 
         for (const dm of dms) {
-            // Busca todos os participantes do chat
-            const participants = await ChatParticipant.findAll({
-                where: { chat_id: dm.id },
-                include: [{
-                    model: User,
-                    attributes: ['id', 'username', 'profile_image']
-                }]
-            });
-            
-            // Encontra o outro participante
-            const otherParticipant = participants.find(p => p.user_id !== req.user.id);
-            if (!otherParticipant || !otherParticipant.User) continue;
+            const otherUser = dm.userId1 === userId ? dm.user2 : dm.user1;
+            if (!otherUser) continue;
 
-            const otherUser = otherParticipant.User;
-
-            // Busca informações de seguimento
+            // Busca informações de seguimento (mantém id interno para busca no banco)
             const following = await Follow.findOne({
-                where: { follower_id: req.user.id, following_id: otherUser.id }
+                where: { followerUserId: userId, followedUserId: otherUser.id }
             });
             const followedBy = await Follow.findOne({
-                where: { follower_id: otherUser.id, following_id: req.user.id }
+                where: { followerUserId: otherUser.id, followedUserId: userId }
             });
 
             const isFriend = !!(following && followedBy);
             const isFollowing = !!following;
             const isFollowedBy = !!followedBy;
 
-            // Busca bio do usuário
-            const fullUserData = await User.findByPk(otherUser.id, {
-                attributes: ['bio']
-            });
-
             // Busca a última mensagem
-            const lastMessage = await ChatMessage.findOne({
-                where: { chat_id: dm.id },
-                order: [['created_at', 'DESC']],
-                include: [{
-                    model: User,
-                    attributes: ['username']
-                }]
+            const lastMessage = await DMMessage.findOne({
+                where: { dmId: dm.id },
+                order: [['createdat', 'DESC']]
             });
-
-            // Busca o registro de leitura do usuário
-            const chatRead = await ChatRead.findOne({
-                where: {
-                    chat_id: dm.id,
-                    user_id: req.user.id
-                }
-            });
-
-            const lastReadId = chatRead ? chatRead.last_read_message_id : 0;
 
             // Conta mensagens não lidas (de outros usuários)
-            const unreadCount = await ChatMessage.count({
+            const unreadCount = await DMMessage.count({
                 where: {
-                    chat_id: dm.id,
-                    id: { [Op.gt]: lastReadId },
-                    user_id: { [Op.ne]: req.user.id }
+                    dmId: dm.id,
+                    userId: otherUser.id,
+                    isread: false
                 }
             });
 
             dmList.push({
-                id: dm.id, // Mudado de dmId para id
+                id: dm.publicid, // Usa publicid como id
+                publicid: dm.publicid,
                 otherUser: {
-                    id: otherUser.id,
+                    id: otherUser.publicid, // Usa publicid como id
+                    publicid: otherUser.publicid,
                     username: otherUser.username,
-                    profile_image: otherUser.profile_image,
-                    bio: fullUserData?.bio || null,
+                    profileimage: otherUser.profileimage,
+                    bio: otherUser.bio || null,
                     status: getUserStatus(otherUser.id),
                     isFriend,
                     isFollowing,
                     isFollowedBy
                 },
-                lastMessage: lastMessage ? lastMessage.mensagem : null,
-                lastMessageAt: lastMessage ? lastMessage.created_at : null,
+                lastMessage: lastMessage ? lastMessage.message : null,
+                lastMessageAt: lastMessage ? lastMessage.createdat : null,
                 unreadCount
             });
         }
@@ -140,34 +111,28 @@ DMsRouter.get('/', async (req, res) => {
 // GET /conversas/unread-count - Conta conversas com mensagens não lidas
 DMsRouter.get('/unread-count', async (req, res) => {
     try {
-        // Busca chats DM do usuário
-        const participations = await ChatParticipant.findAll({
-            where: { user_id: req.user.id },
-            include: [{
-                model: Chat,
-                where: { tipo: 'dm' },
-                attributes: ['id']
-            }]
+        const userId = req.user.id;
+        
+        // Busca dms do usuário
+        const dms = await DM.findAll({
+            where: {
+                [Op.or]: [
+                    { userId1: userId },
+                    { userId2: userId }
+                ]
+            },
+            attributes: ['id']
         });
 
         let count = 0;
 
-        for (const p of participations) {
-            const chatId = p.Chat.id;
-
-            // Busca último lido
-            const chatRead = await ChatRead.findOne({
-                where: { chat_id: chatId, user_id: req.user.id }
-            });
-
-            const lastReadId = chatRead ? chatRead.last_read_message_id : 0;
-
-            // Verifica se há mensagens não lidas
-            const hasUnread = await ChatMessage.count({
+        for (const dm of dms) {
+            // Verifica se há mensagens não lidas de outros
+            const hasUnread = await DMMessage.count({
                 where: {
-                    chat_id: chatId,
-                    id: { [Op.gt]: lastReadId },
-                    user_id: { [Op.ne]: req.user.id }
+                    dmId: dm.id,
+                    userId: { [Op.ne]: userId },
+                    isread: false
                 },
                 limit: 1
             });
@@ -194,44 +159,38 @@ DMsRouter.get('/friends', async (req, res) => {
                 {
                     model: Follow,
                     as: 'followers',
-                    where: { follower_id: userId },
+                    where: { followerUserId: userId },
                     attributes: []
                 },
                 {
                     model: Follow,
                     as: 'following',
-                    where: { following_id: userId },
+                    where: { followedUserId: userId },
                     attributes: []
                 }
             ],
-            attributes: ['id', 'username', 'profile_image']
+            attributes: ['id', 'publicid', 'username', 'profileimage']
         });
 
         const friends = await Promise.all(friendsList.map(async (friend) => {
-            // Verifica se já existe conversa - busca chats comuns do tipo DM
-            const commonChat = await Chat.findOne({
-                where: { type: 'dm' },
-                include: [
-                    { 
-                        model: ChatParticipant, 
-                        as: 'Participants',
-                        where: { user_id: userId } 
-                    },
-                    { 
-                        model: ChatParticipant, 
-                        as: 'Participants',
-                        where: { user_id: friend.id } 
-                    }
-                ]
+            // Verifica se já existe conversa
+            const existingDM = await DM.findOne({
+                where: {
+                    [Op.or]: [
+                        { userId1: userId, userId2: friend.id },
+                        { userId1: friend.id, userId2: userId }
+                    ]
+                }
             });
 
             return {
-                id: friend.id,
+                id: friend.publicid,
+                publicid: friend.publicid,
                 username: friend.username,
-                profile_image: friend.profile_image,
+                profileimage: friend.profileimage,
                 status: getUserStatus(friend.id),
-                hasConversation: commonChat !== null,
-                conversationId: commonChat?.id || null
+                hasConversation: existingDM !== null,
+                conversationId: existingDM?.publicid || null
             };
         }));
 
@@ -265,40 +224,29 @@ DMsRouter.get('/search', validate(searchUsersSchema, 'query'), async (req, res) 
                 username: { [Op.like]: searchTerm },
                 id: { [Op.ne]: userId }
             },
-            attributes: ['id', 'username', 'profile_image'],
+            attributes: ['id', 'publicid', 'username', 'profileimage'],
             limit: 10
         });
 
         // Para cada usuário, verifica se já tem conversa
         const usersWithConversation = await Promise.all(users.map(async (u) => {
-            // Busca conversa DM entre os dois usuários
-            const userParticipations = await ChatParticipant.findAll({
-                where: { user_id: u.id },
-                attributes: ['chat_id']
-            });
-
-            const myParticipations = await ChatParticipant.findAll({
-                where: { user_id: userId },
-                attributes: ['chat_id']
-            });
-
-            const userChatIds = userParticipations.map(cp => cp.chat_id);
-            const myChatIds = myParticipations.map(cp => cp.chat_id);
-            const commonChatIds = userChatIds.filter(id => myChatIds.includes(id));
-
-            const existingChat = commonChatIds.length > 0 ? await Chat.findOne({
+            const existingDM = await DM.findOne({
                 where: {
-                    id: { [Op.in]: commonChatIds },
-                    tipo: 'dm'
+                    [Op.or]: [
+                        { userId1: userId, userId2: u.id },
+                        { userId1: u.id, userId2: userId }
+                    ]
                 },
-                attributes: ['id']
-            }) : null;
+                attributes: ['id', 'publicid']
+            });
 
             return {
-                id: u.id,
+                id: u.publicid,
+                publicid: u.publicid,
                 username: u.username,
-                profile_image: u.profile_image,
-                hasConversation: existingChat !== null,
+                profileimage: u.profileimage,
+                hasConversation: existingDM !== null,
+                conversationId: existingDM?.publicid || null,
                 status: getUserStatus(u.id)
             };
         }));
@@ -330,52 +278,34 @@ DMsRouter.post('/', validate(createDmSchema), async (req, res) => {
         }
 
         // Verifica se já existe uma conversa DM entre os dois
-        const myChats = await ChatParticipant.findAll({
-            where: { user_id: req.user.id },
-            attributes: ['chat_id']
+        const existingDM = await DM.findOne({
+            where: {
+                [Op.or]: [
+                    { userId1: req.user.id, userId2: otherUser.id },
+                    { userId1: otherUser.id, userId2: req.user.id }
+                ]
+            }
         });
 
-        const otherUserChats = await ChatParticipant.findAll({
-            where: { user_id: otherUser.id },
-            attributes: ['chat_id']
-        });
-
-        const myChatIds = myChats.map(c => c.chat_id);
-        const otherChatIds = otherUserChats.map(c => c.chat_id);
-        const commonChatIds = myChatIds.filter(id => otherChatIds.includes(id));
-
-        let existingChat = null;
-        if (commonChatIds.length > 0) {
-            existingChat = await Chat.findOne({
-                where: {
-                    id: { [Op.in]: commonChatIds },
-                    tipo: 'dm'
-                }
-            });
-        }
-
-        if (existingChat) {
+        if (existingDM) {
             return res.status(409).json({ 
                 message: "Conversa já existe", 
-                dmId: existingChat.id 
+                dmId: existingDM.publicid 
             });
         }
 
-        // Cria novo chat DM
-        const chat = await Chat.create({
-            tipo: 'dm',
-            criado_por: req.user.id
-        });
+        const { v4: uuidv4 } = require('uuid');
 
-        // Adiciona ambos os usuários como participantes
-        await ChatParticipant.bulkCreate([
-            { chat_id: chat.id, user_id: req.user.id },
-            { chat_id: chat.id, user_id: otherUser.id }
-        ]);
+        // Cria novo DM
+        const dm = await DM.create({
+            publicid: uuidv4(),
+            userId1: req.user.id,
+            userId2: otherUser.id
+        });
 
         res.status(201).json({ 
             message: "Conversa criada", 
-            dmId: chat.id 
+            dmId: dm.publicid 
         });
 
     } catch (err) {

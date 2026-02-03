@@ -8,7 +8,7 @@ const UserSession = sequelize.define('UserSession', {
         primaryKey: true,
         autoIncrement: true
     },
-    user_id: {
+    userId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,
         references: {
@@ -16,25 +16,21 @@ const UserSession = sequelize.define('UserSession', {
             key: 'id'
         }
     },
-    cookie_value: {
+    cookie: {
         type: DataTypes.STRING(255),
         allowNull: false
     },
-    created_at: {
+    createdat: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     },
-    expires_at: {
+    expiresat: {
         type: DataTypes.DATE,
         allowNull: false
     }
 }, {
-    tableName: 'user_sessions',
+    tableName: 'session',
     timestamps: false
 });
-
-// Relacionamentos
-User.hasMany(UserSession, { foreignKey: 'user_id', onDelete: 'CASCADE' });
-UserSession.belongsTo(User, { foreignKey: 'user_id' });
 
 module.exports = UserSession;

@@ -256,7 +256,7 @@
                 <div class="card-body">
                     <div class="d-flex gap-3">
                         <% const u = locals.loggedUser; %>
-                        <img src="<%= u ? u.profile_image : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                        <img src="<%= u ? u.profileimage : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
                         <div class="flex-grow-1">
                             <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está pensando?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
                             <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
@@ -358,17 +358,21 @@
         socket.on('postUpdate', (data) => {
             const postElements = document.querySelectorAll(`[id="post-${data.id}"]`);
             postElements.forEach(postEl => {
-                if (data.likes_count !== undefined) {
+                if (data.likecount !== undefined) {
                     const likeCountEl = postEl.querySelector('.post-action.like span');
-                    if (likeCountEl) likeCountEl.textContent = data.likes_count;
+                    if (likeCountEl) likeCountEl.textContent = data.likecount;
                 }
-                if (data.replies_count !== undefined) {
+                if (data.replycount !== undefined) {
                     const replyCountEl = postEl.querySelector('.post-action.reply span');
-                    if (replyCountEl) replyCountEl.textContent = data.replies_count;
+                    if (replyCountEl) replyCountEl.textContent = data.replycount;
                 }
-                if (data.reposts_count !== undefined) {
+                if (data.repostcount !== undefined) {
                     const repostCountEl = postEl.querySelector('.post-action.repost span');
-                    if (repostCountEl) repostCountEl.textContent = data.reposts_count;
+                    if (repostCountEl) repostCountEl.textContent = data.repostcount;
+                }
+                if (data.bookmarkcount !== undefined) {
+                    const bookmarkCountEl = postEl.querySelector('.post-action.bookmark span');
+                    if (bookmarkCountEl) bookmarkCountEl.textContent = data.bookmarkcount;
                 }
             });
         });
@@ -399,12 +403,12 @@
             initSocket();
 
             document.querySelector(".profile-name").textContent = user.username;
-            document.querySelector(".profile-avatar").src = user.profile_image;
+            document.querySelector(".profile-avatar").src = user.profileimage;
             document.querySelector(".profile-pronouns").textContent = user.pronouns || '';
             document.getElementById("bio-text").innerHTML = user.bio ? user.bio.replace(/\n/g, '<br>') : 'Nenhuma biografia disponível.';
             
-            if (user.background_image) {
-                document.getElementById("profile-banner").style.backgroundImage = `url('${user.background_image}')`;
+            if (user.backgroundimage) {
+                document.getElementById("profile-banner").style.backgroundImage = `url('${user.backgroundimage}')`;
             }
 
             if (window.currentUser) {
@@ -486,7 +490,7 @@
                 list.innerHTML = `<div class="galerias-grid">
                     ${data.galleries.map(g => `
                         <a href="/galeria/${g.id}" class="gallery-square" title="${g.name}">
-                            <img src="${g.cover_url}">
+                            <img src="${g.coverurl}">
                             <div class="gallery-overlay"><span>${g.name}</span></div>
                         </a>
                     `).join('')}
@@ -508,7 +512,7 @@
                 list.innerHTML = friends.map(f => `
                     <a href="/${f.username}" class="friend-item" data-user-id="${f.id}">
                         <div class="position-relative">
-                            <img src="${f.profile_image}" class="friend-avatar rounded">
+                            <img src="${f.profileimage}" class="friend-avatar rounded">
                             <span class="status-dot ${f.status || 'offline'}" style="width: 12px; height: 12px; border-width: 1px; bottom: 2px; right: 2px;"></span>
                         </div>
                         <span class="small">${f.username}</span>

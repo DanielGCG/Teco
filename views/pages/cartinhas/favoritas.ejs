@@ -50,25 +50,20 @@ async function carregarCartinhasFavoritas() {
         const usuariosAgrupados = {};
         
         cartinhasFavoritas.forEach(cartinha => {
-            const remetenteId = cartinha.remetente_id;
+            const remetenteId = cartinha.remetente ? cartinha.remetente.id : (cartinha.senderUserId || 'desconhecido');
+            const username = cartinha.remetente ? cartinha.remetente.username : 'Desconhecido';
+            const profileimage = cartinha.remetente ? cartinha.remetente.profileimage : '/images/default-avatar.png';
             
             if (!usuariosAgrupados[remetenteId]) {
                 usuariosAgrupados[remetenteId] = {
                     userId: remetenteId,
-                    username: cartinha.remetente_username || 'Desconhecido',
-                    profile_image: cartinha.remetente_profile_image,
+                    username: username,
+                    profileimage: profileimage,
                     cartinhas: []
                 };
             }
             
-            usuariosAgrupados[remetenteId].cartinhas.push({
-                id: cartinha.id,
-                titulo: cartinha.titulo,
-                conteudo: cartinha.conteudo,
-                dataEnvio: cartinha.data_envio,
-                lida: cartinha.lida || true,
-                favoritada: true
-            });
+            usuariosAgrupados[remetenteId].cartinhas.push(cartinha);
         });
         
         usuariosProcessados = Object.values(usuariosAgrupados);
@@ -145,7 +140,7 @@ async function confirmarDesfavoritar(cartinhaId) {
     window.modalCartinha.fechar();
 
     const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
-    const dataEnvio = cartinha ? new Date(cartinha.dataEnvio) : null;
+    const dataEnvio = cartinha ? new Date(cartinha.createdat) : null;
     const agora = new Date();
     const diffMs = agora - dataEnvio;
     const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));

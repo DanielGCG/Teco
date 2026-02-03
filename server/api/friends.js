@@ -8,7 +8,7 @@ const { Op } = require("sequelize");
 const { userIdSchema } = require("../validators/friends.validator");
 
 // Helper para proteger rotas
-const protect = (minRole = 0) => {
+const protect = (minRole = 20) => {
     return authMiddleware(minRole);
 };
 
@@ -21,7 +21,7 @@ function getUserStatus(userId) {
 }
 
 // GET /friends - Listar amigos (seguidores mútuos) do usuário logado
-FriendsRouter.get('/', protect(0), async (req, res) => {
+FriendsRouter.get('/', protect(20), async (req, res) => {
     try {
         const userId = req.user.id;
 
@@ -32,23 +32,24 @@ FriendsRouter.get('/', protect(0), async (req, res) => {
                 {
                     model: Follow,
                     as: 'followers',
-                    where: { follower_id: userId },
+                    where: { followerUserId: userId },
                     attributes: []
                 },
                 {
                     model: Follow,
                     as: 'following',
-                    where: { following_id: userId },
+                    where: { followedUserId: userId },
                     attributes: []
                 }
             ],
-            attributes: ['id', 'username', 'profile_image', 'bio']
+            attributes: ['id', 'publicid', 'username', 'profileimage', 'bio']
         });
 
         const formatted = friends.map(f => ({
             id: f.id,
+            publicid: f.publicid,
             username: f.username,
-            profile_image: f.profile_image,
+            profileimage: f.profileimage,
             bio: f.bio,
             status: getUserStatus(f.id)
         }));
@@ -69,30 +70,45 @@ FriendsRouter.get('/', protect(0), async (req, res) => {
 // GET /friends/user/:userId - Listar amigos (seguidores mútuos) de outro usuário
 FriendsRouter.get('/user/:userId', validate(userIdSchema, 'params'), async (req, res) => {
     try {
-        const targetId = parseInt(req.params.userId);
+        const inputId = req.params.userId;
+
+        // Tenta encontrar o usuário por publicid ou id
+        let targetUser;
+        if (isNaN(inputId)) {
+            targetUser = await User.findOne({ where: { publicid: inputId } });
+        } else {
+            targetUser = await User.findByPk(parseInt(inputId));
+        }
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const targetId = targetUser.id;
 
         const friends = await User.findAll({
             include: [
                 {
                     model: Follow,
                     as: 'followers',
-                    where: { follower_id: targetId },
+                    where: { followerUserId: targetId },
                     attributes: []
                 },
                 {
                     model: Follow,
                     as: 'following',
-                    where: { following_id: targetId },
+                    where: { followedUserId: targetId },
                     attributes: []
                 }
             ],
-            attributes: ['id', 'username', 'profile_image', 'bio']
+            attributes: ['id', 'publicid', 'username', 'profileimage', 'bio']
         });
 
         const formatted = friends.map(f => ({
             id: f.id,
+            publicid: f.publicid,
             username: f.username,
-            profile_image: f.profile_image,
+            profileimage: f.profileimage,
             bio: f.bio,
             status: getUserStatus(f.id)
         }));

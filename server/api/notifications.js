@@ -17,18 +17,18 @@ NotificationsRouter.get('/', validate(getNotificationsSchema, 'query'), async (r
     const unreadOnly = unread === 'true';
 
     try {
-        let whereClause = { user_id: req.user.id };
+        let whereClause = { targetUserId: req.user.id };
         
         if (unreadOnly) {
-            whereClause.read_at = null;
+            whereClause.readat = null;
         }
 
         // Busca notificações
         const { count, rows: notifications } = await Notification.findAndCountAll({
             where: whereClause,
             order: [
-                [Notification.sequelize.literal('read_at IS NULL'), 'DESC'],
-                ['created_at', 'DESC']
+                [Notification.sequelize.literal('readat IS NULL'), 'DESC'],
+                ['createdat', 'DESC']
             ],
             limit: unreadOnly ? limit : undefined,
             offset: unreadOnly ? offset : undefined
@@ -40,19 +40,19 @@ NotificationsRouter.get('/', validate(getNotificationsSchema, 'query'), async (r
             // Pega todas não lidas
             const unreadNotifs = await Notification.findAll({
                 where: {
-                    user_id: req.user.id,
-                    read_at: null
+                    targetUserId: req.user.id,
+                    readat: null
                 },
-                order: [['created_at', 'DESC']]
+                order: [['createdat', 'DESC']]
             });
 
             // Pega até 5 lidas mais recentes
             const readNotifs = await Notification.findAll({
                 where: {
-                    user_id: req.user.id,
-                    read_at: { [Op.ne]: null }
+                    targetUserId: req.user.id,
+                    readat: { [Op.ne]: null }
                 },
-                order: [['created_at', 'DESC']],
+                order: [['createdat', 'DESC']],
                 limit: 5
             });
 
@@ -78,8 +78,8 @@ NotificationsRouter.get('/count', async (req, res) => {
     try {
         const count = await Notification.count({
             where: {
-                user_id: req.user.id,
-                read_at: null
+                targetUserId: req.user.id,
+                readat: null
             }
         });
 
@@ -98,7 +98,7 @@ NotificationsRouter.put('/:id/read', validate(notificationIdSchema, 'params'), a
         const notification = await Notification.findOne({
             where: {
                 id: notificationId,
-                user_id: req.user.id
+                targetUserId: req.user.id
             }
         });
 
@@ -106,7 +106,7 @@ NotificationsRouter.put('/:id/read', validate(notificationIdSchema, 'params'), a
             return res.status(404).json({ message: "Notificação não encontrada" });
         }
 
-        await notification.update({ read_at: new Date() });
+        await notification.update({ readat: new Date() });
 
         res.json({ success: true, message: "Notificação marcada como lida" });
     } catch (err) {
@@ -119,11 +119,11 @@ NotificationsRouter.put('/:id/read', validate(notificationIdSchema, 'params'), a
 NotificationsRouter.put('/read-all', async (req, res) => {
     try {
         await Notification.update(
-            { read_at: new Date() },
+            { readat: new Date() },
             {
                 where: {
-                    user_id: req.user.id,
-                    read_at: null
+                    targetUserId: req.user.id,
+                    readat: null
                 }
             }
         );
@@ -143,7 +143,7 @@ NotificationsRouter.delete('/:id', validate(notificationIdSchema, 'params'), asy
         const result = await Notification.destroy({
             where: {
                 id: notificationId,
-                user_id: req.user.id
+                targetUserId: req.user.id
             }
         });
 
@@ -159,15 +159,14 @@ NotificationsRouter.delete('/:id', validate(notificationIdSchema, 'params'), asy
 });
 
 // ==================== Função helper para criar notificações ====================
-async function createNotification({ userId, type, title, body, link = null, data = null }) {
+async function createNotification({ userId, type, title, body, link = null }) {
     try {
         const notification = await Notification.create({
-            user_id: userId,
+            targetUserId: userId,
             type,
             title,
             body,
-            link,
-            data: data ? JSON.stringify(data) : null
+            link
         });
 
         return notification.id;

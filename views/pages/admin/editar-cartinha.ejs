@@ -11,7 +11,7 @@
             <label for="statusFilter" class="form-label">Status</label>
             <select id="statusFilter" class="form-select">
                 <option value="">Todas</option>
-                <option value="nao_lida">Não lidas</option>
+                <option value="naolida">Não lidas</option>
                 <option value="lida">Lidas</option>
                 <option value="favorita">Favoritas</option>
             </select>
@@ -104,7 +104,7 @@
                     <div class="col-md-6">
                         <select id="modalStatusFilter" class="form-select form-select-sm">
                             <option value="">Todas as cartinhas</option>
-                            <option value="nao_lida">Não lidas</option>
+                            <option value="naolida">Não lidas</option>
                             <option value="lida">Lidas</option>
                             <option value="favorita">Favoritas</option>
                         </select>
@@ -339,7 +339,7 @@ function renderizarUsuarios(usuarios) {
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-2 text-center">
-                        <img src="${usuario.profile_image}" 
+                        <img src="${usuario.profileimage}" 
                              alt="${usuario.username}" 
                              class="rounded-circle" 
                              style="width: 50px; height: 50px; object-fit: cover;">
@@ -351,11 +351,11 @@ function renderizarUsuarios(usuarios) {
                     <div class="col-md-6">
                         <div class="row text-center">
                             <div class="col-3">
-                                <span class="badge bg-primary">${usuario.total_cartinhas}</span>
+                                <span class="badge bg-primary">${usuario.totalcartinhas}</span>
                                 <small class="d-block">Total</small>
                             </div>
                             <div class="col-3">
-                                <span class="badge bg-warning text-dark">${usuario.nao_lidas}</span>
+                                <span class="badge bg-warning text-dark">${usuario.naolidas}</span>
                                 <small class="d-block">Não lidas</small>
                             </div>
                             <div class="col-3">
@@ -388,8 +388,10 @@ function renderizarCartinhas(cartinhas) {
     }
     
     const html = cartinhas.map(cartinha => {
-        const statusClass = cartinha.favoritada ? 'info' : (cartinha.lida ? 'success' : 'warning');
-        const statusText = cartinha.favoritada ? 'Favorita' : (cartinha.lida ? 'Lida' : 'Não lida');
+        const isFavorited = cartinha.isfavorited;
+        const isRead = cartinha.isread;
+        const statusClass = isFavorited ? 'info' : (isRead ? 'success' : 'warning');
+        const statusText = isFavorited ? 'Favorita' : (isRead ? 'Lida' : 'Não lida');
         
         return `
             <div class="cartinha-item p-3 ${selectedCartinhas.has(cartinha.id) ? 'selected' : ''}" 
@@ -401,10 +403,10 @@ function renderizarCartinhas(cartinhas) {
                                ${selectedCartinhas.has(cartinha.id) ? 'checked' : ''}>
                     </div>
                     <div class="col-7">
-                        <h6 class="mb-1">${highlightSearch(cartinha.titulo || 'Sem título')}</h6>
+                        <h6 class="mb-1">${highlightSearch(cartinha.title || 'Sem título')}</h6>
                         <small class="text-muted">
-                            De: <strong>${cartinha.remetente_username}</strong> • 
-                            ${formatarData(cartinha.data_envio)}
+                            De: <strong>${cartinha.remetente ? cartinha.remetente.username : 'Excluído'}</strong> • 
+                            ${formatarData(cartinha.createdat)}
                         </small>
                     </div>
                     <div class="col-2 text-center">
@@ -434,7 +436,7 @@ function renderizarCartinhas(cartinhas) {
 
 function renderizarEstatisticas(stats) {
     document.getElementById('totalCartinhas').textContent = stats.total || 0;
-    document.getElementById('naoLidas').textContent = stats.nao_lidas || 0;
+    document.getElementById('naoLidas').textContent = stats.naolidas || 0;
     document.getElementById('lidas').textContent = stats.lidas || 0;
     document.getElementById('favoritas').textContent = stats.favoritas || 0;
 }

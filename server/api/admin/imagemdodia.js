@@ -14,8 +14,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get('/fila', async (req, res) => {
     try {
         const fila = await ImagemDoDia.findAll({ 
-            where: { start_at: null }, 
-            order: [['created_at', 'ASC']],
+            order: [['createdat', 'ASC']],
             include: [{ model: User, as: 'requester', attributes: ['username'] }]
         });
         res.json(fila);
@@ -26,24 +25,10 @@ router.get('/fila', async (req, res) => {
 
 router.get('/fila/count', async (req, res) => {
     try {
-        const count = await ImagemDoDia.count({ where: { start_at: null } });
-        const hasActive = await ImagemDoDia.count({ where: { start_at: { [Op.ne]: null } } });
-        res.json({ count, hasActive: hasActive > 0 });
+        const count = await ImagemDoDia.count();
+        res.json({ count });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao contar fila.', error: error.message });
-    }
-});
-
-// Ativa a próxima imagem da fila
-router.post('/next', async (req, res) => {
-    try {
-        const proxima = await ImagemDoDia.findOne({ where: { start_at: null }, order: [['created_at', 'ASC']] });
-        if (!proxima) return res.status(404).json({ message: 'Nenhuma imagem na fila.' });
-        proxima.start_at = new Date();
-        await proxima.save();
-        res.json({ message: 'Imagem ativada.', id: proxima.id });
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao ativar próxima.', error: error.message });
     }
 });
 
@@ -53,9 +38,8 @@ router.delete('/fila/:id', async (req, res) => {
         const imagem = await ImagemDoDia.findByPk(req.params.id);
         if (!imagem) return res.status(404).json({ message: 'Imagem não encontrada.' });
         
-        // Deleta apenas a imagem do servidor (moldura é reutilizável, não deletar)
         if (imagem.url) {
-            await deleteFromFileServer({ fileUrl: imagem.url });
+            try { await deleteFromFileServer({ fileUrl: imagem.url }); } catch (e) {}
         }
         
         await imagem.destroy();
@@ -82,11 +66,13 @@ router.post('/borders', upload.single('file'), async (req, res) => {
         });
         const novaBorder = await ImagemDoDiaBorder.create({
             url,
-            nome: req.body.nome
+            name: req.body.nome,
+            createdbyUserId: req.user.id
         });
         res.status(201).json(novaBorder);
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao adicionar moldura.', error: error.message });
+        console.error('[ImagemDoDia Admin] Erro ao adicionar moldura:', error);
+        res.status(500).json({ message: 'Erro ao adicionar moldura.' });
     }
 });
 

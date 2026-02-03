@@ -55,7 +55,7 @@ async function carregarMoldurasPadrao() {
     try {
         const res = await fetch("/api/imagemdodia/borders");
         const borders = await res.json();
-        defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.url}">${b.nome}</option>`).join('');
+        defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.url}">${b.name}</option>`).join('');
         if (borders.length > 0) {
             defaultBorderSelect.value = borders[0].url;
             atualizarPreviewMoldura(borders[0].url);
@@ -104,7 +104,7 @@ document.getElementById("formSugestao").addEventListener("submit", async functio
 
     const formData = new FormData();
     formData.append("file", imagemInput.files[0]);
-    formData.append("texto", document.getElementById("texto").value.trim());
+    formData.append("text", document.getElementById("texto").value.trim());
     formData.append("defaultBorderUrl", defaultBorderSelect.value);
 
     try {

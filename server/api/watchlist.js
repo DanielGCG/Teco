@@ -1,5 +1,5 @@
 const express = require('express');
-const { Filme, Genero, FilmeGenero, User } = require("../models");
+const { Filme, User } = require("../models");
 const validate = require("../middlewares/validate");
 const {
     searchMoviesSchema,
@@ -40,65 +40,37 @@ watchlistRouter.get('/watchlistsearch-movies', validate(searchMoviesSchema, 'que
 });
 
 watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), async (req, res) => {
-    const newMovie = req.body;
-    
     try {
-        // Extrai os campos necessários do objeto recebido
+        // Extrai os campos já mapeados do body (seguindo o modelo)
         const {
             id,
             title,
-            name,
             overview,
             popularity,
-            media_type,
-            original_language,
-            poster_path,
-            backdrop_path,
-            release_date,
-            first_air_date,
-            vote_average,
-            vote_count,
-            genre_ids
-        } = newMovie;
+            type,
+            originallang,
+            posterurl,
+            backdropurl,
+            releasedate,
+            voteaverage,
+            votecount
+        } = req.body;
 
-        // title pode vir como 'name' para séries
-        const movieTitle = title || name || '';
-        // release_date pode vir como 'first_air_date' para séries
-        const releaseDate = release_date || first_air_date || null;
-
-        // Insere ou atualiza o filme/série na tabela wl_filme
-        await Filme.upsert({
+        // Insere ou atualiza o filme/série na tabela movie
+        const [movie, created] = await Filme.upsert({
             id,
-            title: movieTitle,
+            title,
             overview: overview || '',
             popularity: popularity || 0,
-            media_type,
-            original_language: original_language || '',
-            poster_path: poster_path || '',
-            backdrop_path: backdrop_path || '',
-            release_date: releaseDate,
-            vote_average: vote_average || 0,
-            vote_count: vote_count || 0,
-            user_id: req.user.id
+            type,
+            originallang: originallang || '',
+            posterurl: posterurl || '',
+            backdropurl: backdropurl || '',
+            releasedate,
+            voteaverage: voteaverage || 0,
+            votecount: votecount || 0,
+            createdbyUserId: req.user.id
         });
-
-        // Insere os gêneros na tabela de relação N:N
-        if (Array.isArray(genre_ids)) {
-            for (const genero_id of genre_ids) {
-                // Garantir que o gênero exista na tabela wl_genero antes de criar a relação
-                await Genero.findOrCreate({
-                    where: { id: genero_id },
-                    defaults: { name: `Desconhecido ${genero_id}` }
-                });
-
-                await FilmeGenero.findOrCreate({
-                    where: {
-                        filme_id: id,
-                        genero_id: genero_id
-                    }
-                });
-            }
-        }
 
         // Retornar o registro salvo para o frontend (útil para atualizações locais)
         const saved = await Filme.findByPk(id, {
@@ -108,7 +80,7 @@ watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), asy
                 attributes: ['username']
             }]
         });
-        res.json({ success: true, message: 'Filme/série adicionado com sucesso.', fileUrl: null, saved });
+        res.json({ success: true, message: 'Filme/série adicionado com sucesso.', fileUrl: null, saved: saved.toJSON() });
     } catch (error) {
         console.error('Erro ao adicionar filme/série:', error);
         const message = error && error.message ? error.message : 'Erro ao adicionar filme/série.';
@@ -145,8 +117,8 @@ watchlistRouter.patch('/watchlistupdate-status', validate(updateMovieStatusSchem
             return res.status(404).json({ success: false, message: 'Filme/série não encontrado.' });
         }
 
-        if (watched !== undefined) movie.watched = watched;
-        if (custom_rating !== undefined) movie.custom_rating = custom_rating;
+        if (watched !== undefined) movie.iswatched = watched;
+        if (custom_rating !== undefined) movie.voteboteco = custom_rating;
 
         await movie.save();
 

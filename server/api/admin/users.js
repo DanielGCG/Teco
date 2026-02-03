@@ -12,7 +12,7 @@ const { deleteFromFileServer } = require("../../utils/fileServer");
 AdminUsersRouter.get('/', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'role', 'profile_image', 'bio', 'created_at', 'last_access']
+            attributes: ['id', 'username', 'roleId', 'profileimage', 'bio', 'createdat', 'lastaccess']
         });
         res.json(users);
     } catch (err) {
@@ -24,13 +24,14 @@ AdminUsersRouter.get('/', async (req, res) => {
 // PUT /admin/users/:id - Atualizar qualquer usuário (admin)
 AdminUsersRouter.put('/:id', async (req, res) => {
     const userId = req.params.id;
-    const { username, role, bio } = req.body;
+    const { username, roleId, bio } = req.body;
 
     if (!username) return res.status(400).json({ message: "Username é obrigatório" });
 
     // Impede que o usuário edite a si mesmo (exceto Dono)
-    if (req.user.id == userId && req.user.role < 2) {
-        return res.status(403).json({ message: "Você não pode editar seu próprio usuário" });
+    // No novo sistema: 1 = dono, 5 = admin
+    if (req.user.id == userId && req.user.roleId > 1) {
+        return res.status(403).json({ message: "Você não pode editar seu próprio usuário administrativamente (use a página de perfil)" });
     }
 
     // Normaliza o username
@@ -47,9 +48,11 @@ AdminUsersRouter.put('/:id', async (req, res) => {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Admin (1) só pode editar usuários comuns (0)
-        if (req.user.role === 1 && targetUser.role >= 1) {
-            return res.status(403).json({ message: "Você não pode editar administradores ou donos" });
+        // Admin (5) só pode editar usuários de nível inferior
+        if (req.user.roleId >= 5 && targetUser.roleId <= 5 && req.user.id != targetUser.id) {
+            if (req.user.roleId !== 1) {
+                return res.status(403).json({ message: "Você não tem permissão para editar este usuário (nível superior ou igual)" });
+            }
         }
 
         // Verifica se username já está em uso por outro usuário
@@ -67,7 +70,7 @@ AdminUsersRouter.put('/:id', async (req, res) => {
         // Atualiza o usuário
         await targetUser.update({
             username: nomeUser,
-            role: role !== undefined ? role : targetUser.role,
+            roleId: roleId !== undefined ? roleId : targetUser.roleId,
             bio: bio !== undefined ? bio : targetUser.bio
         });
 
@@ -93,7 +96,7 @@ AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
     }
 
     // Impede que o usuário resete sua própria senha por aqui (exceto Dono)
-    if (req.user.id == userId && req.user.role < 2) {
+    if (req.user.id == userId && req.user.roleId > 1) {
         return res.status(403).json({ message: "Use a rota de perfil para alterar sua própria senha" });
     }
 
@@ -104,14 +107,14 @@ AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Admin (1) só pode resetar senha de usuários comuns (0)
-        if (req.user.role === 1 && targetUser.role >= 1) {
-            return res.status(403).json({ message: "Você não pode resetar senha de administradores ou donos" });
+        // Admin (>=5) só pode resetar senha de níveis inferiores
+        if (req.user.roleId >= 5 && targetUser.roleId <= 5 && req.user.id != targetUser.id) {
+             return res.status(403).json({ message: "Você não pode resetar senha de administradores ou donos" });
         }
 
         // Atualiza a senha
         const hash = await bcrypt.hash(newPassword, 10);
-        await targetUser.update({ password_hash: hash });
+        await targetUser.update({ passwordhash: hash });
 
         res.json({ message: "Senha resetada com sucesso" });
     } catch (err) {
@@ -136,14 +139,14 @@ AdminUsersRouter.delete('/:id', async (req, res) => {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Admin (1) só pode deletar usuários comuns (0)
-        if (req.user.role === 1 && targetUser.role >= 1) {
+        // Admin (>=5) só pode deletar usuários de nível inferior
+        if (req.user.roleId >= 5 && targetUser.roleId <= 5) {
             return res.status(403).json({ message: "Você não pode deletar administradores ou donos" });
         }
 
         // Verifica se é o último dono
-        if (targetUser.role === 2) {
-            const ownerCount = await User.count({ where: { role: 2 } });
+        if (targetUser.roleId === 1) {
+            const ownerCount = await User.count({ where: { roleId: 1 } });
             if (ownerCount <= 1) {
                 return res.status(403).json({ message: "Não é possível deletar o último dono do sistema" });
             }
@@ -151,11 +154,11 @@ AdminUsersRouter.delete('/:id', async (req, res) => {
 
 
         // Deleta do servidor de arquivos antes de remover do BD
-        if (targetUser.profile_image) {
-            await deleteFromFileServer({ fileUrl: targetUser.profile_image });
+        if (targetUser.profileimage) {
+            await deleteFromFileServer({ fileUrl: targetUser.profileimage });
         }
-        if (targetUser.background_image) {
-            await deleteFromFileServer({ fileUrl: targetUser.background_image });
+        if (targetUser.backgroundimage) {
+            await deleteFromFileServer({ fileUrl: targetUser.backgroundimage });
         }
 
         await targetUser.destroy();
@@ -173,7 +176,7 @@ AdminUsersRouter.get('/:id', async (req, res) => {
 
     try {
         const user = await User.findByPk(userId, {
-            attributes: ['id', 'username', 'role', 'background_image', 'profile_image', 'bio', 'created_at', 'last_access']
+            attributes: ['id', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'createdat', 'lastaccess']
         });
 
         if (!user) {

@@ -112,7 +112,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const grupos = {};
     imagens.forEach(img => {
-      const d = new Date(img.start_at);
+      const dateVal = img.createdat;
+      const d = new Date(dateVal);
+      
+      if (isNaN(d.getTime())) return;
+
       const mes = d.toLocaleString('pt-BR', { month: 'long' });
       const ano = d.getFullYear();
       const chave = `${mes} ${ano}`;
@@ -159,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span class="calendario-dia-numero">${diaAtual}</span>
                 <div class="calendario-img-container position-relative">
                   <img src="${item.url}" loading="lazy">
-                  ${item.border_url ? `<img src="${item.border_url}" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">` : ''}
+                  ${item.border ? `<img src="${item.border.url}" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">` : ''}
                 </div>
               </div>`;
           } else {
@@ -178,8 +182,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     window.abrirModal = (item) => {
       document.getElementById('modal-img-base').src = item.url;
-      document.getElementById('modal-img-border').src = item.border_url || '';
-      document.getElementById('modal-texto').textContent = item.texto;
+      document.getElementById('modal-img-border').src = (item.border ? item.border.url : '') || '';
+      document.getElementById('modal-texto').textContent = item.text;
       document.getElementById('modal-autor').textContent = item.requester ? `Sugerido por: ${item.requester.username}` : 'Sugerido pelo Sistema';
       modal.show();
     };

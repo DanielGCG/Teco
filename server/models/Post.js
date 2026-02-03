@@ -7,51 +7,177 @@ const Post = sequelize.define('Post', {
         primaryKey: true,
         autoIncrement: true
     },
-    user_id: {
+    authorUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false
+    },
+    isrodinha: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    attachedPostId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true
     },
     content: {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    parent_id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: true
-    },
     type: {
-        type: DataTypes.ENUM('post', 'repost', 'reply'),
+        type: DataTypes.ENUM('post', 'repost', 'reply', 'comment'),
+        allowNull: false,
         defaultValue: 'post'
     },
-    likes_count: {
+    likecount: {
         type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
         defaultValue: 0
     },
-    reposts_count: {
+    replycount: {
         type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
         defaultValue: 0
     },
-    replies_count: {
+    repostcount: {
         type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
         defaultValue: 0
     },
-    is_deleted: {
+    bookmarkcount: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0
+    },
+    isedited: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: false
     },
-    created_at: {
+    createdat: {
         type: DataTypes.DATE,
+        allowNull: false,
         defaultValue: DataTypes.NOW
     },
-    updated_at: {
+    updatedat: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    }
+}, {
+    tableName: 'post',
+    timestamps: false
+});
+
+const PostMedia = sequelize.define('PostMedia', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    postId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    },
+    type: {
+        type: DataTypes.ENUM('image/gif', 'video'),
+        allowNull: false
+    },
+    url: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+    }
+}, {
+    tableName: 'postmedia',
+    timestamps: false
+});
+
+const PostMention = sequelize.define('PostMention', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    postId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    },
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    }
+}, {
+    tableName: 'postmention',
+    timestamps: false
+});
+
+const PostLike = sequelize.define('PostLike', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    },
+    postId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    },
+    createdat: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'posts',
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    tableName: 'postlike',
+    timestamps: false
 });
 
-module.exports = Post;
+const PostBookmark = sequelize.define('PostBookmark', {
+    id: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    },
+    postId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
+    },
+    createdat: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
+    }
+}, {
+    tableName: 'postbookmark',
+    timestamps: false
+});
+
+const Rodinha = sequelize.define('Rodinha', {
+    userId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        primaryKey: true
+    },
+    targetUserId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        primaryKey: true
+    }
+}, {
+    tableName: 'rodinha',
+    timestamps: false
+});
+
+module.exports = {
+    Post,
+    PostMedia,
+    PostLike,
+    PostBookmark,
+    PostMention,
+    Rodinha
+};

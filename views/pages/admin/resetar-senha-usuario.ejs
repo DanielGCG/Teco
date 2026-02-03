@@ -38,13 +38,14 @@ async function carregarUsuarios() {
 
         usuariosLista.forEach(u => {
             // Filtrar usuários: se não for Dono, não mostrar usuários de nível igual ou superior
-            if (currentLoggedUser && currentLoggedUser.role < 2 && u.role >= currentLoggedUser.role) {
+            if (currentLoggedUser && currentLoggedUser.roleId > 1 && u.roleId <= currentLoggedUser.roleId) {
                 return; // Pula este usuário
             }
 
             const option = document.createElement("option");
             option.value = u.id;
-            const roleText = u.role === 2 ? 'Dono' : u.role === 1 ? 'Administrador' : 'Usuário';
+            const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Botecor', 20: 'Usuário' };
+            const roleText = roleNames[u.roleId] || 'Usuário';
             option.textContent = `${u.username} (${roleText})`;
             select.appendChild(option);
         });

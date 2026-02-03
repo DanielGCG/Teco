@@ -8,68 +8,65 @@ const Notification = sequelize.define('Notification', {
         primaryKey: true,
         autoIncrement: true
     },
-    user_id: {
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
+    },
+    targetUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,
-        comment: 'Destinatário da notificação',
         references: {
             model: User,
             key: 'id'
         }
     },
     type: {
-        type: DataTypes.ENUM('FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'NEW_DM', 'NEW_CARTINHA', 'MENTION', 'SYSTEM', 'FOLLOW', 'POST_LIKE', 'POST_REPLY', 'POST_REPOST'),
-        allowNull: false
+        type: DataTypes.ENUM('system', 'everyone', 'followaccept', 'followarequest', 'dm', 'cutucado', 'postcomment', 'postlike', 'postrepost', 'info'),
+        allowNull: false,
+        defaultValue: 'info'
     },
     title: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(160),
         allowNull: false
     },
     body: {
         type: DataTypes.TEXT,
-        allowNull: false
+        allowNull: true
     },
     link: {
-        type: DataTypes.STRING(512),
-        comment: 'Link de destino ao clicar'
+        type: DataTypes.STRING(255),
+        allowNull: true
     },
-    data: {
-        type: DataTypes.JSON,
-        comment: 'Dados adicionais da notificação'
-    },
-    read_at: {
+    readat: {
         type: DataTypes.DATE,
-        comment: 'Quando foi marcada como lida'
+        allowNull: true
     },
-    created_at: {
+    createdat: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     },
-    expires_at: {
+    expiresat: {
         type: DataTypes.DATE,
-        comment: 'Quando a notificação expira (opcional)'
+        allowNull: true
     }
 }, {
-    tableName: 'notifications',
+    tableName: 'notification',
     timestamps: false,
     indexes: [
         {
-            name: 'idx_user_unread',
-            fields: ['user_id', 'read_at']
-        },
-        {
-            name: 'idx_created_at',
-            fields: ['created_at']
-        },
-        {
-            name: 'idx_expires_at',
-            fields: ['expires_at']
+            name: 'idx_notif_cleanup',
+            fields: ['targetUserId', 'readat']
         }
     ]
 });
 
-// Relacionamentos
-User.hasMany(Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
-Notification.belongsTo(User, { foreignKey: 'user_id' });
+Notification.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.id;
+    delete values.targetUserId;
+    return values;
+};
 
 module.exports = Notification;
