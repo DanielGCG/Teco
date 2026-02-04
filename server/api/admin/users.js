@@ -62,7 +62,7 @@ AdminUsersRouter.put('/:publicid', async (req, res) => {
         // Normaliza o username
         let nomeUser = username.trim();
         if (!nomeUser.startsWith('@')) nomeUser = '@' + nomeUser;
-        if (nomeUser.length > 13) nomeUser = nomeUser.slice(0, 13);
+        if (nomeUser.length > 16) nomeUser = nomeUser.slice(0, 16);
         nomeUser = nomeUser.toLowerCase();
 
         // Admin (5) só pode editar usuários de nível inferior

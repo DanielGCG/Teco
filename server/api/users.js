@@ -73,13 +73,13 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
 UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
     let { username, password, bio } = req.body;
 
-    // Normaliza o username: garante @, máximo 13 caracteres e minúsculo
+    // Normaliza o username: garante @, máximo 16 caracteres e minúsculo
     username = username.trim();
     if (!username.startsWith('@')) {
         username = '@' + username;
     }
-    if (username.length > 13) {
-        username = username.slice(0, 13);
+    if (username.length > 16) {
+        username = username.slice(0, 16);
     }
     username = username.toLowerCase();
 
@@ -106,7 +106,13 @@ UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
 
 // Login público
 UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
+
+    // Normaliza o username: garante @ e minúsculo para busca
+    username = username.trim().toLowerCase();
+    if (!username.startsWith('@')) {
+        username = '@' + username;
+    }
 
     try {
         const user = await User.findOne({ 
@@ -204,9 +210,9 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
         username = '@' + username;
     }
 
-    // Limita para no máximo 13 caracteres
-    if (username.length > 13) {
-        username = username.slice(0, 13);
+    // Limita para no máximo 16 caracteres (@ + 15)
+    if (username.length > 16) {
+        username = username.slice(0, 16);
     }
 
     // Converte para caixa baixa

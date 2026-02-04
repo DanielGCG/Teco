@@ -53,16 +53,9 @@ const ImagemDoDia = sequelize.define('ImagemDoDia', {
 
 ImagemDoDia.prototype.toJSON = function () {
     const values = { ...this.get() };
+    delete values.id;
     delete values.borderId;
     delete values.createdbyUserId;
-
-    if (values.requester) {
-        values.createdbyUserId = values.requester.publicid;
-    }
-    if (values.border && values.border.publicid) {
-        values.borderId = values.border.publicid;
-    }
-
     return values;
 };
 
@@ -105,12 +98,8 @@ const ImagemDoDiaBorder = sequelize.define('ImagemDoDiaBorder', {
 
 ImagemDoDiaBorder.prototype.toJSON = function () {
     const values = { ...this.get() };
+    delete values.id;
     delete values.createdbyUserId;
-
-    if (values.creator) {
-        values.createdbyUserId = values.creator.publicid;
-    }
-
     return values;
 };
 

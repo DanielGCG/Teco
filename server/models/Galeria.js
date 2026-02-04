@@ -90,11 +90,8 @@ const Galeria = sequelize.define('Galeria', {
 
 Galeria.prototype.toJSON = function () {
     const values = { ...this.get() };
-
-    if (values.owner && values.owner.publicid) {
-        values.createdbyUserId = values.owner.publicid;
-    }
-
+    delete values.id;
+    delete values.createdbyUserId;
     return values;
 };
 
@@ -190,13 +187,9 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
 
 GaleriaItem.prototype.toJSON = function () {
     const values = { ...this.get() };
+    delete values.id;
     delete values.galleryId;
     delete values.editedbyUserId;
-
-    if (values.uploader && values.uploader.publicid) {
-        values.editedbyUserId = values.uploader.publicid;
-    }
-
     return values;
 };
 
@@ -213,5 +206,12 @@ const GaleriaContributor = sequelize.define('GaleriaContributor', {
     tableName: 'gallerycontributor',
     timestamps: false
 });
+
+GaleriaContributor.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.userId;
+    delete values.galleryId;
+    return values;
+};
 
 module.exports = { Galeria, GaleriaItem, GaleriaContributor };

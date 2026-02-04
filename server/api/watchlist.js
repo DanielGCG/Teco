@@ -73,6 +73,7 @@ watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), asy
         // Retornar o registro salvo para o frontend
         const saved = await Filme.findOne({
             where: { id: movie.id },
+            attributes: { exclude: ['id'] }, // Esconder o ID interno
             include: [{
                 model: User,
                 as: 'requester',
@@ -131,10 +132,11 @@ watchlistRouter.patch('/watchlistupdate-status', validate(updateMovieStatusSchem
 watchlistRouter.get('/watchlistdownload-movies', async (req, res) => {
     try {
         const filmes = await Filme.findAll({
+            attributes: { exclude: ['id'] }, // Esconder o ID interno
             include: [{
                 model: User,
                 as: 'requester',
-                attributes: ['username'],
+                attributes: ['username', 'publicid'], // Retornar publicid do usuário em vez do ID interno
                 required: false
             }],
             order: [['title', 'ASC']]

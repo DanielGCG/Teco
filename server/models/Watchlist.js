@@ -75,6 +75,7 @@ const Filme = sequelize.define('Filme', {
 
 Filme.prototype.toJSON = function () {
     const values = { ...this.get() };
+    delete values.id;
     delete values.createdbyUserId;
     return values;
 };

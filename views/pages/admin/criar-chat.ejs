@@ -237,7 +237,7 @@ document.getElementById("saveChatBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("deleteChatBtn").addEventListener("click", async () => {
-    if (!confirm("Excluir permanentemente?")) return;
+    if (!(await confirm("Excluir permanentemente?"))) return;
     try {
         const res = await fetch(`/api/admin/chats/${state.currentChat.publicid}?type=${state.currentChat.type}`, {
             method: "DELETE",

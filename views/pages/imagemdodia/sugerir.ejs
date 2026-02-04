@@ -55,9 +55,11 @@ async function carregarMoldurasPadrao() {
     try {
         const res = await fetch("/api/imagemdodia/borders");
         const borders = await res.json();
-        defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.url}">${b.name}</option>`).join('');
+        // Armazenar os objetos para recuperar a URL no preview
+        window.bordersCache = borders;
+        defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.publicid}">${b.name}</option>`).join('');
         if (borders.length > 0) {
-            defaultBorderSelect.value = borders[0].url;
+            defaultBorderSelect.value = borders[0].publicid;
             atualizarPreviewMoldura(borders[0].url);
         }
     } catch (err) {
@@ -75,7 +77,10 @@ function atualizarPreviewMoldura(url) {
     }
 }
 
-defaultBorderSelect.addEventListener("change", (e) => atualizarPreviewMoldura(e.target.value));
+defaultBorderSelect.addEventListener("change", (e) => {
+    const border = window.bordersCache.find(b => b.publicid === e.target.value);
+    if (border) atualizarPreviewMoldura(border.url);
+});
 
 imagemInput.addEventListener("change", function() {
     const file = this.files[0];
@@ -105,7 +110,7 @@ document.getElementById("formSugestao").addEventListener("submit", async functio
     const formData = new FormData();
     formData.append("file", imagemInput.files[0]);
     formData.append("text", document.getElementById("texto").value.trim());
-    formData.append("defaultBorderUrl", defaultBorderSelect.value);
+    formData.append("borderPublicId", defaultBorderSelect.value);
 
     try {
         const res = await fetch("/api/imagemdodia", { method: "POST", body: formData });

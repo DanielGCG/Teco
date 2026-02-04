@@ -86,6 +86,13 @@
     .status-dot.online { background-color: #4caf50; }
     .status-dot.ausente { background-color: #ffc107;}
     .status-dot.offline { background-color: #9e9e9e; }
+    .status-dot.status-dot-sm {
+        width: 12px;
+        height: 12px;
+        border-width: 1px;
+        bottom: 2px;
+        right: 2px;
+    }
 
     .profile-name {
         font-size: 1.2rem;
@@ -106,7 +113,8 @@
         display: flex;
         gap: 0.75rem;
     }
-    .bio-container, .galerias-container, .amigos-container {
+
+    .bio-container, .galleries-container, .friends-container {
         background: #fff;
         border-radius: 1.25rem;
         padding: 1.25rem;
@@ -137,7 +145,7 @@
         text-decoration: none;
         color: inherit;
     }
-    .galerias-grid {
+    .galleries-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 4px;
@@ -177,7 +185,7 @@
         height: 40px;
         object-fit: cover;
     }
-    .bio-container, .galerias-container, .amigos-container, .card-header {
+    .bio-container, .galleries-container, .friends-container, .card-header {
         background-color: var(--verde);
     }
     .feed-tab {
@@ -212,7 +220,7 @@
     <div class="profile-header">
         <div class="banner-wrap w-100 position-relative" id="profile-banner">
             <div class="profile-card position-absolute start-0 top-50 translate-middle-y ms-4 d-flex align-items-start">
-                <div class="profile-avatar-container me-3">
+                <div id="profile-main-avatar-container" class="profile-avatar-container me-3">
                     <img class="profile-avatar" src="">
                     <span class="status-dot" id="user-status-dot" title="Offline"></span>
                 </div>
@@ -235,11 +243,11 @@
                 <div class="section-title">Biografia</div>
                 <div id="bio-text">Carregando...</div>
             </div>
-            <div class="galerias-container">
+            <div class="galleries-container">
                 <div class="section-title">Galerias</div>
                 <div id="galerias-list">Carregando...</div>
             </div>
-            <div class="amigos-container">
+            <div class="friends-container">
                 <div class="section-title">Amigos</div>
                 <div id="amigos-list">Carregando...</div>
             </div>
@@ -252,13 +260,13 @@
             </div>
 
             <!-- Área de Novo Post (Apenas se for o próprio perfil) -->
-            <div class="card mb-3 border-0 shadow-sm d-none" id="profile-new-post-area" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+            <div class="card mb-3 border-0 shadow-sm d-none post-composer-card" id="profile-new-post-area">
                 <div class="card-body">
                     <div class="d-flex gap-3">
                         <% const u = locals.loggedUser; %>
-                        <img src="<%= u ? u.profileimage : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
+                        <img src="<%= u ? u.profileimage : '' %>" class="rounded post-composer-avatar">
                         <div class="flex-grow-1">
-                            <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none" placeholder="O que está pensando?" rows="2" style="resize: none; font-size: 1.1rem; color: inherit;"></textarea>
+                            <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none post-composer-textarea" placeholder="O que está pensando?" rows="2"></textarea>
                             <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
                             <div class="d-flex justify-content-between align-items-center border-top">
                                 <div class="d-flex gap-2">
@@ -293,7 +301,7 @@
     const pathParts = window.location.pathname.split('/');
     const username = pathParts[1];
     window.username = username;
-    let profileUserId = null;
+    window.profileUserId = null;
     window.selectedFiles = [];
     window.currentTab = 'posts';
     let socket = null;
@@ -315,23 +323,6 @@
         
         // Entrar na sala do perfil
         socket.emit('joinProfile', username);
-
-        // Ouvir mudanças de status
-        socket.on('userStatusChanged', ({ userId, status }) => {
-            if (userId === profileUserId) {
-                const dot = document.getElementById('user-status-dot');
-                if (dot) {
-                    dot.className = `status-dot ${status}`;
-                    dot.title = status.charAt(0).toUpperCase() + status.slice(1);
-                }
-            }
-
-            // Atualizar na lista de amigos
-            const friendDot = document.querySelector(`.friend-item[data-user-id="${userId}"] .status-dot`);
-            if (friendDot) {
-                friendDot.className = `status-dot ${status}`;
-            }
-        });
 
         // Ouvir novos posts em tempo real
         socket.on('newPost', (post) => {
@@ -398,7 +389,11 @@
             if (!response.ok) return;
 
             const user = await response.json();
-            profileUserId = user.publicid;
+            window.profileUserId = user.publicid;
+
+            // Vincular ID para atualizações automáticas de status via UIUtils
+            const avatarContainer = document.getElementById('profile-main-avatar-container');
+            if (avatarContainer) avatarContainer.setAttribute('data-user-id', user.publicid);
 
             initSocket();
 
@@ -423,7 +418,10 @@
             }
 
             carregarGalerias(user.publicid);
-            carregarAmigos(user.publicid);
+            await carregarAmigos(user.publicid);
+
+            // Sincroniza status dos usuários carregados (amigos, dono do perfil, etc)
+            UIUtils.requestPageStatuses();
 
             // Inicializa o feed usando PostFeed
             PostFeed.init('feed-container', 'user', username);
@@ -487,7 +485,7 @@
             const list = document.getElementById("galerias-list");
             
             if (data.success && data.galleries.length > 0) {
-                list.innerHTML = `<div class="galerias-grid">
+                list.innerHTML = `<div class="galleries-grid">
                     ${data.galleries.map(g => `
                         <a href="/galeria/${g.publicid}" class="gallery-square" title="${g.name}">
                             <img src="${g.coverurl}">
@@ -513,7 +511,7 @@
                     <a href="/${f.username}" class="friend-item" data-user-id="${f.publicid}">
                         <div class="position-relative">
                             <img src="${f.profileimage}" class="friend-avatar rounded">
-                            <span class="status-dot ${f.status || 'offline'}" style="width: 12px; height: 12px; border-width: 1px; bottom: 2px; right: 2px;"></span>
+                            <span class="status-dot ${f.status || 'offline'} status-dot-sm"></span>
                         </div>
                         <span class="small">${f.username}</span>
                     </a>

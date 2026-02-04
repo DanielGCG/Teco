@@ -77,10 +77,8 @@ const Post = sequelize.define('Post', {
 
 Post.prototype.toJSON = function () {
     const values = { ...this.get() };
-    // Mantendo id e publicid separados para evitar ambiguidade
-    if (values.author && values.author.publicid) {
-        values.authorUserId = values.author.publicid;
-    }
+    delete values.id;
+    delete values.authorUserId;
     delete values.attachedPostId;
     return values;
 };
@@ -148,9 +146,8 @@ const PostMention = sequelize.define('PostMention', {
 
 PostMention.prototype.toJSON = function () {
     const values = { ...this.get() };
-    if (values.user && values.user.publicid) {
-        values.userId = values.user.publicid;
-    }
+    delete values.id;
+    delete values.userId;
     delete values.postId;
     return values;
 };
@@ -186,9 +183,8 @@ const PostLike = sequelize.define('PostLike', {
 
 PostLike.prototype.toJSON = function () {
     const values = { ...this.get() };
-    if (values.user && values.user.publicid) {
-        values.userId = values.user.publicid;
-    }
+    delete values.id;
+    delete values.userId;
     delete values.postId;
     return values;
 };
@@ -224,9 +220,8 @@ const PostBookmark = sequelize.define('PostBookmark', {
 
 PostBookmark.prototype.toJSON = function () {
     const values = { ...this.get() };
-    if (values.user && values.user.publicid) {
-        values.userId = values.user.publicid;
-    }
+    delete values.id;
+    delete values.userId;
     delete values.postId;
     return values;
 };
@@ -246,6 +241,13 @@ const Rodinha = sequelize.define('Rodinha', {
     tableName: 'rodinha',
     timestamps: false
 });
+
+Rodinha.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.userId;
+    delete values.targetUserId;
+    return values;
+};
 
 module.exports = {
     Post,

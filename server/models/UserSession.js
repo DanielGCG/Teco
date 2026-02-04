@@ -41,12 +41,8 @@ const UserSession = sequelize.define('UserSession', {
 
 UserSession.prototype.toJSON = function () {
     const values = { ...this.get() };
+    delete values.id;
     delete values.userId;
-
-    if (values.user && values.user.publicid) {
-        values.userId = values.user.publicid;
-    }
-
     return values;
 };
 

@@ -154,7 +154,7 @@
                                 classe: 'btn-outline-danger',
                                 desabilitado: cartinha.isread,
                                 titulo: cartinha.isread ? 'Não é possível excluir cartas que já foram lidas' : 'Excluir esta cartinha',
-                                callback: (carta) => { window.modalCartinha.fechar(); setTimeout(() => confirmarExclusao(carta.id), 300); }
+                                callback: (carta) => { window.modalCartinha.fechar(); setTimeout(() => confirmarExclusao(carta.publicid), 300); }
                             },
                             {
                                 id: 'editar',
@@ -162,12 +162,12 @@
                                 classe: 'btn-outline-primary',
                                 desabilitado: cartinha.isread,
                                 titulo: cartinha.isread ? 'Não é possível editar cartas que já foram lidas' : 'Editar esta cartinha',
-                                callback: (carta) => { window.modalCartinha.fechar(); setTimeout(() => abrirModalEdicao(carta.id), 300); }
+                                callback: (carta) => { window.modalCartinha.fechar(); setTimeout(() => abrirModalEdicao(carta.publicid), 300); }
                             }
                         ],
                         atalhosTeclado: {
-                            'e': { callback: (carta) => { if (!carta.isread) { window.modalCartinha.fechar(); setTimeout(() => abrirModalEdicao(carta.id), 300); } } },
-                            'd': { callback: (carta) => { if (!carta.isread) { window.modalCartinha.fechar(); setTimeout(() => confirmarExclusao(carta.id), 300); } } }
+                            'e': { callback: (carta) => { if (!carta.isread) { window.modalCartinha.fechar(); setTimeout(() => abrirModalEdicao(carta.publicid), 300); } } },
+                            'd': { callback: (carta) => { if (!carta.isread) { window.modalCartinha.fechar(); setTimeout(() => confirmarExclusao(carta.publicid), 300); } } }
                         }
                     });
                 }
@@ -348,7 +348,7 @@
                 const usuario = encontrarUsuarioPorCartinha(cartinhaId, usuariosProcessados);
 
                 if (usuario && cartinha) {
-                    const index = usuario.cartinhas.findIndex(c => c.id === cartinhaId);
+                    const index = usuario.cartinhas.findIndex(c => c.publicid === cartinhaId);
                     if (index !== -1) usuario.cartinhas.splice(index, 1);
 
                     const cartaElement = document.getElementById(`carta-${cartinhaId}`);

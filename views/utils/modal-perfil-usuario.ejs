@@ -9,7 +9,7 @@
                 <div class="row align-items-start mb-3">
                     <div class="col d-flex flex-column align-items-center">
                         <!-- Avatar com Status -->
-                        <div class="position-relative d-inline-block mb-3">
+                        <div id="profile-modal-avatar-container" class="position-relative d-inline-block mb-3">
                             <img id="profile-modal-avatar" src="" alt="Avatar" class="rounded" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #f8f9fa;">
                             <span id="profile-modal-status-indicator" class="position-absolute bottom-0 end-0 border border-white rounded-circle" style="width: 30px; height: 30px; background: #6c757d;"></span>
                         </div>
@@ -40,7 +40,6 @@
 </div>
 
 <!-- Importar módulos compartilhados -->
-<script src="/js/commons/ui-common.js"></script>
 <script src="/js/commons/follow-common.js"></script>
 
 <style>
@@ -77,6 +76,10 @@
         function show(userData, options = {}) {
             currentUserData = userData;
             onDmClickCallback = options.onDmClick ?? null;
+
+            // Vincular ID para atualizações automáticas via UIUtils
+            const avatarContainer = document.getElementById('profile-modal-avatar-container');
+            if (avatarContainer) avatarContainer.setAttribute('data-user-id', userData.publicid);
 
             // Avatar - com fallback automático
             const avatarImg = document.getElementById('profile-modal-avatar');
@@ -211,6 +214,10 @@
             modal.hide();
         }
 
+        function getCurrentUserId() {
+            return currentUserData ? currentUserData.publicid : null;
+        }
+
         // API pública
         return {
             show,
@@ -218,7 +225,8 @@
             hide,
             follow,
             unfollow,
-            openDm
+            openDm,
+            getCurrentUserId
         };
     })();
 </script>

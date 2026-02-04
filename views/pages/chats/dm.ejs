@@ -73,7 +73,6 @@
 </div>
 
 <!-- UI Utilities -->
-<script src="/js/commons/ui-common.js"></script>
 <script src="/js/commons/chat-dm-common.js"></script>
 
 <script>
@@ -147,10 +146,7 @@
             dmList.appendChild(card);
         });
 
-        setTimeout(() => {
-            const userIds = [...new Set([...document.querySelectorAll('[data-chat-id]')].map(c => c.getAttribute('data-user-id')).filter(Boolean))];
-            if (userIds.length) socket.emit('requestUserStatus', { userIds });
-        }, 100);
+        setTimeout(UIUtils.requestPageStatuses, 100);
     }
 
     // Atualiza card de conversa específica na sidebar
@@ -199,9 +195,7 @@
             if (!inserted) dmList.appendChild(newCard);
             
             // Atualiza status do usuário
-            if (conversa.otherUser?.publicid) {
-                socket.emit('requestUserStatus', { userIds: [conversa.otherUser.publicid] });
-            }
+            UIUtils.requestPageStatuses();
         } catch (error) {
             console.error('[DMs] Erro ao atualizar card:', error);
         }
@@ -298,7 +292,7 @@
         
         const { chatId, messages } = data;
         const msgs = messages.map(msg => ({
-            id: msg.publicid,
+            publicid: msg.publicid,
             username: msg.Sender?.username || msg.username || 'Usuário',
             message: msg.message,
             isMine: msg.isMine,
@@ -328,7 +322,7 @@
         if (chatId === selectedChatId) {
             // Adiciona mensagem ao chat atual
             const newMsg = {
-                id: message.publicid,
+                publicid: message.publicid,
                 message: message.message,
                 username: message.username,
                 isMine: message.username === currentUser.username,
@@ -337,8 +331,8 @@
             };
             
             allMessages.push(newMsg);
-            ChatUtils.renderMessages(allMessages, chatMessages, { 
-                clearContainer: true, 
+            ChatUtils.renderMessages([newMsg], chatMessages, { 
+                clearContainer: false, 
                 scrollToBottom: true, 
                 showUsername: false, 
                 showTime: true 
@@ -370,35 +364,6 @@
         
         // Atualiza badge de não lidas na sidebar
         atualizarCardDM(chatId);
-    });
-
-    socket.on('userStatusChanged', (data) => {
-        if (!data) return;
-        
-        const { userId, status } = data;
-        
-        document.querySelectorAll('[data-chat-id]').forEach(card => {
-            if (card.getAttribute('data-user-id') == userId) {
-                const indicator = card.querySelector('.position-absolute.rounded');
-                if (indicator) indicator.style.background = UIUtils.getStatusColor(status);
-            }
-        });
-        
-        if (currentChatOtherUser?.publicid === userId) {
-            currentChatOtherUser.status = status;
-            UserProfileModal.updateStatus(status);
-        }
-    });
-
-    socket.on('userStatusBatch', (statusMap) => {
-        Object.entries(statusMap).forEach(([userId, status]) => {
-            document.querySelectorAll('[data-chat-id]').forEach(card => {
-                if (card.getAttribute('data-user-id') == userId) {
-                    const indicator = card.querySelector('.position-absolute');
-                    if (indicator) indicator.style.background = UIUtils.getStatusColor(status);
-                }
-            });
-        });
     });
 
     socket.on('error', (error) => {

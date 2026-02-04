@@ -1078,7 +1078,7 @@
             container.innerHTML = html;
         }
 
-        aplicarRascunho(rascunhoId) {
+        async aplicarRascunho(rascunhoId) {
             try {
                 const rascunhos = this.carregarTodosRascunhos();
                 // Compara como string para ser robusto
@@ -1094,7 +1094,7 @@
                 const conteudoAtual = document.getElementById('conteudo').value.trim();
                 
                 if ((tituloAtual || conteudoAtual) && 
-                    !confirm('⚠️ Há conteúdo na cartinha atual. Deseja substituir pelo rascunho selecionado?')) {
+                    !(await confirm('⚠️ Há conteúdo na cartinha atual. Deseja substituir pelo rascunho selecionado?'))) {
                     return;
                 }
                 
@@ -1145,8 +1145,8 @@
             }
         }
 
-        excluirRascunho(rascunhoId) {
-            if (!confirm('🗑️ Tem certeza que deseja excluir este rascunho? Esta ação não pode ser desfeita.')) {
+        async excluirRascunho(rascunhoId) {
+            if (!(await confirm('🗑️ Tem certeza que deseja excluir este rascunho? Esta ação não pode ser desfeita.'))) {
                 return;
             }
             
@@ -1424,8 +1424,8 @@
         );
         
         if (rascunhosSimilares.length > 0) {
-            setTimeout(() => {
-                const confirmar = confirm(
+            setTimeout(async () => {
+                const confirmar = await confirm(
                     `🗑️ Encontramos ${rascunhosSimilares.length} rascunho(s) similar(es) à cartinha que você acabou de enviar.\n\n` +
                     'Deseja excluí-los para manter sua lista organizada?'
                 );

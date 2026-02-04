@@ -22,7 +22,7 @@ const Role = sequelize.define('Role', {
 
 Role.prototype.toJSON = function () {
     const values = { ...this.get() };
-    // Não misturamos id com publicid
+    delete values.id;
     return values;
 };
 
@@ -97,7 +97,7 @@ const User = sequelize.define('User', {
 
 User.prototype.toJSON = function () {
     const values = { ...this.get() };
-    // Não alteramos id para publicid para evitar ambiguidade
+    delete values.id;
     delete values.roleId;
     delete values.passwordhash;
     return values;

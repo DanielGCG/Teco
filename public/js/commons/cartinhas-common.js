@@ -178,7 +178,7 @@ class ModalCartinha {
                     <img src="${usuario.profileimage}" alt="Avatar" class="avatar-carta me-2" style="width: 35px; height: 35px;">
                     <div>
                         <strong style="font-size: 1rem; color: #2d3436;">${labelNome}${nomeExibido}</strong>
-                        <div><small class="text-muted">📅 ${formatarData(cartinha.createdat)}</small></div>
+                        <div><small class="text-muted">📅 ${UIUtils.formatarData(cartinha.createdat)}</small></div>
                     </div>
                     <div class="ms-auto">
                         ${badgesHTML}
@@ -649,23 +649,6 @@ function descarregarPilhasInvisiveis() {
 }
 
 // ==================== Utilitários ====================
-function formatarData(dataISO) {
-    const data = new Date(dataISO);
-    const agora = new Date();
-    const diffMs = agora - data;
-    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDias === 0) {
-        return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias === 1) {
-        return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diffDias < 7) {
-        return `${diffDias} dias atrás`;
-    } else {
-        return data.toLocaleDateString('pt-BR');
-    }
-}
-
 function cortarTexto(texto, limite) {
     if (texto.length <= limite) return texto;
     return texto.substring(0, limite) + '...';
@@ -674,7 +657,7 @@ function cortarTexto(texto, limite) {
 function encontrarCartinha(cartinhaId, usuarios) {
     if (!Array.isArray(usuarios)) return null;
     for (const usuario of usuarios) {
-        const cartinha = usuario.cartinhas.find(c => c.id == cartinhaId);
+        const cartinha = usuario.cartinhas.find(c => c.publicid == cartinhaId);
         if (cartinha) return cartinha;
     }
     return null;
@@ -683,7 +666,7 @@ function encontrarCartinha(cartinhaId, usuarios) {
 function encontrarUsuarioPorCartinha(cartinhaId, usuarios) {
     if (!Array.isArray(usuarios)) return null;
     return usuarios.find(usuario => 
-        Array.isArray(usuario.cartinhas) && usuario.cartinhas.some(c => c.id == cartinhaId)
+        Array.isArray(usuario.cartinhas) && usuario.cartinhas.some(c => c.publicid == cartinhaId)
     );
 }
 
@@ -782,7 +765,7 @@ function inicializarNavegacaoTeclado(atalhosPagina = {}) {
 
 // ==================== Construtor de HTML de cartinha ====================
 function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, realIndex) {
-    const dataFormatada = formatarData(cartinha.createdat);
+    const dataFormatada = UIUtils.formatarData(cartinha.createdat);
     if (!Number.isInteger(realIndex)) realIndex = posicao;
     const posicaoReal = realIndex + 1;
     const posicaoClasse = posicao === 0 ? 'topo' : posicao === 1 ? 'meio' : 'fundo';
@@ -819,8 +802,8 @@ function construirHtmlCartinha(cartinha, usuario, posicao, total, tipoConfig, re
     
     return `
         <div class="carta-empilhada carta-envelope ${posicaoClasse}" 
-            id="carta-${cartinha.id}" 
-            data-cartinha-id="${cartinha.id}"
+            id="carta-${cartinha.publicid}" 
+            data-cartinha-id="${cartinha.publicid}"
             data-usuario-id="${usuario.userId}"
             data-posicao="${posicao}"
             style="z-index: ${10 - posicao}">

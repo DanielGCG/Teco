@@ -65,7 +65,7 @@
 
                 container.innerHTML = data.galleries.map(g => `
                     <div class="imagem">
-                        <a href="/galeria/${g.id}">
+                        <a href="/galeria/${g.publicid}">
                             <!-- CORREÇÃO: g.capa_url -> g.coverurl e g.nome -> g.name -->
                             <img src="${g.coverurl}" alt="${g.name}" onerror="this.src='/images/placeholder-album.png'">
                             <div class="texto-hover">

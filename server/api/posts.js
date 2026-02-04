@@ -137,7 +137,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                 const io = req.app.get('io');
                 if (io) {
                     io.to(`profile_${parentPost.author.username}`).emit('postUpdate', { 
-                        id: parentPost.publicid, 
+                        publicid: parentPost.publicid, 
                         replycount: parentPost.replycount,
                         repostcount: parentPost.repostcount
                     });
@@ -383,11 +383,7 @@ PostsRouter.get('/:publicid', async (req, res) => {
         
         while (currentParentId && depth < 10) {
             const parent = await Post.findByPk(currentParentId, {
-                include: [
-                    { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
-                    { model: PostMedia, as: 'media' },
-                    { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] }
-                ]
+                include: POST_INCLUDES
             });
             
             if (!parent) break;

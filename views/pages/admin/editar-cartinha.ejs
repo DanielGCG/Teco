@@ -406,7 +406,7 @@ function renderizarCartinhas(cartinhas) {
                         <h6 class="mb-1">${highlightSearch(cartinha.title || 'Sem título')}</h6>
                         <small class="text-muted">
                             De: <strong>${cartinha.remetente ? cartinha.remetente.username : 'Excluído'}</strong> • 
-                            ${formatarData(cartinha.createdat)}
+                            ${UIUtils.formatarData(cartinha.createdat)}
                         </small>
                     </div>
                     <div class="col-2 text-center">
@@ -664,14 +664,6 @@ function mostrarToast(mensagem, tipo = 'info') {
     setTimeout(() => {
         if (toast.parentNode) toast.remove();
     }, 5000);
-}
-
-function formatarData(dataISO) {
-    const data = new Date(dataISO);
-    return data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
 }
 
 function truncateText(text, maxLength) {

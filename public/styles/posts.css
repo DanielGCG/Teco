@@ -205,6 +205,23 @@
     z-index: 1;
 }
 
+/* Post Composer Styles */
+.post-composer-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+.post-composer-avatar {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+}
+.post-composer-textarea {
+    resize: none;
+    font-size: 1.1rem;
+    color: inherit;
+    background: transparent;
+}
+
 /* Previews */
 .post-preview-container {
     display: flex;

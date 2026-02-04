@@ -54,7 +54,7 @@ router.get('/borders', async (req, res) => {
 
 // Adiciona nova imagem (sugestão)
 router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border', maxCount: 1 }]), async (req, res) => {
-    const { text, borderId } = req.body;
+    const { text, borderPublicId } = req.body;
     if (!req.files || !req.files['file'] || !text) {
         return res.status(400).json({ message: 'Campos obrigatórios: file, text.' });
     }
@@ -69,9 +69,14 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
             mimetype: 'image/png'
         });
 
-        let finalBorderId = borderId;
+        let finalBorderId = null;
 
-        // Se não foi informada uma border ou se a border 1 não existe, busca a mais recente disponível
+        if (borderPublicId) {
+            const border = await ImagemDoDiaBorder.findOne({ where: { publicid: borderPublicId } });
+            if (border) finalBorderId = border.id;
+        }
+
+        // Se não foi informada uma border ou se a border não foi encontrada, busca a mais recente disponível
         if (!finalBorderId) {
             const defaultBorder = await ImagemDoDiaBorder.findOne({ order: [['id', 'ASC']] });
             finalBorderId = defaultBorder ? defaultBorder.id : null;

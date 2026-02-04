@@ -30,7 +30,7 @@ const FollowAPI = (() => {
     // Deixar de seguir um usuário
     async function deixarDeSeguir(userId, options = {}) {
         const { onSuccess = null, onError = null, showAlert = true, confirmMessage = 'Deseja parar de seguir este usuário?' } = options;
-        if (confirmMessage && !confirm(confirmMessage)) return { success: false, cancelled: true };
+        if (confirmMessage && !(await confirm(confirmMessage))) return { success: false, cancelled: true };
         try {
             const res = await fetch(`/api/follows/${userId}`, {
                 method: 'DELETE',

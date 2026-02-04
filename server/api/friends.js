@@ -46,7 +46,6 @@ FriendsRouter.get('/', protect(20), async (req, res) => {
         });
 
         const formatted = friends.map(f => ({
-            id: f.publicid,
             publicid: f.publicid,
             username: f.username,
             profileimage: f.profileimage,
@@ -100,7 +99,6 @@ FriendsRouter.get('/user/:publicid', validate(publicidSchema, 'params'), async (
         });
 
         const formatted = friends.map(f => ({
-            id: f.publicid,
             publicid: f.publicid,
             username: f.username,
             profileimage: f.profileimage,

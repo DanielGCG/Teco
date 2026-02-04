@@ -115,8 +115,8 @@
 
     function renderMainPost(post) {
         const container = document.getElementById('main-post-container');
-        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.userId === window.currentUser.publicid);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.userId === window.currentUser.publicid);
+        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.user && l.user.publicid === window.currentUser.publicid);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.user && b.user.publicid === window.currentUser.publicid);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -131,7 +131,7 @@
         const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateStr = date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
 
-        const deleteBtn = (window.currentUser && window.currentUser.publicid === post.authorUserId) 
+        const deleteBtn = (window.currentUser && window.currentUser.publicid === post.author.publicid) 
             ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar('${post.publicid}')" title="Deletar">
                 <i class="bi bi-trash"></i>
                </button>` 
@@ -141,7 +141,7 @@
         const isQuote = post.type === 'reply';
         const isComment = post.type === 'comment';
 
-        if ((isQuote || isComment) && !post.attachedPostId) {
+        if ((isQuote || isComment) && !post.parent) {
             deletedParentHtml = `
                 <div class="post-card deleted-post p-3 border-bottom bg-light">
                     <div class="post-content text-muted fst-italic">
@@ -152,7 +152,7 @@
         }
 
         container.innerHTML = deletedParentHtml + `
-            <div class="main-post p-3 border-bottom" id="post-${post.id}">
+            <div class="main-post p-3 border-bottom" id="post-${post.publicid}">
                 <div class="d-flex gap-3 mb-2">
                     <img src="${post.author.profileimage}" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
                     <div class="d-flex flex-column">
@@ -173,16 +173,16 @@
                     <button class="post-action reply d-flex align-items-center" onclick="document.getElementById('reply-textarea').focus()" title="Responder">
                         <i class="bi bi-chat" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action repost d-flex align-items-center ${post.type === 'repost' ? 'reposted' : ''}" onclick="PostUI.abrirModalInteracao('${post.id}', 'repost')" title="Repostar">
+                    <button class="post-action repost d-flex align-items-center ${post.type === 'repost' ? 'reposted' : ''}" onclick="PostUI.abrirModalInteracao('${post.publicid}', 'repost')" title="Repostar">
                         <i class="bi bi-arrow-repeat" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action like d-flex align-items-center ${isLiked ? 'liked' : ''}" onclick="PostActions.like('${post.id}')" title="Curtir">
+                    <button class="post-action like d-flex align-items-center ${isLiked ? 'liked' : ''}" onclick="PostActions.like('${post.publicid}')" title="Curtir">
                         <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action bookmark d-flex align-items-center ${isBookmarked ? 'bookmarked' : ''}" onclick="PostActions.toggleBookmark('${post.id}')" title="Salvar">
+                    <button class="post-action bookmark d-flex align-items-center ${isBookmarked ? 'bookmarked' : ''}" onclick="PostActions.toggleBookmark('${post.publicid}')" title="Salvar">
                         <i class="bi ${isBookmarked ? 'bi-bookmark-fill' : 'bi-bookmark'}" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action share d-flex align-items-center" onclick="PostActions.compartilhar('${post.id}', '${post.author.username}')" title="Compartilhar">
+                    <button class="post-action share d-flex align-items-center" onclick="PostActions.compartilhar('${post.publicid}', '${post.author.username}')" title="Compartilhar">
                         <i class="bi bi-share" style="font-size: 20px;"></i>
                     </button>
                     ${deleteBtn}
@@ -211,7 +211,7 @@
 
         await PostActions.enviarPost(content, window.selectedFiles, { 
             type: 'comment', 
-            attachedPostId: postId 
+            attachedPostPublicId: postId 
         }, btn);
 
         textarea.value = '';

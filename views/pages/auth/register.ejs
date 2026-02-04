@@ -1,37 +1,36 @@
-<div class="container mt-5">
+<div class="container d-flex flex-column min-vh-100 justify-content-center py-5">
     <div class="row justify-content-center">
         <div class="col-md-5">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h3 class="card-title text-center mb-4">Criar Conta</h3>
+                    <h3 class="card-title text-center mb-4">Registro</h3>
 
                     <form id="registerForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuário</label>
-                            <input type="text" class="form-control" id="username" name="username" required maxlength="13" value="@" autocomplete="off">
+                            <div class="input-group">
+                                <span class="input-group-text">@</span>
+                                <input type="text" class="form-control" id="username" name="username" required maxlength="15" pattern="[A-Za-z0-9_]{1,15}" autocomplete="off">
+                            </div>
+                            <div id="usernameHelp" class="form-text">Máx 16 caracteres.</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">Senha</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="password" name="password" required>
+                                <input type="password" class="form-control" id="password" name="password" required minlength="8">
                                 <button class="btn btn-outline-secondary" type="button" id="togglePassword">Ver</button>
                             </div>
+                            <div id="passwordHelp" class="form-text">Mínimo 8 caracteres.</div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="passwordConfirm" class="form-label">Confirme a Senha</label>
+                            <label for="passwordConfirm" class="form-label">Confirme a senha</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="passwordConfirm" name="passwordConfirm" required>
+                                <input type="password" class="form-control" id="passwordConfirm" name="passwordConfirm" required minlength="8">
                                 <button class="btn btn-outline-secondary" type="button" id="togglePasswordConfirm">Ver</button>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="bio" class="form-label">Bio (opcional)</label>
-                            <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="160"></textarea>
-                        </div>
-
                         <button type="submit" class="btn btn-primary w-100">Registrar</button>
                     </form>
 
@@ -44,7 +43,7 @@
         </div>
     </div>
     <div class="version-text text-center w-100">
-        <h5>Teco</h5>
+        <h5 style="font-size: 30px;">Teco</h5>
         <small><%= locals.version %></small>
     </div>
 </div>
@@ -59,19 +58,29 @@
 </style>
 
 <script>
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
+const registerForm = document.getElementById('registerForm');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const passwordConfirmInput = document.getElementById('passwordConfirm');
+const messageDiv = document.getElementById('message');
+
+registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    const passwordConfirm = document.getElementById('passwordConfirm').value;
-    const bio = document.getElementById('bio').value.trim();
+    const usernameRaw = usernameInput.value.trim();
+    const username = '@' + usernameRaw.replace(/^@/, '');
+    const password = passwordInput.value;
+    const passwordConfirm = passwordConfirmInput.value;
 
-    const messageDiv = document.getElementById('message');
     messageDiv.textContent = '';
     
     try {
-        // Validação local: checar confirmação de senha
+        if (password.length < 8) {
+            messageDiv.className = 'text-danger';
+            messageDiv.textContent = 'A senha deve ter pelo menos 8 caracteres.';
+            return;
+        }
+
         if (password !== passwordConfirm) {
             messageDiv.className = 'text-danger';
             messageDiv.textContent = 'As senhas não conferem.';
@@ -81,8 +90,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         const response = await fetch('/api/users/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, bio }),
-            credentials: 'include' // garante que o cookie da sessão vá junto
+            body: JSON.stringify({ username, password }),
+            credentials: 'include'
         });
 
         const data = await response.json();
@@ -90,7 +99,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         if (response.ok) {
             messageDiv.className = 'text-success';
             messageDiv.textContent = data.message;
-            window.location.href = '/login';
+            setTimeout(() => window.location.href = '/login', 1000);
         } else {
             messageDiv.className = 'text-danger';
             messageDiv.textContent = data.message;
@@ -102,27 +111,13 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     }
 });
 
-const usernameInput = document.getElementById('username');
-
-// Sempre manter o @ no início
 usernameInput.addEventListener('input', () => {
-    // Remove qualquer caractere inválido depois do @
-    usernameInput.value = '@' + usernameInput.value.slice(1).replace(/[^a-zA-Z0-9_]/g, '');
-
-    // Limitar a 13 caracteres
-    if (usernameInput.value.length > 13) {
-        usernameInput.value = usernameInput.value.slice(0, 13);
+    usernameInput.value = usernameInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+    if (usernameInput.value.length > 15) {
+        usernameInput.value = usernameInput.value.slice(0, 15);
     }
 });
 
-// Impedir apagar o @
-usernameInput.addEventListener('keydown', (e) => {
-    if (usernameInput.selectionStart === 0 && (e.key === 'Backspace' || e.key === 'Delete')) {
-        e.preventDefault();
-    }
-});
-
-// Toggle show/hide password
 const togglePassword = document.getElementById('togglePassword');
 const togglePasswordConfirm = document.getElementById('togglePasswordConfirm');
 togglePassword.addEventListener('click', () => {

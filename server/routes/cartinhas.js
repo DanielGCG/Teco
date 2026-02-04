@@ -5,7 +5,7 @@ CartinhasRouter.get('/', async (req, res) => {
     const locals = {
         title: `Correio`,
         description: "Gerencie suas cartinhas",
-        icon: "📬",
+        icon: "",
         version: process.env.VERSION,
         loggedUser: req.user
     }

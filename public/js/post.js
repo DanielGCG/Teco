@@ -32,7 +32,7 @@ window.PostUI = {
         const isQuote = post.type === 'reply';
         const isComment = post.type === 'comment';
 
-        if ((isQuote || isComment) && !post.attachedPostId && !isThread) {
+        if ((isQuote || isComment) && !post.parent && !isThread) {
             deletedParentHtml = `
                 <div class="post-card deleted-post p-2 px-3 border-bottom bg-light">
                     <div class="post-content text-muted small fst-italic">
@@ -42,8 +42,8 @@ window.PostUI = {
             `;
         }
 
-        const isLiked = post.likes && post.likes.some(l => currentUser && l.userId === currentUser.publicid);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.userId === currentUser.publicid);
+        const isLiked = post.likes && post.likes.some(l => currentUser && l.user && l.user.publicid === currentUser.publicid);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.user && b.user.publicid === currentUser.publicid);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -80,7 +80,7 @@ window.PostUI = {
             `;
         }
 
-        const deleteBtn = (currentUser && currentUser.publicid === post.authorUserId) 
+        const deleteBtn = (currentUser && currentUser.publicid === post.author.publicid) 
             ? `<button class="post-action delete d-flex align-items-center" onclick="event.stopPropagation(); PostActions.deletar('${post.publicid}')" title="Deletar">
                 <i class="bi bi-trash"></i>
                </button>` 
@@ -393,9 +393,7 @@ window.PostActions = {
 
     // Deletar post
     deletar: async function(postId) {
-        const confirmacao = typeof mostrarConfirmacao === 'function' 
-            ? await mostrarConfirmacao('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.', 'Deletar Post')
-            : confirm('Tem certeza que deseja deletar este post?');
+        const confirmacao = await confirm('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.');
 
         if (!confirmacao) return;
 
@@ -436,7 +434,7 @@ window.PostActions = {
             type = 'reply';
         }
 
-        this.enviarPost(content, window.selectedFiles, { attachedPostId: postId, type }, btn, 'modalPostInteracao');
+        this.enviarPost(content, window.selectedFiles, { attachedPostPublicId: postId, type }, btn, 'modalPostInteracao');
     },
 
     // Enviar novo post
@@ -473,8 +471,8 @@ window.PostActions = {
                     window.PostFeed.reload();
                 }
 
-                // Se estivermos na página de detalhes do post (attachedPostId existe), recarrega as respostas
-                if (extraData.attachedPostId && typeof carregarRespostas === 'function') {
+                // Se estivermos na página de detalhes do post (attachedPostPublicId existe), recarrega as respostas
+                if (extraData.attachedPostPublicId && typeof carregarRespostas === 'function') {
                     carregarRespostas();
                 }
             } else {

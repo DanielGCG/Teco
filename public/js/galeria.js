@@ -73,7 +73,7 @@ const GaleriaManager = {
                 });
             }
 
-            this.collaborators = (this.data.collaborators || []).map(c => ({ id: c.id, username: c.username }));
+            this.collaborators = (this.data.collaborators || []).map(c => ({ publicid: c.publicid, username: c.username }));
             this.render();
         } catch (err) { console.error(err); Utils.alert('Erro ao carregar dados.', 'Erro'); }
     },
@@ -176,16 +176,16 @@ const GaleriaManager = {
 
             const editControls = this.editMode ? `
                 <div class="edit-overlay">
-                    <button class="btn btn-xs btn-light border" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem('${item.id}')">
+                    <button class="btn btn-xs btn-light border" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem('${item.publicid}')">
                         <i class="bi bi-pencil-square"></i>
                     </button>
                 </div>
-                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem('${item.id}')" title="Excluir"><i class="bi bi-trash"></i></button>
-                <div class="resize-handle" data-id="${item.id}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
+                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem('${item.publicid}')" title="Excluir"><i class="bi bi-trash"></i></button>
+                <div class="resize-handle" data-id="${item.publicid}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
             ` : '';
 
             return `
-            <div class="grid-item" data-id="${item.id}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};">
+            <div class="grid-item" data-id="${item.publicid}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};">
                 <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.positionz || 0};" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}')">
                     ${content}
                     ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeName}</small></div>` : ''}
@@ -198,12 +198,12 @@ const GaleriaManager = {
     },
 
     openEditItem(id) {
-        const item = this.data.items.find(i => i.id === id);
+        const item = this.data.items.find(i => i.publicid === id);
         if (!item) return Utils.alert('Item não encontrado.');
         const form = document.getElementById('formEditItem');
         if (!form) return Utils.alert('Formulário de edição não encontrado.');
 
-        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('edit-item-id').value = item.publicid;
         document.getElementById('edit-item-name').value = item.title || "";
         document.getElementById('edit-item-showtitle').checked = item.showtitle !== false;
         document.getElementById('edit-item-fit').value = item.objectfit;
@@ -265,7 +265,7 @@ const GaleriaManager = {
             const json = await res.json();
             if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
 
-            const idx = this.data.items.findIndex(i => i.id === id);
+            const idx = this.data.items.findIndex(i => i.publicid === id);
             if (idx > -1) this.data.items[idx] = { ...this.data.items[idx], ...json.item };
 
             bootstrap.Modal.getInstance(document.getElementById('modalEditItem')).hide();
@@ -303,7 +303,7 @@ const GaleriaManager = {
 
     async saveLayout() {
         const layout = this.data.items.map((it) => ({ 
-            id: it.id, 
+            publicid: it.publicid, 
             grid_w: it.grid_w, 
             grid_h: it.grid_h, 
             startpositionx: it.startpositionx, 
@@ -548,20 +548,20 @@ const GaleriaManager = {
             const results = document.getElementById('search-results');
             if (results) {
                 const list = json.users || json.usuarios || [];
-                results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator('${u.id}', '${u.username}')">${u.username}</button>`).join('');
+                results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator('${u.publicid}', '${u.username}')">${u.username}</button>`).join('');
             }
         } catch (e) { console.error(e); }
     },
 
     addCollaborator(id, username) {
-        if (!this.collaborators.find(c => c.id === id)) this.collaborators.push({ id, username });
+        if (!this.collaborators.find(c => c.publicid === id)) this.collaborators.push({ publicid: id, username });
         this.renderCollaborators();
         document.getElementById('search-results').innerHTML = '';
     },
-    removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.id !== id); this.renderCollaborators(); },
+    removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.publicid !== id); this.renderCollaborators(); },
     renderCollaborators() {
         const container = document.getElementById('collaborators-list');
-        if (container) container.innerHTML = this.collaborators.map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeCollaborator('${c.id}')"></i></span>`).join('');
+        if (container) container.innerHTML = this.collaborators.map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeCollaborator('${c.publicid}')"></i></span>`).join('');
     },
     togglePublicSection() {
         const section = document.getElementById('collaborators-section');
@@ -578,7 +578,7 @@ const GaleriaManager = {
             formConfig.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
-                fd.append('collaborators', JSON.stringify(this.collaborators.map(c => c.id)));
+                fd.append('collaborators', JSON.stringify(this.collaborators.map(c => c.publicid)));
                 if (document.getElementById('config-is-public')) fd.set('ispublic', document.getElementById('config-is-public').checked);
                 try {
                     const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: fd });
@@ -639,7 +639,7 @@ const GaleriaManager = {
             const id = handle.dataset.id;
             const itemEl = gridContainer.querySelector(`.grid-item[data-id="${id}"]`);
             if (!itemEl) return;
-            const idx = this.data.items.findIndex(i => i.id === id);
+            const idx = this.data.items.findIndex(i => i.publicid === id);
             if (idx === -1) return;
 
             const item = this.data.items[idx];
@@ -747,7 +747,7 @@ const GaleriaManager = {
             const targetCol = parseInt(style.gridColumnStart);
             const targetRow = parseInt(style.gridRowStart);
 
-            const imgIndex = this.data.items.findIndex(i => i.id === draggedId);
+            const imgIndex = this.data.items.findIndex(i => i.publicid === draggedId);
             if (imgIndex > -1) {
                 this.data.items[imgIndex].startpositionx = targetCol;
                 this.data.items[imgIndex].startpositiony = targetRow;
@@ -771,7 +771,7 @@ const GaleriaManager = {
         return fetch(url, { method: 'DELETE' }).then(res => res.json()).then(json => {
             if (json.success) {
                 if (redirect) window.location.href = redirect;
-                else { this.data.items = this.data.items.filter(i => i.id !== itemId); this.renderGrid(); }
+                else { this.data.items = this.data.items.filter(i => i.publicid !== itemId); this.renderGrid(); }
             } else { Utils.alert('Falha na exclusão'); }
         }).catch(e => Utils.alert('Falha na exclusão'));
     },

@@ -81,6 +81,7 @@ const Cartinha = sequelize.define('Cartinha', {
 
 Cartinha.prototype.toJSON = function () {
     const values = { ...this.get() };
+    delete values.id;
     delete values.senderUserId;
     delete values.recipientUserId;
     return values;

@@ -37,7 +37,7 @@ FeaturesRouter.get('/galeria/:id', async (req, res) => {
         layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST,
-        galeriaId: req.params.id
+        galleryId: req.params.id
     });
 });
 

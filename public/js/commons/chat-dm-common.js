@@ -19,15 +19,15 @@ const ChatUtils = (() => {
             prepend = false
         } = options;
 
-        // Evita duplicação
-        if (message.id && container.querySelector(`[data-msg-id="${message.id}"]`)) return;
+        const msgId = message.publicid;
+        if (msgId && container.querySelector(`[data-msg-id="${msgId}"]`)) return;
 
         const msgGroup = document.createElement('div');
         msgGroup.className = `msg-group ${isMine ? 'usuario' : 'outrousuario'}`;
         
         const msgDiv = document.createElement('div');
         msgDiv.className = `mensagem ${isMine ? 'usuario' : 'outrousuario'}`;
-        if (message.id) msgDiv.dataset.msgId = message.id;
+        if (msgId) msgDiv.dataset.msgId = msgId;
 
         // Nome do usuário
         if (showUsername && message.username) {

@@ -335,7 +335,7 @@ module.exports = (io) => {
                         chatId: publicChatId,
                         type: 'dm',
                         message: {
-                            id: messageWithUser.publicid,
+                            publicid: messageWithUser.publicid,
                             message: messageWithUser.message,
                             username: messageWithUser.Sender.username,
                             userId: messageWithUser.Sender.publicid, // Usa publicid do sender
@@ -424,7 +424,7 @@ module.exports = (io) => {
                         chatId: publicChatId,
                         type: 'chat',
                         message: {
-                            id: messageWithUser.publicid,
+                            publicid: messageWithUser.publicid,
                             message: messageWithUser.message,
                             username: messageWithUser.author.username,
                             userId: messageWithUser.author.publicid, // Usa publicid do autor

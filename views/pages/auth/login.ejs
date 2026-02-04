@@ -1,4 +1,4 @@
-<div class="container mt-5">
+<div class="container d-flex flex-column min-vh-100 justify-content-center py-5">
     <div class="row justify-content-center">
         <div class="col-md-5">
             <div class="card shadow-sm">
@@ -8,7 +8,10 @@
                     <form id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuário</label>
-                            <input type="text" class="form-control" id="username" name="username" required maxlength="50" value="@">
+                            <div class="input-group">
+                                <span class="input-group-text">@</span>
+                                <input type="text" class="form-control" id="username" name="username" required maxlength="15" pattern="[A-Za-z0-9_]{1,15}" aria-describedby="usernameHelp">
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -28,7 +31,7 @@
         </div>
     </div>
     <div class="version-text text-center w-100">
-        <h5>Teco</h5>
+        <h5 style="font-size: 30px;">Teco</h5>
         <small><%= locals.version %></small>
     </div>
 </div>
@@ -36,32 +39,30 @@
 <style>
 .version-text {
     position: absolute;
-    bottom: 20px; /* distância do chão */
+    bottom: 20px;
     left: 0;
     width: 100%;
 }
 </style>
 
 <script>
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+const loginForm = document.getElementById('loginForm');
+const usernameInput = document.getElementById('username');
+const messageDiv = document.getElementById('message');
+
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const username = document.getElementById('username').value.trim();
+    const username = '@' + usernameInput.value.trim().replace(/^@/, '');
     const password = document.getElementById('password').value;
-    const messageDiv = document.getElementById('message');
+    
     messageDiv.textContent = '';
     messageDiv.className = '';
-
-    if (!username || !password) {
-        messageDiv.className = 'text-danger';
-        messageDiv.textContent = 'Preencha usuário e senha';
-        return;
-    }
 
     try {
         const response = await fetch('/api/users/login', {
             method: 'POST',
-            credentials: 'include', // necessário para cookies cross-site
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
@@ -71,8 +72,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         if (response.ok) {
             messageDiv.className = 'text-success';
             messageDiv.textContent = data.message;
-
-            // Redireciona para a página principal do frontend
             setTimeout(() => window.location.href = '/', 500);
         } else {
             messageDiv.className = 'text-danger';
@@ -85,13 +84,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Comportamento do campo username: prefixar @ e impedir remoção
-const usernameInputLogin = document.getElementById('username');
-usernameInputLogin.addEventListener('input', () => {
-    usernameInputLogin.value = '@' + usernameInputLogin.value.slice(1).replace(/[^a-zA-Z0-9_]/g, '');
-    if (usernameInputLogin.value.length > 13) usernameInputLogin.value = usernameInputLogin.value.slice(0, 13);
-});
-usernameInputLogin.addEventListener('keydown', (e) => {
-    if (usernameInputLogin.selectionStart === 0 && (e.key === 'Backspace' || e.key === 'Delete')) e.preventDefault();
+// Apenas para garantir que o usuário não digite outro @ se ele já estiver lá visualmente
+usernameInput.addEventListener('input', () => {
+    usernameInput.value = usernameInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+    if (usernameInput.value.length > 15) usernameInput.value = usernameInput.value.slice(0, 15);
 });
 </script>

@@ -113,7 +113,7 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
             include: [{
                 model: User,
                 as: 'remetente',
-                attributes: ['username', 'profileimage']
+                attributes: ['publicid', 'username', 'profileimage']
             }],
             order: [['favoritedat', 'DESC']]
         });

@@ -45,226 +45,173 @@ if (typeof window.UIUtils !== 'undefined') {
         } = options;
 
         const card = document.createElement('div');
+        card.className = `card ${type === 'conversation' ? 'dm-card' : 'friend-card'}`;
         
-            if (type === 'conversation') {
-                const unreadBadgeHtml = showUnreadBadge && user.unreadCount > 0
-                    ? `<span class="unread-badge">${user.unreadCount}</span>`
-                    : '';
+        const badgeFriend = user.isFriend ? `<small class="badge bg-success ms-1">Amigo</small>` : '';
+        const bioHtml = user.bio ? `<small class="text-muted d-block text-truncate">${user.bio}</small>` : '';
+        const sinceHtml = user.friend_since ? `<br><small class="text-muted">Amigos desde ${formatarData(user.friend_since)}</small>` : '';
 
-                card.innerHTML = `
-                    <div class="card dm-card">
-                        <div class="card-body d-flex gap-2 align-items-start">
-                            ${createAvatarWithStatus(user, avatarSize)}
-                            <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-                                <div class="d-flex justify-content-between align-items-start gap-1">
-                                    <a href="/${user.username}" class="text-decoration-none text-dark text-truncate">
-                                        <strong>${user.username}</strong>
-                                    </a>
-                                    ${unreadBadgeHtml}
-                                </div>
-                                <small class="text-muted text-truncate d-block" style="margin-top:0.25rem;">
-                                    ${user.lastMessage ?? 'Sem mensagens'}
-                                </small>
+        if (type === 'conversation') {
+            const unreadBadgeHtml = showUnreadBadge && user.unreadCount > 0 ? `<span class="unread-badge">${user.unreadCount}</span>` : '';
+            card.innerHTML = `
+                <div class="card-body d-flex gap-2 align-items-start">
+                    ${createAvatarWithStatus(user, avatarSize)}
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                        <div class="d-flex justify-content-between align-items-start gap-1">
+                            <a href="/${user.username}" class="text-decoration-none text-dark text-truncate">
+                                <strong>${user.username}</strong>
+                            </a>
+                            ${unreadBadgeHtml}
+                        </div>
+                        <small class="text-muted text-truncate d-block" style="margin-top:0.25rem;">
+                            ${user.lastMessage ?? 'Sem mensagens'}
+                        </small>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Types 'friend' and 'search' simplificados
+            card.innerHTML = `
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2" style="flex:1;min-width:0;">
+                        ${createAvatarWithStatus(user, avatarSize)}
+                        <div style="flex:1;min-width:0;">
+                            <div class="d-flex align-items-center">
+                                <a href="/${user.username}" class="text-decoration-none text-dark text-truncate">
+                                    <h6 class="mb-0 fw-bold">${user.username}</h6>
+                                </a>
+                                ${badgeFriend}
                             </div>
+                            ${bioHtml}
+                            ${sinceHtml}
                         </div>
                     </div>
-                `;
-            } else if (type === 'friend') {
-            card.className = 'card friend-card';
+                    <div class="action-buttons d-flex gap-2"></div>
+                </div>
+            `;
             
-            const cardBody = document.createElement('div');
-            cardBody.className = 'card-body d-flex align-items-center justify-content-between';
-            
-            const leftDiv = document.createElement('div');
-            leftDiv.className = 'd-flex align-items-center gap-2';
-            leftDiv.style.flex = '1';
-            leftDiv.style.minWidth = '0';
-            
-            // Avatar
-            const avatarDiv = document.createElement('div');
-            avatarDiv.innerHTML = createAvatarWithStatus(user, avatarSize);
-            
-            // Info
-            const infoDiv = document.createElement('div');
-            infoDiv.style.flex = '1';
-            infoDiv.style.minWidth = '0';
-            
-            const nameDiv = document.createElement('div');
-            const nameLink = document.createElement('a');
-            nameLink.href = `/${user.username}`;
-            nameLink.className = 'text-decoration-none text-dark';
-            
-            const nameEl = document.createElement('h6');
-            nameEl.className = 'mb-0';
-            nameEl.textContent = user.username;
-            
-            nameLink.appendChild(nameEl);
-            nameDiv.appendChild(nameLink);
-            
-            if (user.bio) {
-                const bioEl = document.createElement('small');
-                bioEl.className = 'text-muted d-block text-truncate';
-                bioEl.textContent = user.bio;
-                infoDiv.appendChild(bioEl);
-            }
-            
-            if (user.friend_since) {
-                const sinceEl = document.createElement('small');
-                sinceEl.className = 'text-muted';
-                sinceEl.textContent = `Amigos desde ${formatarData(user.friend_since)}`;
-                const br = document.createElement('br');
-                infoDiv.appendChild(br);
-                infoDiv.appendChild(sinceEl);
-            }
-            
-            infoDiv.insertBefore(nameDiv, infoDiv.firstChild);
-            
-            leftDiv.appendChild(avatarDiv);
-            leftDiv.appendChild(infoDiv);
-            
-            cardBody.appendChild(leftDiv);
-            
-            // Ações
             if (actions.length > 0) {
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'action-buttons';
+                const actionsDiv = card.querySelector('.action-buttons');
                 actions.forEach(action => actionsDiv.appendChild(action));
-                cardBody.appendChild(actionsDiv);
             }
-            
-            card.appendChild(cardBody);
-        } else if (type === 'search') {
-            card.className = 'card friend-card';
-            
-            const cardBody = document.createElement('div');
-            cardBody.className = 'card-body d-flex align-items-center justify-content-between';
-            
-            const leftDiv = document.createElement('div');
-            leftDiv.className = 'd-flex align-items-center gap-2';
-            leftDiv.style.flex = '1';
-            
-            // Avatar
-            const avatarDiv = document.createElement('div');
-            avatarDiv.innerHTML = createAvatarWithStatus(user, avatarSize);
-            
-            // Info
-            const infoDiv = document.createElement('div');
-            infoDiv.style.flex = '1';
-            
-            const nameLink = document.createElement('a');
-            nameLink.href = `/${user.username}`;
-            nameLink.className = 'text-decoration-none text-dark';
-            
-            const nameEl = document.createElement('strong');
-            nameEl.textContent = user.username;
-            
-            nameLink.appendChild(nameEl);
-            infoDiv.appendChild(nameLink);
-            
-            if (user.isFriend) {
-                const badge = document.createElement('small');
-                badge.className = 'badge bg-success ms-1';
-                badge.textContent = 'Amigo';
-                infoDiv.appendChild(badge);
-            }
-            
-            leftDiv.appendChild(avatarDiv);
-            leftDiv.appendChild(infoDiv);
-            
-            cardBody.appendChild(leftDiv);
-            
-            // Ações
-            if (actions.length > 0) {
-                const actionsDiv = document.createElement('div');
-                actions.forEach(action => actionsDiv.appendChild(action));
-                cardBody.appendChild(actionsDiv);
-            }
-            
-            card.appendChild(cardBody);
         }
         
         return card;
     }
 
-    // Atualiza o status indicator de um usuário em todos os cards
+    // Atualiza o status indicator de um usuário em todos os cards e elementos
     function updateUserStatus(userId, status) {
-        const cards = document.querySelectorAll(`[data-user-id="${userId}"]`);
-        cards.forEach(card => {
-            const indicator = card.querySelector('.position-absolute.rounded-circle');
+        if (!userId || !status) return;
+
+        // 1. Atualiza indicadores em elementos que usam data-user-id (cards, itens de lista, etc)
+        const userElements = document.querySelectorAll(`[data-user-id="${userId}"]`);
+        userElements.forEach(el => {
+            // Suporte para indicador via style (UIUtils.createAvatarWithStatus)
+            const indicator = el.querySelector('.position-absolute.rounded-circle');
             if (indicator) {
                 indicator.style.background = getStatusColor(status);
+            }
+
+            // Suporte para indicador via classe (ex: .status-dot em profile.ejs)
+            const dot = el.querySelector('.status-dot');
+            if (dot) {
+                dot.classList.remove('online', 'offline', 'ausente');
+                dot.classList.add(status);
+                dot.title = status.charAt(0).toUpperCase() + status.slice(1);
             }
         });
     }
 
-    // Formata data relativa (hoje, ontem, há X dias, etc)
-    function formatarData(dateStr) {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = now - date;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    // Eventos globais de status
+    document.addEventListener('user:statusChanged', (e) => {
+        if (e.detail && e.detail.userId && e.detail.status) {
+            updateUserStatus(e.detail.userId, e.detail.status);
+        }
+    });
 
-        if (days === 0) return 'hoje';
-        if (days === 1) return 'ontem';
-        if (days < 7) return `há ${days} dias`;
-        if (days < 30) return `há ${Math.floor(days / 7)} semanas`;
-        if (days < 365) return `há ${Math.floor(days / 30)} meses`;
-        return `há ${Math.floor(days / 365)} anos`;
+    document.addEventListener('user:statusBatch', (e) => {
+        if (e.detail && e.detail.statusMap) {
+            Object.entries(e.detail.statusMap).forEach(([userId, status]) => {
+                updateUserStatus(userId, status);
+            });
+        }
+    });
+
+    // Solicita o status de todos os usuários presentes na página
+    function requestPageStatuses() {
+        const socket = window.appSocket || (window.SocketConnector ? window.SocketConnector.getSocket() : null);
+        if (!socket) return;
+
+        const ids = [...new Set(
+            [...document.querySelectorAll('[data-user-id]')]
+                .map(el => el.getAttribute('data-user-id'))
+                .filter(id => id && id !== 'null' && id !== 'undefined')
+        )];
+
+        if (ids.length > 0) {
+            socket.emit('requestUserStatus', { userIds: ids });
+        }
     }
 
-    // Cria botão de ação
-    function createActionButton(config) {
-        const {
-            text = '',
-            icon = '',
-            variant = 'primary',
-            size = 'sm',
-            onClick = () => {},
-            className = ''
-        } = config;
+    /**
+     * Utilitários de Formatação e Componentes
+     */
+    function formatarData(dataISO) {
+        if (!dataISO) return '-';
+        try {
+            const data = new Date(dataISO);
+            const agora = new Date();
+            const diffMs = agora - data;
+            const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        const btn = document.createElement('button');
-        btn.className = `btn btn-${size} btn-${variant} ${className}`.trim();
-        
-        if (icon) {
-            const iconEl = document.createElement('i');
-            iconEl.className = icon;
-            btn.appendChild(iconEl);
-            if (text) btn.appendChild(document.createTextNode(' ' + text));
-        } else {
-            btn.textContent = text;
+            if (diffDias === 0) {
+                return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
+            } else if (diffDias === 1) {
+                return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
+            } else if (diffDias < 7) {
+                return `${diffDias} dias atrás`;
+            } else {
+                return data.toLocaleDateString('pt-BR');
+            }
+        } catch (e) {
+            return dataISO;
         }
-        
-        btn.addEventListener('click', onClick);
+    }
+
+    function createActionButton(options) {
+        const { icon, text, variant = 'primary', size = 'sm', onClick, className = '' } = options;
+        const btn = document.createElement('button');
+        btn.className = `btn btn-${variant} btn-${size} ${className}`;
+        btn.innerHTML = icon ? `<i class="${icon}"></i> ${text || ''}` : text;
+        if (onClick) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                onClick(e);
+            });
+        }
         return btn;
     }
 
-    // Cria link de ação
-    function createActionLink(config) {
-        const {
-            text = '',
-            icon = '',
-            href = '#',
-            variant = 'primary',
-            size = 'sm',
-            className = ''
-        } = config;
-
-        const link = document.createElement('a');
-        link.href = href;
-        link.className = `btn btn-${size} btn-outline-${variant} ${className}`.trim();
-        
-        if (icon) {
-            const iconEl = document.createElement('i');
-            iconEl.className = icon;
-            link.appendChild(iconEl);
-            if (text) link.appendChild(document.createTextNode(' ' + text));
-        } else {
-            link.textContent = text;
-        }
-        
-        return link;
+    function createActionLink(options) {
+        const { icon, text, href = '#', variant = 'primary', size = 'sm', className = '' } = options;
+        const a = document.createElement('a');
+        a.href = href;
+        a.className = `btn btn-${variant} btn-${size} ${className}`;
+        a.innerHTML = icon ? `<i class="${icon}"></i> ${text || ''}` : text;
+        return a;
     }
+
+    // Inicialização automática para o usuário logado
+    function initLoggedUserStatus() {
+        const user = window.UserContext ? window.UserContext.get() : null;
+        if (user && user.publicid) {
+            // Garantimos que o próprio usuário sempre apareça online para si mesmo se estiver conectado
+            updateUserStatus(user.publicid, 'online');
+        }
+    }
+
+    // Tentar inicializar após um breve delay para garantir que o DOM e Contexto estejam prontos
+    setTimeout(initLoggedUserStatus, 500);
 
     // API pública
     return {
@@ -272,6 +219,7 @@ if (typeof window.UIUtils !== 'undefined') {
         createAvatarWithStatus,
         createUserCard,
         updateUserStatus,
+        requestPageStatuses,
         formatarData,
         createActionButton,
         createActionLink
