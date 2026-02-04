@@ -326,7 +326,7 @@ function listarObras() {
         const titulo = obra.title || obra.name;
 
         conteudo.innerHTML = `
-            <img src="${posterPath}" class="capa rounded" alt="Capa de ${titulo}" onclick="abrirPopup('${posterPath}', ${obra.id})">
+            <img src="${posterPath}" class="capa rounded" alt="Capa de ${titulo}" onclick="abrirPopup('${posterPath}', '${obra.id}')">
             <h1 class="fw-bold text-dark">${titulo}</h1>
             ${obra.voteboteco ? `<div class="badge bg-warning text-dark">★ ${obra.voteboteco.toFixed(1)}</div>` : ''}
         `;
@@ -413,17 +413,17 @@ function abrirPopup(url, id) {
                     
                     <div class="d-flex flex-column gap-2">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="watched-switch" ${obra.iswatched ? 'checked' : ''} onchange="atualizarStatusObra(${obra.id}, this.checked, null)">
+                            <input class="form-check-input" type="checkbox" id="watched-switch" ${obra.iswatched ? 'checked' : ''} onchange="atualizarStatusObra('${obra.id}', this.checked, null)">
                             <label class="form-check-label" for="watched-switch">Já assistimos</label>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <label for="custom-rating" class="small">Nossa Nota:</label>
-                            <input type="number" id="custom-rating" class="form-control form-control-sm" style="width: 60px;" step="0.1" min="0" max="10" value="${obra.voteboteco || ''}" onchange="atualizarStatusObra(${obra.id}, null, this.value)">
+                            <input type="number" id="custom-rating" class="form-control form-control-sm" style="width: 60px;" step="0.1" min="0" max="10" value="${obra.voteboteco || ''}" onchange="atualizarStatusObra('${obra.id}', null, this.value)">
                         </div>
                     </div>
 
                     <div class="d-flex gap-2 mt-3">
-                        <button class='btn btn-danger btn-sm' onclick="abrirConfirmacaoDelecao(${obra.id})">Deletar</button>
+                        <button class='btn btn-danger btn-sm' onclick="abrirConfirmacaoDelecao('${obra.id}')">Deletar</button>
                         <button class='btn btn-secondary btn-sm' onclick='fecharPopup()'>Fechar</button>
                     </div>
                 </div>

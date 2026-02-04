@@ -26,7 +26,7 @@ if (typeof window.UIUtils !== 'undefined') {
         return `
             <div class="position-relative" style="width:${size}px;height:${size}px;flex-shrink:0;align-self:flex-start;">
                 <img src="${profileImage}" 
-                     class="rounded-circle" 
+                     class="rounded" 
                      style="width:100%;height:100%;object-fit:cover;"
                      alt="${user.username}">
                 <span class="position-absolute bottom-0 end-0 border border-white rounded-circle" 

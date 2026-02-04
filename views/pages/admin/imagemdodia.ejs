@@ -91,7 +91,7 @@ async function carregarFila() {
                         Em: ${new Date(item.createdat).toLocaleDateString()}
                     </div>
                 </div>
-                <button onclick="removerImagem(${item.id}, 'fila')" class="btn btn-outline-danger btn-sm border-0">
+                <button onclick="removerImagem('${item.publicid}', 'fila')" class="btn btn-outline-danger btn-sm border-0">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
@@ -122,7 +122,7 @@ async function carregarHistorico() {
                     <div class="fw-bold" style="font-size: 0.8rem;">${item.text}</div>
                     <div class="text-muted" style="font-size: 0.6rem;">Ativada em: ${new Date(item.start_at).toLocaleDateString()}</div>
                 </div>
-                <button onclick="removerImagem(${item.id}, 'historico')" class="btn btn-outline-danger btn-sm border-0">
+                <button onclick="removerImagem('${item.publicid}', 'historico')" class="btn btn-outline-danger btn-sm border-0">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
@@ -142,7 +142,7 @@ async function carregarMolduras() {
             <div class="d-flex align-items-center mb-2 p-2 border rounded">
                 <img src="${b.url}" style="width: 40px; height: 40px;" class="me-2 border">
                 <span class="small flex-grow-1">${b.name}</span>
-                <button onclick="removerMoldura(${b.id})" class="btn btn-outline-danger btn-sm border-0">
+                <button onclick="removerMoldura('${b.publicid}')" class="btn btn-outline-danger btn-sm border-0">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>

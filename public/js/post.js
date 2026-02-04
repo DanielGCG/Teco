@@ -42,8 +42,8 @@ window.PostUI = {
             `;
         }
 
-        const isLiked = post.likes && post.likes.some(l => currentUser && l.userId === currentUser.id);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.userId === currentUser.id);
+        const isLiked = post.likes && post.likes.some(l => currentUser && l.userId === currentUser.publicid);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.userId === currentUser.publicid);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -68,7 +68,7 @@ window.PostUI = {
             const parentUsername = post.parent.author.username;
 
             repostHtml = `
-                <div class="repost-container p-2 mt-2 border rounded" onclick="event.stopPropagation(); PostUI.abrirModal(${post.parent.id}, '${parentUsername}')">
+                <div class="repost-container p-2 mt-2 border rounded" onclick="event.stopPropagation(); PostUI.abrirModal('${post.parent.publicid}', '${parentUsername}')">
                     <div class="d-flex align-items-center gap-2 mb-1">
                         <img src="${post.parent.author.profileimage}" class="rounded object-fit-cover" style="width: 20px; height: 20px;">
                         <span class="post-author-name fw-bold small">${parentUsername}</span>
@@ -80,8 +80,8 @@ window.PostUI = {
             `;
         }
 
-        const deleteBtn = (currentUser && currentUser.id === post.authorUserId) 
-            ? `<button class="post-action delete d-flex align-items-center" onclick="event.stopPropagation(); PostActions.deletar(${post.id})" title="Deletar">
+        const deleteBtn = (currentUser && currentUser.publicid === post.authorUserId) 
+            ? `<button class="post-action delete d-flex align-items-center" onclick="event.stopPropagation(); PostActions.deletar('${post.publicid}')" title="Deletar">
                 <i class="bi bi-trash"></i>
                </button>` 
             : '';
@@ -92,7 +92,7 @@ window.PostUI = {
         const authorUsername = post.author.username;
 
         return deletedParentHtml + `
-            <div class="${cardClass}" id="post-${post.id}" onclick="PostUI.abrirModal(${post.id}, '${authorUsername}')">
+            <div class="${cardClass}" id="post-${post.publicid}" onclick="PostUI.abrirModal('${post.publicid}', '${authorUsername}')">
                 <div class="flex-shrink-0 position-relative">
                     <img src="${post.author.profileimage}" class="rounded object-fit-cover" style="width: 48px; height: 48px; z-index: 2; position: relative;">
                     ${threadLine}
@@ -106,19 +106,19 @@ window.PostUI = {
                     ${mediaHtml}
                     ${repostHtml}
                     <div class="post-actions d-flex justify-content-between mt-2">
-                        <button class="post-action reply d-flex align-items-center gap-1" onclick="event.stopPropagation(); PostUI.abrirModal(${post.id}, '${authorUsername}', true)" title="Responder">
+                        <button class="post-action reply d-flex align-items-center gap-1" onclick="event.stopPropagation(); PostUI.abrirModal('${post.publicid}', '${authorUsername}', true)" title="Responder">
                             <i class="bi bi-chat"></i> <span>${post.replycount || 0}</span>
                         </button>
-                        <button class="post-action repost d-flex align-items-center gap-1 ${post.type === 'repost' ? 'reposted' : ''}" onclick="event.stopPropagation(); PostUI.abrirModalInteracao(${post.id}, 'repost')" title="Repostar">
+                        <button class="post-action repost d-flex align-items-center gap-1 ${post.type === 'repost' ? 'reposted' : ''}" onclick="event.stopPropagation(); PostUI.abrirModalInteracao('${post.publicid}', 'repost')" title="Repostar">
                             <i class="bi bi-arrow-repeat"></i> <span>${post.repostcount || 0}</span>
                         </button>
-                        <button class="post-action like d-flex align-items-center gap-1 ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); PostActions.like(${post.id})" title="Curtir">
+                        <button class="post-action like d-flex align-items-center gap-1 ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); PostActions.like('${post.publicid}')" title="Curtir">
                             <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span>${post.likecount || 0}</span>
                         </button>
-                        <button class="post-action bookmark d-flex align-items-center gap-1 ${isBookmarked ? 'bookmarked' : ''}" onclick="event.stopPropagation(); PostActions.toggleBookmark(${post.id})" title="Salvar">
+                        <button class="post-action bookmark d-flex align-items-center gap-1 ${isBookmarked ? 'bookmarked' : ''}" onclick="event.stopPropagation(); PostActions.toggleBookmark('${post.publicid}')" title="Salvar">
                             <i class="bi ${isBookmarked ? 'bi-bookmark-fill' : 'bi-bookmark'}"></i>
                         </button>
-                        <button class="post-action share d-flex align-items-center gap-1" onclick="event.stopPropagation(); PostActions.compartilhar(${post.id}, '${post.author.username}')" title="Compartilhar">
+                        <button class="post-action share d-flex align-items-center gap-1" onclick="event.stopPropagation(); PostActions.compartilhar('${post.publicid}', '${post.author.username}')" title="Compartilhar">
                             <i class="bi bi-share"></i>
                         </button>
                         ${deleteBtn}

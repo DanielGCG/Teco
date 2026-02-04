@@ -176,11 +176,11 @@ const GaleriaManager = {
 
             const editControls = this.editMode ? `
                 <div class="edit-overlay">
-                    <button class="btn btn-xs btn-light border" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem(${item.id})">
+                    <button class="btn btn-xs btn-light border" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem('${item.id}')">
                         <i class="bi bi-pencil-square"></i>
                     </button>
                 </div>
-                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem(${item.id})" title="Excluir"><i class="bi bi-trash"></i></button>
+                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem('${item.id}')" title="Excluir"><i class="bi bi-trash"></i></button>
                 <div class="resize-handle" data-id="${item.id}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
             ` : '';
 
@@ -232,7 +232,7 @@ const GaleriaManager = {
                             <img src="${item.coverurl}" style="max-height:80px; max-width:120px; object-fit:cover; border-radius:8px;"/>
                             <div>
                                 <div class="small text-muted">Capa Atual</div>
-                                <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover(${item.id})">Remover Capa</button></div>
+                                <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover('${item.id}')">Remover Capa</button></div>
                             </div>
                         </div>`;
                 } else {
@@ -265,7 +265,7 @@ const GaleriaManager = {
             const json = await res.json();
             if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
 
-            const idx = this.data.items.findIndex(i => i.id === parseInt(id));
+            const idx = this.data.items.findIndex(i => i.id === id);
             if (idx > -1) this.data.items[idx] = { ...this.data.items[idx], ...json.item };
 
             bootstrap.Modal.getInstance(document.getElementById('modalEditItem')).hide();
@@ -548,7 +548,7 @@ const GaleriaManager = {
             const results = document.getElementById('search-results');
             if (results) {
                 const list = json.users || json.usuarios || [];
-                results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator(${u.id}, '${u.username}')">${u.username}</button>`).join('');
+                results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator('${u.id}', '${u.username}')">${u.username}</button>`).join('');
             }
         } catch (e) { console.error(e); }
     },
@@ -561,7 +561,7 @@ const GaleriaManager = {
     removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.id !== id); this.renderCollaborators(); },
     renderCollaborators() {
         const container = document.getElementById('collaborators-list');
-        if (container) container.innerHTML = this.collaborators.map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeCollaborator(${c.id})"></i></span>`).join('');
+        if (container) container.innerHTML = this.collaborators.map(c => `<span class="badge bg-primary p-2">${c.username} <i class="bi bi-x-circle cursor-pointer ms-1" onclick="GaleriaManager.removeCollaborator('${c.id}')"></i></span>`).join('');
     },
     togglePublicSection() {
         const section = document.getElementById('collaborators-section');
@@ -636,7 +636,7 @@ const GaleriaManager = {
             const handle = e.target.closest('.resize-handle');
             if (!handle) return;
             e.preventDefault(); e.stopPropagation();
-            const id = parseInt(handle.dataset.id);
+            const id = handle.dataset.id;
             const itemEl = gridContainer.querySelector(`.grid-item[data-id="${id}"]`);
             if (!itemEl) return;
             const idx = this.data.items.findIndex(i => i.id === id);
@@ -695,7 +695,7 @@ const GaleriaManager = {
             if (!this.editMode) return;
             const item = e.target.closest('.grid-item');
             if (item) {
-                draggedId = parseInt(item.dataset.id);
+                draggedId = item.dataset.id;
                 this.draggedItemDims = { w: parseInt(item.dataset.w), h: parseInt(item.dataset.h) };
                 e.dataTransfer.effectAllowed = 'move';
                 setTimeout(() => item.classList.add('dragging'), 0);
@@ -762,7 +762,7 @@ const GaleriaManager = {
         try {
             const modalEl = document.getElementById('modalEditItem');
             const currentId = document.getElementById('edit-item-id')?.value;
-            if (modalEl && currentId && parseInt(currentId) === parseInt(id)) { bootstrap.Modal.getInstance(modalEl)?.hide(); }
+            if (modalEl && currentId && currentId === id) { bootstrap.Modal.getInstance(modalEl)?.hide(); }
         } catch (e) {}
     },
     deleteGallery: async () => { if (await Utils.confirm('Excluir a galeria INTEIRA?')) GaleriaManager.apiDelete(`/api/galeria/${GaleriaManager.galleryId}`, null, '/galerias'); },

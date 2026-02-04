@@ -1,9 +1,9 @@
 const { z } = require('zod');
 
-const userIdSchema = z.object({
-    userId: z.string()
+const publicidSchema = z.object({
+    publicid: z.string().uuid("ID de usuário inválido")
 });
 
 module.exports = {
-    userIdSchema
+    publicidSchema
 };

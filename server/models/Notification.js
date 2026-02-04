@@ -64,8 +64,7 @@ const Notification = sequelize.define('Notification', {
 
 Notification.prototype.toJSON = function () {
     const values = { ...this.get() };
-    delete values.id;
-    delete values.targetUserId;
+    // Mantendo id e publicid separados para evitar ambiguidade
     return values;
 };
 

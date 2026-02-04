@@ -93,11 +93,21 @@ const ChatUtils = (() => {
     }
 
     // Atualiza checks de visualização das mensagens (apenas para DMs)
-    function updateReadStatus(container, lastReadMessageId) {
+    function updateReadStatus(container, lastReadMessageId = null) {
         const messages = container.querySelectorAll('.mensagem.usuario[data-msg-id]');
         messages.forEach(msgEl => {
-            const msgId = parseInt(msgEl.dataset.msgId);
-            if (msgId <= lastReadMessageId) {
+            // Se lastReadMessageId não for fornecido, assume que todas as mensagens do usuário foram lidas
+            let isRead = !lastReadMessageId;
+            
+            if (lastReadMessageId) {
+                const msgId = msgEl.dataset.msgId;
+                // Comparação exata para UUIDs ou numérica para IDs antigos
+                if (msgId === lastReadMessageId) {
+                    isRead = true;
+                }
+            }
+
+            if (isRead) {
                 const checkEl = msgEl.querySelector('.msg-check');
                 if (checkEl) {
                     checkEl.textContent = '✓✓';

@@ -18,10 +18,9 @@ ChatsRouter.get('/', async (req, res) => {
         });
 
         const chatList = chats.map(chat => ({
-            id: chat.id,
             publicid: chat.publicid,
             title: chat.title,
-            creatorusername: chat.creator?.username || 'Desconhecido',
+            creatorusername: chat.creator?.username || 'Sistema',
             createdat: chat.createdat,
             chatTopicName: chat.chatTopicName,
             lastmessageat: chat.lastmessageat
@@ -39,7 +38,7 @@ ChatsRouter.get('/', async (req, res) => {
 ChatsRouter.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username'],
+            attributes: ['publicid', 'username'],
             order: [['username', 'ASC']]
         });
         res.json(users);

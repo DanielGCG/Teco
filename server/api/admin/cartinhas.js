@@ -29,7 +29,7 @@ AdminCartinhasRouter.get('/estatisticas', async (req, res) => {
 AdminCartinhasRouter.get('/usuarios', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const usuario = req.query.usuario;
+    const userPublicId = req.query.userPublicId;
     const status = req.query.status;
     const search = req.query.search;
 
@@ -37,7 +37,7 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
 
     try {
         const userWhere = {};
-        if (usuario) userWhere.id = usuario;
+        if (userPublicId) userWhere.publicid = userPublicId;
         if (search && search.trim() !== '') userWhere.username = { [Op.like]: `%${search}%` };
 
         const cartinhaWhere = {};
@@ -48,7 +48,7 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
         const { rows, count } = await User.findAndCountAll({
             where: userWhere,
             attributes: [
-                'id',
+                'publicid',
                 'username',
                 'profileimage',
                 [fn('COUNT', col('cartinhas_recebidas.id')), 'totalcartinhas'],
@@ -85,13 +85,22 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
 
 // GET /admin/cartinhas - Listar cartinhas com filtros
 AdminCartinhasRouter.get('/', async (req, res) => {
-    const { usuario, remetente, search, status, page = 1, limit = 20 } = req.query;
+    const { recipientPublicId, senderPublicId, search, status, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
     try {
         const where = {};
-        if (usuario) where.recipientUserId = usuario;
-        if (remetente) where.senderUserId = remetente;
+        
+        if (recipientPublicId) {
+            const recipient = await User.findOne({ where: { publicid: recipientPublicId } });
+            if (recipient) where.recipientUserId = recipient.id;
+        }
+
+        if (senderPublicId) {
+            const sender = await User.findOne({ where: { publicid: senderPublicId } });
+            if (sender) where.senderUserId = sender.id;
+        }
+
         if (status === 'naolida') where.isread = false;
         else if (status === 'lida') where.isread = true;
         else if (status === 'favorita') where.isfavorited = true;
@@ -106,8 +115,8 @@ AdminCartinhasRouter.get('/', async (req, res) => {
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
             include: [
-                { model: User, as: 'remetente', attributes: ['username'] },
-                { model: User, as: 'destinatario', attributes: ['username'] }
+                { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
+                { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
             ],
             order: [['createdat', 'DESC']],
             limit,
@@ -125,14 +134,19 @@ AdminCartinhasRouter.get('/', async (req, res) => {
     }
 });
 
-// GET /admin/cartinhas/usuario/:userId - Listar cartinhas de um usuário específico
-AdminCartinhasRouter.get('/usuario/:userId', async (req, res) => {
-    const { userId } = req.params;
+// GET /admin/cartinhas/usuario/:publicid - Listar cartinhas de um usuário específico
+AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
+    const { publicid } = req.params;
     const { page = 1, limit = 15, status, search } = req.query;
     const offset = (page - 1) * limit;
 
     try {
-        const where = { recipientUserId: userId };
+        const user = await User.findOne({ where: { publicid } });
+        if (!user) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const where = { recipientUserId: user.id };
         if (status === 'naolida') where.isread = false;
         else if (status === 'lida') where.isread = true;
         else if (status === 'favorita') where.isfavorited = true;
@@ -147,7 +161,7 @@ AdminCartinhasRouter.get('/usuario/:userId', async (req, res) => {
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
             include: [
-                { model: User, as: 'remetente', attributes: ['username'] }
+                { model: User, as: 'remetente', attributes: ['username', 'publicid'] }
             ],
             order: [['createdat', 'DESC']],
             limit: parseInt(limit),

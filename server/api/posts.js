@@ -12,7 +12,7 @@ const POST_INCLUDES = [
     { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
     { model: PostMedia, as: 'media' },
     { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
-    { model: PostBookmark, as: 'bookmarks', attributes: ['userId'] },
+    { model: PostBookmark, as: 'bookmarks', include: [{ model: User, as: 'user', attributes: ['publicid'] }] },
     { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
     { 
         model: Post, 
@@ -36,8 +36,8 @@ const POST_INCLUDES = [
 PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
     try {
         const { content, type } = req.body;
-        // Frontend deve enviar como attachedPostId
-        const attachedPostId = req.body.attachedPostId;
+        // Frontend deve enviar como attachedPostPublicId
+        const attachedPostPublicId = req.body.attachedPostPublicId || req.body.attachedPostId;
         const userId = req.user.id;
 
         if (!content && (!req.files || req.files.length === 0) && type !== 'repost') {
@@ -46,6 +46,14 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
 
         if (content && content.length > 400) {
             return res.status(400).json({ error: 'O texto deve ter no máximo 400 caracteres.' });
+        }
+
+        let attachedPostId = null;
+        if (attachedPostPublicId) {
+            const parentPost = await Post.findOne({ where: { publicid: attachedPostPublicId } });
+            if (parentPost) {
+                attachedPostId = parentPost.id;
+            }
         }
 
         const post = await Post.create({
@@ -104,7 +112,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                             type: 'info', // 'MENTION' não está no ENUM do SQL, usando 'info'
                             title: 'Menção em Post',
                             body: `${req.user.username} mencionou você em um post.`,
-                            link: `/${req.user.username}/status/${post.id}`
+                            link: `/${req.user.username}/status/${post.publicid}`
                         });
 
                         // Emitir via socket
@@ -129,7 +137,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                 const io = req.app.get('io');
                 if (io) {
                     io.to(`profile_${parentPost.author.username}`).emit('postUpdate', { 
-                        id: parentPost.id, 
+                        id: parentPost.publicid, 
                         replycount: parentPost.replycount,
                         repostcount: parentPost.repostcount
                     });
@@ -153,7 +161,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                         type: notifType,
                         title: notifTitle,
                         body: notifBody,
-                        link: `/${req.user.username}/status/${post.id}`
+                        link: `/${req.user.username}/status/${post.publicid}`
                     });
 
                     // Emitir via socket
@@ -258,12 +266,16 @@ PostsRouter.get('/user/:username', async (req, res) => {
     }
 });
 
-// GET /posts/:id/replies - Listar respostas de um post
-PostsRouter.get('/:id/replies', async (req, res) => {
+// GET /posts/:publicid/replies - Listar respostas de um post
+PostsRouter.get('/:publicid/replies', async (req, res) => {
     try {
+        const { publicid } = req.params;
+        const parentPost = await Post.findOne({ where: { publicid: publicid } });
+        if (!parentPost) return res.status(404).json({ error: 'Post pai não encontrado.' });
+
         const replies = await Post.findAll({
             where: { 
-                attachedPostId: req.params.id, 
+                attachedPostId: parentPost.id, 
                 type: 'comment'
             },
             include: [
@@ -283,21 +295,23 @@ PostsRouter.get('/:id/replies', async (req, res) => {
     }
 });
 
-// POST /posts/:id/like - Curtir/Descurtir
-PostsRouter.post('/:id/like', async (req, res) => {
+// POST /posts/:publicid/like - Curtir/Descurtir
+PostsRouter.post('/:publicid/like', async (req, res) => {
     try {
-        const postId = req.params.id;
+        const { publicid } = req.params;
         const userId = req.user.id;
 
-        const existingLike = await PostLike.findOne({
-            where: { postId: postId, userId: userId }
-        });
-
-        const post = await Post.findByPk(postId, {
+        const post = await Post.findOne({
+            where: { publicid: publicid },
             include: [{ model: User, as: 'author', attributes: ['username'] }]
         });
 
         if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
+        const postId = post.id;
+
+        const existingLike = await PostLike.findOne({
+            where: { postId: postId, userId: userId }
+        });
 
         if (existingLike) {
             await existingLike.destroy();
@@ -307,12 +321,12 @@ PostsRouter.post('/:id/like', async (req, res) => {
             const io = req.app.get('io');
             if (io) {
                 io.to(`profile_${post.author.username}`).emit('postUpdate', { 
-                    id: post.id, 
+                    publicid: post.publicid, 
                     likecount: post.likecount 
                 });
             }
 
-            return res.json({ liked: false, likecount: post.likecount });
+            return res.json({ liked: false, likecount: post.likecount, publicid: post.publicid });
         } else {
             await PostLike.create({ postId: postId, userId: userId });
             await post.reload();
@@ -321,7 +335,7 @@ PostsRouter.post('/:id/like', async (req, res) => {
             const io = req.app.get('io');
             if (io) {
                 io.to(`profile_${post.author.username}`).emit('postUpdate', { 
-                    id: post.id, 
+                    publicid: post.publicid, 
                     likecount: post.likecount 
                 });
             }
@@ -333,7 +347,7 @@ PostsRouter.post('/:id/like', async (req, res) => {
                     type: 'info',
                     title: 'Nova Curtida',
                     body: `${req.user.username} curtiu seu post.`,
-                    link: `/${post.author.username}/status/${post.id}`
+                    link: `/${post.author.username}/status/${post.publicid}`
                 });
 
                 // Emitir via socket
@@ -343,7 +357,7 @@ PostsRouter.post('/:id/like', async (req, res) => {
                 }
             }
             
-            return res.json({ liked: true, likecount: post.likecount });
+            return res.json({ liked: true, likecount: post.likecount, publicid: post.publicid });
         }
 
     } catch (error) {
@@ -352,10 +366,12 @@ PostsRouter.post('/:id/like', async (req, res) => {
     }
 });
 
-// GET /posts/:id - Buscar um post específico (com ancestralidade)
-PostsRouter.get('/:id', async (req, res) => {
+// GET /posts/:publicid - Buscar um post específico (com ancestralidade)
+PostsRouter.get('/:publicid', async (req, res) => {
     try {
-        const post = await Post.findByPk(req.params.id, {
+        const { publicid } = req.params;
+        const post = await Post.findOne({
+            where: { publicid: publicid },
             include: POST_INCLUDES
         });
         if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
@@ -368,9 +384,9 @@ PostsRouter.get('/:id', async (req, res) => {
         while (currentParentId && depth < 10) {
             const parent = await Post.findByPk(currentParentId, {
                 include: [
-                    { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns'] },
+                    { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
                     { model: PostMedia, as: 'media' },
-                    { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] }
+                    { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] }
                 ]
             });
             
@@ -422,38 +438,39 @@ PostsRouter.get('/user/:username/bookmarks', async (req, res) => {
     }
 });
 
-// POST /posts/:id/bookmark - Favoritar/Desfavoritar
-PostsRouter.post('/:id/bookmark', async (req, res) => {
+// POST /posts/:publicid/bookmark - Favoritar/Desfavoritar
+PostsRouter.post('/:publicid/bookmark', async (req, res) => {
     try {
-        const postId = req.params.id;
+        const { publicid } = req.params;
         const userId = req.user.id;
+
+        const post = await Post.findOne({ where: { publicid: publicid } });
+        if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
+        const postId = post.id;
 
         const existingBookmark = await PostBookmark.findOne({
             where: { postId: postId, userId: userId }
         });
 
-        const post = await Post.findByPk(postId);
-        if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
-
         if (existingBookmark) {
             await existingBookmark.destroy();
             await post.reload();
-            return res.json({ bookmarked: false, bookmarkcount: post.bookmarkcount });
+            return res.json({ bookmarked: false, bookmarkcount: post.bookmarkcount, publicid: post.publicid });
         } else {
             await PostBookmark.create({ postId: postId, userId: userId });
             await post.reload();
-            return res.json({ bookmarked: true, bookmarkcount: post.bookmarkcount });
+            return res.json({ bookmarked: true, bookmarkcount: post.bookmarkcount, publicid: post.publicid });
         }
     } catch (error) {
         console.error('[Posts] Erro ao favoritar:', error);
         res.status(500).json({ error: 'Erro interno ao processar favorito.' });
     }
 });
-
-// DELETE /posts/:id - Deletar um post
-PostsRouter.delete('/:id', async (req, res) => {
+// DELETE /posts/:publicid - Deletar um post
+PostsRouter.delete('/:publicid', async (req, res) => {
     try {
-        const post = await Post.findByPk(req.params.id);
+        const { publicid } = req.params;
+        const post = await Post.findOne({ where: { publicid: publicid } });
         if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
 
         // Apenas o autor pode deletar
@@ -477,7 +494,7 @@ PostsRouter.delete('/:id', async (req, res) => {
                 const io = req.app.get('io');
                 if (io) {
                     io.to(`profile_${parent.author.username}`).emit('postUpdate', {
-                        id: parent.id,
+                        publicid: parent.publicid,
                         replycount: parent.replycount,
                         repostcount: parent.repostcount
                     });
@@ -500,10 +517,10 @@ PostsRouter.delete('/:id', async (req, res) => {
         // Emitir deleção via socket
         const io = req.app.get('io');
         if (io && author) {
-            io.to(`profile_${author.username}`).emit('postDeleted', post.id);
+            io.to(`profile_${author.username}`).emit('postDeleted', post.publicid);
         }
 
-        res.json({ success: true });
+        res.json({ success: true, publicid: post.publicid });
     } catch (error) {
         console.error('[Posts] Erro ao deletar:', error);
         res.status(500).json({ error: 'Erro interno ao deletar post.' });

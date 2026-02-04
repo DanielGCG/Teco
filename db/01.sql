@@ -6,15 +6,16 @@ USE teco;
 -- ==========================
 CREATE TABLE IF NOT EXISTS role (
     id TINYINT UNSIGNED PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     name VARCHAR(64)
 );
 
-INSERT INTO role (id, name) VALUES
-(1, 'dono'),
-(5, 'admin'),
-(10, 'moderador'),
-(11, 'botecor'),
-(20, 'usuário');
+INSERT INTO role (id, publicid, name) VALUES
+(1, '83d26732-c7f9-4623-bc75-1a13470402b4', 'dono'),
+(5, '6c9135fc-3e28-4475-be82-f58c4957f950', 'admin'),
+(10, '33a2e796-03f3-4fd6-912a-04987a052e69', 'moderador'),
+(11, 'f268b8b0-880c-4ef7-8f5f-f61b0722cc2c', 'botecor'),
+(20, '4078864a-2f47-495f-9e32-3f7cb5f98897', 'usuário');
 
 CREATE TABLE IF NOT EXISTS user (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -45,6 +46,7 @@ END;
 DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS follow (
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     followerUserId INT UNSIGNED NOT NULL,
     followedUserId INT UNSIGNED NOT NULL,
     CHECK (followerUserId != followedUserId),
@@ -59,6 +61,7 @@ CREATE TABLE IF NOT EXISTS follow (
 -- ==========================
 CREATE TABLE IF NOT EXISTS session (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     userId INT UNSIGNED NOT NULL,
     cookie VARCHAR(255) NOT NULL,
     createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -71,6 +74,7 @@ CREATE TABLE IF NOT EXISTS session (
 -- ==========================
 CREATE TABLE IF NOT EXISTS notification (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     targetUserId INT UNSIGNED NOT NULL,
     type ENUM('system','everyone','followaccept', 'followarequest', 'dm', 'cutucado', 'postcomment', 'postlike', 'postrepost', 'info') NOT NULL DEFAULT 'info',
     title VARCHAR(160) NOT NULL,
@@ -140,6 +144,7 @@ CREATE TABLE IF NOT EXISTS rodinha (
 
 CREATE TABLE IF NOT EXISTS post (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     authorUserId INT UNSIGNED NOT NULL,
     isrodinha BOOLEAN NOT NULL DEFAULT FALSE,
     attachedPostId INT UNSIGNED DEFAULT NULL,
@@ -158,6 +163,7 @@ CREATE TABLE IF NOT EXISTS post (
 
 CREATE TABLE IF NOT EXISTS postmedia (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     postId INT UNSIGNED NOT NULL,
     type ENUM('image/gif','video') NOT NULL,
     url VARCHAR(255) NOT NULL,
@@ -166,6 +172,7 @@ CREATE TABLE IF NOT EXISTS postmedia (
 
 CREATE TABLE IF NOT EXISTS postmention (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     postId INT UNSIGNED NOT NULL,
     userId INT UNSIGNED NOT NULL,
     FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE,
@@ -189,6 +196,7 @@ DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS postlike (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     userId INT UNSIGNED NOT NULL,
     postId INT UNSIGNED NOT NULL,
     createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -199,6 +207,7 @@ CREATE TABLE IF NOT EXISTS postlike (
 
 CREATE TABLE IF NOT EXISTS postbookmark (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     userId INT UNSIGNED NOT NULL,
     postId INT UNSIGNED NOT NULL,
     createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -280,6 +289,7 @@ CREATE TABLE IF NOT EXISTS gallerycontributor (
 
 CREATE TABLE IF NOT EXISTS galleryitem (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     galleryId INT UNSIGNED NOT NULL,
     type ENUM('image/gif','video','audio', 'text', 'embed') NOT NULL,
     title VARCHAR(160),
@@ -306,6 +316,7 @@ CREATE TABLE IF NOT EXISTS galleryitem (
 -- ==========================
 CREATE TABLE IF NOT EXISTS movie (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     title VARCHAR(160) NOT NULL,
     overview TEXT,
     popularity FLOAT,
@@ -328,6 +339,7 @@ CREATE TABLE IF NOT EXISTS movie (
 -- ==========================
 CREATE TABLE IF NOT EXISTS imagemdodiaborder (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     name VARCHAR(64) NOT NULL,
     url VARCHAR(255) NOT NULL,
     createdbyUserId INT UNSIGNED,
@@ -337,6 +349,7 @@ CREATE TABLE IF NOT EXISTS imagemdodiaborder (
 
 CREATE TABLE IF NOT EXISTS imagemdodia (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     position INT NOT NULL,
     url VARCHAR(255) NOT NULL,
     text VARCHAR(32) NOT NULL,
@@ -375,6 +388,7 @@ CREATE TABLE IF NOT EXISTS chat (
 
 CREATE TABLE IF NOT EXISTS chatmessages (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     chatId INT UNSIGNED NOT NULL,
     userId INT UNSIGNED NOT NULL,
     message TEXT NOT NULL,
@@ -430,6 +444,7 @@ DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS dmmessage (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
     dmId INT UNSIGNED NOT NULL,
     userId INT UNSIGNED NOT NULL,
     message TEXT NOT NULL,

@@ -470,19 +470,33 @@
 
                 <!-- Botões de Ação -->
                 <div class="acoes-cartinha">
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn btn-outline-secondary" id="btnGerenciarRascunhos" title="Ver rascunhos salvos">
-                            📝 Rascunhos
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-secondary" id="btnGerenciarRascunhos" title="Ver rascunhos salvos (Ctrl+D)">
+                            <i class="bi bi-journal-text me-1"></i> Rascunhos
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="btnSalvarRascunho" title="Salvar como rascunho (Ctrl+S)">
-                            💾 Salvar
-                        </button>
-                        <button type="button" class="btn btn-outline-danger" id="btnLimparCartinha" title="Limpar tudo">
-                            🗑️ Limpar
-                        </button>
-                        <div class="ms-auto">
-                            <button type="button" class="btn btn-primary btn-lg" id="btnEnviarCartinha" title="Enviar cartinha (Ctrl+Enter)">
-                                ✉️ Enviar Cartinha
+                        
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Mais opções">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <button type="button" class="dropdown-item d-flex align-items-center" id="btnSalvarRascunho">
+                                        <i class="bi bi-save me-2"></i> Salvar Rascunho <small class="text-muted ms-auto ps-3">Ctrl+S</small>
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger d-flex align-items-center" id="btnLimparCartinha">
+                                        <i class="bi bi-trash me-2"></i> Limpar Tudo <small class="text-muted ms-auto ps-3">Delete</small>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="ms-auto flex-grow-1 flex-sm-grow-0">
+                            <button type="button" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2" id="btnEnviarCartinha">
+                                <i class="bi bi-send-fill"></i> <span>Enviar Cartinha</span>
                             </button>
                         </div>
                     </div>
@@ -631,10 +645,6 @@
     </div>
 </div>
 
-<!-- Modais necessários -->
-<%- include('../../utils/modal-aviso') %>
-<%- include('../../utils/modal-confirmacao') %>
-
 <script>
     // Sistema de Escrever Cartinhas
     class EscreverCartinha {
@@ -771,7 +781,7 @@
             if (paraUserId && paraUsername) {
                 // Simular destinatário a partir dos parâmetros
                 this.destinatarioSelecionado = {
-                    id: parseInt(paraUserId),
+                    id: paraUserId,
                     username: decodeURIComponent(paraUsername),
                     profileimage: null,
                     status: 'online'
@@ -864,7 +874,7 @@
 
             container.querySelectorAll('.sugestao-usuario').forEach(elemento => {
                 elemento.addEventListener('click', () => {
-                    const usuarioId = parseInt(elemento.dataset.usuarioId);
+                    const usuarioId = elemento.dataset.usuarioId;
                     this.selecionarDestinatario(usuarioId);
                 });
             });
@@ -1055,10 +1065,10 @@
                     </div>
                     
                     <div class="rascunho-acoes">
-                        <button class="btn btn-success btn-sm" onclick="window.escreverCartinha.aplicarRascunho(${rascunho.id})">
+                        <button class="btn btn-success btn-sm" onclick="window.escreverCartinha.aplicarRascunho('${rascunho.id}')">
                             ✏️ Aplicar
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="window.escreverCartinha.excluirRascunho(${rascunho.id})">
+                        <button class="btn btn-danger btn-sm" onclick="window.escreverCartinha.excluirRascunho('${rascunho.id}')">
                             🗑️ Excluir
                         </button>
                     </div>
@@ -1071,7 +1081,8 @@
         aplicarRascunho(rascunhoId) {
             try {
                 const rascunhos = this.carregarTodosRascunhos();
-                const rascunho = rascunhos.find(r => r.id === rascunhoId);
+                // Compara como string para ser robusto
+                const rascunho = rascunhos.find(r => String(r.id) === String(rascunhoId));
                 
                 if (!rascunho) {
                     alert('❌ Rascunho não encontrado!');
@@ -1097,7 +1108,7 @@
                     
                     // Simular destinatário selecionado
                     this.destinatarioSelecionado = {
-                        id: parseInt(rascunho.destinatarioId),
+                        id: rascunho.destinatarioId,
                         username: rascunho.destinatarioNome
                     };
                     
@@ -1400,13 +1411,16 @@
         }
 
     oferecerLimpezaRascunhos(titulo, conteudo) {
+        // Só oferecer se houver algo substancial escrito
+        if (!titulo && (!conteudo || conteudo.length < 20)) return;
+
         // Procurar rascunhos similares para oferecer limpeza
         const rascunhos = this.carregarTodosRascunhos();
         const rascunhosSimilares = rascunhos.filter(r => 
-            r.title === titulo || 
-            r.body === conteudo ||
-            (titulo && r.title.includes(titulo)) ||
-            (conteudo && r.body.includes(conteudo.substring(0, 50)))
+            (titulo && r.title && r.title === titulo) || 
+            (conteudo && r.body && r.body === conteudo) ||
+            (titulo && r.title && r.title.includes(titulo) && titulo.length > 5) ||
+            (conteudo && r.body && r.body.includes(conteudo.substring(0, 50)) && conteudo.length > 20)
         );
         
         if (rascunhosSimilares.length > 0) {
@@ -1480,6 +1494,8 @@
         }
 
         async buscarUsuarioPorId(usuarioId) {
+            if (!usuarioId || usuarioId === 'null') return;
+            
             try {
                 const response = await fetch(`/api/users/${usuarioId}`, {
                     credentials: 'include'

@@ -115,8 +115,8 @@
 
     function renderMainPost(post) {
         const container = document.getElementById('main-post-container');
-        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.userId === window.currentUser.id);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.userId === window.currentUser.id);
+        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.userId === window.currentUser.publicid);
+        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.userId === window.currentUser.publicid);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -131,8 +131,8 @@
         const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateStr = date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
 
-        const deleteBtn = (window.currentUser && window.currentUser.id === post.userId) 
-            ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar(${post.id})" title="Deletar">
+        const deleteBtn = (window.currentUser && window.currentUser.publicid === post.authorUserId) 
+            ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar('${post.publicid}')" title="Deletar">
                 <i class="bi bi-trash"></i>
                </button>` 
             : '';
@@ -173,16 +173,16 @@
                     <button class="post-action reply d-flex align-items-center" onclick="document.getElementById('reply-textarea').focus()" title="Responder">
                         <i class="bi bi-chat" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action repost d-flex align-items-center ${post.type === 'repost' ? 'reposted' : ''}" onclick="PostUI.abrirModalInteracao(${post.id}, 'repost')" title="Repostar">
+                    <button class="post-action repost d-flex align-items-center ${post.type === 'repost' ? 'reposted' : ''}" onclick="PostUI.abrirModalInteracao('${post.id}', 'repost')" title="Repostar">
                         <i class="bi bi-arrow-repeat" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action like d-flex align-items-center ${isLiked ? 'liked' : ''}" onclick="PostActions.like(${post.id})" title="Curtir">
+                    <button class="post-action like d-flex align-items-center ${isLiked ? 'liked' : ''}" onclick="PostActions.like('${post.id}')" title="Curtir">
                         <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action bookmark d-flex align-items-center ${isBookmarked ? 'bookmarked' : ''}" onclick="PostActions.toggleBookmark(${post.id})" title="Salvar">
+                    <button class="post-action bookmark d-flex align-items-center ${isBookmarked ? 'bookmarked' : ''}" onclick="PostActions.toggleBookmark('${post.id}')" title="Salvar">
                         <i class="bi ${isBookmarked ? 'bi-bookmark-fill' : 'bi-bookmark'}" style="font-size: 20px;"></i>
                     </button>
-                    <button class="post-action share d-flex align-items-center" onclick="PostActions.compartilhar(${post.id}, '${post.author.username}')" title="Compartilhar">
+                    <button class="post-action share d-flex align-items-center" onclick="PostActions.compartilhar('${post.id}', '${post.author.username}')" title="Compartilhar">
                         <i class="bi bi-share" style="font-size: 20px;"></i>
                     </button>
                     ${deleteBtn}

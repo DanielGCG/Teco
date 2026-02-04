@@ -242,7 +242,7 @@
             const result = await response.json();
             
             if (response.ok) {
-                const cartinha = encontrarCartinha(parseInt(cartinhaId));
+                const cartinha = encontrarCartinha(cartinhaId);
                 if (cartinha) {
                     cartinha.title = titulo;
                     cartinha.body = conteudo;

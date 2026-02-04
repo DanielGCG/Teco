@@ -7,6 +7,12 @@ const Post = sequelize.define('Post', {
         primaryKey: true,
         autoIncrement: true
     },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
+    },
     authorUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false
@@ -69,11 +75,27 @@ const Post = sequelize.define('Post', {
     timestamps: false
 });
 
+Post.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    // Mantendo id e publicid separados para evitar ambiguidade
+    if (values.author && values.author.publicid) {
+        values.authorUserId = values.author.publicid;
+    }
+    delete values.attachedPostId;
+    return values;
+};
+
 const PostMedia = sequelize.define('PostMedia', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     postId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -92,11 +114,24 @@ const PostMedia = sequelize.define('PostMedia', {
     timestamps: false
 });
 
+PostMedia.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.id;
+    delete values.postId;
+    return values;
+};
+
 const PostMention = sequelize.define('PostMention', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     postId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -111,11 +146,26 @@ const PostMention = sequelize.define('PostMention', {
     timestamps: false
 });
 
+PostMention.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    if (values.user && values.user.publicid) {
+        values.userId = values.user.publicid;
+    }
+    delete values.postId;
+    return values;
+};
+
 const PostLike = sequelize.define('PostLike', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     userId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -134,11 +184,26 @@ const PostLike = sequelize.define('PostLike', {
     timestamps: false
 });
 
+PostLike.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    if (values.user && values.user.publicid) {
+        values.userId = values.user.publicid;
+    }
+    delete values.postId;
+    return values;
+};
+
 const PostBookmark = sequelize.define('PostBookmark', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     userId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -156,6 +221,15 @@ const PostBookmark = sequelize.define('PostBookmark', {
     tableName: 'postbookmark',
     timestamps: false
 });
+
+PostBookmark.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    if (values.user && values.user.publicid) {
+        values.userId = values.user.publicid;
+    }
+    delete values.postId;
+    return values;
+};
 
 const Rodinha = sequelize.define('Rodinha', {
     userId: {

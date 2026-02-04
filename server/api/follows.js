@@ -4,7 +4,7 @@ const { Follow, User, sequelize } = require("../models");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const { createNotification } = require("./notifications");
 const validate = require("../middlewares/validate");
-const { userIdSchema } = require("../validators/follows.validator");
+const { publicidSchema } = require("../validators/follows.validator");
 const { Op } = require("sequelize");
 
 // Helper para proteger rotas
@@ -12,19 +12,14 @@ const protect = (minRole = 20) => {
     return authMiddleware(minRole);
 };
 
-// POST /follow/:userId - Seguir um usuário
-FollowsRouter.post('/:userId', protect(20), validate(userIdSchema, 'params'), async (req, res) => {
+// POST /follow/:publicid - Seguir um usuário
+FollowsRouter.post('/:publicid', protect(20), validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const inputId = req.params.userId;
+        const publicid = req.params.publicid;
         const followerId = req.user.id;
 
-        // Tenta encontrar o usuário por publicid ou id
-        let targetUser;
-        if (isNaN(inputId)) {
-            targetUser = await User.findOne({ where: { publicid: inputId } });
-        } else {
-            targetUser = await User.findByPk(parseInt(inputId));
-        }
+        // Tenta encontrar o usuário por publicid
+        const targetUser = await User.findOne({ where: { publicid } });
 
         if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
@@ -89,19 +84,14 @@ FollowsRouter.post('/:userId', protect(20), validate(userIdSchema, 'params'), as
     }
 });
 
-// DELETE /unfollow/:userId - Parar de seguir um usuário
-FollowsRouter.delete('/:userId', protect(20), validate(userIdSchema, 'params'), async (req, res) => {
+// DELETE /unfollow/:publicid - Parar de seguir um usuário
+FollowsRouter.delete('/:publicid', protect(20), validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const inputId = req.params.userId;
+        const publicid = req.params.publicid;
         const followerId = req.user.id;
 
-        // Tenta encontrar o usuário por publicid ou id
-        let targetUser;
-        if (isNaN(inputId)) {
-            targetUser = await User.findOne({ where: { publicid: inputId } });
-        } else {
-            targetUser = await User.findByPk(parseInt(inputId));
-        }
+        // Tenta encontrar o usuário por publicid
+        const targetUser = await User.findOne({ where: { publicid } });
 
         if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
@@ -124,11 +114,17 @@ FollowsRouter.delete('/:userId', protect(20), validate(userIdSchema, 'params'), 
     }
 });
 
-// GET /status/:userId - Verificar status de seguimento
-FollowsRouter.get('/status/:userId', protect(20), validate(userIdSchema, 'params'), async (req, res) => {
+// GET /status/:publicid - Verificar status de seguimento
+FollowsRouter.get('/status/:publicid', protect(20), validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const targetId = parseInt(req.params.userId);
+        const publicid = req.params.publicid;
         const currentUserId = req.user.id;
+
+        const targetUser = await User.findOne({ where: { publicid } });
+        if (!targetUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+        const targetId = targetUser.id;
 
         const following = await Follow.findOne({
             where: { followerUserId: currentUserId, followedUserId: targetId }
@@ -149,26 +145,21 @@ FollowsRouter.get('/status/:userId', protect(20), validate(userIdSchema, 'params
     }
 });
 
-// GET /followers/:userId - Listar seguidores
-FollowsRouter.get('/followers/:userId', validate(userIdSchema, 'params'), async (req, res) => {
+// GET /followers/:publicid - Listar seguidores
+FollowsRouter.get('/followers/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const inputId = req.params.userId;
-        let targetId;
-
-        if (isNaN(inputId)) {
-            const user = await User.findOne({ where: { publicid: inputId } });
-            if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-            targetId = user.id;
-        } else {
-            targetId = parseInt(inputId);
-        }
+        const publicid = req.params.publicid;
+        
+        const user = await User.findOne({ where: { publicid } });
+        if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+        const targetId = user.id;
 
         const followers = await Follow.findAll({
             where: { followedUserId: targetId },
             include: [{
                 model: User,
                 as: 'follower',
-                attributes: ['id', 'publicid', 'username', 'profileimage', 'bio']
+                attributes: ['publicid', 'username', 'profileimage', 'bio']
             }]
         });
 
@@ -179,26 +170,21 @@ FollowsRouter.get('/followers/:userId', validate(userIdSchema, 'params'), async 
     }
 });
 
-// GET /following/:userId - Listar quem o usuário segue
-FollowsRouter.get('/following/:userId', validate(userIdSchema, 'params'), async (req, res) => {
+// GET /following/:publicid - Listar quem o usuário segue
+FollowsRouter.get('/following/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const inputId = req.params.userId;
-        let targetId;
-
-        if (isNaN(inputId)) {
-            const user = await User.findOne({ where: { publicid: inputId } });
-            if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-            targetId = user.id;
-        } else {
-            targetId = parseInt(inputId);
-        }
+        const publicid = req.params.publicid;
+        
+        const user = await User.findOne({ where: { publicid } });
+        if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+        const targetId = user.id;
 
         const following = await Follow.findAll({
             where: { followerUserId: targetId },
             include: [{
                 model: User,
                 as: 'followed',
-                attributes: ['id', 'publicid', 'username', 'profileimage', 'bio']
+                attributes: ['publicid', 'username', 'profileimage', 'bio']
             }]
         });
 

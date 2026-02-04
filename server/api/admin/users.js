@@ -12,7 +12,7 @@ const { deleteFromFileServer } = require("../../utils/fileServer");
 AdminUsersRouter.get('/', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'roleId', 'profileimage', 'bio', 'createdat', 'lastaccess']
+            attributes: ['publicid', 'username', 'roleId', 'profileimage', 'bio', 'createdat', 'lastaccess']
         });
         res.json(users);
     } catch (err) {
@@ -21,32 +21,49 @@ AdminUsersRouter.get('/', async (req, res) => {
     }
 });
 
-// PUT /admin/users/:id - Atualizar qualquer usuário (admin)
-AdminUsersRouter.put('/:id', async (req, res) => {
-    const userId = req.params.id;
+// GET /admin/users/:publicid - Obter um único usuário (admin)
+AdminUsersRouter.get('/:publicid', async (req, res) => {
+    try {
+        const user = await User.findOne({
+            where: { publicid: req.params.publicid },
+            attributes: ['publicid', 'username', 'roleId', 'profileimage', 'bio', 'createdat', 'lastaccess']
+        });
+        if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+        res.json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao buscar usuário" });
+    }
+});
+
+// PUT /admin/users/:publicid - Atualizar qualquer usuário (admin)
+AdminUsersRouter.put('/:publicid', async (req, res) => {
+    const publicid = req.params.publicid;
     const { username, roleId, bio } = req.body;
 
     if (!username) return res.status(400).json({ message: "Username é obrigatório" });
 
-    // Impede que o usuário edite a si mesmo (exceto Dono)
-    // No novo sistema: 1 = dono, 5 = admin
-    if (req.user.id == userId && req.user.roleId > 1) {
-        return res.status(403).json({ message: "Você não pode editar seu próprio usuário administrativamente (use a página de perfil)" });
-    }
-
-    // Normaliza o username
-    let nomeUser = username.trim();
-    if (!nomeUser.startsWith('@')) nomeUser = '@' + nomeUser;
-    if (nomeUser.length > 13) nomeUser = nomeUser.slice(0, 13);
-    nomeUser = nomeUser.toLowerCase();
-
     try {
         // Busca o usuário alvo
-        const targetUser = await User.findByPk(userId);
+        const targetUser = await User.findOne({ where: { publicid } });
 
         if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
+
+        const userId = targetUser.id;
+
+        // Impede que o usuário edite a si mesmo (exceto Dono)
+        // No novo sistema: 1 = dono, 5 = admin
+        if (req.user.id == userId && req.user.roleId > 1) {
+            return res.status(403).json({ message: "Você não pode editar seu próprio usuário administrativamente (use a página de perfil)" });
+        }
+
+        // Normaliza o username
+        let nomeUser = username.trim();
+        if (!nomeUser.startsWith('@')) nomeUser = '@' + nomeUser;
+        if (nomeUser.length > 13) nomeUser = nomeUser.slice(0, 13);
+        nomeUser = nomeUser.toLowerCase();
 
         // Admin (5) só pode editar usuários de nível inferior
         if (req.user.roleId >= 5 && targetUser.roleId <= 5 && req.user.id != targetUser.id) {
@@ -81,9 +98,9 @@ AdminUsersRouter.put('/:id', async (req, res) => {
     }
 });
 
-// PUT /admin/users/:id/reset-password - Resetar senha de qualquer usuário (admin)
-AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
-    const userId = req.params.id;
+// PUT /admin/users/:publicid/reset-password - Resetar senha de qualquer usuário (admin)
+AdminUsersRouter.put('/:publicid/reset-password', async (req, res) => {
+    const publicid = req.params.publicid;
     let { newPassword } = req.body || {};
 
     // Se não for enviada senha, define o padrão 12345
@@ -95,16 +112,18 @@ AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
         return res.status(400).json({ message: "Nova senha deve ter no mínimo 5 caracteres" });
     }
 
-    // Impede que o usuário resete sua própria senha por aqui (exceto Dono)
-    if (req.user.id == userId && req.user.roleId > 1) {
-        return res.status(403).json({ message: "Use a rota de perfil para alterar sua própria senha" });
-    }
-
     try {
-        const targetUser = await User.findByPk(userId);
+        const targetUser = await User.findOne({ where: { publicid } });
 
         if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const userId = targetUser.id;
+
+        // Impede que o usuário resete sua própria senha por aqui (exceto Dono)
+        if (req.user.id == userId && req.user.roleId > 1) {
+            return res.status(403).json({ message: "Use a rota de perfil para alterar sua própria senha" });
         }
 
         // Admin (>=5) só pode resetar senha de níveis inferiores
@@ -123,20 +142,22 @@ AdminUsersRouter.put('/:id/reset-password', async (req, res) => {
     }
 });
 
-// DELETE /admin/users/:id - Deletar qualquer usuário (admin)
-AdminUsersRouter.delete('/:id', async (req, res) => {
-    const userId = req.params.id;
-
-    // Impede que o usuário delete a si mesmo
-    if (req.user.id == userId) {
-        return res.status(403).json({ message: "Você não pode deletar sua própria conta" });
-    }
+// DELETE /admin/users/:publicid - Deletar qualquer usuário (admin)
+AdminUsersRouter.delete('/:publicid', async (req, res) => {
+    const publicid = req.params.publicid;
 
     try {
-        const targetUser = await User.findByPk(userId);
+        const targetUser = await User.findOne({ where: { publicid } });
 
         if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const userId = targetUser.id;
+
+        // Impede que o usuário delete a si mesmo
+        if (req.user.id == userId) {
+            return res.status(403).json({ message: "Você não pode deletar sua própria conta" });
         }
 
         // Admin (>=5) só pode deletar usuários de nível inferior
@@ -167,26 +188,6 @@ AdminUsersRouter.delete('/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao deletar usuário" });
-    }
-});
-
-// GET /admin/users/:id - Buscar usuário específico (admin)
-AdminUsersRouter.get('/:id', async (req, res) => {
-    const userId = req.params.id;
-
-    try {
-        const user = await User.findByPk(userId, {
-            attributes: ['id', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'createdat', 'lastaccess']
-        });
-
-        if (!user) {
-            return res.status(404).json({ message: "Usuário não encontrado" });
-        }
-
-        res.json(user);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao buscar usuário" });
     }
 });
 

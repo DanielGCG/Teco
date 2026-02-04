@@ -5,7 +5,7 @@ const { authMiddleware } = require("../middlewares/authMiddleware");
 const socketRouter = require("../routes/socket.router");
 const validate = require("../middlewares/validate");
 const { Op } = require("sequelize");
-const { userIdSchema } = require("../validators/friends.validator");
+const { publicidSchema } = require("../validators/friends.validator");
 
 // Helper para proteger rotas
 const protect = (minRole = 20) => {
@@ -46,7 +46,7 @@ FriendsRouter.get('/', protect(20), async (req, res) => {
         });
 
         const formatted = friends.map(f => ({
-            id: f.id,
+            id: f.publicid,
             publicid: f.publicid,
             username: f.username,
             profileimage: f.profileimage,
@@ -67,18 +67,13 @@ FriendsRouter.get('/', protect(20), async (req, res) => {
     }
 });
 
-// GET /friends/user/:userId - Listar amigos (seguidores mútuos) de outro usuário
-FriendsRouter.get('/user/:userId', validate(userIdSchema, 'params'), async (req, res) => {
+// GET /friends/user/:publicid - Listar amigos (seguidores mútuos) de outro usuário
+FriendsRouter.get('/user/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const inputId = req.params.userId;
+        const publicid = req.params.publicid;
 
-        // Tenta encontrar o usuário por publicid ou id
-        let targetUser;
-        if (isNaN(inputId)) {
-            targetUser = await User.findOne({ where: { publicid: inputId } });
-        } else {
-            targetUser = await User.findByPk(parseInt(inputId));
-        }
+        // Busca o usuário por publicid
+        const targetUser = await User.findOne({ where: { publicid } });
 
         if (!targetUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
@@ -105,7 +100,7 @@ FriendsRouter.get('/user/:userId', validate(userIdSchema, 'params'), async (req,
         });
 
         const formatted = friends.map(f => ({
-            id: f.id,
+            id: f.publicid,
             publicid: f.publicid,
             username: f.username,
             profileimage: f.profileimage,

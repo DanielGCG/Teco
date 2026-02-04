@@ -6,6 +6,12 @@ const Role = sequelize.define('Role', {
         type: DataTypes.TINYINT.UNSIGNED,
         primaryKey: true
     },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
+    },
     name: {
         type: DataTypes.STRING(64)
     }
@@ -13,6 +19,12 @@ const Role = sequelize.define('Role', {
     tableName: 'role',
     timestamps: false
 });
+
+Role.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    // Não misturamos id com publicid
+    return values;
+};
 
 const User = sequelize.define('User', {
     id: {
@@ -82,6 +94,14 @@ const User = sequelize.define('User', {
         }
     ]
 });
+
+User.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    // Não alteramos id para publicid para evitar ambiguidade
+    delete values.roleId;
+    delete values.passwordhash;
+    return values;
+};
 
 // Relacionamento
 User.belongsTo(Role, { foreignKey: 'roleId' });

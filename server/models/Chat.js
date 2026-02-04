@@ -68,7 +68,11 @@ const Chat = sequelize.define('Chat', {
 
 Chat.prototype.toJSON = function () {
     const values = { ...this.get() };
-    delete values.id;
+
+    if (values.createdbyUserId && values.author) {
+        values.createdbyUserId = values.author.publicid;
+    }
+
     return values;
 };
 
@@ -77,6 +81,12 @@ const ChatMessage = sequelize.define('ChatMessage', {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     chatId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -112,6 +122,21 @@ const ChatMessage = sequelize.define('ChatMessage', {
     tableName: 'chatmessages',
     timestamps: false
 });
+
+ChatMessage.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.chatId;
+    delete values.userId;
+
+    if (values.chat && values.chat.publicid) {
+        values.chatId = values.chat.publicid;
+    }
+    if (values.user && values.user.publicid) {
+        values.userId = values.user.publicid;
+    }
+
+    return values;
+};
 
 const DM = sequelize.define('DM', {
     id: {
@@ -153,7 +178,16 @@ const DM = sequelize.define('DM', {
 
 DM.prototype.toJSON = function () {
     const values = { ...this.get() };
-    delete values.id;
+    delete values.userId1;
+    delete values.userId2;
+
+    if (values.user1 && values.user1.publicid) {
+        values.userId1 = values.user1.publicid;
+    }
+    if (values.user2 && values.user2.publicid) {
+        values.userId2 = values.user2.publicid;
+    }
+
     return values;
 };
 
@@ -162,6 +196,12 @@ const DMMessage = sequelize.define('DMMessage', {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     dmId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -202,5 +242,20 @@ const DMMessage = sequelize.define('DMMessage', {
     tableName: 'dmmessage',
     timestamps: false
 });
+
+DMMessage.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.dmId;
+    delete values.userId;
+
+    if (values.dm && values.dm.publicid) {
+        values.dmId = values.dm.publicid;
+    }
+    if (values.user && values.user.publicid) {
+        values.userId = values.user.publicid;
+    }
+
+    return values;
+};
 
 module.exports = { ChatTopic, Chat, ChatMessage, DM, DMMessage };

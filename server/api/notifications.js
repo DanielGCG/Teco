@@ -90,14 +90,14 @@ NotificationsRouter.get('/count', async (req, res) => {
     }
 });
 
-// PUT /notifications/:id/read - Marcar notificação como lida
-NotificationsRouter.put('/:id/read', validate(notificationIdSchema, 'params'), async (req, res) => {
-    const notificationId = req.params.id;
+// PUT /notifications/:publicid/read - Marcar notificação como lida
+NotificationsRouter.put('/:publicid/read', validate(notificationIdSchema, 'params'), async (req, res) => {
+    const { publicid } = req.params;
 
     try {
         const notification = await Notification.findOne({
             where: {
-                id: notificationId,
+                publicid: publicid,
                 targetUserId: req.user.id
             }
         });
@@ -135,14 +135,14 @@ NotificationsRouter.put('/read-all', async (req, res) => {
     }
 });
 
-// DELETE /notifications/:id - Deletar notificação
-NotificationsRouter.delete('/:id', validate(notificationIdSchema, 'params'), async (req, res) => {
-    const notificationId = req.params.id;
+// DELETE /notifications/:publicid - Deletar notificação
+NotificationsRouter.delete('/:publicid', validate(notificationIdSchema, 'params'), async (req, res) => {
+    const { publicid } = req.params;
 
     try {
         const result = await Notification.destroy({
             where: {
-                id: notificationId,
+                publicid: publicid,
                 targetUserId: req.user.id
             }
         });

@@ -49,7 +49,7 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
             },
             include: [{
                 model: User,
-                attributes: ['id', 'username', 'roleId']
+                attributes: ['publicid', 'username', 'roleId']
             }]
         });
 
@@ -58,7 +58,7 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
         res.json({ 
             valid: true, 
             user: { 
-                id: session.User.id, 
+                publicid: session.User.publicid, 
                 username: session.User.username, 
                 roleId: session.User.roleId 
             } 
@@ -183,7 +183,7 @@ UsersRouter.post('/logout', async (req, res) => {
 UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['id', 'publicid', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'pronouns']
+            attributes: ['publicid', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'pronouns']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
@@ -330,7 +330,7 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
                 username: { [Op.like]: searchTerm },
                 id: { [Op.ne]: req.user.id }
             },
-            attributes: ['id', 'publicid', 'username', 'profileimage'],
+            attributes: ['publicid', 'username', 'profileimage'],
             order: [
                 [
                     // Ordena: exato, começa com, depois resto
@@ -370,7 +370,7 @@ UsersRouter.get('/:username', protect(20), async (req, res) => {
 
         const user = await User.findOne({
             where: { username: username },
-            attributes: ['id', 'publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'createdat', 'lastaccess']
+            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'createdat', 'lastaccess']
         });
         if (!user) return res.status(404).json({
             message: "Usuário não encontrado"

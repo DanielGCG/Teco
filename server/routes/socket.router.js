@@ -45,14 +45,22 @@ function updateUserActivity(userId) {
 }
 
 // Emite mudança de status com debounce (evita múltiplas emissões rápidas)
-function emitStatusChange(io, userId, status) {
+async function emitStatusChange(io, userId, publicid, status) {
     const now = Date.now();
     const lastEmission = lastStatusEmission.get(userId) || 0;
     
+    // Se não temos o publicid, tentamos buscar no banco (fallback)
+    if (!publicid) {
+        const user = await User.findByPk(userId, { attributes: ['publicid'] });
+        if (user) publicid = user.publicid;
+    }
+
+    if (!publicid) return false;
+
     // Só emite se passou mais de 10 segundos desde a última emissão
     // OU se está mudando para offline (desconexão é imediata)
     if (status === 'offline' || (now - lastEmission) > 10000) {
-        io.emit('userStatusChanged', { userId, status });
+        io.emit('userStatusChanged', { userId: publicid, status });
         lastStatusEmission.set(userId, now);
         return true;
     }
@@ -65,9 +73,11 @@ module.exports.getUserStatus = getUserStatus;
 
 module.exports = (io) => {
     // Timer para verificar mudanças de status por inatividade
-    const statusCheckInterval = setInterval(() => {
+    const statusCheckInterval = setInterval(async () => {
         const now = Date.now();
-        onlineUsers.forEach((sockets, userId) => {
+        const { User } = require('../models');
+
+        for (const [userId, sockets] of onlineUsers.entries()) {
             if (sockets.size > 0) {
                 const lastActivity = userLastActivity.get(userId);
                 if (lastActivity) {
@@ -81,12 +91,15 @@ module.exports = (io) => {
                     
                     // Notifica se o status mudou
                     if (previousStatus !== newStatus) {
-                        io.emit('userStatusChanged', { userId, status: newStatus });
-                        console.log('[Socket] Status do usuário', userId, 'mudou de', previousStatus, 'para', newStatus, '(inativo há', Math.round(inactiveMinutes), 'min)');
+                        const user = await User.findByPk(userId, { attributes: ['publicid'] });
+                        if (user) {
+                            emitStatusChange(io, userId, user.publicid, newStatus);
+                            console.log('[Socket] Status do usuário', userId, 'mudou de', previousStatus, 'para', newStatus, '(inativo há', Math.round(inactiveMinutes), 'min)');
+                        }
                     }
                 }
             }
-        });
+        }
     }, 60000); // Verifica a cada 60 segundos
 
     io.on('connection', (socket) => {
@@ -109,18 +122,30 @@ module.exports = (io) => {
                         cookie: cookieValue,
                         expiresat: { [Op.gt]: new Date() }
                     },
-                    attributes: ['userId']
+                    include: [{ model: User, attributes: ['id', 'publicid'] }]
                 });
 
-                if (!session) return null;
-                return { userId: session.userId };
+                if (!session || !session.User) return null;
+                return { userId: session.User.id, publicid: session.User.publicid };
             } catch (err) {
                 throw err;
             }
         }
 
+        // Helper para buscar ID real de um Chat ou DM a partir do publicid
+        async function resolveChatId(publicid, type = 'chat') {
+            const { Chat, DM } = require('../models');
+            if (type === 'dm') {
+                const dm = await DM.findOne({ where: { publicid }, attributes: ['id'] });
+                return dm ? dm.id : null;
+            } else {
+                const chat = await Chat.findOne({ where: { publicid }, attributes: ['id'] });
+                return chat ? chat.id : null;
+            }
+        }
+
         // ==================== Join Chat ====================
-        socket.on('joinChat', async (chatId) => {
+        socket.on('joinChat', async (publicChatId) => {
             try {
                 // Atualiza atividade do usuário ao entrar no chat
                 if (socket.userId) {
@@ -128,12 +153,12 @@ module.exports = (io) => {
                     const newStatus = getUserStatus(socket.userId);
                     
                     // Emite status com debounce
-                    emitStatusChange(io, socket.userId, newStatus);
+                    emitStatusChange(io, socket.userId, socket.publicid, newStatus);
                 }
                 
-                socket.join(`chat_${chatId}`);
-                socket.emit('joinedChat', { chatId, success: true });
-                console.log('[Socket] Cliente entrou no chat:', chatId);
+                socket.join(`chat_${publicChatId}`);
+                socket.emit('joinedChat', { chatId: publicChatId, success: true });
+                console.log('[Socket] Cliente entrou no chat:', publicChatId);
             } catch (err) {
                 console.error('[Socket] Erro ao entrar no chat:', err);
                 socket.emit('error', { message: 'Erro ao entrar no chat' });
@@ -155,10 +180,10 @@ module.exports = (io) => {
 
                 // Enviar status atual do dono do perfil para quem entrou
                 const { User } = require('../models');
-                const user = await User.findOne({ where: { username }, attributes: ['id'] });
+                const user = await User.findOne({ where: { username }, attributes: ['id', 'publicid'] });
                 if (user) {
                     const status = getUserStatus(user.id);
-                    socket.emit('userStatusChanged', { userId: user.id, status });
+                    socket.emit('userStatusChanged', { userId: user.publicid, status });
                 }
             } catch (err) {
                 console.error('[Socket] Erro ao entrar no perfil:', err);
@@ -260,9 +285,9 @@ module.exports = (io) => {
         });
 
         // ==================== Send Message ====================
-        socket.on('sendMessage', async ({ chatId, mensagem, type = 'chat' }) => {
+        socket.on('sendMessage', async ({ chatId: publicChatId, mensagem, type = 'chat' }) => {
             try {
-                console.log(`[Socket] Mensagem recebida de ${socket.id}:`, { chatId, type });
+                console.log(`[Socket] Mensagem recebida de ${socket.id}:`, { publicChatId, type });
                 
                 const auth = await authenticateSocket(socket);
                 if (!auth) {
@@ -274,6 +299,13 @@ module.exports = (io) => {
                 const { Chat, ChatMessage, DM, DMMessage, User } = require('../models');
                 const { Op } = require('sequelize');
 
+                // Resolve o ID real
+                const realChatId = await resolveChatId(publicChatId, type);
+                if (!realChatId) {
+                    socket.emit('error', { message: 'Chat não encontrado' });
+                    return;
+                }
+
                 // Atualiza atividade do usuário
                 updateUserActivity(userId);
 
@@ -283,7 +315,7 @@ module.exports = (io) => {
                 if (type === 'dm') {
                     // Insere mensagem no banco (DM)
                     newMessage = await DMMessage.create({
-                        dmId: chatId,
+                        dmId: realChatId,
                         userId: userId,
                         message: mensagem
                     });
@@ -293,32 +325,32 @@ module.exports = (io) => {
                         include: [{
                             model: User,
                             as: 'Sender',
-                            attributes: ['username']
+                            attributes: ['username', 'publicid']
                         }],
-                        attributes: ['id', 'message', 'userId', 'createdat']
+                        attributes: ['publicid', 'message', 'userId', 'createdat']
                     });
 
-                    // Emite para ambos no chat
-                    io.to(`chat_${chatId}`).emit('newMessage', {
-                        chatId,
+                    // Emite para ambos no chat (usa o publicChatId para a sala e resposta)
+                    io.to(`chat_${publicChatId}`).emit('newMessage', {
+                        chatId: publicChatId,
                         type: 'dm',
                         message: {
-                            id: messageWithUser.id,
+                            id: messageWithUser.publicid,
                             message: messageWithUser.message,
                             username: messageWithUser.Sender.username,
-                            userId: messageWithUser.userId,
+                            userId: messageWithUser.Sender.publicid, // Usa publicid do sender
                             createdat: messageWithUser.createdat
                         }
                     });
 
                     // Notificações para o destinatário da DM
                     try {
-                        const dm = await DM.findByPk(chatId);
+                        const dm = await DM.findByPk(realChatId);
                         if (dm) {
                             const otherUserId = dm.userId1 === userId ? dm.userId2 : dm.userId1;
                             
                             // Verifica se o usuário está na sala do chat (online no chat)
-                            const socketsInRoom = await io.in(`chat_${chatId}`).fetchSockets();
+                            const socketsInRoom = await io.in(`chat_${publicChatId}`).fetchSockets();
                             
                             // Se não está no chat, cria ou atualiza notificação
                             if (socketsInRoom.length <= 1) {
@@ -327,7 +359,7 @@ module.exports = (io) => {
                                 const existingNotif = await Notification.findOne({
                                     where: {
                                         targetUserId: otherUserId,
-                                        type: 'NEW_DM',
+                                        type: 'dm',
                                         readat: null
                                     },
                                     order: [['createdat', 'DESC']]
@@ -337,7 +369,7 @@ module.exports = (io) => {
                                 if (existingNotif && existingNotif.data) {
                                     try {
                                         const notifData = JSON.parse(existingNotif.data);
-                                        isFromSameChat = notifData.chatId === chatId;
+                                        isFromSameChat = notifData.chatId === publicChatId;
                                     } catch (e) {
                                         isFromSameChat = false;
                                     }
@@ -356,11 +388,11 @@ module.exports = (io) => {
                                 } else {
                                     await Notification.create({
                                         targetUserId: otherUserId,
-                                        type: 'NEW_DM',
+                                        type: 'dm',
                                         title: `Nova mensagem de ${messageWithUser.Sender.username}`,
                                         body: mensagem.substring(0, 100) + (mensagem.length > 100 ? '...' : ''),
                                         link: '/dms',
-                                        data: JSON.stringify({ chatId, senderId: userId })
+                                        data: JSON.stringify({ chatId: publicChatId, senderId: auth.publicid })
                                     });
                                 }
                                 
@@ -374,7 +406,7 @@ module.exports = (io) => {
                 } else {
                     // Mensagem para Chat Público / Tópico
                     newMessage = await ChatMessage.create({
-                        chatId: chatId,
+                        chatId: realChatId,
                         userId: userId,
                         message: mensagem
                     });
@@ -383,25 +415,25 @@ module.exports = (io) => {
                         include: [{
                             model: User,
                             as: 'author',
-                            attributes: ['username']
+                            attributes: ['username', 'publicid']
                         }],
-                        attributes: ['id', 'message', 'userId', 'createdat']
+                        attributes: ['publicid', 'message', 'userId', 'createdat']
                     });
 
-                    io.to(`chat_${chatId}`).emit('newMessage', {
-                        chatId,
+                    io.to(`chat_${publicChatId}`).emit('newMessage', {
+                        chatId: publicChatId,
                         type: 'chat',
                         message: {
-                            id: messageWithUser.id,
+                            id: messageWithUser.publicid,
                             message: messageWithUser.message,
                             username: messageWithUser.author.username,
-                            userId: messageWithUser.userId,
+                            userId: messageWithUser.author.publicid, // Usa publicid do autor
                             createdat: messageWithUser.createdat
                         }
                     });
                 }
 
-                console.log('[Socket] Mensagem enviada para', type, chatId);
+                console.log('[Socket] Mensagem enviada para', type, publicChatId);
             } catch (err) {
                 console.error('[Socket] Erro ao enviar mensagem:', err);
                 socket.emit('error', { message: 'Erro ao enviar mensagem' });
@@ -409,7 +441,7 @@ module.exports = (io) => {
         });
 
         // ==================== Mark As Read ====================
-        socket.on('markAsRead', async ({ chatId }) => {
+        socket.on('markAsRead', async ({ chatId: publicChatId }) => {
             try {
                 const auth = await authenticateSocket(socket);
                 if (!auth) {
@@ -417,15 +449,19 @@ module.exports = (io) => {
                     return;
                 }
 
-                const { userId } = auth;
+                const { userId, publicid } = auth;
                 const { DMMessage, DM } = require('../models');
                 const { Op } = require('sequelize');
+
+                // Resolve o id real
+                const realChatId = await resolveChatId(publicChatId, 'dm');
+                if (!realChatId) return;
 
                 // Atualiza atividade do usuário
                 updateUserActivity(userId);
 
                 // Apenas DMs devem suportar marcação de mensagens como lidas
-                const dm = await DM.findByPk(chatId);
+                const dm = await DM.findByPk(realChatId);
                 if (!dm) {
                     // Ignora se não for uma DM válida
                     return;
@@ -436,17 +472,17 @@ module.exports = (io) => {
                     { isread: true },
                     {
                         where: {
-                            dmId: chatId,
+                            dmId: realChatId,
                             userId: { [Op.ne]: userId },
                             isread: false
                         }
                     }
                 );
 
-                // Notifica todos no chat sobre a atualização de leitura
-                io.to(`chat_${chatId}`).emit('messageRead', {
-                    chatId,
-                    userId
+                // Notifica todos no chat sobre a atualização de leitura (usa publicChatId para sala)
+                io.to(`chat_${publicChatId}`).emit('messageRead', {
+                    chatId: publicChatId,
+                    userId: publicid // Usa publicid
                 });
                 
                 // Atualiza contagem de DMs não lidas para o usuário que leu
@@ -463,7 +499,7 @@ module.exports = (io) => {
                 const auth = await authenticateSocket(socket);
                 if (!auth) return;
 
-                const { userId } = auth;
+                const { userId, publicid } = auth;
                 
                 // Atualiza lastaccess no banco
                 await User.update(
@@ -492,14 +528,15 @@ module.exports = (io) => {
                 // Registra atividade inicial
                 updateUserActivity(userId);
                 
-                // Associa userId ao socket para usar no disconnect
+                // Associa IDs ao socket para usar no disconnect e outros eventos
                 socket.userId = userId;
+                socket.publicid = publicid;
                 
                 console.log('[Socket] Usuário', userId, wasOnline ? 'reconectou' : 'conectou', '| Online:', onlineUsers.size);
                 
                 // Só notifica se é uma NOVA conexão (não estava online antes)
                 if (!wasOnline) {
-                    io.emit('userStatusChanged', { userId, status: 'online' });
+                    emitStatusChange(io, userId, publicid, 'online');
                     lastStatusEmission.set(userId, Date.now());
                 }
             } catch (err) {
@@ -509,14 +546,14 @@ module.exports = (io) => {
 
         // ==================== User Activity ====================
         socket.on('userActivity', () => {
-            if (socket.userId) {
+            if (socket.userId && socket.publicid) {
                 const previousStatus = getUserStatus(socket.userId);
                 updateUserActivity(socket.userId);
                 const newStatus = getUserStatus(socket.userId);
                 
                 // Só emite se mudou de ausente para online (com debounce)
                 if (previousStatus === 'ausente' && newStatus === 'online') {
-                    if (emitStatusChange(io, socket.userId, 'online')) {
+                    if (emitStatusChange(io, socket.userId, socket.publicid, 'online')) {
                         console.log('[Socket] Usuário', socket.userId, 'voltou a ficar online');
                     }
                 }
@@ -524,13 +561,18 @@ module.exports = (io) => {
         });
 
         // ==================== Request User Status ====================
-        socket.on('requestUserStatus', ({ userIds }) => {
-            if (!userIds || !Array.isArray(userIds)) return;
+        socket.on('requestUserStatus', async ({ userIds: publicIds }) => {
+            if (!publicIds || !Array.isArray(publicIds)) return;
             
             const statusMap = {};
-            userIds.forEach(userId => {
-                statusMap[userId] = getUserStatus(userId);
-            });
+            const { User } = require('../models');
+
+            for (const publicid of publicIds) {
+                const user = await User.findOne({ where: { publicid }, attributes: ['id'] });
+                if (user) {
+                    statusMap[publicid] = getUserStatus(user.id);
+                }
+            }
             
             socket.emit('userStatusBatch', statusMap);
         });
@@ -599,7 +641,7 @@ module.exports = (io) => {
         });
 
         // ==================== Get Messages ====================
-        socket.on('getMessages', async ({ chatId, page = 1, type = 'chat' }) => {
+        socket.on('getMessages', async ({ chatId: publicChatId, page = 1, type = 'chat' }) => {
             try {
                 const auth = await authenticateSocket(socket);
                 if (!auth) return socket.emit('error', { message: 'Não autenticado' });
@@ -607,6 +649,10 @@ module.exports = (io) => {
                 const { userId } = auth;
                 const { Chat, ChatMessage, DM, DMMessage, User } = require('../models');
                 const { Op } = require('sequelize');
+
+                // Resolve o id real para busca
+                const realChatId = await resolveChatId(publicChatId, type);
+                if (!realChatId) return socket.emit('error', { message: 'Chat não encontrado' });
 
                 const limit = 50;
                 const offset = (page - 1) * limit;
@@ -618,7 +664,7 @@ module.exports = (io) => {
                     // Verifica se o usuário faz parte da DM
                     const dm = await DM.findOne({
                         where: {
-                            id: chatId,
+                            id: realChatId,
                             [Op.or]: [{ userId1: userId }, { userId2: userId }]
                         }
                     });
@@ -626,8 +672,8 @@ module.exports = (io) => {
                     if (!dm) return socket.emit('error', { message: 'DM não encontrada ou acesso negado' });
 
                     const msgs = await DMMessage.findAll({
-                        where: { dmId: chatId },
-                        include: [{ model: User, as: 'Sender', attributes: ['username'] }],
+                        where: { dmId: realChatId },
+                        include: [{ model: User, as: 'Sender', attributes: ['username', 'publicid'] }],
                         order: [['createdat', 'DESC']],
                         limit: limit + 1,
                         offset
@@ -638,18 +684,18 @@ module.exports = (io) => {
                         const msg = m.toJSON();
                         msg.isMine = m.userId === userId;
                         msg.username = m.Sender?.username;
-                        msg.userId = m.userId;
+                        msg.userId = m.Sender?.publicid; // Usa publicid
                         msg.createdat = m.createdat;
                         return msg;
                     });
                 } else {
                     // Chat Público
-                    const chat = await Chat.findByPk(chatId);
+                    const chat = await Chat.findByPk(realChatId);
                     if (!chat) return socket.emit('error', { message: 'Chat não encontrado' });
 
                     const msgs = await ChatMessage.findAll({
-                        where: { chatId: chatId },
-                        include: [{ model: User, as: 'author', attributes: ['username'] }],
+                        where: { chatId: realChatId },
+                        include: [{ model: User, as: 'author', attributes: ['username', 'publicid'] }],
                         order: [['createdat', 'DESC']],
                         limit: limit + 1,
                         offset
@@ -660,19 +706,19 @@ module.exports = (io) => {
                         const msg = m.toJSON();
                         msg.isMine = m.userId === userId;
                         msg.username = m.author?.username;
-                        msg.userId = m.userId;
+                        msg.userId = m.author?.publicid; // Usa publicid
                         msg.createdat = m.createdat;
                         return msg;
                     });
 
-                    // Entra na sala do chat (público)
-                    socket.join(`chat_${chatId}`);
+                    // Entra na sala do chat (público) - usa publicid para o nome da sala
+                    socket.join(`chat_${publicChatId}`);
                 }
 
                 messages.reverse();
 
                 socket.emit('messagesLoaded', {
-                    chatId,
+                    chatId: publicChatId,
                     page,
                     messages,
                     hasMore
@@ -717,7 +763,9 @@ module.exports = (io) => {
                                     console.log('[Socket] Usuário', userId, 'ficou offline. Online:', onlineUsers.size);
                                     
                                     // Notifica que usuário ficou offline
-                                    io.emit('userStatusChanged', { userId, status: 'offline' });
+                                    if (socket.publicid) {
+                                        io.emit('userStatusChanged', { userId: socket.publicid, status: 'offline' });
+                                    }
                                     lastStatusEmission.delete(userId);
                                     disconnectionTimeouts.delete(userId);
                                 } catch (err) {

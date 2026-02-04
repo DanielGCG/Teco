@@ -340,7 +340,7 @@
                 const feed = document.getElementById('feed-container');
                 
                 // Verifica se o post já existe no feed para evitar duplicatas
-                if (document.getElementById(`post-${post.id}`)) return;
+                if (document.getElementById(`post-${post.publicid}`)) return;
 
                 // Se houver uma mensagem de "Nenhum post" ou o spinner de carregamento, limpa o feed
                 const emptyState = feed.querySelector('.text-muted');
@@ -356,7 +356,7 @@
 
         // Ouvir atualizações de posts (curtidas, etc)
         socket.on('postUpdate', (data) => {
-            const postElements = document.querySelectorAll(`[id="post-${data.id}"]`);
+            const postElements = document.querySelectorAll(`[id="post-${data.publicid}"]`);
             postElements.forEach(postEl => {
                 if (data.likecount !== undefined) {
                     const likeCountEl = postEl.querySelector('.post-action.like span');
@@ -398,7 +398,7 @@
             if (!response.ok) return;
 
             const user = await response.json();
-            profileUserId = user.id;
+            profileUserId = user.publicid;
 
             initSocket();
 
@@ -412,18 +412,18 @@
             }
 
             if (window.currentUser) {
-                if (window.currentUser.id === user.id) {
+                if (window.currentUser.publicid === user.publicid) {
                     document.getElementById("btn-edit").classList.remove("d-none");
                     document.getElementById("profile-new-post-area").classList.remove("d-none");
                     document.getElementById("tab-bookmarks").classList.remove("d-none");
                 } else {
                     document.getElementById("btn-follow").classList.remove("d-none");
-                    verificarSeguimento(user.id);
+                    verificarSeguimento(user.publicid);
                 }
             }
 
-            carregarGalerias(user.id);
-            carregarAmigos(user.id);
+            carregarGalerias(user.publicid);
+            carregarAmigos(user.publicid);
 
             // Inicializa o feed usando PostFeed
             PostFeed.init('feed-container', 'user', username);
@@ -489,7 +489,7 @@
             if (data.success && data.galleries.length > 0) {
                 list.innerHTML = `<div class="galerias-grid">
                     ${data.galleries.map(g => `
-                        <a href="/galeria/${g.id}" class="gallery-square" title="${g.name}">
+                        <a href="/galeria/${g.publicid}" class="gallery-square" title="${g.name}">
                             <img src="${g.coverurl}">
                             <div class="gallery-overlay"><span>${g.name}</span></div>
                         </a>
@@ -510,7 +510,7 @@
             
             if (friends && friends.length > 0) {
                 list.innerHTML = friends.map(f => `
-                    <a href="/${f.username}" class="friend-item" data-user-id="${f.id}">
+                    <a href="/${f.username}" class="friend-item" data-user-id="${f.publicid}">
                         <div class="position-relative">
                             <img src="${f.profileimage}" class="friend-avatar rounded">
                             <span class="status-dot ${f.status || 'offline'}" style="width: 12px; height: 12px; border-width: 1px; bottom: 2px; right: 2px;"></span>

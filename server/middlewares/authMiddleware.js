@@ -6,7 +6,7 @@ const PUBLIC_ROUTES = ['/register', '/login', '/logout', '/validate-session']; /
 const setUserCookie = (res, user) => {
     const userData = user.get ? user.get({ plain: true }) : user;
     const userInfo = JSON.stringify({
-        id: userData.id,
+        publicid: userData.publicid,
         username: userData.username,
         profileimage: userData.profileimage,
         backgroundimage: userData.backgroundimage,
@@ -86,7 +86,8 @@ const authMiddleware = (minRole = 20, refresh = true) => {
             // Anexa informações do usuário
             const userData = user.get ? user.get({ plain: true }) : user;
             req.user = {
-                id: userData.id,
+                id: userData.id, // Mantém id interno para operações no banco
+                publicid: userData.publicid,
                 username: userData.username,
                 roleId: userData.roleId,
                 profileimage: userData.profileimage,

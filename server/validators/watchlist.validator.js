@@ -21,11 +21,11 @@ const uploadMovieSchema = z.object({
 });
 
 const deleteMovieSchema = z.object({
-    id: z.coerce.number().int().positive("ID do filme/série é obrigatório")
+    publicid: z.string().uuid("ID do filme/série é obrigatório")
 });
 
 const updateMovieStatusSchema = z.object({
-    id: z.number().int(),
+    publicid: z.string().uuid("ID do filme/série é obrigatório"),
     watched: z.boolean().optional(),
     custom_rating: z.number().min(0).max(10).optional().nullable()
 });

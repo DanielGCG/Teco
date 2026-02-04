@@ -335,18 +335,18 @@ function renderizarUsuarios(usuarios) {
         return;
     }
     const html = usuarios.map(usuario => `
-        <div class="usuario-card card mb-3" onclick="abrirCartinhasUsuario(${usuario.id}, '${usuario.username}')">
+        <div class="usuario-card card mb-3" onclick="abrirCartinhasUsuario('${usuario.publicid}', '${usuario.username}')">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-2 text-center">
                         <img src="${usuario.profileimage}" 
                              alt="${usuario.username}" 
-                             class="rounded-circle" 
+                             class="rounded" 
                              style="width: 50px; height: 50px; object-fit: cover;">
                     </div>
                     <div class="col-md-4">
                         <h6 class="mb-1">${usuario.username}</h6>
-                        <small class="text-muted">ID: ${usuario.id}</small>
+                        <small class="text-muted">ID: ${usuario.publicid}</small>
                     </div>
                     <div class="col-md-6">
                         <div class="row text-center">
@@ -394,13 +394,13 @@ function renderizarCartinhas(cartinhas) {
         const statusText = isFavorited ? 'Favorita' : (isRead ? 'Lida' : 'Não lida');
         
         return `
-            <div class="cartinha-item p-3 ${selectedCartinhas.has(cartinha.id) ? 'selected' : ''}" 
-                 data-cartinha-id="${cartinha.id}">
+            <div class="cartinha-item p-3 ${selectedCartinhas.has(cartinha.publicid) ? 'selected' : ''}" 
+                 data-cartinha-id="${cartinha.publicid}">
                 <div class="row align-items-center">
                     <div class="col-1">
                         <input type="checkbox" class="form-check-input cartinha-checkbox" 
-                               data-cartinha-id="${cartinha.id}"
-                               ${selectedCartinhas.has(cartinha.id) ? 'checked' : ''}>
+                               data-cartinha-id="${cartinha.publicid}"
+                               ${selectedCartinhas.has(cartinha.publicid) ? 'checked' : ''}>
                     </div>
                     <div class="col-7">
                         <h6 class="mb-1">${highlightSearch(cartinha.title || 'Sem título')}</h6>
@@ -415,7 +415,7 @@ function renderizarCartinhas(cartinhas) {
                     <div class="col-2 text-end">
                         <div class="cartinha-actions">
                             <button class="btn btn-sm btn-outline-danger" 
-                                    onclick="event.stopPropagation(); confirmarRemocaoUnica(${cartinha.id})"
+                                    onclick="event.stopPropagation(); confirmarRemocaoUnica('${cartinha.publicid}')"
                                     title="Remover">
                                 🗑️
                             </button>
@@ -501,7 +501,7 @@ function abrirCartinhasUsuario(userId, username) {
 }
 
 function toggleSelecaoCartinha(event) {
-    const cartinhaId = parseInt(event.target.dataset.cartinhaId);
+    const cartinhaId = event.target.dataset.cartinhaId;
     const cartinhaElement = event.target.closest('.cartinha-item');
     
     if (event.target.checked) {
@@ -712,7 +712,7 @@ async function carregarUsuariosFiltro() {
             select.innerHTML = '<option value="">Todos os usuários</option>';
             usuarios.forEach(usuario => {
                 const option = document.createElement('option');
-                option.value = usuario.id;
+                option.value = usuario.publicid;
                 option.textContent = usuario.username;
                 select.appendChild(option);
             });

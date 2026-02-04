@@ -43,7 +43,7 @@ async function carregarUsuarios() {
             }
 
             const option = document.createElement("option");
-            option.value = u.id;
+            option.value = u.publicid;
             const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Botecor', 20: 'Usuário' };
             const roleText = roleNames[u.roleId] || 'Usuário';
             option.textContent = `${u.username} (${roleText})`;

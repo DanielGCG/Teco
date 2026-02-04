@@ -42,7 +42,7 @@
                 <input type="hidden" id="interacao-post-id">
                 <input type="hidden" id="interacao-type">
                 <div class="d-flex gap-3">
-                    <img src="<%= locals.user ? locals.user.profileimage : '' %>" class="rounded-circle object-fit-cover" style="width: 48px; height: 48px;">
+                    <img src="<%= locals.user ? locals.user.profileimage : '' %>" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
                     <div class="flex-grow-1">
                         <textarea id="interacao-textarea" class="modal-post-textarea border-0 w-100" placeholder="Adicione um comentário..." rows="3" oninput="PostUI.handleTextareaInput(event, 'interacao-char-counter')"></textarea>
                         <div id="interacao-preview" class="post-preview-container"></div>

@@ -9,7 +9,7 @@ const getNotificationsSchema = z.object({
 });
 
 const notificationIdSchema = z.object({
-    id: z.string()
+    publicid: z.string()
 });
 
 module.exports = {

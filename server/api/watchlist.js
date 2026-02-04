@@ -43,7 +43,6 @@ watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), asy
     try {
         // Extrai os campos já mapeados do body (seguindo o modelo)
         const {
-            id,
             title,
             overview,
             popularity,
@@ -56,9 +55,8 @@ watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), asy
             votecount
         } = req.body;
 
-        // Insere ou atualiza o filme/série na tabela movie
-        const [movie, created] = await Filme.upsert({
-            id,
+        // Insere o filme/série na tabela movie
+        const movie = await Filme.create({
             title,
             overview: overview || '',
             popularity: popularity || 0,
@@ -72,12 +70,13 @@ watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), asy
             createdbyUserId: req.user.id
         });
 
-        // Retornar o registro salvo para o frontend (útil para atualizações locais)
-        const saved = await Filme.findByPk(id, {
+        // Retornar o registro salvo para o frontend
+        const saved = await Filme.findOne({
+            where: { id: movie.id },
             include: [{
                 model: User,
                 as: 'requester',
-                attributes: ['username']
+                attributes: ['username', 'publicid']
             }]
         });
         res.json({ success: true, message: 'Filme/série adicionado com sucesso.', fileUrl: null, saved: saved.toJSON() });
@@ -89,12 +88,12 @@ watchlistRouter.post('/watchlistupload-movies', validate(uploadMovieSchema), asy
 });
 
 watchlistRouter.delete('/watchlistdelete-movie', validate(deleteMovieSchema, 'query'), async (req, res) => {
-    const { id } = req.query;
+    const { publicid } = req.query;
 
     try {
-        // Remove o filme da tabela wl_filme (as relações N:N serão removidas por ON DELETE CASCADE)
+        // Remove o filme da tabela movie usando publicid
         const result = await Filme.destroy({
-            where: { id }
+            where: { publicid }
         });
         
         if (result > 0) {
@@ -109,10 +108,10 @@ watchlistRouter.delete('/watchlistdelete-movie', validate(deleteMovieSchema, 'qu
 });
 
 watchlistRouter.patch('/watchlistupdate-status', validate(updateMovieStatusSchema), async (req, res) => {
-    const { id, watched, custom_rating } = req.body;
+    const { publicid, watched, custom_rating } = req.body;
 
     try {
-        const movie = await Filme.findByPk(id);
+        const movie = await Filme.findOne({ where: { publicid } });
         if (!movie) {
             return res.status(404).json({ success: false, message: 'Filme/série não encontrado.' });
         }

@@ -42,19 +42,19 @@ const validateFileSize = (req, res, next) => {
 };
 
 async function checkGalleryPermission(req, res, next) {
-    const { id } = req.params;
+    const { publicid } = req.params;
     const userId = req.user.id;
     const userRole = req.user.roleId;
 
     try {
-        const gallery = await Galeria.findByPk(id);
+        const gallery = await Galeria.findOne({ where: { publicid } });
         if (!gallery) return res.status(404).json({ success: false, message: 'Gallery not found.' });
 
         if (userRole <= 11) { req.gallery = gallery; return next(); }
         if (gallery.createdbyUserId === userId) { req.gallery = gallery; return next(); }
         if (gallery.ispublic) { req.gallery = gallery; return next(); }
 
-        const permission = await GaleriaContributor.findOne({ where: { galleryId: id, userId: userId } });
+        const permission = await GaleriaContributor.findOne({ where: { galleryId: gallery.id, userId: userId } });
         if (permission) { req.gallery = gallery; return next(); }
 
         return res.status(403).json({ success: false, message: 'You do not have permission to edit this gallery.' });
@@ -66,7 +66,7 @@ async function checkGalleryPermission(req, res, next) {
 router.get('/', async (req, res) => {
     try {
         const galleries = await Galeria.findAll({
-            include: [{ model: User, as: 'owner', attributes: ['username', 'profileimage'] }],
+            include: [{ model: User, as: 'owner', attributes: ['username', 'profileimage', 'publicid'] }],
             order: [['createdat', 'DESC']]
         });
         
@@ -113,20 +113,21 @@ router.post('/', uploadImage.single('cover'), async (req, res) => {
     }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:publicid', async (req, res) => {
     try {
-        const gallery = await Galeria.findByPk(req.params.id, {
+        const gallery = await Galeria.findOne({
+            where: { publicid: req.params.publicid },
             include: [
-                { model: User, as: 'owner', attributes: ['username', 'profileimage'] },
+                { model: User, as: 'owner', attributes: ['username', 'profileimage', 'publicid'] },
                 { 
                     model: GaleriaItem, 
                     as: 'items',
-                    include: [{ model: User, as: 'uploader', attributes: ['username'] }]
+                    include: [{ model: User, as: 'uploader', attributes: ['username', 'publicid'] }]
                 },
                 { 
                     model: User, 
                     as: 'collaborators',
-                    attributes: ['id', 'username'] 
+                    attributes: ['username', 'publicid'] 
                 }
             ]
         });
@@ -139,7 +140,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
+router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
     uploadVideo.fields([{ name: 'media', maxCount: 1 }, { name: 'cover', maxCount: 1 }])(req, res, (err) => {
         if (err) {
             if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, message: 'File too large. Limit: 100MB' });
@@ -156,7 +157,7 @@ router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
         const fileUrl = await uploadToFileServer({
             buffer: mainFile.buffer,
             filename: sanitizedFilename,
-            folder: `galerias/${req.params.id}`,
+            folder: `galerias/${req.gallery.publicid}`,
             mimetype: mainFile.mimetype
         });
 
@@ -169,7 +170,7 @@ router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
                 coverUrl = await uploadToFileServer({
                     buffer: coverFile.buffer,
                     filename: sanitizedCover,
-                    folder: `galerias/${req.params.id}/covers`,
+                    folder: `galerias/${req.gallery.publicid}/covers`,
                     mimetype: coverFile.mimetype
                 });
             } catch (err) {
@@ -180,13 +181,13 @@ router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
             coverUrl = coverUrl || fileUrl;
         }
 
-        const maxZ = await GaleriaItem.max('positionz', { where: { galleryId: req.params.id } });
+        const maxZ = await GaleriaItem.max('positionz', { where: { galleryId: req.gallery.id } });
         
         const mediaType = mainFile.mimetype.startsWith('video/') ? 'video' : 
                          mainFile.mimetype.startsWith('audio/') ? 'audio' : 'image/gif';
 
         const item = await GaleriaItem.create({
-            galleryId: req.params.id,
+            galleryId: req.gallery.id,
             coverurl: coverUrl,
             contenturl: fileUrl,
             title: req.body.title || mainFile.originalname,
@@ -205,9 +206,9 @@ router.post('/:id/upload', checkGalleryPermission, (req, res, next) => {
     }
 });
 
-router.delete('/:id/item/:itemId', checkGalleryPermission, async (req, res) => {
+router.delete('/:publicid/item/:itemPublicId', checkGalleryPermission, async (req, res) => {
     try {
-        const item = await GaleriaItem.findOne({ where: { id: req.params.itemId, galleryId: req.params.id } });
+        const item = await GaleriaItem.findOne({ where: { publicid: req.params.itemPublicId, galleryId: req.gallery.id } });
         if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
         
         if (item.contenturl) await deleteFromFileServer({ fileUrl: item.contenturl });
@@ -220,14 +221,14 @@ router.delete('/:id/item/:itemId', checkGalleryPermission, async (req, res) => {
     }
 });
 
-router.delete('/:id', checkGalleryPermission, async (req, res) => {
+router.delete('/:publicid', checkGalleryPermission, async (req, res) => {
     try {
         if (req.gallery.createdbyUserId !== req.user.id && req.user.roleId > 11) return res.status(403).json({ success: false, message: 'Only owner can delete.' });
         
         if (req.gallery.coverurl) await deleteFromFileServer({ fileUrl: req.gallery.coverurl });
         if (req.gallery.backgroundurl) await deleteFromFileServer({ fileUrl: req.gallery.backgroundurl });
         
-        const items = await GaleriaItem.findAll({ where: { galleryId: req.params.id } });
+        const items = await GaleriaItem.findAll({ where: { galleryId: req.gallery.id } });
         for (const img of items) {
             if (img.contenturl) await deleteFromFileServer({ fileUrl: img.contenturl });
             if (img.coverurl) await deleteFromFileServer({ fileUrl: img.coverurl });
@@ -240,9 +241,9 @@ router.delete('/:id', checkGalleryPermission, async (req, res) => {
     }
 });
 
-router.patch('/:id/item/:itemId', checkGalleryPermission, uploadImage.single('cover'), async (req, res) => {
+router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImage.single('cover'), async (req, res) => {
     try {
-        const item = await GaleriaItem.findOne({ where: { id: req.params.itemId, galleryId: req.params.id } });
+        const item = await GaleriaItem.findOne({ where: { publicid: req.params.itemPublicId, galleryId: req.gallery.id } });
         if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
 
         const getVal = (k) => {
@@ -294,7 +295,7 @@ router.patch('/:id/item/:itemId', checkGalleryPermission, uploadImage.single('co
 });
 
 // PATCH Gallery (Settings & Layout)
-router.patch('/:id', 
+router.patch('/:publicid', 
     checkGalleryPermission, 
     uploadImage.fields([{ name: 'background', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), 
     async (req, res) => {
@@ -350,7 +351,7 @@ router.patch('/:id',
             req.gallery.backgroundurl = await uploadToFileServer({
                 buffer: file.buffer,
                 filename: sanitizedFilename,
-                folder: `galerias/${req.params.id}/style`,
+                folder: `galerias/${req.gallery.publicid}/style`,
                 mimetype: file.mimetype
             });
         }
@@ -374,8 +375,8 @@ router.patch('/:id',
             try { parsed = typeof layout === 'string' ? JSON.parse(layout) : layout; } catch (e) { parsed = null; }
             if (Array.isArray(parsed)) {
                 for (const item of parsed) {
-                    const { id, grid_w, grid_h, positionz, showtitle, objectfit, startpositionx, startpositiony } = item;
-                    if (!id) continue;
+                    const { publicid, grid_w, grid_h, positionz, showtitle, objectfit, startpositionx, startpositiony } = item;
+                    if (!publicid) continue;
                     
                     const updateData = {
                         positionz: positionz || 0
@@ -394,7 +395,7 @@ router.patch('/:id',
                     }
 
                     try {
-                        await GaleriaItem.update(updateData, { where: { id, galleryId: req.params.id } });
+                        await GaleriaItem.update(updateData, { where: { publicid, galleryId: req.gallery.id } });
                     } catch (e) { /* silent continue */ }
                 }
             }
@@ -403,8 +404,12 @@ router.patch('/:id',
         if (collaborators) {
             const colabsArray = typeof collaborators === 'string' ? JSON.parse(collaborators) : collaborators;
             if (Array.isArray(colabsArray)) {
-                await GaleriaContributor.destroy({ where: { galleryId: req.params.id } });
-                const permissions = colabsArray.map(uId => ({ galleryId: req.params.id, userId: uId }));
+                await GaleriaContributor.destroy({ where: { galleryId: req.gallery.id } });
+                
+                // Buscar IDs reais a partir dos publicids
+                const users = await User.findAll({ where: { publicid: colabsArray }, attributes: ['id'] });
+                const permissions = users.map(u => ({ galleryId: req.gallery.id, userId: u.id }));
+                
                 await GaleriaContributor.bulkCreate(permissions);
             }
         }
@@ -415,10 +420,14 @@ router.patch('/:id',
     }
 });
 
-// GET /galerias/user/:userId - Listar galerias de um usuário específico
-router.get('/user/:userId', async (req, res) => {
+// GET /galerias/user/:userPublicId - Listar galerias de um usuário específico
+router.get('/user/:userPublicId', async (req, res) => {
     try {
-        const targetUserId = req.params.userId;
+        const userPublicId = req.params.userPublicId;
+
+        const targetUser = await User.findOne({ where: { publicid: userPublicId } });
+        if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
+
         let showPrivate = false;
 
         // Tenta identificar o usuário logado para permitir ver galerias privadas se for o dono
@@ -430,19 +439,20 @@ router.get('/user/:userId', async (req, res) => {
                     expiresat: { [Op.gt]: new Date() }
                 }
             });
-            if (session && session.userId == targetUserId) {
+            if (session && session.userId === targetUser.id) {
                 showPrivate = true;
             }
         }
 
-        const whereClause = { createdbyUserId: targetUserId };
+        const whereClause = { createdbyUserId: targetUser.id };
         if (!showPrivate) {
             whereClause.ispublic = true;
         }
 
         const galleries = await Galeria.findAll({
             where: whereClause,
-            order: [['createdat', 'DESC']]
+            order: [['createdat', 'DESC']],
+            include: [{ model: User, as: 'owner', attributes: ['username', 'profileimage', 'publicid'] }]
         });
         res.json({ success: true, galleries });
     } catch (error) {

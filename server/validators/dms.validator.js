@@ -3,8 +3,8 @@ const { sanitizeString } = require('../utils/sanitize');
 
 // ==================== Validadores de Conversas (DMs) ====================
 
-const dmIdSchema = z.object({
-    dmId: z.string().uuid("ID da conversa inválido")
+const publicidSchema = z.object({
+    publicid: z.string().uuid("ID da conversa inválido")
 });
 
 const getMessagesSchema = z.object({
@@ -29,7 +29,7 @@ const searchUsersSchema = z.object({
 });
 
 module.exports = {
-    dmIdSchema,
+    publicidSchema,
     getMessagesSchema,
     sendMessageSchema,
     createDmSchema,

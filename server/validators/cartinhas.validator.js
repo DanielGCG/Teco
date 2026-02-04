@@ -13,12 +13,12 @@ const updateCartinhaSchema = z.object({
     body: z.string().min(1, "Conteúdo é obrigatório").max(2000, "Conteúdo deve ter no máximo 2000 caracteres")
 });
 
-const cartinhaIdSchema = z.object({
-    cartinhaId: z.coerce.number().int().positive()
+const publicidSchema = z.object({
+    publicid: z.string().uuid("ID da cartinha inválido")
 });
 
 module.exports = {
     createCartinhaSchema,
     updateCartinhaSchema,
-    cartinhaIdSchema
+    publicidSchema
 };

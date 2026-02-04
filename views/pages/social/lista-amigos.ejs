@@ -188,11 +188,12 @@
                 console.error('Erro na busca:', res.statusText);
                 return;
             }
-            const users = await res.json();
+            const data = await res.json();
+            const users = data.usuarios || [];
             const container = document.getElementById('search-results');
             container.innerHTML = '';
 
-            if (!Array.isArray(users) || users.length === 0) {
+            if (users.length === 0) {
                 container.innerHTML = '<div class="no-results">Nenhum usuário encontrado</div>';
                 return;
             }
@@ -209,8 +210,7 @@
                         const b = e.currentTarget;
                         b.disabled = true;
                         const action = isFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
-                        // Usar publicid se disponível, senão id por compatibilidade
-                        const targetId = user.publicid || user.id;
+                        const targetId = user.id;
                         const res = await action(targetId, { showAlert: false });
                         if (res.success) {
                             await carregarTudo();

@@ -14,7 +14,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <div class="modal-body text-center">
-        <img id="editUserProfile" src="" alt="Foto de perfil" class="rounded-circle mb-3" width="100" height="100">
+        <img id="editUserProfile" src="" alt="Foto de perfil" class="rounded mb-3" width="100" height="100">
 
         <div class="mb-3 text-start">
             <label for="editUsername" class="form-label">Nome de usuário</label>
@@ -91,7 +91,7 @@ async function carregarUsuarios() {
             `;
 
         // Adiciona o evento de clique no card
-        card.addEventListener("click", () => abrirModalEdicao(user.id));
+        card.addEventListener("click", () => abrirModalEdicao(user.publicid));
 
         userList.appendChild(card);
     });
@@ -103,20 +103,20 @@ async function carregarUsuarios() {
 
 // ==================== Abrir modal de edição ====================
 function abrirModalEdicao(userId) {
-    const user = usuariosLista.find(u => u.id === userId);
+    const user = usuariosLista.find(u => u.publicid === userId);
     if (!user) {
         mostrarAviso("Usuário não encontrado!");
         return;
     }
 
     // Impede editar a si mesmo (exceto Dono)
-    if (currentLoggedUser && currentLoggedUser.id === user.id && currentLoggedUser.roleId > 1) {
+    if (currentLoggedUser && currentLoggedUser.publicid === user.publicid && currentLoggedUser.roleId > 1) {
         mostrarAviso("Você não pode editar seu próprio usuário!");
         return;
     }
 
     // Impede editar usuários de nível igual ou superior (exceto se for o próprio Dono editando a si mesmo)
-    if (currentLoggedUser && user.roleId <= currentLoggedUser.roleId && user.id !== currentLoggedUser.id) {
+    if (currentLoggedUser && user.roleId <= currentLoggedUser.roleId && user.publicid !== currentLoggedUser.publicid) {
         mostrarAviso("Você não pode editar usuários de nível igual ou superior ao seu!");
         return;
     }
@@ -138,11 +138,6 @@ function abrirModalEdicao(userId) {
             option.disabled = false;
         }
     });
-            option.disabled = true;
-        } else {
-            option.disabled = false;
-        }
-    });
 
     const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
     editModal.show();
@@ -157,7 +152,7 @@ document.getElementById("saveUserBtn").addEventListener("click", async () => {
     const bio = document.getElementById("editBio").value.trim();
 
     try {
-        const res = await fetch(`/api/admin/users/${currentUser.id}`, {
+        const res = await fetch(`/api/admin/users/${currentUser.publicid}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -185,7 +180,7 @@ document.getElementById("deleteUserBtn").addEventListener("click", async () => {
     if (!await mostrarConfirmacao("Tem certeza que deseja excluir este usuário?")) return;
 
     try {
-        const res = await fetch(`/api/admin/users/${currentUser.id}`, {
+        const res = await fetch(`/api/admin/users/${currentUser.publicid}`, {
             method: "DELETE",
             credentials: "include"
         });

@@ -431,7 +431,7 @@ function lerCartaAtiva(usuarios) {
 
     const cartaTopo = pilhaAtiva.querySelector('.carta-empilhada.topo');
     if (cartaTopo) {
-        const cartinhaId = parseInt(cartaTopo.dataset.cartinhaId);
+        const cartinhaId = cartaTopo.dataset.cartinhaId;
         if (cartinhasHooks && typeof cartinhasHooks.abrirCartinha === 'function') {
             cartinhasHooks.abrirCartinha(cartinhaId, usuarios);
             return;
@@ -494,7 +494,7 @@ function carregarCartas(pilhaElement, usuarioIndex, usuarios) {
     // conectar handlers: abrir ao clicar na carta topo ou no botão específico
     const cartaTopo = pilhaElement.querySelector('.carta-empilhada.topo');
     if (cartaTopo) {
-        const id = parseInt(cartaTopo.dataset.cartinhaId, 10);
+        const id = cartaTopo.dataset.cartinhaId;
         cartaTopo.addEventListener('click', (e) => {
             if (e.target.closest('.btn-acao')) return; // ignore clicks on action buttons
             if (cartinhasHooks && typeof cartinhasHooks.abrirCartinha === 'function') {
@@ -673,9 +673,8 @@ function cortarTexto(texto, limite) {
 
 function encontrarCartinha(cartinhaId, usuarios) {
     if (!Array.isArray(usuarios)) return null;
-    const id = Number(cartinhaId);
     for (const usuario of usuarios) {
-        const cartinha = usuario.cartinhas.find(c => Number(c.id) === id);
+        const cartinha = usuario.cartinhas.find(c => c.id == cartinhaId);
         if (cartinha) return cartinha;
     }
     return null;
@@ -683,9 +682,8 @@ function encontrarCartinha(cartinhaId, usuarios) {
 
 function encontrarUsuarioPorCartinha(cartinhaId, usuarios) {
     if (!Array.isArray(usuarios)) return null;
-    const id = Number(cartinhaId);
     return usuarios.find(usuario => 
-        Array.isArray(usuario.cartinhas) && usuario.cartinhas.some(c => Number(c.id) === id)
+        Array.isArray(usuario.cartinhas) && usuario.cartinhas.some(c => c.id == cartinhaId)
     );
 }
 

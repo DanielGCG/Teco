@@ -197,8 +197,8 @@ async function abrirModalEdicao(chat) {
         await carregarUsuariosAdmin();
         const u1 = document.getElementById("editParticipant1");
         const u2 = document.getElementById("editParticipant2");
-        if (u1) u1.value = chat.participants[0]?.id || "";
-        if (u2) u2.value = chat.participants[1]?.id || "";
+        if (u1) u1.value = chat.participants[0]?.publicid || "";
+        if (u2) u2.value = chat.participants[1]?.publicid || "";
     }
     
     new bootstrap.Modal(document.getElementById('editChatModal')).show();
@@ -217,7 +217,7 @@ document.getElementById("saveChatBtn").addEventListener("click", async () => {
             ] : []
         };
 
-        const res = await fetch(`/api/admin/chats/${state.currentChat.id}`, {
+        const res = await fetch(`/api/admin/chats/${state.currentChat.publicid}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -239,7 +239,7 @@ document.getElementById("saveChatBtn").addEventListener("click", async () => {
 document.getElementById("deleteChatBtn").addEventListener("click", async () => {
     if (!confirm("Excluir permanentemente?")) return;
     try {
-        const res = await fetch(`/api/admin/chats/${state.currentChat.id}?type=${state.currentChat.type}`, {
+        const res = await fetch(`/api/admin/chats/${state.currentChat.publicid}?type=${state.currentChat.type}`, {
             method: "DELETE",
             credentials: "include"
         });
@@ -286,7 +286,7 @@ document.getElementById("createAdminDmBtn").addEventListener("click", async () =
         const res = await fetch(`/api/admin/chats/dm`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ otherUserId: user2, creatorId: user1 }),
+            body: JSON.stringify({ otherUserPublicId: user2, creatorPublicId: user1 }),
             credentials: "include"
         });
         if (res.ok) {
@@ -322,7 +322,7 @@ async function carregarUsuariosAdmin() {
             if (!el) return;
             const currentVal = el.value;
             el.innerHTML = '<option value="">Selecione...</option>' + 
-                users.map(u => `<option value="${u.id}">${u.username}</option>`).join("");
+                users.map(u => `<option value="${u.publicid}">${u.username}</option>`).join("");
             el.value = currentVal;
         });
     } catch (e) {}

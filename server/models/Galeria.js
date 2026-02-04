@@ -88,11 +88,27 @@ const Galeria = sequelize.define('Galeria', {
     timestamps: false
 });
 
+Galeria.prototype.toJSON = function () {
+    const values = { ...this.get() };
+
+    if (values.owner && values.owner.publicid) {
+        values.createdbyUserId = values.owner.publicid;
+    }
+
+    return values;
+};
+
 const GaleriaItem = sequelize.define('GaleriaItem', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,
         primaryKey: true,
         autoIncrement: true
+    },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
     },
     galleryId: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -171,6 +187,18 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
     tableName: 'galleryitem',
     timestamps: false
 });
+
+GaleriaItem.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.galleryId;
+    delete values.editedbyUserId;
+
+    if (values.uploader && values.uploader.publicid) {
+        values.editedbyUserId = values.uploader.publicid;
+    }
+
+    return values;
+};
 
 const GaleriaContributor = sequelize.define('GaleriaContributor', {
     userId: {

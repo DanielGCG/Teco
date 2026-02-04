@@ -8,6 +8,12 @@ const UserSession = sequelize.define('UserSession', {
         primaryKey: true,
         autoIncrement: true
     },
+    publicid: {
+        type: DataTypes.STRING(36),
+        allowNull: false,
+        unique: true,
+        defaultValue: DataTypes.UUIDV4
+    },
     userId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,
@@ -32,5 +38,16 @@ const UserSession = sequelize.define('UserSession', {
     tableName: 'session',
     timestamps: false
 });
+
+UserSession.prototype.toJSON = function () {
+    const values = { ...this.get() };
+    delete values.userId;
+
+    if (values.user && values.user.publicid) {
+        values.userId = values.user.publicid;
+    }
+
+    return values;
+};
 
 module.exports = UserSession;

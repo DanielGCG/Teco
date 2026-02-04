@@ -10,7 +10,7 @@
                     <div class="col d-flex flex-column align-items-center">
                         <!-- Avatar com Status -->
                         <div class="position-relative d-inline-block mb-3">
-                            <img id="profile-modal-avatar" src="" alt="Avatar" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #f8f9fa;">
+                            <img id="profile-modal-avatar" src="" alt="Avatar" class="rounded" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #f8f9fa;">
                             <span id="profile-modal-status-indicator" class="position-absolute bottom-0 end-0 border border-white rounded-circle" style="width: 30px; height: 30px; background: #6c757d;"></span>
                         </div>
                         <!-- Username -->
@@ -134,7 +134,7 @@
             badges.innerHTML = '';
             actions.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span></div>';
             
-            const status = await FollowAPI.verificarStatus(userData.id);
+            const status = await FollowAPI.verificarStatus(userData.publicid);
             actions.innerHTML = '';
             if (!status) return;
 
@@ -186,14 +186,14 @@
 
         // Ações de seguimento
         async function follow() {
-            if (!currentUserData?.id) return;
-            await FollowAPI.seguir(currentUserData.id, { showAlert: false });
+            if (!currentUserData?.publicid) return;
+            await FollowAPI.seguir(currentUserData.publicid, { showAlert: false });
             renderFollowActions(currentUserData);
         }
 
         async function unfollow() {
-            if (!currentUserData?.id) return;
-            const res = await FollowAPI.deixarDeSeguir(currentUserData.id, { 
+            if (!currentUserData?.publicid) return;
+            const res = await FollowAPI.deixarDeSeguir(currentUserData.publicid, { 
                 confirmMessage: `Parar de seguir ${currentUserData.username}?`,
                 showAlert: false 
             });

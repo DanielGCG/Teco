@@ -15,7 +15,7 @@ router.get('/fila', async (req, res) => {
     try {
         const fila = await ImagemDoDia.findAll({ 
             order: [['createdat', 'ASC']],
-            include: [{ model: User, as: 'requester', attributes: ['username'] }]
+            include: [{ model: User, as: 'requester', attributes: ['username', 'publicid'] }]
         });
         res.json(fila);
     } catch (error) {
@@ -33,9 +33,9 @@ router.get('/fila/count', async (req, res) => {
 });
 
 // Remove uma imagem (da fila ou do histórico)
-router.delete('/fila/:id', async (req, res) => {
+router.delete('/fila/:publicid', async (req, res) => {
     try {
-        const imagem = await ImagemDoDia.findByPk(req.params.id);
+        const imagem = await ImagemDoDia.findOne({ where: { publicid: req.params.publicid } });
         if (!imagem) return res.status(404).json({ message: 'Imagem não encontrada.' });
         
         if (imagem.url) {
@@ -77,9 +77,9 @@ router.post('/borders', upload.single('file'), async (req, res) => {
 });
 
 // Remove uma moldura
-router.delete('/borders/:id', async (req, res) => {
+router.delete('/borders/:publicid', async (req, res) => {
     try {
-        const border = await ImagemDoDiaBorder.findByPk(req.params.id);
+        const border = await ImagemDoDiaBorder.findOne({ where: { publicid: req.params.publicid } });
         if (!border) return res.status(404).json({ message: 'Moldura não encontrada.' });
         
         // Deleta do servidor de arquivos antes de remover do BD

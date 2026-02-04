@@ -166,7 +166,7 @@ async function desfavoritarCartinha(cartinhaId) {
         
         // Remover da lista local após desfavoritar
         for (let usuario of usuariosProcessados) {
-            const index = usuario.cartinhas.findIndex(c => Number(c.id) === Number(cartinhaId));
+            const index = usuario.cartinhas.findIndex(c => c.id == cartinhaId);
             if (index !== -1) {
                 usuario.cartinhas.splice(index, 1);
                 if (usuario.cartinhas.length === 0) {
@@ -204,7 +204,7 @@ async function excluirCartinha(cartinhaId) {
 
         // Remover da lista local
         for (let usuario of usuariosProcessados) {
-            const index = usuario.cartinhas.findIndex(c => Number(c.id) === Number(cartinhaId));
+            const index = usuario.cartinhas.findIndex(c => c.id == cartinhaId);
             if (index !== -1) {
                 usuario.cartinhas.splice(index, 1);
                 if (usuario.cartinhas.length === 0) {

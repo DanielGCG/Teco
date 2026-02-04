@@ -7,14 +7,15 @@ const { Op } = require("sequelize");
 const {
     createCartinhaSchema,
     updateCartinhaSchema,
-    cartinhaIdSchema
+    publicidSchema
 } = require("../validators/cartinhas.validator");
 
 // ==================== Auxiliares ====================
 
 // Verifica se o usuário tem acesso à cartinha (remetente, destinatário ou admin)
-async function verifyCartinhaAccess(cartinhaId, userId, userRole) {
-    const cartinha = await Cartinha.findByPk(cartinhaId, {
+async function verifyCartinhaAccess(cartinhaPublicId, userId, userRole) {
+    const cartinha = await Cartinha.findOne({
+        where: { publicid: cartinhaPublicId },
         attributes: ['senderUserId', 'recipientUserId']
     });
 
@@ -39,22 +40,22 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
             include: [{
                 model: User,
                 as: 'destinatario',
-                attributes: ['id', 'username', 'profileimage']
+                attributes: ['publicid', 'username', 'profileimage']
             }],
             order: [['createdat', 'DESC']]
         });
 
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
-            const destinatarioId = carta.destinatario.id;
-            if (!acc[destinatarioId]) {
-                acc[destinatarioId] = {
-                    userId: destinatarioId,
+            const destinatarioPublicId = carta.destinatario.publicid;
+            if (!acc[destinatarioPublicId]) {
+                acc[destinatarioPublicId] = {
+                    userId: destinatarioPublicId,
                     username: carta.destinatario.username,
                     profileimage: carta.destinatario.profileimage,
                     cartinhas: []
                 };
             }
-            acc[destinatarioId].cartinhas.push(carta);
+            acc[destinatarioPublicId].cartinhas.push(carta);
             return acc;
         }, {});
 
@@ -75,22 +76,22 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
             include: [{
                 model: User,
                 as: 'remetente',
-                attributes: ['id', 'username', 'profileimage']
+                attributes: ['publicid', 'username', 'profileimage']
             }],
             order: [['createdat', 'DESC']]
         });
 
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
-            const remetenteId = carta.remetente.id;
-            if (!acc[remetenteId]) {
-                acc[remetenteId] = {
-                    userId: remetenteId,
+            const remetentePublicId = carta.remetente.publicid;
+            if (!acc[remetentePublicId]) {
+                acc[remetentePublicId] = {
+                    userId: remetentePublicId,
                     username: carta.remetente.username,
                     profileimage: carta.remetente.profileimage,
                     cartinhas: []
                 };
             }
-            acc[remetenteId].cartinhas.push(carta);
+            acc[remetentePublicId].cartinhas.push(carta);
             return acc;
         }, {});
 
@@ -124,13 +125,14 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
     }
 });
 
-// GET /cartinhas/:cartinhaId - Carregar conteúdo de uma cartinha específica
-CartinhasRouter.get('/:cartinhaId', validate(cartinhaIdSchema, 'params'), async (req, res) => {
+// GET /cartinhas/:publicid - Carregar conteúdo de uma cartinha específica
+CartinhasRouter.get('/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const cartinha = await Cartinha.findByPk(req.params.cartinhaId, {
+        const cartinha = await Cartinha.findOne({
+            where: { publicid: req.params.publicid },
             include: [
-                { model: User, as: 'remetente', attributes: ['id', 'username', 'profileimage'] },
-                { model: User, as: 'destinatario', attributes: ['id', 'username'] }
+                { model: User, as: 'remetente', attributes: ['publicid', 'username', 'profileimage'] },
+                { model: User, as: 'destinatario', attributes: ['publicid', 'username'] }
             ]
         });
 
@@ -146,10 +148,10 @@ CartinhasRouter.get('/:cartinhaId', validate(cartinhaIdSchema, 'params'), async 
     }
 });
 
-// PUT /cartinhas/:cartinhaId/lida - Marcar cartinha como lida
-CartinhasRouter.put('/:cartinhaId/lida', validate(cartinhaIdSchema, 'params'), async (req, res) => {
+// PUT /cartinhas/:publicid/lida - Marcar cartinha como lida
+CartinhasRouter.put('/:publicid/lida', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const cartinha = await Cartinha.findByPk(req.params.cartinhaId);
+        const cartinha = await Cartinha.findOne({ where: { publicid: req.params.publicid } });
         if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
 
         if (cartinha.recipientUserId !== req.user.id) {
@@ -196,17 +198,17 @@ CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
         const io = req.app.get('io');
         if (io) io.to(`user_${destinatario.id}`).emit('newNotification', { type: 'cartinha' });
 
-        res.status(201).json({ message: "Cartinha enviada com sucesso", cartinhaId: cartinha.id });
+        res.status(201).json({ message: "Cartinha enviada com sucesso", cartinhaPublicId: cartinha.publicid });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao enviar cartinha" });
     }
 });
 
-// POST /cartinhas/:cartinhaId/toggle-favorito - Alterna o status de favorito
-CartinhasRouter.post('/:cartinhaId/toggle-favorito', validate(cartinhaIdSchema, 'params'), async (req, res) => {
+// POST /cartinhas/:publicid/toggle-favorito - Alterna o status de favorito
+CartinhasRouter.post('/:publicid/toggle-favorito', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const cartinha = await Cartinha.findByPk(req.params.cartinhaId);
+        const cartinha = await Cartinha.findOne({ where: { publicid: req.params.publicid } });
         if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
 
         if (cartinha.recipientUserId !== req.user.id) {
@@ -223,10 +225,10 @@ CartinhasRouter.post('/:cartinhaId/toggle-favorito', validate(cartinhaIdSchema, 
     }
 });
 
-// PUT /cartinhas/:cartinhaId - Editar uma cartinha
-CartinhasRouter.put('/:cartinhaId', validate(cartinhaIdSchema, 'params'), validate(updateCartinhaSchema), async (req, res) => {
+// PUT /cartinhas/:publicid - Editar uma cartinha
+CartinhasRouter.put('/:publicid', validate(publicidSchema, 'params'), validate(updateCartinhaSchema), async (req, res) => {
     try {
-        const cartinha = await Cartinha.findByPk(req.params.cartinhaId);
+        const cartinha = await Cartinha.findOne({ where: { publicid: req.params.publicid } });
         if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
 
         if (cartinha.senderUserId !== req.user.id && req.user.roleId > 11) {
@@ -245,10 +247,10 @@ CartinhasRouter.put('/:cartinhaId', validate(cartinhaIdSchema, 'params'), valida
     }
 });
 
-// DELETE /cartinhas/:cartinhaId - Excluir uma cartinha
-CartinhasRouter.delete('/:cartinhaId', validate(cartinhaIdSchema, 'params'), async (req, res) => {
+// DELETE /cartinhas/:publicid - Excluir uma cartinha
+CartinhasRouter.delete('/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
     try {
-        const cartinha = await Cartinha.findByPk(req.params.cartinhaId);
+        const cartinha = await Cartinha.findOne({ where: { publicid: req.params.publicid } });
         if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
 
         const hasAccess = req.user.roleId <= 11 || cartinha.senderUserId === req.user.id || cartinha.recipientUserId === req.user.id;

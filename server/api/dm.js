@@ -5,7 +5,7 @@ const socketRouter = require("../routes/socket.router");
 const validate = require("../middlewares/validate");
 const { Op } = require("sequelize");
 const {
-    dmIdSchema,
+    publicidSchema,
     getMessagesSchema,
     sendMessageSchema,
     createDmSchema,
@@ -74,10 +74,8 @@ DMsRouter.get('/', async (req, res) => {
             });
 
             dmList.push({
-                id: dm.publicid, // Usa publicid como id
                 publicid: dm.publicid,
                 otherUser: {
-                    id: otherUser.publicid, // Usa publicid como id
                     publicid: otherUser.publicid,
                     username: otherUser.username,
                     profileimage: otherUser.profileimage,
@@ -184,7 +182,6 @@ DMsRouter.get('/friends', async (req, res) => {
             });
 
             return {
-                id: friend.publicid,
                 publicid: friend.publicid,
                 username: friend.username,
                 profileimage: friend.profileimage,
@@ -241,7 +238,6 @@ DMsRouter.get('/search', validate(searchUsersSchema, 'query'), async (req, res) 
             });
 
             return {
-                id: u.publicid,
                 publicid: u.publicid,
                 username: u.username,
                 profileimage: u.profileimage,

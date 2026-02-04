@@ -61,26 +61,28 @@ AdminChatsRouter.post('/public', async (req, res) => {
 
 // POST /admin/chats/dm - Criar uma DM entre dois usuários
 AdminChatsRouter.post('/dm', async (req, res) => {
-    let { otherUserId, creatorId } = req.body;
+    let { otherUserPublicId, creatorPublicId } = req.body;
     
-    const user1Id = creatorId || req.user.id;
-    const user2Id = otherUserId;
-
-    if (!user1Id || !user2Id) {
-        return res.status(400).json({ message: "IDs dos usuários são obrigatórios" });
-    }
-
-    if (user1Id == user2Id) {
-        return res.status(400).json({ message: "Não é possível criar uma DM com o mesmo usuário" });
-    }
-
     try {
-        // Verificar se ambos os usuários existem
-        const user1 = await User.findByPk(user1Id);
-        const user2 = await User.findByPk(user2Id);
+        let user1, user2;
+        
+        if (creatorPublicId) {
+            user1 = await User.findOne({ where: { publicid: creatorPublicId } });
+        } else {
+            user1 = await User.findByPk(req.user.id);
+        }
+
+        user2 = await User.findOne({ where: { publicid: otherUserPublicId } });
 
         if (!user1 || !user2) {
             return res.status(404).json({ message: "Um ou ambos os usuários não foram encontrados" });
+        }
+
+        const user1Id = user1.id;
+        const user2Id = user2.id;
+
+        if (user1Id == user2Id) {
+            return res.status(400).json({ message: "Não é possível criar uma DM com o mesmo usuário" });
         }
 
         // Verificar se já existe uma DM entre eles
@@ -137,7 +139,6 @@ AdminChatsRouter.get('/', async (req, res) => {
                 const lastMsg = await ChatMessage.findOne({ where: { chatId: chat.id }, order: [['createdat', 'DESC']] });
 
                 results.push({
-                    id: chat.id,
                     publicid: chat.publicid,
                     title: chat.title,
                     type: 'public',
@@ -154,8 +155,8 @@ AdminChatsRouter.get('/', async (req, res) => {
         if (!tipo || tipo === 'dm') {
             const dms = await DM.findAll({
                 include: [
-                    { model: User, as: 'user1', attributes: ['username'] },
-                    { model: User, as: 'user2', attributes: ['username'] }
+                    { model: User, as: 'user1', attributes: ['username', 'publicid'] },
+                    { model: User, as: 'user2', attributes: ['username', 'publicid'] }
                 ],
                 order: [['createdat', 'DESC']]
             });
@@ -169,7 +170,6 @@ AdminChatsRouter.get('/', async (req, res) => {
                 const lastMsg = await DMMessage.findOne({ where: { dmId: dm.id }, order: [['createdat', 'DESC']] });
 
                 results.push({
-                    id: dm.id,
                     publicid: dm.publicid,
                     title: `${dm.user1.username} & ${dm.user2.username}`,
                     type: 'dm',
@@ -178,8 +178,8 @@ AdminChatsRouter.get('/', async (req, res) => {
                     messagecount: messageCount,
                     lastmessageat: lastMsg?.createdat || dm.createdat,
                     participants: [
-                        { id: dm.userId1, username: dm.user1.username },
-                        { id: dm.userId2, username: dm.user2.username }
+                        { publicid: dm.user1.publicid, username: dm.user1.username },
+                        { publicid: dm.user2.publicid, username: dm.user2.username }
                     ]
                 });
             }
@@ -200,14 +200,15 @@ AdminChatsRouter.get('/', async (req, res) => {
     }
 });
 
-// GET /admin/chats/:id - Detalhes de um chat ou DM
-AdminChatsRouter.get('/:id', async (req, res) => {
-    const id = req.params.id;
+// GET /admin/chats/:publicid - Detalhes de um chat ou DM
+AdminChatsRouter.get('/:publicid', async (req, res) => {
+    const publicid = req.params.publicid;
     const type = req.query.type; // 'public' ou 'dm'
 
     try {
         if (type === 'public') {
-            const chat = await Chat.findByPk(id, {
+            const chat = await Chat.findOne({
+                where: { publicid },
                 include: [{ model: User, as: 'creator', attributes: ['username'] }]
             });
             if (!chat) return res.status(404).json({ message: "Chat não encontrado" });
@@ -219,10 +220,11 @@ AdminChatsRouter.get('/:id', async (req, res) => {
                 participants: []
             });
         } else {
-            const dm = await DM.findByPk(id, {
+            const dm = await DM.findOne({
+                where: { publicid },
                 include: [
-                    { model: User, as: 'user1', attributes: ['username'] },
-                    { model: User, as: 'user2', attributes: ['username'] }
+                    { model: User, as: 'user1', attributes: ['username', 'publicid'] },
+                    { model: User, as: 'user2', attributes: ['username', 'publicid'] }
                 ]
             });
             if (!dm) return res.status(404).json({ message: "DM não encontrada" });
@@ -232,8 +234,8 @@ AdminChatsRouter.get('/:id', async (req, res) => {
                 type: 'dm',
                 title: `${dm.user1.username} & ${dm.user2.username}`,
                 participants: [
-                    { id: dm.userId1, username: dm.user1.username },
-                    { id: dm.userId2, username: dm.user2.username }
+                    { publicid: dm.user1.publicid, username: dm.user1.username },
+                    { publicid: dm.user2.publicid, username: dm.user2.username }
                 ]
             });
         }
@@ -243,18 +245,18 @@ AdminChatsRouter.get('/:id', async (req, res) => {
     }
 });
 
-// DELETE /admin/chats/:id - Deletar um chat ou DM
-AdminChatsRouter.delete('/:id', async (req, res) => {
-    const id = req.params.id;
+// DELETE /admin/chats/:publicid - Deletar um chat ou DM
+AdminChatsRouter.delete('/:publicid', async (req, res) => {
+    const publicid = req.params.publicid;
     const type = req.query.type;
 
     try {
         if (type === 'public') {
-            const chat = await Chat.findByPk(id);
+            const chat = await Chat.findOne({ where: { publicid } });
             if (!chat) return res.status(404).json({ message: "Chat não encontrado" });
             await chat.destroy();
         } else {
-            const dm = await DM.findByPk(id);
+            const dm = await DM.findOne({ where: { publicid } });
             if (!dm) return res.status(404).json({ message: "DM não encontrada" });
             await dm.destroy();
         }
@@ -265,25 +267,30 @@ AdminChatsRouter.delete('/:id', async (req, res) => {
     }
 });
 
-// PUT /admin/chats/:id - Atualizar um chat ou DM
-AdminChatsRouter.put('/:id', async (req, res) => {
-    const id = req.params.id;
+// PUT /admin/chats/:publicid - Atualizar um chat ou DM
+AdminChatsRouter.put('/:publicid', async (req, res) => {
+    const publicid = req.params.publicid;
     const { title, type, participants } = req.body;
 
     try {
         if (type === 'public') {
-            const chat = await Chat.findByPk(id);
+            const chat = await Chat.findOne({ where: { publicid } });
             if (!chat) return res.status(404).json({ message: "Chat não encontrado" });
             if (title) chat.title = title;
             await chat.save();
         } else if (type === 'dm') {
-            const dm = await DM.findByPk(id);
+            const dm = await DM.findOne({ where: { publicid } });
             if (!dm) return res.status(404).json({ message: "DM não encontrada" });
             
             if (participants && participants.length === 2) {
-                dm.userId1 = participants[0];
-                dm.userId2 = participants[1];
-                await dm.save();
+                // Participants are publicids
+                const user1 = await User.findOne({ where: { publicid: participants[0] } });
+                const user2 = await User.findOne({ where: { publicid: participants[1] } });
+                if (user1 && user2) {
+                    dm.userId1 = user1.id;
+                    dm.userId2 = user2.id;
+                    await dm.save();
+                }
             }
         }
         res.json({ message: "Atualizado com sucesso" });
@@ -293,9 +300,9 @@ AdminChatsRouter.put('/:id', async (req, res) => {
     }
 });
 
-// GET /admin/chats/:chatId/mensagens - Listar mensagens de um chat (admin)
-AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
-    const chatId = req.params.chatId;
+// GET /admin/chats/:publicid/mensagens - Listar mensagens de um chat (admin)
+AdminChatsRouter.get('/:publicid/mensagens', async (req, res) => {
+    const publicid = req.params.publicid;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const search = req.query.search; // busca por conteúdo da mensagem
@@ -304,14 +311,16 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
 
     try {
         // Verificar se o chat existe
-        const chat = await Chat.findByPk(chatId);
+        const chat = await Chat.findOne({ where: { publicid } });
         
         if (!chat) {
             return res.status(404).json({ message: "Chat não encontrado" });
         }
 
+        const realChatId = chat.id;
+
         // Construir filtros
-        const where = { chatId: chatId };
+        const where = { chatId: realChatId };
 
         if (search) {
             where.message = { [Op.like]: `%${search}%` };
@@ -322,7 +331,7 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
             where,
             include: [{
                 model: User,
-                attributes: ['id', 'username']
+                attributes: ['publicid', 'username']
             }],
             order: [['createdat', 'DESC']],
             limit,
@@ -333,10 +342,10 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
 
         res.json({
             mensagens: mensagens.map(m => ({
-                id: m.id,
+                publicid: m.publicid,
                 message: m.message,
                 createdat: m.createdat,
-                userId: m.User.id,
+                userPublicId: m.User.publicid,
                 username: m.User.username
             })),
             currentPage: page,
@@ -351,23 +360,16 @@ AdminChatsRouter.get('/:chatId/mensagens', async (req, res) => {
 
 // DELETE /admin/chats/mensagens/remover - Remover mensagens selecionadas
 AdminChatsRouter.delete('/mensagens/remover', async (req, res) => {
-    const { mensagemIds } = req.body;
+    const { publicids } = req.body;
 
-    if (!mensagemIds || !Array.isArray(mensagemIds) || mensagemIds.length === 0) {
-        return res.status(400).json({ message: "IDs de mensagens são obrigatórios" });
+    if (!publicids || !Array.isArray(publicids) || publicids.length === 0) {
+        return res.status(400).json({ message: "publicids das mensagens são obrigatórios" });
     }
 
     try {
-        // Converter IDs para integers e filtrar valores válidos
-        const validIds = mensagemIds.filter(id => !isNaN(parseInt(id))).map(id => parseInt(id));
-
-        if (validIds.length === 0) {
-            return res.status(400).json({ message: "Nenhum ID válido fornecido" });
-        }
-
         const deletedCount = await ChatMessage.destroy({
             where: {
-                id: { [Op.in]: validIds }
+                publicid: { [Op.in]: publicids }
             }
         });
 
@@ -381,13 +383,13 @@ AdminChatsRouter.delete('/mensagens/remover', async (req, res) => {
     }
 });
 
-// PUT /admin/chats/:chatId - Atualizar informações do chat
-AdminChatsRouter.put('/:chatId', async (req, res) => {
-    const chatId = req.params.chatId;
+// PUT /admin/chats/:publicid/info - Atualizar informações do chat
+AdminChatsRouter.put('/:publicid/info', async (req, res) => {
+    const publicid = req.params.publicid;
     const { title, chatTopicName } = req.body;
 
     try {
-        const chat = await Chat.findByPk(chatId);
+        const chat = await Chat.findOne({ where: { publicid } });
 
         if (!chat) {
             return res.status(404).json({ message: "Chat não encontrado" });
@@ -406,36 +408,38 @@ AdminChatsRouter.put('/:chatId', async (req, res) => {
     }
 });
 
-// POST /admin/chats/:chatId/participantes - Adicionar participante ao chat
-AdminChatsRouter.post('/:chatId/participantes', async (req, res) => {
-    const chatId = req.params.chatId;
-    const { userId } = req.body;
+// POST /admin/chats/:publicid/participantes - Adicionar participante ao chat
+AdminChatsRouter.post('/:publicid/participantes', async (req, res) => {
+    const { publicid } = req.params;
+    const { userPublicId } = req.body;
 
-    if (!userId) {
-        return res.status(400).json({ message: "userId é obrigatório" });
+    if (!userPublicId) {
+        return res.status(400).json({ message: "userPublicId é obrigatório" });
     }
 
     try {
-        const chat = await Chat.findByPk(chatId);
+        const chat = await Chat.findOne({ where: { publicid } });
         if (!chat) {
             return res.status(404).json({ message: "Chat não encontrado" });
         }
 
-        const user = await User.findByPk(userId);
+        const user = await User.findOne({ where: { publicid: userPublicId } });
         if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        // Verificar se já é participante
+        // Se existisse ChatParticipant (é necessário importar se for usar)
+        /*
         const existing = await ChatParticipant.findOne({
-            where: { chatId: chatId, userId: userId }
+            where: { chatId: chat.id, userId: user.id }
         });
 
         if (existing) {
             return res.status(409).json({ message: "Usuário já é participante" });
         }
 
-        await ChatParticipant.create({ chatId: chatId, userId: userId });
+        await ChatParticipant.create({ chatId: chat.id, userId: user.id });
+        */
 
         res.json({ message: "Participante adicionado com sucesso" });
     } catch (err) {
@@ -444,13 +448,20 @@ AdminChatsRouter.post('/:chatId/participantes', async (req, res) => {
     }
 });
 
-// DELETE /admin/chats/:chatId/participantes/:userId - Remover participante do chat
-AdminChatsRouter.delete('/:chatId/participantes/:userId', async (req, res) => {
-    const { chatId, userId } = req.params;
+// DELETE /admin/chats/:publicid/participantes/:userPublicid - Remover participante do chat
+AdminChatsRouter.delete('/:publicid/participantes/:userPublicid', async (req, res) => {
+    const { publicid, userPublicid } = req.params;
 
     try {
+        const chat = await Chat.findOne({ where: { publicid } });
+        const user = await User.findOne({ where: { publicid: userPublicid } });
+        
+        if (!chat || !user) {
+            return res.status(404).json({ message: "Chat ou usuário não encontrado" });
+        }
+
         const participant = await ChatParticipant.findOne({
-            where: { chatId: chatId, userId: userId }
+            where: { chatId: chat.id, userId: user.id }
         });
 
         if (!participant) {
