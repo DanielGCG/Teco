@@ -2,59 +2,33 @@
 <script src="/js/commons/cartinhas-common.js"></script>
 
 <div class="container mt-4">
-    <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 fw-bold mb-0">Mensagens Enviadas</h2>
         <a href="/cartinhas" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Voltar ao Menu
         </a>
     </div>
+
     <div class="row">
         <div class="col-12">  
             <!-- Loading -->
-            <div id="loading" class="loading-spinner">
+            <div id="loading" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Carregando cartas...</span>
+                    <span class="visually-hidden">Carregando...</span>
                 </div>
             </div>
 
             <!-- Container para as cartinhas -->
             <div id="cartinhas-container" style="display: none;">    
-                <!-- Container das pilhas empilhadas -->
-                <div class="container-pilhas">
-                    <!-- As pilhas serão inseridas aqui -->
-                </div>
+                <div id="cartas-grid"></div>
             </div>
             
             <!-- Mensagem quando não há cartinhas -->
-            <div id="sem-cartinhas" class="sem-cartinhas" style="display: none;">
-                <div class="envelope-vazio">📬</div>
+            <div id="sem-cartinhas" class="text-center py-5" style="display: none;">
+                <div class="display-1 text-muted mb-3"><i class="bi bi-send"></i></div>
                 <h4>Nenhuma cartinha enviada</h4>
-                <p>Você ainda não enviou nenhuma cartinha.<br>Quando enviar uma carta para alguém, ela aparecerá aqui.</p>
-                <a href="/cartinhas/escrever" class="btn btn-primary mt-3">✏️ Escrever Cartinha</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para visualizar cartinha completa -->
-<div class="modal fade modal-carta" id="cartinhaModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">📤 Cartinha Enviada</h5>
-                <div class="ms-auto me-2">
-                    <small class="text-muted">Atalhos: <kbd>E</kbd> Editar | <kbd>D</kbd> Excluir</small>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body">
-                <div id="modal-content">
-                    <!-- Conteúdo da cartinha será inserido aqui -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">📪 Fechar</button>
-                <button type="button" class="btn btn-outline-danger" id="excluir-btn">🗑️ Excluir</button>
-                <button type="button" class="btn btn-outline-primary" id="editar-btn">✏️ Editar</button>
+                <p class="text-muted">Você ainda não enviou nenhuma cartinha.</p>
+                <a href="/cartinhas/escrever" class="btn btn-primary mt-3">Escrever Cartinha</a>
             </div>
         </div>
     </div>
@@ -64,44 +38,43 @@
 <div class="modal fade" id="editarModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, var(--marrom) 0%, #7D8D86 100%); color: white;">
-                <h5 class="modal-title">✏️ Editar Cartinha</h5>
+            <div class="modal-header bg-marrom text-white">
+                <h5 class="modal-title">Editar Cartinha</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <form id="form-editar">
                     <input type="hidden" id="edit-cartinha-id">
                     
                     <!-- Para quem -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">📨 Para:</label>
-                        <div id="edit-destinatario" class="d-flex align-items-center p-2" style="background: #f8f9fa; border-radius: 8px;">
-                            <img id="edit-destinatario-profileimage" src="" alt="Avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                            <span id="edit-destinatario-nome" style="font-weight: 600; color: #3E3F29;"></span>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Para:</label>
+                        <div id="edit-destinatario" class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                            <img id="edit-destinatario-profileimage" src="" alt="Avatar" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                            <span id="edit-destinatario-nome" class="fw-bold h6 mb-0"></span>
                         </div>
                     </div>
 
                     <!-- Assunto -->
-                    <div class="mb-3">
-                        <label for="edit-titulo" class="form-label fw-bold">📋 Assunto:</label>
-                        <input type="text" class="form-control" id="edit-titulo" maxlength="160" required>
-                        <div class="form-text">Máximo 160 caracteres. <span id="edit-contador-titulo">0/160</span></div>
+                    <div class="mb-4">
+                        <label for="edit-titulo" class="form-label fw-bold small text-muted text-uppercase">Assunto:</label>
+                        <input type="text" class="form-control form-control-lg" id="edit-titulo" maxlength="160" required>
+                        <div class="form-text">Máximo 160 caracteres. <span id="edit-contador-titulo" class="float-end">0/160</span></div>
                     </div>
 
                     <!-- Mensagem -->
-                    <div class="mb-3">
-                        <label for="edit-conteudo" class="form-label fw-bold">💌 Mensagem:</label>
-                        <textarea class="form-control" id="edit-conteudo" rows="10" maxlength="2000" required style="resize: vertical;"></textarea>
-                        <div class="form-text">Máximo 2000 caracteres. <span id="edit-contador-conteudo">0/2000</span></div>
+                    <div class="mb-4">
+                        <label for="edit-conteudo" class="form-label fw-bold small text-muted text-uppercase">Mensagem:</label>
+                        <textarea class="form-control" id="edit-conteudo" rows="8" maxlength="2000" required style="resize: vertical;"></textarea>
+                        <div class="form-text">Máximo 2000 caracteres. <span id="edit-contador-conteudo" class="float-end">0/2000</span></div>
                     </div>
 
-                    <!-- Mensagens de erro/sucesso -->
-                    <div id="edit-mensagem" style="display: none;"></div>
+                    <div id="edit-mensagem" class="alert d-none"></div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="salvar-edicao-btn">💾 Salvar Alterações</button>
+                <button type="button" class="btn btn-link text-decoration-none text-muted" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" id="salvar-edicao-btn">Salvar Alterações</button>
             </div>
         </div>
     </div>
@@ -111,27 +84,25 @@
     // Tipo desta página
     window.tipoCartinhas = 'enviadas';
 
-    // Dados locais da página (não expor como global)
+    // Dados locais da página
     let usuariosProcessados = [];
 
     async function carregarCartinhas() {
+        const loading = document.getElementById('loading');
+        const container = document.getElementById('cartinhas-container');
+        const empty = document.getElementById('sem-cartinhas');
+
         try {
             const response = await fetch('/api/cartinhas/enviadas', {
                 credentials: 'include'
             });
 
-            if (!response.ok) {
-                throw new Error(`Erro: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Erro: ${response.status}`);
 
             usuariosProcessados = await response.json();
+            loading.style.display = 'none';
 
-            if (!Array.isArray(usuariosProcessados)) {
-                console.error('Formato de resposta inesperado:', usuariosProcessados);
-                usuariosProcessados = [];
-            }
-
-            // Hooks para integração com o common (abre modal com config da página)
+            // Hooks para integração com o common
             const hooks = {
                 abrirCartinha: (cartinhaId) => {
                     const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
@@ -143,46 +114,35 @@
                         tipo: 'enviadas',
                         cartinha: cartinha,
                         usuario: usuario,
+                        titulo: 'Cartinha Enviada',
                         badges: [
-                            cartinha.isread ? { icone: '✓', texto: 'Lida pelo destinatário', cor: '#27ae60', corTexto: 'white' } :
-                                           { icone: '○', texto: 'Ainda não lida', cor: '#f39c12', corTexto: '#2d3436' }
+                            { texto: cartinha.isread ? 'Lida' : 'Entregue', cor: cartinha.isread ? '#198754' : '#6c757d' }
                         ],
                         acoes: [
                             {
                                 id: 'excluir',
-                                label: '🗑️ Excluir',
+                                label: 'Excluir',
                                 classe: 'btn-outline-danger',
                                 desabilitado: cartinha.isread,
-                                titulo: cartinha.isread ? 'Não é possível excluir cartas que já foram lidas' : 'Excluir esta cartinha',
                                 callback: (carta) => { window.modalCartinha.fechar(); setTimeout(() => confirmarExclusao(carta.publicid), 300); }
                             },
                             {
                                 id: 'editar',
-                                label: '✏️ Editar',
-                                classe: 'btn-outline-primary',
+                                label: 'Editar',
+                                classe: 'btn-primary',
                                 desabilitado: cartinha.isread,
-                                titulo: cartinha.isread ? 'Não é possível editar cartas que já foram lidas' : 'Editar esta cartinha',
                                 callback: (carta) => { window.modalCartinha.fechar(); setTimeout(() => abrirModalEdicao(carta.publicid), 300); }
                             }
-                        ],
-                        atalhosTeclado: {
-                            'e': { callback: (carta) => { if (!carta.isread) { window.modalCartinha.fechar(); setTimeout(() => abrirModalEdicao(carta.publicid), 300); } } },
-                            'd': { callback: (carta) => { if (!carta.isread) { window.modalCartinha.fechar(); setTimeout(() => confirmarExclusao(carta.publicid), 300); } } }
-                        }
+                        ]
                     });
                 }
             };
 
-            // Usar funções do common
-            renderizarCartinhas(usuariosProcessados, hooks);
-            inicializarNavegacaoCartinhas(usuariosProcessados, hooks);
+            renderizarGridCartinhas(usuariosProcessados, '#cartas-grid', hooks);
             
         } catch (error) {
             console.error('Erro ao carregar cartinhas:', error);
-            usuariosProcessados = [];
-            renderizarCartinhas(usuariosProcessados);
-        } finally {
-            document.getElementById('loading').style.display = 'none';
+            loading.innerHTML = '<div class="alert alert-danger">Erro ao carregar mensagens.</div>';
         }
     }
 
@@ -242,23 +202,16 @@
             const result = await response.json();
             
             if (response.ok) {
-                const cartinha = encontrarCartinha(cartinhaId);
+                const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
                 if (cartinha) {
                     cartinha.title = titulo;
                     cartinha.body = conteudo;
                 }
                 
-                const cartaElement = document.getElementById(`carta-${cartinhaId}`);
-                if (cartaElement) {
-                    const tituloElement = cartaElement.querySelector('.title-carta');
-                    const conteudoElement = cartaElement.querySelector('.body-carta');
-                    if (tituloElement) tituloElement.textContent = titulo;
-                    if (conteudoElement) conteudoElement.textContent = cortarTexto(conteudo, 120);
-                }
-                
                 const editarModal = bootstrap.Modal.getInstance(document.getElementById('editarModal'));
                 editarModal.hide();
                 
+                carregarCartinhas();
                 mostrarFeedback(result.message, 'success');
             } else {
                 mostrarMensagem(result.message, 'danger');
@@ -285,54 +238,19 @@
     }
 
     // ==================== Função de exclusão ====================
-    function confirmarExclusao(cartinhaId) {
-        let confirmationModal = document.getElementById('confirmDeleteModal');
+    async function confirmarExclusao(cartinhaId) {
+        const confirmado = await mostrarConfirmacao(
+            'Tem certeza que deseja excluir permanentemente esta cartinha?\n\nEsta ação não pode ser desfeita!',
+            'Confirmar Exclusão'
+        );
         
-        if (!confirmationModal) {
-            const modalHtml = `
-                <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger text-white">
-                                <h5 class="modal-title">⚠️ Confirmar exclusão</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p>Tem certeza que deseja <strong>excluir permanentemente</strong> esta cartinha?</p>
-                                <div class="alert alert-warning" role="alert">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    Esta ação não pode ser desfeita!
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                                    Excluir permanentemente
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            confirmationModal = document.getElementById('confirmDeleteModal');
+        if (confirmado) {
+            excluirCartinha(cartinhaId);
         }
-        
-        const confirmBtn = confirmationModal.querySelector('#confirmDeleteBtn');
-        confirmBtn.onclick = () => excluirCartinha(cartinhaId);
-        
-        const modal = new bootstrap.Modal(confirmationModal);
-        modal.show();
     }
 
     async function excluirCartinha(cartinhaId) {
         try {
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            const originalText = confirmBtn.innerHTML;
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Excluindo...`;
-            
             const response = await fetch(`/api/cartinhas/${cartinhaId}`, {
                 method: 'DELETE',
                 credentials: 'include'
@@ -341,53 +259,28 @@
             if (response.ok) {
                 const result = await response.json();
 
-                const confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
-                confirmationModal.hide();
-
-                const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
-                const usuario = encontrarUsuarioPorCartinha(cartinhaId, usuariosProcessados);
-
-                if (usuario && cartinha) {
-                    const index = usuario.cartinhas.findIndex(c => c.publicid === cartinhaId);
-                    if (index !== -1) usuario.cartinhas.splice(index, 1);
-
-                    const cartaElement = document.getElementById(`carta-${cartinhaId}`);
-                    if (cartaElement) cartaElement.remove();
-
-                    if (usuario.cartinhas.length === 0) {
-                        const userIndex = usuariosProcessados.findIndex(u => u.userId === usuario.userId);
-                        if (userIndex !== -1) {
-                            usuariosProcessados.splice(userIndex, 1);
+                // Remover do array local
+                for (let usuario of usuariosProcessados) {
+                    const index = usuario.cartinhas.findIndex(c => (c.publicid || c.id) == cartinhaId);
+                    if (index !== -1) {
+                        usuario.cartinhas.splice(index, 1);
+                        if (usuario.cartinhas.length === 0) {
+                            const uIndex = usuariosProcessados.indexOf(usuario);
+                            usuariosProcessados.splice(uIndex, 1);
                         }
-
-                        const pilha = document.getElementById(`pilha-${usuario.userId}`);
-                        if (pilha) pilha.remove();
-
-                        if (usuariosProcessados.length === 0) {
-                            const container = document.getElementById('cartinhas-container');
-                            const semCartinhas = document.getElementById('sem-cartinhas');
-                            container.style.display = 'none';
-                            semCartinhas.style.display = 'block';
-                        }
+                        break;
                     }
-
-                    mostrarFeedback(result.message || "Cartinha excluída com sucesso!", "success");
                 }
+
+                carregarCartinhas();
+                mostrarFeedback(result.message || "Cartinha excluída com sucesso!", "success");
             } else {
                 const result = await response.json();
                 mostrarFeedback(result.message || "Erro ao excluir cartinha", "danger");
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = originalText;
             }
         } catch (error) {
             console.error('Erro ao excluir cartinha:', error);
             mostrarFeedback("Erro ao excluir cartinha. Por favor, tente novamente.", "danger");
-            
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            if (confirmBtn) {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = "Excluir permanentemente";
-            }
         }
     }
 
@@ -395,29 +288,13 @@
     document.addEventListener('DOMContentLoaded', () => {
         carregarCartinhas();
         
-        // Usar função comum de navegação por teclado
-        inicializarNavegacaoTeclado({
-            modal: (e, modalAberto) => {
-                if (modalAberto.id === 'cartinhaModal') {
-                    if (e.key === 'e' || e.key === 'E') {
-                        e.preventDefault();
-                        const editarBtn = document.getElementById('editar-btn');
-                        if (editarBtn && !editarBtn.disabled) editarBtn.click();
-                    }
-                    if (e.key === 'd' || e.key === 'D') {
-                        e.preventDefault();
-                        const excluirBtn = document.getElementById('excluir-btn');
-                        if (excluirBtn && !excluirBtn.disabled) excluirBtn.click();
-                    }
-                }
-            }
-        });
-        
         // Eventos do modal de edição
         document.getElementById('edit-titulo').addEventListener('input', atualizarContadores);
         document.getElementById('edit-conteudo').addEventListener('input', atualizarContadores);
         document.getElementById('salvar-edicao-btn').addEventListener('click', salvarEdicao);
     });
 </script>
+
+<%- include('../../utils/modal-confirmacao') %>
 
 

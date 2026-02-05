@@ -31,6 +31,20 @@ const protect = (minRole = 20) => {
 
 // ==================== Rotas públicas ====================
 
+// Listagem simplificada de usuários para filtros
+UsersRouter.get('/', async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['publicid', 'username', 'profileimage'],
+            order: [['username', 'ASC']]
+        });
+        res.json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao listar usuários" });
+    }
+});
+
 // POST /users/validate-session
 UsersRouter.post('/validate-session', validate(validateSessionSchema), async (req, res) => {
     let cookie = req.body?.cookie;

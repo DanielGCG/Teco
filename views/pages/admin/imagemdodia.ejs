@@ -120,7 +120,7 @@ async function carregarHistorico() {
                 </div>
                 <div class="flex-grow-1">
                     <div class="fw-bold" style="font-size: 0.8rem;">${item.text}</div>
-                    <div class="text-muted" style="font-size: 0.6rem;">Ativada em: ${new Date(item.start_at).toLocaleDateString()}</div>
+                    <div class="text-muted" style="font-size: 0.6rem;">Ativada em: ${item.activatedat ? new Date(item.activatedat).toLocaleDateString() : 'N/A'}</div>
                 </div>
                 <button onclick="removerImagem('${item.publicid}', 'historico')" class="btn btn-outline-danger btn-sm border-0">
                     <i class="bi bi-trash"></i>

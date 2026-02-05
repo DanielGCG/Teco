@@ -12,10 +12,11 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // deleteFileFromServer substituído por deleteFromFileServer universal
 
-// Busca a imagem do dia ativa (A maior posição)
+// Busca a imagem do dia ativa (A maior posição, ignorando as da fila com posição 0)
 router.get('/', async (req, res) => {
     try {
         const imagem = await ImagemDoDia.findOne({
+            where: { position: { [Op.gt]: 0 } },
             order: [['position', 'DESC']],
             include: [{ model: ImagemDoDiaBorder, as: 'border' }]
         });
@@ -26,10 +27,11 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Busca histórico
+// Busca histórico (Somente as que já foram ativadas)
 router.get('/ativas', async (req, res) => {
     try {
         const imagens = await ImagemDoDia.findAll({
+            where: { position: { [Op.gt]: 0 } },
             order: [['position', 'DESC']],
             include: [
                 { model: User, as: 'requester', attributes: ['username', 'profileimage'] },
@@ -99,13 +101,33 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
             finalBorderId = newBorder.id;
         }
 
-        const maxPosition = await ImagemDoDia.max('position') || 0;
+        // Verifica se já existe uma imagem ativada hoje
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const imagemHoje = await ImagemDoDia.findOne({
+            where: {
+                position: { [Op.gt]: 0 },
+                activatedat: { [Op.gte]: hoje }
+            }
+        });
+
+        let position = 0;
+        let activatedat = null;
+
+        // Se não houver imagem para hoje, ativa esta imediatamente
+        if (!imagemHoje) {
+            const maxPos = await ImagemDoDia.max('position') || 0;
+            position = maxPos + 1;
+            activatedat = new Date();
+        }
 
         const novaImagem = await ImagemDoDia.create({ 
             url, 
             borderId: finalBorderId, 
             text: text,
-            position: maxPosition + 1,
+            position: position,
+            activatedat: activatedat,
             createdbyUserId: req.user ? req.user.id : null
         });
         res.status(201).json(novaImagem);

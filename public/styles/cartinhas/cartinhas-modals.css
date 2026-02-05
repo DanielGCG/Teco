@@ -1,466 +1,96 @@
-/* ==================== CARTINHAS - ESTILOS COMPARTILHADOS ==================== */
+/* 
+   SISTEMA DE CARTINHAS - ESTILO SIMPLIFICADO
+   Remove metáforas físicas (envelopes/pilhas) em favor de uma interface limpa
+*/
 
-/* Estilo de carta física */
-.carta-envelope {
-    background: linear-gradient(135deg, var(--bege-claro), var(--bege-medio));
-    border: 1px solid var(--bege-escuro);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(var(--texto-principal-rgb), 0.1);
-    margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
+:root {
+    --marrom: #A39178;
+    --marrom-dark: #8c7b64;
+    --texto-principal: #333;
 }
 
-.carta-envelope:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(var(--marrom-rgb), 0.25);
-}
-
-/* Sistema de empilhamento de pilhas */
-.container-pilhas {
-    position: relative;
-    height: 350px;
-    perspective: 1000px;
-    margin-bottom: 1rem;
-    overflow: visible;
-}
-
-.pilha-cartas {
-    position: absolute;
-    width: 100%;
-    max-width: 600px;
-    left: 50%;
-    transform: translateX(-50%);
-    perspective: 1000px;
-    padding: 8px;
-    border-radius: 12px;
-    transition: all 0.5s ease;
-}
-
-/* Posições das pilhas */
-.pilha-cartas.segunda {
-    top: 80px;
-    z-index: 8;
-    transform: translateX(-50%) translateY(-10px) rotate(-1deg) scale(0.95);
-    opacity: 0.8;
-}
-
-.pilha-cartas.terceira {
-    top: 65px;
-    z-index: 6;
-    transform: translateX(-50%) translateY(-20px) rotate(-2deg) scale(0.9);
-    opacity: 0.6;
-}
-
-.pilha-cartas.quarta {
-    top: 50px;
-    z-index: 4;
-    transform: translateX(-50%) translateY(-30px) rotate(-3deg) scale(0.85);
-    opacity: 0.4;
-}
-
-.pilha-cartas.fundo {
-    top: 35px;
-    z-index: 2;
-    transform: translateX(-50%) translateY(-40px) rotate(-4deg) scale(0.8);
-    opacity: 0.2;
-}
-
-.pilha-cartas.ativa {
-    top: 100px;
-    z-index: 10;
-    transform: translateX(-50%);
-    background: rgba(var(--roxo-escuro-rgb), 0.08);
-    box-shadow: 0 0 0 2px rgba(var(--roxo-escuro-rgb), 0.3);
-}
-
-.pilha-cartas.ativa .instrucoes-pilha { opacity: 1; }
-
-/* Cartas empilhadas */
-.carta-empilhada {
-    position: absolute;
-    width: 100%;
-    cursor: pointer;
-    transform-origin: center center;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.carta-empilhada.topo {
-    z-index: 10;
-    transform: translateY(0) translateX(0) rotate(0deg) scale(1);
-}
-
-.carta-empilhada.meio {
-    z-index: 5;
-    transform: translateY(-8px) translateX(-3px) rotate(-1deg) scale(0.98);
-}
-
-.carta-empilhada.fundo {
-    z-index: 1;
-    transform: translateY(-16px) translateX(-6px) rotate(-2deg) scale(0.96);
-}
-
-.carta-empilhada.jogada-direita {
-    transform: translateX(400px) translateY(-20px) rotate(15deg) scale(0.9);
-    opacity: 0.7;
-    z-index: 0;
-    pointer-events: none;
-}
-
-.carta-empilhada.jogada-esquerda {
-    transform: translateX(-400px) translateY(-20px) rotate(-15deg) scale(0.9);
-    opacity: 0.7;
-    z-index: 0;
-    pointer-events: none;
-}
-
-/* Ocultar contador nas pilhas distantes */
-.pilha-cartas.quarta .contador-pilha,
-.pilha-cartas.fundo .contador-pilha {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Botões de ação da carta */
-.acoes-carta {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    display: flex;
-    gap: 0.5rem;
-    z-index: 12;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.carta-empilhada.topo:hover .acoes-carta { opacity: 1; }
-
-.btn-acao {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    transition: transform 0.2s;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-.btn-jogar-direita { background: var(--bs-info); color: white; }
-.btn-jogar-esquerda { background: var(--bs-danger); color: white; }
-.btn-ler { background: var(--bs-success); color: white; }
-.btn-acao:hover { transform: scale(1.1); }
-
-/* Envelope header */
-.envelope-header {
-    position: relative;
-    z-index: 2;
-    padding: 1.5rem 1.5rem 1rem;
-    margin-top: 35px;
-}
-
-.remetente-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-/* Selo customizável */
-.selo {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    width: 40px;
-    height: 40px;
+/* ==================== GRID DE CARTINHAS ==================== */
+.carta-simples {
+    border: 1px solid rgba(0,0,0,0.08); /* Borda suave por padrão */
+    transition: all 0.2s ease-in-out;
     background: #fff;
-    border: 2px solid var(--marrom);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: bold;
-    color: var(--marrom);
-    transform: rotate(-5deg);
-    z-index: 3;
+    border-radius: 8px;
 }
 
-/* Variantes de cor do selo - Use classes adicionais */
-.selo.selo-info { border-color: var(--bs-info); color: var(--bs-info); }
-.selo.selo-success { border-color: var(--bs-success); color: var(--bs-success); }
-.selo.selo-warning { border-color: var(--bs-warning); color: var(--bs-warning); }
-.selo.selo-danger { border-color: var(--bs-danger); color: var(--bs-danger); }
-.selo.selo-primary { border-color: var(--bs-primary); color: var(--bs-primary); }
-
-/* Envelope flap */
-.envelope-flap {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(135deg, var(--marrom), #A39178);
-    clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
-    z-index: 1;
+.carta-simples:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
 }
 
-/* Contador de cartas */
-.contador-pilha {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: var(--bs-danger);
-    color: white;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: bold;
-    z-index: 15;
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-    animation: pulse 2s infinite;
+.carta-simples.border-primary {
+    border-width: 2px !important;
 }
 
-/* Badges (rótulos curtos no canto superior esquerdo) */
-.badge-recebidas,
-.badge-enviadas,
-.badge-favoritas {
-    position: absolute;
-    top: 12px;
-    left: 14px;
-    z-index: 6; /* acima do flap (z-index:1) e selo (z-index:3) */
-    background: rgba(255,255,255,0.95);
-    color: var(--marrom);
-    padding: 0.25rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    border: 1px solid rgba(188, 168, 141, 0.25);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.badge-recebidas { background: linear-gradient(90deg, #fff, #fbf8f3); }
-
-.avatar-carta {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    border: 3px solid var(--marrom);
-    object-fit: cover;
-}
-
-/* Papel da cartinha */
-.cartinha-papel {
-    background: #fafaf5;
-    margin: 0 1.5rem 1.5rem;
-    padding: 1.5rem;
-    border-radius: 6px;
-    box-shadow: inset 0 0 0 1px rgba(188, 168, 141, 0.1);
-    position: relative;
-}
-
-.cartinha-papel::before {
-    content: '';
-    position: absolute;
-    left: 1.5rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(to bottom, #d4d1bf, var(--marrom), #d4d1bf);
-}
-
-.papel-linhas {
-    background-image: repeating-linear-gradient(
-        transparent,
-        transparent 1.4rem,
-        rgba(0,0,0,0.05) 1.4rem,
-        rgba(0,0,0,0.05) 1.5rem
-    );
-    min-height: 120px;
-}
-
-/* Textos da cartinha */
-.titulo-carta {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #3E3F29;
-    margin-bottom: 0.8rem;
-    padding-left: 1rem;
-    word-break: break-word;
-}
-
-.conteudo-carta {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: #636e72;
-    padding-left: 1rem;
-    margin-bottom: 1rem;
-    word-break: break-word;
-}
-
-.data-carta {
-    font-size: 0.8rem;
-    color: #7D8D86;
-    text-align: right;
-    font-style: italic;
-    margin-top: 1rem;
-    padding-right: 1rem;
-}
-
-/* Estados vazios */
-.sem-cartinhas {
-    text-align: center;
-    padding: 3rem 2rem;
-    color: #7D8D86;
-}
-
-.sem-cartinhas .envelope-vazio {
-    font-size: 4rem;
-    color: #ddd;
-    margin-bottom: 1.5rem;
-    opacity: 0.7;
-}
-
-.loading-spinner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-}
-
-.contador-cartas {
-    background: rgba(255,255,255,0.9);
-    color: var(--marrom);
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid rgba(188, 168, 141, 0.3);
-}
-
-/* ==================== MODAL REUTILIZÁVEL ==================== */
+/* ==================== MODAL DE CARTINHA ==================== */
 .modal-carta .modal-dialog {
     max-width: 800px;
 }
 
 .modal-carta .modal-content {
-    background: #fefefe;
+    background: #fff;
     border: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    overflow: hidden;
 }
 
 .modal-carta .modal-header {
-    background: linear-gradient(135deg, var(--marrom), #A39178);
-    color: #3E3F29;
-    border-bottom: none;
+    background: var(--marrom);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border: none;
+}
+
+.modal-carta .btn-close-white {
+    filter: brightness(0) invert(1);
 }
 
 .modal-carta .modal-body {
-    background-image: repeating-linear-gradient(
-        transparent,
-        transparent 1.4rem,
-        rgba(0,0,0,0.03) 1.4rem,
-        rgba(0,0,0,0.03) 1.5rem
-    );
+    padding: 0; /* O padding interno é gerado pelo HTML dinâmico no JS */
+    min-height: 400px;
+    max-height: 80vh;
     overflow-y: auto;
-    max-height: 70vh;
 }
 
-.modal-carta img {
-    max-width: 100%;
-    height: auto;
-}
-
+/* Garante que o conteúdo não quebre o layout */
 .modal-carta * {
     word-break: break-word;
 }
 
-/* Instruções da pilha */
-.instrucoes-pilha {
-    position: absolute;
-    top: -30px;
-    left: 0;
-    right: 0;
+/* ==================== ESTADOS VAZIOS ==================== */
+.sem-cartinhas {
     text-align: center;
-    font-size: 0.8rem;
-    color: #3E3F29;
-    opacity: 0;
-    transition: opacity 0.3s;
+    padding: 4rem 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
 }
 
-/* Controles de navegação */
-.controles-navegacao {
-    position: absolute;
-    left: -50px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 20;
+.sem-cartinhas .bi {
+    font-size: 3.5rem;
+    color: #adb5bd;
+    margin-bottom: 1.5rem;
 }
 
-.pilha-cartas:hover .controles-navegacao,
-.pilha-cartas.focada .controles-navegacao {
-    opacity: 1;
-}
-
-.btn-navegacao {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--marrom);
-    background: white;
-    color: var(--marrom);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(188, 168, 141, 0.2);
-    cursor: pointer;
-}
-
-.btn-navegacao:hover {
-    background: var(--marrom);
-    color: white;
-    transform: scale(1.1);
-}
-
-.btn-navegacao:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.btn-navegacao:disabled:hover {
-    background: white;
-    color: var(--marrom);
-    transform: none;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-/* Responsividade */
+/* ==================== RESPONSIVIDADE ==================== */
 @media (max-width: 768px) {
-    .container-pilhas { height: 300px; }
-    .pilha-cartas { max-width: 95%; }
-    .envelope-header { padding: 1rem; margin-top: 30px; }
-    .selo { width: 35px; height: 35px; font-size: 0.65rem; }
-    .cartinha-papel { margin: 0 1rem 1rem; padding: 1rem; }
-    .titulo-carta { font-size: 1rem; }
-    .conteudo-carta { font-size: 0.9rem; }
-    .controles-navegacao { display: none; }
+    .modal-carta .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-carta .modal-body {
+        max-height: 85vh;
+    }
 }

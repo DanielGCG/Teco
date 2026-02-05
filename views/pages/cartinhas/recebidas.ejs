@@ -2,27 +2,29 @@
 <script src="/js/commons/cartinhas-common.js"></script>
 
 <div class="container mt-4">
-    <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 fw-bold mb-0">Caixa de Entrada</h2>
         <a href="/cartinhas" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Voltar ao Menu
         </a>
     </div>
+
     <div class="row">
         <div class="col-12">  
-            <div id="loading" class="loading-spinner">
+            <div id="loading" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Carregando...</span>
                 </div>
             </div>
 
             <div id="cartinhas-container" style="display: none;">
-                <div class="container-pilhas"></div>
+                <div id="cartas-grid"></div>
             </div>
 
-            <div id="sem-cartinhas" class="sem-cartinhas" style="display: none;">
-                <div class="envelope-vazio">📭</div>
+            <div id="sem-cartinhas" class="text-center py-5" style="display: none;">
+                <div class="display-1 text-muted mb-3"><i class="bi bi-mailbox"></i></div>
                 <h4>Nenhuma cartinha recebida</h4>
-                <p>Você ainda não recebeu nenhuma cartinha. Quando alguém enviar uma para você, ela aparecerá aqui!</p>
+                <p class="text-muted">Você ainda não recebeu nenhuma cartinha.</p>
             </div>
         </div>
     </div>
@@ -32,11 +34,15 @@
 // Configuração do tipo de cartinhas
 window.tipoCartinhas = 'recebidas';
 
-// Dados locais da página (não expor como global)
+// Dados locais da página
 let usuariosProcessados = [];
 
 // ==================== CARREGAR CARTINHAS ====================
-async function carregarCartinhasRecebidas() {
+async function carregarCartinhas() {
+    const loading = document.getElementById('loading');
+    const container = document.getElementById('cartinhas-container');
+    const empty = document.getElementById('sem-cartinhas');
+
     try {
         const response = await fetch('/api/cartinhas/recebidas', {
             credentials: 'include'
@@ -45,12 +51,9 @@ async function carregarCartinhasRecebidas() {
         if (!response.ok) throw new Error('Erro ao carregar cartinhas');
 
         usuariosProcessados = await response.json();
+        loading.style.display = 'none';
 
-        if (!Array.isArray(usuariosProcessados)) {
-            throw new Error('Resposta inválida da API');
-        }
-
-        // Hooks para integração com o common (abrir modal com comportamento desta página)
+        // Hooks para integração com o common
         const hooks = {
             abrirCartinha: async (cartinhaId) => {
                 const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
@@ -59,39 +62,35 @@ async function carregarCartinhasRecebidas() {
                 const usuario = encontrarUsuarioPorCartinha(cartinhaId, usuariosProcessados);
                 if (!usuario) return;
 
-                // Marcar como lida antes de abrir (aguardar para estado consistente)
                 if (!cartinha.isread) {
-                    try { await marcarComoLida(cartinhaId); } catch (e) { /* continue */ }
+                    try { await marcarComoLida(cartinhaId); } catch (e) {}
                 }
 
                 window.modalCartinha.abrir({
                     cartinha: cartinha,
                     usuario: usuario,
                     tipo: 'recebidas',
-                    titulo: '📬 Lendo Cartinha',
+                    titulo: 'Lendo Cartinha',
                     badges: [
-                        { icone: cartinha.isread ? '✓' : '○', texto: cartinha.isread ? 'Lida' : 'Não lida', cor: cartinha.isread ? '#10b981' : '#6b7280' }
+                        { texto: cartinha.isread ? 'Lida' : 'Novo', cor: cartinha.isread ? '#6c757d' : '#0d6efd' }
                     ],
                     acoes: [
                         {
                             id: 'responder',
-                            label: '💌 Responder',
+                            label: 'Responder',
                             classe: 'btn-primary',
-                            atalho: 'R',
                             callback: () => responderCartinha(usuario.userId, usuario.username)
                         },
                         {
                             id: 'favoritar',
-                            label: cartinha.isfavorited ? '⭐ Favoritada' : '⭐ Favoritar',
+                            label: cartinha.isfavorited ? 'Remover Favorito' : 'Favoritar',
                             classe: cartinha.isfavorited ? 'btn-warning' : 'btn-outline-warning',
-                            atalho: 'F',
                             callback: () => toggleFavoritoCommon(cartinhaId, usuariosProcessados)
                         },
                         {
                             id: 'excluir',
-                            label: '🗑️ Excluir',
+                            label: 'Excluir',
                             classe: 'btn-danger',
-                            atalho: 'D',
                             callback: () => confirmarExclusao(cartinhaId)
                         }
                     ]
@@ -99,17 +98,13 @@ async function carregarCartinhasRecebidas() {
             }
         };
 
-        // Usa função genérica do common
-        renderizarCartinhas(usuariosProcessados, hooks);
-        // Inicializar navegação com a lista local (evita uso de globals)
-        inicializarNavegacaoCartinhas(usuariosProcessados, hooks);
-        
+        renderizarGridCartinhas(usuariosProcessados, '#cartas-grid', hooks);
+
     } catch (error) {
-        console.error('Erro ao carregar cartinhas:', error);
-        window.usuariosProcessados = [];
-        renderizarCartinhas([]);
+        console.error('Erro:', error);
+        loading.innerHTML = '<div class="alert alert-danger">Erro ao carregar mensagens. Tente novamente mais tarde.</div>';
     } finally {
-        document.getElementById('loading').style.display = 'none';
+        loading.style.display = 'none';
     }
 }
 
@@ -126,36 +121,8 @@ async function marcarComoLida(cartinhaId) {
         const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
         if (cartinha) {
             cartinha.isread = true;
-            
-            // Atualizar UI
-            const cartaElement = document.getElementById(`carta-${cartinhaId}`);
-            if (cartaElement) {
-                const selo = cartaElement.querySelector('.selo');
-                if (selo) selo.textContent = 'LIDA';
-                
-                const indicador = cartaElement.querySelector('.indicador-nao-lida');
-                if (indicador) {
-                    indicador.className = 'indicador-lida';
-                    indicador.textContent = '✓ Lida';
-                }
-            }
-            
-            // Atualizar contador de não lidas
-            const usuario = encontrarUsuarioPorCartinha(cartinhaId, usuariosProcessados);
-            if (usuario) {
-                const pilha = document.getElementById(`pilha-${usuario.userId}`);
-                if (pilha) {
-                    const naoLidas = usuario.cartinhas.filter(c => !c.isread).length;
-                    const contador = pilha.querySelector('.contador-pilha');
-                    if (contador) {
-                        if (naoLidas > 0) {
-                            contador.textContent = naoLidas;
-                        } else {
-                            contador.remove();
-                        }
-                    }
-                }
-            }
+            // No grid, apenas re-renderizamos ou ignoramos (o status visual muda ao reabrir o grid ou modal)
+            renderizarGridCartinhas(usuariosProcessados, '#cartas-grid', hooks);
         }
 
         return true;
@@ -176,7 +143,7 @@ async function confirmarExclusao(cartinhaId) {
     window.modalCartinha.fechar();
     
     const confirmado = await mostrarConfirmacao(
-        '⚠️ Tem certeza que deseja excluir permanentemente esta cartinha?\n\nEsta ação não pode ser desfeita!',
+        'Tem certeza que deseja excluir permanentemente esta cartinha?\n\nEsta ação não pode ser desfeita!',
         'Confirmar Exclusão'
     );
     
@@ -196,7 +163,7 @@ async function excluirCartinha(cartinhaId) {
 
         // Remover cartinha do array local
         for (let usuario of usuariosProcessados) {
-            const index = usuario.cartinhas.findIndex(c => c.publicid === cartinhaId);
+            const index = usuario.cartinhas.findIndex(c => (c.publicid || c.id) == cartinhaId);
             if (index !== -1) {
                 usuario.cartinhas.splice(index, 1);
                 
@@ -210,8 +177,8 @@ async function excluirCartinha(cartinhaId) {
         }
 
         // Re-renderizar
-        renderizarCartinhas(usuariosProcessados);
-        mostrarFeedback('🗑️ Cartinha excluída com sucesso!', 'success');
+        carregarCartinhas();
+        mostrarFeedback('Cartinha excluída com sucesso!', 'success');
         
     } catch (error) {
         console.error('Erro ao excluir cartinha:', error);
@@ -221,13 +188,7 @@ async function excluirCartinha(cartinhaId) {
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', () => {
-    carregarCartinhasRecebidas();
-    
-    // Focar na primeira pilha
-    setTimeout(() => {
-        const primeiraPilha = document.querySelector('.pilha-cartas.ativa');
-        if (primeiraPilha) primeiraPilha.focus();
-    }, 500);
+    carregarCartinhas();
 });
 </script>
 

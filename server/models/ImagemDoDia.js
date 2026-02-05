@@ -45,6 +45,10 @@ const ImagemDoDia = sequelize.define('ImagemDoDia', {
     createdat: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
+    },
+    activatedat: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     tableName: 'imagemdodia',

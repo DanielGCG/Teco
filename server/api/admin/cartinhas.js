@@ -29,7 +29,7 @@ AdminCartinhasRouter.get('/estatisticas', async (req, res) => {
 AdminCartinhasRouter.get('/usuarios', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const userPublicId = req.query.userPublicId;
+    const usuario = req.query.usuario; // Alterado de userPublicId para usuario para bater com o frontend
     const status = req.query.status;
     const search = req.query.search;
 
@@ -37,7 +37,7 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
 
     try {
         const userWhere = {};
-        if (userPublicId) userWhere.publicid = userPublicId;
+        if (usuario) userWhere.publicid = usuario;
         if (search && search.trim() !== '') userWhere.username = { [Op.like]: `%${search}%` };
 
         const cartinhaWhere = {};
@@ -61,10 +61,9 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
                 as: 'cartinhas_recebidas',
                 attributes: [],
                 where: cartinhaWhere,
-                required: false
+                required: true
             }],
             group: ['User.id'],
-            having: literal('totalcartinhas > 0'),
             order: [[literal('totalcartinhas'), 'DESC']],
             limit,
             offset,
@@ -177,6 +176,60 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar cartinhas do usuário" });
+    }
+});
+
+// GET /admin/cartinhas/:publicid - Detalhes de uma cartinha
+AdminCartinhasRouter.get('/:publicid', async (req, res) => {
+    try {
+        const cartinha = await Cartinha.findOne({
+            where: { publicid: req.params.publicid },
+            include: [
+                { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
+                { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
+            ]
+        });
+        if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
+        res.json(cartinha);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao buscar detalhes da cartinha" });
+    }
+});
+
+// DELETE /admin/cartinhas/remover - Remover múltiplas cartinhas
+AdminCartinhasRouter.delete('/remover', async (req, res) => {
+    const { cartinhaIds } = req.body;
+    if (!Array.isArray(cartinhaIds)) return res.status(400).json({ message: "IDs inválidos" });
+
+    try {
+        const result = await Cartinha.destroy({
+            where: { publicid: { [Op.in]: cartinhaIds } }
+        });
+        res.json({ message: "Cartinhas removidas", removidas: result });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao remover cartinhas" });
+    }
+});
+
+// POST /admin/cartinhas/limpeza - Limpeza automática (lidas > 30 dias e não favoritas)
+AdminCartinhasRouter.post('/limpeza', async (req, res) => {
+    try {
+        const trintaDiasAtras = new Date();
+        trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+        const result = await Cartinha.destroy({
+            where: {
+                isread: true,
+                isfavorited: false,
+                readat: { [Op.lt]: trintaDiasAtras }
+            }
+        });
+        res.json({ message: "Limpeza concluída", removidas: result });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao executar limpeza" });
     }
 });
 

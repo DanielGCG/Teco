@@ -210,6 +210,38 @@ if (typeof window.UIUtils !== 'undefined') {
         }
     }
 
+    // Utilitário de debounce para evitar chamadas excessivas
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Mostra um feedback visual rápido (toast)
+    function mostrarFeedback(mensagem, tipo = 'success') {
+        let container = document.querySelector('.feedback-container') || (() => {
+            const c = document.createElement('div');
+            c.className = 'feedback-container';
+            c.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;';
+            document.body.appendChild(c);
+            return c;
+        })();
+
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${tipo} border-0 mb-2`;
+        toast.innerHTML = `<div class="d-flex"><div class="toast-body">${mensagem}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+        container.appendChild(toast);
+        
+        new bootstrap.Toast(toast, { autohide: true, delay: 3000 }).show();
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+
     // Tentar inicializar após um breve delay para garantir que o DOM e Contexto estejam prontos
     setTimeout(initLoggedUserStatus, 500);
 
@@ -222,7 +254,9 @@ if (typeof window.UIUtils !== 'undefined') {
         requestPageStatuses,
         formatarData,
         createActionButton,
-        createActionLink
+        createActionLink,
+        debounce,
+        mostrarFeedback
     };
     })();
 }

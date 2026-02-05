@@ -110,9 +110,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // A primeira imagem da lista (ordenada por DESC) é a atual
     const currentId = imagens[0].id;
 
-    const grupos = {};
+    grupos = {};
     imagens.forEach(img => {
-      const dateVal = img.createdat;
+      const dateVal = img.activatedat || img.createdat;
       const d = new Date(dateVal);
       
       if (isNaN(d.getTime())) return;

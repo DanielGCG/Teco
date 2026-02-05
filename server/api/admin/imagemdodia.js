@@ -10,12 +10,16 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Fila de Imagens
+// Fila de Imagens (Somente as que estão com posição 0, ou seja, aguardando ativação)
 router.get('/fila', async (req, res) => {
     try {
         const fila = await ImagemDoDia.findAll({ 
+            where: { position: 0 },
             order: [['createdat', 'ASC']],
-            include: [{ model: User, as: 'requester', attributes: ['username', 'publicid'] }]
+            include: [
+                { model: User, as: 'requester', attributes: ['username', 'publicid'] },
+                { model: ImagemDoDiaBorder, as: 'border' }
+            ]
         });
         res.json(fila);
     } catch (error) {
@@ -25,7 +29,7 @@ router.get('/fila', async (req, res) => {
 
 router.get('/fila/count', async (req, res) => {
     try {
-        const count = await ImagemDoDia.count();
+        const count = await ImagemDoDia.count({ where: { position: 0 } });
         res.json({ count });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao contar fila.', error: error.message });
@@ -46,6 +50,29 @@ router.delete('/fila/:publicid', async (req, res) => {
         res.json({ message: 'Removida com sucesso.' });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao remover.', error: error.message });
+    }
+});
+
+// Ativa a próxima imagem da fila
+router.post('/next', async (req, res) => {
+    try {
+        const proxima = await ImagemDoDia.findOne({
+            where: { position: 0 },
+            order: [['createdat', 'ASC']]
+        });
+
+        if (!proxima) {
+            return res.status(404).json({ message: 'Nenhuma imagem na fila de espera.' });
+        }
+
+        const maxPos = await ImagemDoDia.max('position') || 0;
+        proxima.position = maxPos + 1;
+        proxima.activatedat = new Date();
+        await proxima.save();
+
+        res.json({ message: 'Imagem ativada com sucesso!', imagem: proxima });
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao ativar próxima imagem.', error: error.message });
     }
 });
 

@@ -356,6 +356,7 @@ CREATE TABLE IF NOT EXISTS imagemdodia (
     borderId INT UNSIGNED NOT NULL DEFAULT 1,
     createdbyUserId INT UNSIGNED,
     createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    activatedat TIMESTAMP NULL,
     FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL,
     FOREIGN KEY (borderId) REFERENCES imagemdodiaborder(id) ON DELETE CASCADE
 );
