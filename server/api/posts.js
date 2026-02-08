@@ -51,9 +51,10 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
         let attachedPostId = null;
         if (attachedPostPublicId) {
             const parentPost = await Post.findOne({ where: { publicid: attachedPostPublicId } });
-            if (parentPost) {
-                attachedPostId = parentPost.id;
+            if (!parentPost) {
+                return res.status(404).json({ error: 'Post referenciado não encontrado.' });
             }
+            attachedPostId = parentPost.id;
         }
 
         const post = await Post.create({
@@ -125,6 +126,11 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
             }
         }
 
+        // Buscar post completo para emitir via socket e retornar
+        const fullPost = await Post.findByPk(post.id, {
+            include: POST_INCLUDES
+        });
+
         // Se for um reply ou repost, notificar o autor do post original e atualizar contadores
         if (attachedPostId) {
             const parentPost = await Post.findByPk(attachedPostId, {
@@ -138,6 +144,13 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                 if (io) {
                     io.to(`profile_${parentPost.author.username}`).emit('postUpdate', { 
                         publicid: parentPost.publicid, 
+                        replycount: parentPost.replycount,
+                        repostcount: parentPost.repostcount
+                    });
+                    // Também emitir para a sala do próprio post (thread)
+                    io.to(`post_${parentPost.publicid}`).emit('newReply', fullPost);
+                    io.to(`post_${parentPost.publicid}`).emit('postUpdate', {
+                        publicid: parentPost.publicid,
                         replycount: parentPost.replycount,
                         repostcount: parentPost.repostcount
                     });
@@ -172,11 +185,6 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                 }
             }
         }
-
-        // Buscar post completo para emitir via socket e retornar
-        const fullPost = await Post.findByPk(post.id, {
-            include: POST_INCLUDES
-        });
 
         // Emitir via socket para a sala do perfil
         const io = req.app.get('io');
@@ -278,12 +286,7 @@ PostsRouter.get('/:publicid/replies', async (req, res) => {
                 attachedPostId: parentPost.id, 
                 type: 'comment'
             },
-            include: [
-                { model: User, as: 'author', attributes: ['username', 'profileimage'] },
-                { model: PostMedia, as: 'media' },
-                { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username'] }] },
-                { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username'] }] }
-            ],
+            include: POST_INCLUDES,
             order: [
                 ['likecount', 'DESC'],
                 ['createdat', 'ASC']
@@ -320,10 +323,12 @@ PostsRouter.post('/:publicid/like', async (req, res) => {
             // Emitir atualização via socket
             const io = req.app.get('io');
             if (io) {
-                io.to(`profile_${post.author.username}`).emit('postUpdate', { 
+                const updateData = { 
                     publicid: post.publicid, 
                     likecount: post.likecount 
-                });
+                };
+                io.to(`profile_${post.author.username}`).emit('postUpdate', updateData);
+                io.to(`post_${post.publicid}`).emit('postUpdate', updateData);
             }
 
             return res.json({ liked: false, likecount: post.likecount, publicid: post.publicid });
@@ -334,10 +339,12 @@ PostsRouter.post('/:publicid/like', async (req, res) => {
             // Emitir atualização via socket
             const io = req.app.get('io');
             if (io) {
-                io.to(`profile_${post.author.username}`).emit('postUpdate', { 
+                const updateData = { 
                     publicid: post.publicid, 
                     likecount: post.likecount 
-                });
+                };
+                io.to(`profile_${post.author.username}`).emit('postUpdate', updateData);
+                io.to(`post_${post.publicid}`).emit('postUpdate', updateData);
             }
 
             // Notificar autor do post

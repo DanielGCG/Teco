@@ -65,6 +65,10 @@
                     <a href="/imagemdodia" class="btn btn-link btn-sm mt-2 p-0">Ver mais Imagens do Dia</a>
                     <a href="/imagemdodia/sugerir" class="btn btn-link btn-sm p-0">Sugerir Imagem do Dia</a>
                 </div>
+                
+                <div class="boteco-analytics-section d-flex flex-column align-self-center">
+                    <a href="/manutencao" target="_blank" class="btn btn-link btn-sm mt-2 p-0"><img src="/images/BotecoAnalytics.png" style="max-height: 90px;"></a>
+                </div>
             </div>
 
         </div>
@@ -149,11 +153,29 @@
             joinFollowed();
 
             socket.on('newPost', (post) => {
-                PostFeed.reload();
+                const feed = document.getElementById('feed-container');
+                
+                // Verifica se o post já existe no feed para evitar duplicatas
+                if (document.getElementById(`post-${post.publicid}`)) return;
+
+                // Não adiciona comentários diretos ao feed principal
+                if (post.type === 'comment') return;
+
+                // Só adiciona se estivermos na aba "Seguindo" ou se for um post relevante
+                // O socket room 'profile_username' já garante que é alguém que seguimos ou nós mesmos
+                
+                // Remove empty state se existir
+                const emptyState = feed.querySelector('.text-muted');
+                if (emptyState && !feed.querySelector('.post-card')) {
+                    feed.innerHTML = '';
+                }
+
+                const postHtml = PostUI.renderPost(post, window.currentUser);
+                feed.insertAdjacentHTML('afterbegin', postHtml);
             });
 
             socket.on('postUpdate', (data) => {
-                PostFeed.reload();
+                PostUI.updatePostStats(data.publicid, data);
             });
 
             socket.on('postDeleted', (publicid) => {

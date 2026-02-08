@@ -165,6 +165,11 @@ module.exports = (io) => {
             }
         });
 
+        // ==================== Join Post (Thread) ====================
+        socket.on('joinPost', (postId) => {
+            socket.join(`post_${postId}`);
+        });
+
         // ==================== Join Profile ====================
         socket.on('joinProfile', async (username) => {
             try {

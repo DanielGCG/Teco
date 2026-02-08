@@ -76,6 +76,32 @@
                 document.getElementById('reply-box').style.display = 'flex';
             }
 
+            // Inicializar Socket
+            const socket = SocketConnector.init();
+            socket.emit('joinPost', postId);
+
+            socket.on('postUpdate', (data) => {
+                PostUI.updatePostStats(data.publicid, data);
+            });
+
+            socket.on('newReply', (reply) => {
+                const container = document.getElementById('replies-container');
+                if (document.getElementById(`post-${reply.publicid}`)) return;
+                
+                const replyHtml = PostUI.renderPost(reply, window.currentUser);
+                container.insertAdjacentHTML('afterbegin', replyHtml);
+            });
+
+            socket.on('postDeleted', (deletedPostId) => {
+                if (deletedPostId === postId) {
+                    alert('Este post foi deletado.');
+                    window.history.back();
+                } else {
+                    const el = document.getElementById(`post-${deletedPostId}`);
+                    if (el) el.remove();
+                }
+            });
+
             const res = await fetch(`/api/posts/${postId}`);
             if (!res.ok) throw new Error('Post não encontrado');
             
@@ -166,8 +192,8 @@
                     ${timeStr} · ${dateStr}
                 </div>
                 <div class="post-stats d-flex gap-3 py-2 border-top border-bottom">
-                    <a href="#" class="stat-item text-decoration-none"><strong>${post.repostcount || 0}</strong> <span class="text-muted">Reposts</span></a>
-                    <a href="#" class="stat-item text-decoration-none"><strong>${post.likecount || 0}</strong> <span class="text-muted">Curtidas</span></a>
+                    <a href="#" class="stat-item text-decoration-none"><strong class="repost-count">${post.repostcount || 0}</strong> <span class="text-muted">Reposts</span></a>
+                    <a href="#" class="stat-item text-decoration-none"><strong class="like-count">${post.likecount || 0}</strong> <span class="text-muted">Curtidas</span></a>
                 </div>
                 <div class="post-actions d-flex justify-content-around py-2">
                     <button class="post-action reply d-flex align-items-center" onclick="document.getElementById('reply-textarea').focus()" title="Responder">
@@ -217,7 +243,7 @@
         textarea.value = '';
         window.selectedFiles = [];
         document.getElementById('reply-preview').innerHTML = '';
-        carregarRespostas();
+        // As respostas agora são atualizadas via Socket (newReply)
     }
 
     // Auto-resize textarea

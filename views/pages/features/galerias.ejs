@@ -69,8 +69,7 @@
                             <!-- CORREÇÃO: g.capa_url -> g.coverurl e g.nome -> g.name -->
                             <img src="${g.coverurl}" alt="${g.name}" onerror="this.src='/images/placeholder-album.png'">
                             <div class="texto-hover">
-                                <div>${g.name}</div>
-                                <small>por <a href="/${g.owner ? g.owner.username : ''}" class="text-white text-decoration-underline" onclick="event.stopPropagation()">${g.owner ? g.owner.username : 'Desconhecido'}</a></small>
+                                <span>${g.name}</span>
                             </div>
                         </a>
                     </div>
@@ -162,20 +161,21 @@
 
     .texto-hover {
         position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: linear-gradient(transparent, rgba(0,0,0,0.8));
-        padding: 20px 10px 10px;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
         color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
         text-align: center;
-        opacity: 0; /* Opcional: só mostrar no hover se preferir, mas o CSS original mantinha visivel ou com transição de fundo */
-        transition: opacity 0.3s ease, background 0.3s ease;
-        opacity: 1; /* Mantendo visível conforme original, ajustado apenas o gradiente no hover abaixo */
+        font-size: 0.75rem;
     }
 
     .imagem:hover .texto-hover {
-        background: linear-gradient(transparent, rgba(0,0,0,0.95));
+        opacity: 1;
     }
 
     @media (max-width: 768px) {

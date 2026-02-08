@@ -326,8 +326,8 @@
 
         // Ouvir novos posts em tempo real
         socket.on('newPost', (post) => {
-            // Só adiciona se estivermos na aba de posts e o post for do dono do perfil
-            if (window.currentTab === 'posts' && post.author.username === username) {
+            // Só adiciona se estivermos na aba de posts e o post for do dono do perfil e não for um comentário
+            if (window.currentTab === 'posts' && post.author.username === username && post.type !== 'comment') {
                 const feed = document.getElementById('feed-container');
                 
                 // Verifica se o post já existe no feed para evitar duplicatas
@@ -347,25 +347,7 @@
 
         // Ouvir atualizações de posts (curtidas, etc)
         socket.on('postUpdate', (data) => {
-            const postElements = document.querySelectorAll(`[id="post-${data.publicid}"]`);
-            postElements.forEach(postEl => {
-                if (data.likecount !== undefined) {
-                    const likeCountEl = postEl.querySelector('.post-action.like span');
-                    if (likeCountEl) likeCountEl.textContent = data.likecount;
-                }
-                if (data.replycount !== undefined) {
-                    const replyCountEl = postEl.querySelector('.post-action.reply span');
-                    if (replyCountEl) replyCountEl.textContent = data.replycount;
-                }
-                if (data.repostcount !== undefined) {
-                    const repostCountEl = postEl.querySelector('.post-action.repost span');
-                    if (repostCountEl) repostCountEl.textContent = data.repostcount;
-                }
-                if (data.bookmarkcount !== undefined) {
-                    const bookmarkCountEl = postEl.querySelector('.post-action.bookmark span');
-                    if (bookmarkCountEl) bookmarkCountEl.textContent = data.bookmarkcount;
-                }
-            });
+            PostUI.updatePostStats(data.publicid, data);
         });
 
         // Ouvir deleções de posts

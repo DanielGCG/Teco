@@ -256,6 +256,55 @@ window.PostUI = {
         }
     },
 
+    // Atualiza estatísticas de um post (curtidas, reposts, etc) na UI
+    updatePostStats: function(postId, data) {
+        const postElements = document.querySelectorAll(`[id="post-${postId}"]`);
+        postElements.forEach(postEl => {
+            if (data.likecount !== undefined) {
+                const likeCountEl = postEl.querySelector('.post-action.like span');
+                if (likeCountEl) likeCountEl.textContent = data.likecount;
+                
+                const mainLikeStat = postEl.querySelector('.like-count');
+                if (mainLikeStat) mainLikeStat.textContent = data.likecount;
+            }
+            if (data.replycount !== undefined) {
+                const replyCountEl = postEl.querySelector('.post-action.reply span');
+                if (replyCountEl) replyCountEl.textContent = data.replycount;
+            }
+            if (data.repostcount !== undefined) {
+                const repostCountEl = postEl.querySelector('.post-action.repost span');
+                if (repostCountEl) repostCountEl.textContent = data.repostcount;
+                
+                const mainRepostStat = postEl.querySelector('.repost-count');
+                if (mainRepostStat) mainRepostStat.textContent = data.repostcount;
+            }
+            if (data.bookmarkcount !== undefined) {
+                const bookmarkCountEl = postEl.querySelector('.post-action.bookmark span');
+                if (bookmarkCountEl) bookmarkCountEl.textContent = data.bookmarkcount;
+            }
+
+            // Atualizar classes de estado se os dados de interação do usuário logado estiverem presentes
+            if (data.liked !== undefined) {
+                const likeBtn = postEl.querySelector('.post-action.like');
+                const icon = likeBtn ? likeBtn.querySelector('i') : null;
+                if (likeBtn && icon) {
+                    likeBtn.classList.toggle('liked', data.liked);
+                    icon.classList.toggle('bi-heart-fill', data.liked);
+                    icon.classList.toggle('bi-heart', !data.liked);
+                }
+            }
+            if (data.bookmarked !== undefined) {
+                const bookmarkBtn = postEl.querySelector('.post-action.bookmark');
+                const icon = bookmarkBtn ? bookmarkBtn.querySelector('i') : null;
+                if (bookmarkBtn && icon) {
+                    bookmarkBtn.classList.toggle('bookmarked', data.bookmarked);
+                    icon.classList.toggle('bi-bookmark-fill', data.bookmarked);
+                    icon.classList.toggle('bi-bookmark', !data.bookmarked);
+                }
+            }
+        });
+    },
+
     // Faz textarea crescer conforme o conteúdo até um máximo de linhas
     autoGrowTextarea: function(textarea, maxLines) {
         if (!textarea) return;
@@ -325,21 +374,8 @@ window.PostActions = {
             const res = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
             const data = await res.json();
             
-            // Atualizar todos os elementos deste post na página (pode estar no feed e no modal)
-            const buttons = document.querySelectorAll(`#post-${postId} .post-action.like`);
-            buttons.forEach(btn => {
-                const span = btn.querySelector('span');
-                const icon = btn.querySelector('i');
-                
-                if (data.liked) {
-                    btn.classList.add('liked');
-                    icon.classList.replace('bi-heart', 'bi-heart-fill');
-                } else {
-                    btn.classList.remove('liked');
-                    icon.classList.replace('bi-heart-fill', 'bi-heart');
-                }
-                if (span) span.textContent = data.likecount !== undefined ? data.likecount : span.textContent;
-            });
+            // Atualizar contadores e ícones em todos os lugares
+            PostUI.updatePostStats(postId, data);
         } catch (e) {
             console.error('Erro ao curtir:', e);
         }
@@ -351,23 +387,8 @@ window.PostActions = {
             const res = await fetch(`/api/posts/${postId}/bookmark`, { method: 'POST' });
             const data = await res.json();
             
-            const buttons = document.querySelectorAll(`#post-${postId} .post-action.bookmark`);
-            buttons.forEach(btn => {
-                const icon = btn.querySelector('i');
-                const span = btn.querySelector('span');
-
-                if (data.bookmarked) {
-                    btn.classList.add('bookmarked');
-                    icon.classList.replace('bi-bookmark', 'bi-bookmark-fill');
-                } else {
-                    btn.classList.remove('bookmarked');
-                    icon.classList.replace('bi-bookmark-fill', 'bi-bookmark');
-                }
-                
-                if (span && data.bookmarkcount !== undefined) {
-                    span.textContent = data.bookmarkcount;
-                }
-            });
+            // Atualizar contadores e ícones
+            PostUI.updatePostStats(postId, data);
 
             // Se estiver na aba de favoritos e desfavoritou, remove o card
             if (!data.bookmarked && window.currentTab === 'bookmarks') {
@@ -460,21 +481,16 @@ window.PostActions = {
         try {
             const res = await fetch('/api/posts', { method: 'POST', body: formData });
             if (res.ok) {
+                const newPost = await res.json();
                 if (modalId) {
                     const modalEl = document.getElementById(modalId);
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     if (modal) modal.hide();
                 }
                 
-                // Se houver um feed ativo, recarrega para mostrar o novo post
-                if (window.PostFeed && typeof window.PostFeed.reload === 'function') {
-                    window.PostFeed.reload();
-                }
-
-                // Se estivermos na página de detalhes do post (attachedPostPublicId existe), recarrega as respostas
-                if (extraData.attachedPostPublicId && typeof carregarRespostas === 'function') {
-                    carregarRespostas();
-                }
+                // Notificar sucesso ou algo assim?
+                // Em vez de recarregar o feed inteiro (que causa flash), 
+                // o Socket.io cuidará de inserir o post no topo para todos (incluindo o autor).
             } else {
                 const err = await res.json();
                 alert(err.error || 'Erro ao enviar post.');
