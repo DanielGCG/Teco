@@ -92,6 +92,32 @@ const ChatUtils = (() => {
         if (scrollToBottom) container.scrollTop = container.scrollHeight;
     }
 
+    // Configura o input de mensagem (textarea + botão)
+    function setupMessageInput(input, button, onSend) {
+        const handleSend = () => {
+            const text = input.value.trim();
+            if (text) {
+                onSend(text);
+                input.value = '';
+                input.style.height = 'auto'; // Reseta altura se for auto-resize
+            }
+        };
+
+        button.onclick = handleSend;
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        };
+
+        // Auto-resize opcional
+        input.addEventListener('input', () => {
+            input.style.height = 'auto';
+            input.style.height = (input.scrollHeight) + 'px';
+        });
+    }
+
     // Atualiza checks de visualização das mensagens (apenas para DMs)
     function updateReadStatus(container, lastReadMessageId = null) {
         const messages = container.querySelectorAll('.mensagem.usuario[data-msg-id]');
@@ -276,3 +302,39 @@ const ChatUtils = (() => {
 if (typeof window !== 'undefined') {
     window.ChatUtils = ChatUtils;
 }
+
+/**
+ * ChatLayout - Gerencia a interface comum entre Chats e DMs
+ * Lida com troca de telas, modo mobile e placeholders
+ */
+const ChatLayout = (() => {
+    let elements = {};
+
+    function init(config) {
+        elements = {
+            sidebar: config.sidebar || document.getElementById('sidebar'),
+            chatArea: config.chatArea || document.getElementById('chat-area'),
+            infoArea: config.infoArea || document.getElementById('info-area'),
+            chatTitle: config.chatTitle || document.getElementById('chat-title')
+        };
+    }
+
+    function showChat(title) {
+        if (elements.infoArea) elements.infoArea.style.setProperty('display', 'none', 'important');
+        if (elements.chatArea) elements.chatArea.style.setProperty('display', 'flex', 'important');
+        if (elements.chatTitle && title) elements.chatTitle.innerText = title;
+
+        // Mobile: Esconde sidebar quando chat abre
+        if (window.innerWidth < 768 && elements.sidebar) {
+            elements.sidebar.parentElement.classList.add('d-none');
+        }
+    }
+
+    function hideChat() {
+        if (elements.sidebar) elements.sidebar.parentElement.classList.remove('d-none');
+        if (elements.chatArea) elements.chatArea.style.setProperty('display', 'none', 'important');
+        if (elements.infoArea) elements.infoArea.style.setProperty('display', 'flex', 'important');
+    }
+
+    return { init, showChat, hideChat };
+})();

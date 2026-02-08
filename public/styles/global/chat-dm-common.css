@@ -62,3 +62,58 @@
     padding: 0.2rem 0.5rem;
     font-size: 0.7rem;
 }
+
+/* Layout e Sidebar */
+#sidebar, #info-area, #chat-area { 
+    background-color: var(--verde) !important; 
+}
+
+.conversation-card { 
+    cursor: pointer; 
+    margin-bottom: 0.5rem; 
+    border: none; 
+    background: transparent; 
+}
+
+.conversation-card .card-body { 
+    padding: 0.75rem; 
+    border-radius: 0.6rem; 
+    transition: box-shadow .15s ease, transform .08s ease, background .15s ease; 
+}
+
+.conversation-card:hover .card-body { 
+    background: #f9fafb; 
+    box-shadow: 0 6px 18px rgba(16,24,40,0.06); 
+    transform: translateY(-2px); 
+}
+
+.conversation-card.active .card-body { 
+    background: #ede9fe; 
+    box-shadow: 0 8px 22px rgba(16,24,40,0.08); 
+}
+
+/* Placeholders (Info Area) */
+.chat-preview-info {
+    text-align: center;
+    padding: 2rem;
+}
+
+.chat-preview-icon {
+    font-size: 4rem;
+    color: var(--roxo);
+    margin-bottom: 1rem;
+}
+
+/* Ícones de chat circular */
+.chat-icon-circle {
+    width: 40px;
+    height: 40px;
+    background: var(--roxo);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}

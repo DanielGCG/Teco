@@ -2,46 +2,8 @@
 
 <style>
 #chats-container { height: 100%; }
-#sidebar { background-color: var(--verde); }
-#info-area { background-color: var(--verde); }
 
-.chat-card { cursor: pointer; margin-bottom: 0.5rem; }
-.chat-card.card { border: none; background: transparent; }
-.chat-card .card-body { padding: 0.75rem; border-radius: 0.6rem; transition: box-shadow .15s ease, transform .08s ease, background .15s ease; }
-.chat-card:hover .card-body { background: #f9fafb; box-shadow: 0 6px 18px rgba(16,24,40,0.06); transform: translateY(-2px); }
-.chat-card.active .card-body { background: #ede9fe; box-shadow: 0 8px 22px rgba(16,24,40,0.08); }
-
-.unread-badge {
-    background: #7c3aed;
-    color: white;
-    border-radius: 50%;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.7rem;
-}
-
-.chat-icon-circle {
-    width: 40px;
-    height: 40px;
-    background: var(--roxo);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    flex-shrink: 0;
-}
-
-.chat-preview-info {
-    text-align: center;
-    padding: 2rem;
-}
-
-.chat-preview-icon {
-    font-size: 4rem;
-    color: var(--roxo);
-    margin-bottom: 1rem;
-}
+.chat-card { @extend .conversation-card; }
 </style>
 
 <div id="chats-container" class="container-fluid" style="padding: 0px;">
@@ -69,7 +31,7 @@
 
         <!-- Área de Chat -->
         <div class="col-12 col-md-9">
-            <div id="chat-area" class="card h-100 d-flex flex-column" style="display: none !important;">
+            <div id="chat-area" class="card h-100 d-flex flex-column">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0" id="chat-title">Sala</h5>
                     <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="voltarLista()">
@@ -119,15 +81,14 @@
     let allMessages = [];
     const bufferSize = 100;
 
-    const chatArea = document.getElementById('chat-area');
-    const infoArea = document.getElementById('info-area');
     const chatMessages = document.getElementById('chat-messages');
     const inputMsg = document.getElementById('input-msg');
     const sendBtn = document.getElementById('send-btn');
-    const chatTitle = document.getElementById('chat-title');
 
     // Inicialização
     document.addEventListener('DOMContentLoaded', async () => {
+        ChatLayout.init({}); // Usa IDs padrão
+        
         const resUser = await fetch('/api/users/me', { credentials: 'include' });
         currentUser = await resUser.json();
         
@@ -164,7 +125,7 @@
         chats.forEach(chat => {
             const card = document.createElement('div');
             card.dataset.id = chat.publicid;
-            card.className = `chat-card card ${selectedChat?.publicid === chat.publicid ? 'active' : ''}`;
+            card.className = `conversation-card chat-card card ${selectedChat?.publicid === chat.publicid ? 'active' : ''}`;
             card.innerHTML = `
                 <div class="card-body d-flex gap-3 align-items-center">
                     <div class="chat-icon-circle">
@@ -203,67 +164,47 @@
             c.classList.toggle('active', c.dataset.id == chat.publicid);
         });
 
-        infoArea.style.setProperty('display', 'none', 'important');
-        chatArea.style.setProperty('display', 'flex', 'important');
-        chatTitle.innerText = `# ${chatNome}`;
-
-        // Mobile toggle
-        if (window.innerWidth < 768) {
-            document.getElementById('sidebar').parentElement.classList.add('d-none');
-        }
+        ChatLayout.showChat(`# ${chatNome}`);
 
         // Socket
         socket.emit('getMessages', { chatId: chat.publicid, page: 1, type: 'chat' });
     }
 
     function voltarLista() {
-        document.getElementById('sidebar').parentElement.classList.remove('d-none');
-        chatArea.style.setProperty('display', 'none', 'important');
-        infoArea.style.setProperty('display', 'flex', 'important');
+        ChatLayout.hideChat();
         selectedChat = null;
         window.history.pushState({}, '', '/chat');
     }
 
     // ==================== Socket.IO Events ====================
     socket.on('messagesLoaded', ({ chatId: loadedChatId, messages }) => {
-        if (!selectedChat || (loadedChatId !== selectedChat.publicid && !selectedChat.publicid)) {
-            // Se ainda não temos o ID do chat selecionado, mas o nome bate
-            // (O backend retorna o ID no messagesLoaded)
-            if (selectedChat) selectedChat.publicid = loadedChatId;
-        }
-        
+        if (selectedChat && !selectedChat.publicid) selectedChat.publicid = loadedChatId;
         if (selectedChat?.publicid !== loadedChatId) return;
 
         allMessages = messages.map(msg => formatMessage(msg));
-        chatMessages.innerHTML = '';
-        allMessages.forEach(msg => renderMessage(msg));
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        ChatUtils.renderMessages(allMessages, chatMessages, { clearContainer: true, scrollToBottom: true });
         
         socket.emit('joinChat', loadedChatId);
         socket.emit('markAsRead', { chatId: loadedChatId });
     });
 
-    socket.on('newMessage', (data) => {
-        const { chatId, message } = data;
+    socket.on('newMessage', ({ chatId, message }) => {
+        const formatted = formatMessage(message);
         
         if (selectedChat?.publicid === chatId) {
-            const formatted = formatMessage(message);
             allMessages.push(formatted);
-            renderMessage(formatted);
+            ChatUtils.renderMessages([formatted], chatMessages, { clearContainer: false, scrollToBottom: true });
             
             if (chatMessages.children.length > bufferSize) {
                 chatMessages.removeChild(chatMessages.firstChild);
             }
-            
-            chatMessages.scrollTop = chatMessages.scrollHeight;
 
             if (formatted.username !== currentUser.username) {
                 socket.emit('markAsRead', { chatId });
             }
         } else {
-            // Incrementa contador se não for o chat atual
             const chat = allChats.find(c => c.publicid === chatId);
-            if (chat && (message.author?.username || message.username) !== currentUser.username) {
+            if (chat && formatted.username !== currentUser.username) {
                 chat.unreadCount = (chat.unreadCount || 0) + 1;
                 renderizarLista(allChats);
             }
@@ -273,20 +214,11 @@
     function formatMessage(msg) {
         const username = msg.author?.username || msg.username || 'Usuário';
         return {
-            publicid: msg.publicid,
-            message: msg.message,
-            username: username,
+            ...msg,
+            username,
             isMine: username === currentUser.username,
             createdat: msg.createdat || new Date().toISOString()
         };
-    }
-
-    function renderMessage(msg) {
-        ChatUtils.renderMessage(msg, chatMessages, {
-            isMine: msg.isMine,
-            showUsername: true,
-            showTime: true
-        });
     }
 
     // ==================== Envio ====================

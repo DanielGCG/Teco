@@ -2,25 +2,6 @@
 
 <style>
 #dms-container { height: 100%; }
-#sidebar { background-color: var(--verde); }
-#chat-area { background-color: var(--verde); }
-
-#chat-messages { height: 0; }
-
-.dm-card { cursor: pointer; margin-bottom: 0.5rem; }
-.dm-card.card { border: none; background: transparent; }
-.dm-card .card-body { padding: 0.75rem; border-radius: 0.6rem; transition: box-shadow .15s ease, transform .08s ease, background .15s ease; }
-.dm-card:hover .card-body { background: #f9fafb; box-shadow: 0 6px 18px rgba(16,24,40,0.06); transform: translateY(-2px); }
-.dm-card.active .card-body { background: #ede9fe; box-shadow: 0 8px 22px rgba(16,24,40,0.08); }
-
-.unread-badge {
-    background: #7c3aed;
-    color: white;
-    border-radius: 50%;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.7rem;
-}
-
 </style>
 <div id="dms-container" class="container-fluid" style="padding: 0px;">
     <div class="row h-100 g-3">
@@ -49,22 +30,34 @@
             <div id="chat-area" class="card h-100 d-flex flex-column">
                 <div class="card-header d-flex align-items-center justify-content-between" id="chat-header">
                     <h5 class="mb-0 flex-grow-1" id="chat-title">Selecione uma conversa</h5>
-                    <button class="btn btn-sm btn-link" id="chat-user-info-btn" style="display: none; padding: 0px;">
-                        <i class="bi bi-info-circle"></i>
-                    </button>
-                </div>
-                
-                <div class="card-body flex-grow-1 overflow-auto" id="chat-messages">
-                    <div class="text-center text-muted mt-5">
-                        <i class="bi bi-chat-dots" style="font-size: 3rem; color: var(--roxo-escuro);"></i>
-                        <p class="mt-3">Selecione uma conversa</p>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="voltarLista()">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </button>
                     </div>
                 </div>
                 
-                <div class="card-footer border-top" id="chat-input-footer" style="display: none;">
+                <div class="card-body flex-grow-1 overflow-auto" id="chat-messages">
+                </div>
+                
+                <div class="card-footer border-top" id="chat-input-footer">
                     <div class="input-group flex-nowrap" style="align-items: stretch;">
-                        <textarea id="dm-input-msg" class="form-control" placeholder="Digite sua mensagem..." disabled style="resize: none; max-height: 170px; min-height: 40px; line-height: 1.25; overflow-y: auto;"></textarea>
-                        <button id="dm-send-btn" class="btn btn-primary" disabled>Enviar</button>
+                        <textarea id="dm-input-msg" class="form-control" placeholder="Digite sua mensagem..." style="resize: none; max-height: 170px; min-height: 40px; line-height: 1.25; overflow-y: auto;"></textarea>
+                        <button id="dm-send-btn" class="btn btn-primary">Enviar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Placeholder quando nada selecionado -->
+            <div id="info-area" class="card h-100 d-flex flex-column">
+                <div class="card-header">
+                    <h5 class="mb-0">Detalhes da Conversa</h5>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <div class="chat-preview-info">
+                        <i class="bi bi-chat-quote chat-preview-icon"></i>
+                        <h4>Selecione uma conversa</h4>
+                        <p class="text-muted">Escolha uma das conversas ao lado para iniciar um bate-papo.</p>
                     </div>
                 </div>
             </div>
@@ -80,6 +73,7 @@
 
     let selectedChatId = null;
     let allMessages = [];
+    let todasConversas = []; // Cache local das conversas
     let currentUser = null;
     let currentChatOtherUser = null;
 
@@ -87,50 +81,33 @@
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('dm-input-msg');
     const sendBtn = document.getElementById('dm-send-btn');
-    const chatInputFooter = document.getElementById('chat-input-footer');
-    const chatUserInfoBtn = document.getElementById('chat-user-info-btn');
-
-    if (!socket) {
-        console.error('[DMs] Socket.IO não disponível!');
-    }
-
-    // Função de reconexão
-    function onSocketConnect() {
-        if (selectedChatId) {
-            socket.emit('joinChat', selectedChatId);
-            socket.emit('getMessages', { chatId: selectedChatId, page: 1 });
-        }
-    }
-
-    // Registra handler de reconexão
-    if (window.SocketConnector) {
-        SocketConnector.onReconnect(onSocketConnect);
-    }
-
-    chatUserInfoBtn.addEventListener('click', () => {
-        if (currentChatOtherUser) {
-            UserProfileModal.show(currentChatOtherUser, {
-                onDmClick: () => console.log('[DM] Já estamos na conversa com', currentChatOtherUser.username)
-            });
-        }
-    });
 
     // Carrega lista de conversas
     async function carregarDMs() {
-        const res = await fetch('/api/dms', { credentials: 'include' });
-        const conversas = await res.json();
+        try {
+            const res = await fetch('/api/dms', { credentials: 'include' });
+            todasConversas = await res.json();
+            renderizarListaDMs();
+        } catch (error) {
+            console.error('[DMs] Erro ao carregar:', error);
+            document.getElementById('dm-list').innerHTML = '<p class="text-danger text-center p-3">Erro ao carregar conversas.</p>';
+        }
+    }
+
+    // Renderiza a lista de cards na sidebar
+    function renderizarListaDMs() {
         const dmList = document.getElementById('dm-list');
         dmList.innerHTML = '';
 
-        if (!conversas.length) {
-            dmList.innerHTML = '<p class="text-muted text-center p-3">Sem conversas</p>';
+        if (!todasConversas.length) {
+            dmList.innerHTML = '<div class="text-center p-4 text-muted small"><p>Nenhuma conversa encontrada.</p></div>';
             return;
         }
 
-        conversas.forEach(conversa => {
-            const existingCard = dmList.querySelector(`[data-chat-id="${conversa.publicid}"]`);
-            if (existingCard) existingCard.remove();
+        // Ordena por data da última mensagem (mais recente primeiro)
+        todasConversas.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
 
+        todasConversas.forEach(conversa => {
             const card = UIUtils.createUserCard({
                 ...conversa.otherUser,
                 lastMessage: conversa.lastMessage,
@@ -138,66 +115,35 @@
                 unreadCount: conversa.unreadCount
             }, { type: 'conversation', avatarSize: 40, showUnreadBadge: true });
             
+            card.classList.add('conversation-card');
+            card.dataset.chatId = conversa.publicid;
             if (selectedChatId === conversa.publicid) card.classList.add('active');
-            card.setAttribute('data-chat-id', conversa.publicid);
-            card.setAttribute('data-user-id', conversa.otherUser?.publicid);
-            card.setAttribute('data-last-message-at', conversa.lastMessageAt || '0');
             card.addEventListener('click', () => abrirDM(conversa.publicid, conversa.otherUser?.username, conversa.otherUser));
             dmList.appendChild(card);
         });
 
-        setTimeout(UIUtils.requestPageStatuses, 100);
+        UIUtils.requestPageStatuses();
     }
 
-    // Atualiza card de conversa específica na sidebar
-    async function atualizarCardDM(chatId) {
-        try {
-            const res = await fetch('/api/dms', { credentials: 'include' });
-            const conversas = await res.json();
-            const conversa = conversas.find(c => c.publicid === chatId);
-            
-            if (!conversa) return;
-            
-            const dmList = document.getElementById('dm-list');
-            const existingCard = dmList.querySelector(`[data-chat-id="${chatId}"]`);
-            
-            // Cria novo card atualizado
-            const newCard = UIUtils.createUserCard({
-                ...conversa.otherUser,
-                lastMessage: conversa.lastMessage,
-                lastMessageAt: conversa.lastMessageAt,
-                unreadCount: conversa.unreadCount
-            }, { type: 'conversation', avatarSize: 40, showUnreadBadge: true });
-            
-            if (selectedChatId === conversa.publicid) newCard.classList.add('active');
-            newCard.setAttribute('data-chat-id', conversa.publicid);
-            newCard.setAttribute('data-user-id', conversa.otherUser?.publicid);
-            newCard.setAttribute('data-last-message-at', conversa.lastMessageAt || '0');
-            newCard.addEventListener('click', () => abrirDM(conversa.publicid, conversa.otherUser?.username, conversa.otherUser));
-            
-            // Remove card antigo
-            if (existingCard) existingCard.remove();
-            
-            // Insere na posição correta baseado em lastMessageAt
-            const allCards = [...dmList.querySelectorAll('[data-chat-id]')];
-            const newTime = new Date(conversa.lastMessageAt || 0).getTime();
-            let inserted = false;
-            
-            for (const card of allCards) {
-                const cardTime = new Date(card.getAttribute('data-last-message-at') || 0).getTime();
-                if (newTime > cardTime) {
-                    dmList.insertBefore(newCard, card);
-                    inserted = true;
-                    break;
+    // Atualiza card de conversa específica sem dar fetch em tudo
+    function atualizarCardDM(chatId, novaMensagem = null, isReadEvent = false) {
+        const conversa = todasConversas.find(c => c.publicid === chatId);
+        
+        if (conversa) {
+            if (novaMensagem) {
+                conversa.lastMessage = novaMensagem.message;
+                conversa.lastMessageAt = novaMensagem.createdat;
+                if (chatId !== selectedChatId && !isReadEvent) {
+                    conversa.unreadCount = (conversa.unreadCount || 0) + 1;
                 }
             }
-            
-            if (!inserted) dmList.appendChild(newCard);
-            
-            // Atualiza status do usuário
-            UIUtils.requestPageStatuses();
-        } catch (error) {
-            console.error('[DMs] Erro ao atualizar card:', error);
+            if (isReadEvent && chatId === selectedChatId) {
+                conversa.unreadCount = 0;
+            }
+            renderizarListaDMs();
+        } else {
+            // Se a conversa não existe no cache, aí sim buscamos do servidor
+            carregarDMs();
         }
     }
 
@@ -250,13 +196,13 @@
     function abrirDM(chatId, chatName, otherUserData = null) {
         currentChatOtherUser = otherUserData;
         selectedChatId = chatId;
-        document.getElementById('chat-title').textContent = chatName;
-        chatInputFooter.style.display = '';
+        
+        ChatLayout.showChat(chatName);
+
         chatInput.disabled = false;
         sendBtn.disabled = false;
-        chatUserInfoBtn.style.display = currentChatOtherUser ? 'block' : 'none';
         
-        document.querySelectorAll('.dm-card').forEach(card => card.classList.remove('active'));
+        document.querySelectorAll('.conversation-card').forEach(card => card.classList.remove('active'));
         const activeCard = document.querySelector(`[data-chat-id="${chatId}"]`);
         if (activeCard) {
             activeCard.classList.add('active');
@@ -271,6 +217,12 @@
         socket.emit('getMessages', { chatId, page: 1, type: 'dm' });
     }
 
+    function voltarLista() {
+        ChatLayout.hideChat();
+        selectedChatId = null;
+        document.querySelectorAll('.conversation-card').forEach(card => card.classList.remove('active'));
+    }
+
     ChatUtils.setupMessageInput(chatInput, sendBtn, (mensagem) => {
         if (!selectedChatId) return;
         socket.emit('sendMessage', { 
@@ -282,106 +234,64 @@
 
     // ---------------- Socket.IO Events ----------------
     socket.on('joinedChat', (data) => {
-        if (data && data.success) {
-            console.log('[Socket] Entrou no chat:', data.chatId);
-        }
+        if (data?.success) console.log('[Socket] Entrou no chat:', data.chatId);
     });
 
     socket.on('messagesLoaded', (data) => {
         if (!data || data.chatId !== selectedChatId) return;
         
         const { chatId, messages } = data;
-        const msgs = messages.map(msg => ({
-            publicid: msg.publicid,
-            username: msg.Sender?.username || msg.username || 'Usuário',
-            message: msg.message,
-            isMine: msg.isMine,
-            createdat: msg.createdat,
-            isread: msg.isread || false
-        }));
+        allMessages = messages.map(msg => {
+            const username = msg.Sender?.username || msg.username || 'Usuário';
+            return { ...msg, username, isMine: username === currentUser.username };
+        });
 
-        // Sempre carregamento inicial simplificado
-        allMessages = msgs;
         ChatUtils.renderMessages(allMessages, chatMessages, { 
-            clearContainer: true, 
-            scrollToBottom: true, 
-            showUsername: false, 
-            showTime: true 
+            clearContainer: true, scrollToBottom: true, showUsername: false 
         });
         
         socket.emit('markAsRead', { chatId });
-        setTimeout(() => atualizarCardDM(chatId), 300);
+        atualizarCardDM(chatId, null, true); // Zera as não lidas no cache
     });
 
     socket.on('newMessage', (data) => {
-        // Ignora eventos sem dados (usado apenas para atualizar contagem de notificações)
-        if (!data || !data.chatId || !data.message?.message) return;
-        
+        if (!data?.chatId || !data.message?.message) return;
         const { chatId, message } = data;
         
         if (chatId === selectedChatId) {
-            // Adiciona mensagem ao chat atual
-            const newMsg = {
-                publicid: message.publicid,
-                message: message.message,
-                username: message.username,
-                isMine: message.username === currentUser.username,
-                createdat: message.createdat || new Date().toISOString(),
-                isread: false
-            };
+            const username = message.username || 'Usuário';
+            const newMsg = { ...message, username, isMine: username === currentUser.username };
             
             allMessages.push(newMsg);
             ChatUtils.renderMessages([newMsg], chatMessages, { 
-                clearContainer: false, 
-                scrollToBottom: true, 
-                showUsername: false, 
-                showTime: true 
+                clearContainer: false, scrollToBottom: true, showUsername: false 
             });
             
-            if (!newMsg.isMine) socket.emit('markAsRead', { chatId: selectedChatId });
+            if (!newMsg.isMine) socket.emit('markAsRead', { chatId });
         }
-        
-        // Sempre atualiza o card na sidebar (move para topo, atualiza preview, etc)
-        atualizarCardDM(chatId);
+        atualizarCardDM(chatId, message);
     });
 
     socket.on('messageRead', (data) => {
         if (!data) return;
-        
         const { chatId, userId, lastReadMessageId } = data;
         
         if (userId !== currentUser.publicid && chatId === selectedChatId) {
-            // Atualiza status de leitura das mensagens no chat aberto
-            allMessages.forEach(msg => {
-                if (msg.isMine) {
-                    if (!lastReadMessageId || msg.id === lastReadMessageId) {
-                        msg.isread = true;
-                    }
-                }
-            });
+            allMessages.forEach(msg => { if (msg.isMine) msg.isread = true; });
             ChatUtils.updateReadStatus(chatMessages, lastReadMessageId);
         }
-        
-        // Atualiza badge de não lidas na sidebar
-        atualizarCardDM(chatId);
+        atualizarCardDM(chatId, null, true);
     });
 
-    socket.on('error', (error) => {
-        console.error('[Socket] Erro:', error);
-        alert('Erro: ' + error.message);
-    });
+    socket.on('error', (err) => console.error('[Socket] Erro:', err));
 
     // Inicialização
     (async () => {
+        ChatLayout.init({});
         const res = await fetch('/api/users/me', { credentials: 'include' });
         currentUser = await res.json();
         await carregarDMs();
-        document.getElementById('search-btn').addEventListener('click', buscarUsuarios);
-        document.getElementById('search-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') buscarUsuarios();
-        });
+        document.getElementById('search-btn').onclick = buscarUsuarios;
+        document.getElementById('search-input').onkeypress = (e) => e.key === 'Enter' && buscarUsuarios();
     })();
 </script>
-
-<!-- Modal de perfil de usuário -->
-<%- include('../../utils/modal-perfil-usuario') %>

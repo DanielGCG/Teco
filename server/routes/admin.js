@@ -98,4 +98,18 @@ AdminRouter.get('/imagemdodia', async (req, res) => {
     })
 });
 
+AdminRouter.get('/badges', async (req, res) => {
+    const locals = {
+        title: `Gerenciar badges`,
+        description: "Controle as badges",
+        version: process.env.VERSION,
+    }
+    res.render('pages/admin/badges', {
+        layout: 'layouts/main',
+        locals: locals,
+        HOST: process.env.HOST
+    })
+});
+
+
 module.exports = AdminRouter;

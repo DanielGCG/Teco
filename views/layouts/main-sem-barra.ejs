@@ -3,7 +3,7 @@
 <head>
 <script>
 // Função global para fallback de imagens quebradas
-function aplicarFallbackImagens(selector = 'img', placeholder = '/images/placeholder.png') {
+function aplicarFallbackImagens(selector = 'img', placeholder = '/images/placeholder.webp') {
     document.querySelectorAll(selector).forEach(img => {
         if (!img.dataset.fallbackSet) {
             const rawSrc = img.getAttribute('src');

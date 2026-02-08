@@ -114,7 +114,7 @@
         gap: 0.75rem;
     }
 
-    .bio-container, .galleries-container, .friends-container {
+    .bio-container, .galleries-container, .badges-container, .friends-container {
         background: #fff;
         border-radius: 1.25rem;
         padding: 1.25rem;
@@ -134,7 +134,7 @@
         content: '';
         flex: 1;
         height: 1px;
-        background: #f0f0f0;
+        background: rgba(0, 0, 0, 0.1);
     }
 
     .friend-item {
@@ -145,20 +145,23 @@
         text-decoration: none;
         color: inherit;
     }
-    .galleries-grid {
+    .galleries-grid, .badges-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 4px;
-        max-height: 240px;
+        max-height: 185px;
         overflow-y: auto;
     }
-    .gallery-square {
+    .badges-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+    .gallery-square, .badge-square {
         position: relative;
         aspect-ratio: 1;
         border-radius: 4px;
         overflow: hidden;
     }
-    .gallery-square img {
+    .gallery-square img, .badge-square img {
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -185,7 +188,7 @@
         height: 40px;
         object-fit: cover;
     }
-    .bio-container, .galleries-container, .friends-container, .card-header {
+    .bio-container, .galleries-container, .badges-container, .friends-container, .card-header {
         background-color: var(--verde);
     }
     .feed-tab {
@@ -242,6 +245,10 @@
             <div class="bio-container">
                 <div class="section-title">Biografia</div>
                 <div id="bio-text">Carregando...</div>
+            </div>
+            <div class="badges-container">
+                <div class="section-title">Badges</div>
+                <div id="badges-list">Carregando...</div>
             </div>
             <div class="galleries-container">
                 <div class="section-title">Galerias</div>
@@ -399,6 +406,7 @@
                 }
             }
 
+            carregarBadges(user.publicid);
             carregarGalerias(user.publicid);
             await carregarAmigos(user.publicid);
 
@@ -457,6 +465,29 @@
         } catch (e) {
             btn.disabled = false;
             btn.textContent = 'Erro';
+        }
+    }
+    
+    async function carregarBadges(userId) {
+        try {
+            const response = await fetch(`/api/badges/user/${userId}`);
+            const data = await response.json();
+            const list = document.getElementById("badges-list");
+            
+            if (Array.isArray(data) && data.length > 0) {
+                list.innerHTML = `<div class="badges-grid">
+                    ${data.map(b => `
+                        <div class="badge-square" title="${b.name}${b.description ? ': ' + b.description : ''}">
+                            <img src="${b.url}">
+                        </div>
+                    `).join('')}
+                </div>`;
+            } else {
+                list.innerHTML = '<div class="text-muted small">Nenhum badge.</div>';
+            }
+        } catch (e) {
+            console.error("Erro ao carregar badges:", e);
+            document.getElementById("badges-list").innerHTML = 'Erro ao carregar.';
         }
     }
 

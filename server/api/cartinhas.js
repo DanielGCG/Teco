@@ -37,6 +37,7 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
             where: {
                 senderUserId: req.user.id
             },
+            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem
             include: [{
                 model: User,
                 as: 'destinatario',
@@ -73,6 +74,7 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
             where: {
                 recipientUserId: req.user.id
             },
+            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem
             include: [{
                 model: User,
                 as: 'remetente',
@@ -110,6 +112,7 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
                 recipientUserId: req.user.id,
                 isfavorited: true
             },
+            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem
             include: [{
                 model: User,
                 as: 'remetente',

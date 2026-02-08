@@ -492,3 +492,31 @@ DELIMITER ;
 -- Adicionar FK circular do chat após a criação das tabelas
 ALTER TABLE chat ADD CONSTRAINT fk_last_message 
 FOREIGN KEY (lastChatMessageId) REFERENCES chatmessages(id) ON DELETE SET NULL;
+
+-- ==========================
+-- TABELA DE BADGES
+-- ==========================
+
+CREATE TABLE IF NOT EXISTS badge (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    name VARCHAR(64) NOT NULL,
+    description TEXT,
+    url VARCHAR(255),
+    createdbyUserId INT UNSIGNED,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS badgeuser (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    userId INT UNSIGNED NOT NULL,
+    badgeId INT UNSIGNED NOT NULL,
+    createdbyUserId INT UNSIGNED,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (userId, badgeId),
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (badgeId) REFERENCES badge(id) ON DELETE CASCADE,
+    FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL
+);

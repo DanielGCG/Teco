@@ -102,7 +102,7 @@
     <a id="sidebar-profile-link" href="<%= profileLink %>" class="text-decoration-none w-100">
         <div class="user-card text-center mb-3 w-100" style="<%= bgStyle %>">
             <img src="<%= profilePic %>" alt="Foto de Perfil" class="user-avatar mb-2">
-            <h5 class="user-name mb-0"><%= username %></h5>
+            <h5 class="user-name mb-0 text-white"><%= username %></h5>
         </div>
     </a>
 
@@ -114,12 +114,15 @@
         <a href="/amigos" class="nav-item-custom"><i class="bi bi-people"></i> Amigos</a>
         <a href="/galerias" class="nav-item-custom"><i class="bi bi-images"></i> Galerias</a>
         
-        <div class="nav-group-label">Ferramentas</div>
+        <div class="nav-group-label">Diversão</div>
+
         <a href="/watchlist" class="nav-item-custom"><i class="bi bi-film"></i> Watchlist</a>
         <a href="/manutencao" class="nav-item-custom"><i class="bi bi-hand-index"></i> Cutucar</a>
+   
+
+        <div class="nav-group-label">Ferramentas</div>
     </div>
 
-    <hr class="w-100 mt-0">
     <!-- Links ou botões da barra lateral -->
     <div class="sidebar-buttons d-flex flex-column align-items-center w-100">
         <% if (u && u.roleId <= 5) { %>

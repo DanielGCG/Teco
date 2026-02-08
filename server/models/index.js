@@ -10,6 +10,7 @@ const { Post, PostMedia, PostLike, PostBookmark, PostMention, Rodinha } = requir
 const { Filme } = require('./Watchlist');
 const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
 const { Galeria, GaleriaItem, GaleriaContributor } = require('./Galeria');
+const { Badge, BadgeUser } = require('./Badges');
 
 // Associações Imagem do Dia
 ImagemDoDia.belongsTo(User, { foreignKey: 'createdbyUserId', as: 'requester' });
@@ -134,6 +135,26 @@ User.hasMany(Cartinha, { foreignKey: 'recipientUserId', as: 'cartinhas_recebidas
 Cartinha.belongsTo(User, { foreignKey: 'senderUserId', as: 'remetente' });
 Cartinha.belongsTo(User, { foreignKey: 'recipientUserId', as: 'destinatario' });
 
+// Associações de Badges
+Badge.belongsTo(User, { foreignKey: 'createdbyUserId', as: 'creator' });
+User.hasMany(Badge, { foreignKey: 'createdbyUserId', as: 'createdBadges' });
+
+User.belongsToMany(Badge, {
+    through: BadgeUser,
+    foreignKey: 'userId',
+    otherKey: 'badgeId',
+    as: 'badges'
+});
+Badge.belongsToMany(User, {
+    through: BadgeUser,
+    foreignKey: 'badgeId',
+    otherKey: 'userId',
+    as: 'owners'
+});
+
+BadgeUser.belongsTo(Badge, { foreignKey: 'badgeId' });
+BadgeUser.belongsTo(User, { foreignKey: 'userId' });
+
 // Sincroniza modelos (use com cuidado em produção)
 // sequelize.sync({ alter: true });
 
@@ -160,5 +181,7 @@ module.exports = {
     ImagemDoDiaBorder,
     Galeria,
     GaleriaItem,
-    GaleriaContributor
+    GaleriaContributor,
+    Badge,
+    BadgeUser
 };

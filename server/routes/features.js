@@ -75,10 +75,45 @@ FeaturesRouter.get('/credits', async (req, res) => {
         description: "Agracedimentos e Créditos",
         version: process.env.VERSION,
     }
-    res.render('pages/features/credits', {
+    res.render('utils/credits', {
         layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
+    });
+});
+
+const { execSync } = require("child_process");
+
+FeaturesRouter.get('/changelog', async (req, res) => {
+    let commits = [];
+    try {
+        const gitLog = execSync('git log -n 30 --pretty=format:"%h|%as|%an|%s|%b[END_COMMIT]"').toString();
+        
+        commits = gitLog.split('[END_COMMIT]').filter(c => c.trim()).map(line => {
+            const parts = line.trim().split('|');
+            const hash = parts[0];
+            const date = parts[1];
+            const author = parts[2];
+            const subject = parts[3] || '';
+            const body = parts.slice(4).join('|').trim();
+            
+            return { hash, date, author, subject, body };
+        });
+    } catch (err) {
+        console.error('[Changelog] Erro ao buscar git log:', err);
+    }
+
+    const locals = {
+        title: `Changelog`,
+        description: "Histórico de atualizações do sistema",
+        version: process.env.VERSION,
+    }
+
+    res.render('utils/changelog', {
+        layout: 'layouts/main',
+        locals: locals,
+        HOST: process.env.HOST,
+        commits: commits
     });
 });
 

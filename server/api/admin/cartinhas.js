@@ -113,6 +113,7 @@ AdminCartinhasRouter.get('/', async (req, res) => {
 
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
+            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem admin
             include: [
                 { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
                 { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
@@ -159,6 +160,7 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
 
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
+            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem admin
             include: [
                 { model: User, as: 'remetente', attributes: ['username', 'publicid'] }
             ],

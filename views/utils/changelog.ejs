@@ -1,0 +1,120 @@
+<style>
+    .changelog-timeline {
+        position: relative;
+        padding-left: 3rem;
+        margin: 2rem 0;
+    }
+    .changelog-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.75rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--bs-border-color);
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2.5rem;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: -3rem;
+        top: 0.25rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        background: var(--bs-primary);
+        border: 4px solid var(--bs-body-bg);
+        z-index: 1;
+    }
+    .timeline-date {
+        font-size: 0.85rem;
+        font-weight: bold;
+        color: var(--bs-secondary);
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+    .commit-type {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: bold;
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.25rem;
+        margin-right: 0.5rem;
+    }
+    .type-feat { background: #d1e7dd; color: #0a3622; }
+    .type-fix { background: #f8d7da; color: #842029; }
+    .type-docs { background: #cff4fc; color: #055160; }
+    .type-refactor { background: #fff3cd; color: #664d03; }
+</style>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-journal-text fs-2 me-3 text-primary"></i>
+                <div>
+                    <h2 class="mb-0">Changelog</h2>
+                    <p class="text-muted mb-0">Versionamento pelo <a href="https://github.com/DanielGCG/teco" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+                </div>
+            </div>
+
+            <div class="changelog-timeline">
+                <% if (typeof commits !== 'undefined' && commits.length > 0) { %>
+                    <% 
+                    let lastDate = '';
+                    commits.forEach(commit => { 
+                        let type = '';
+                        let displayMessage = commit.subject;
+                        if (commit.subject && commit.subject.includes(':')) {
+                            const parts = commit.subject.split(':');
+                            type = parts[0].toLowerCase().trim();
+                            displayMessage = parts.slice(1).join(':').trim();
+                        }
+                    %>
+                        <% if (commit.date !== lastDate) { %>
+                            <span class="timeline-date font-monospace"><%= commit.date %></span>
+                            <% lastDate = commit.date; %>
+                        <% } %>
+
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="flex-grow-1">
+                                            <% if (type === 'feat') { %>
+                                                <span class="commit-type type-feat">Novidade</span>
+                                            <% } else if (type === 'fix') { %>
+                                                <span class="commit-type type-fix">Correção</span>
+                                            <% } else if (type === 'docs') { %>
+                                                <span class="commit-type type-docs">Documentação</span>
+                                            <% } else if (type === 'refactor' || type === 'style') { %>
+                                                <span class="commit-type type-refactor">Ajuste</span>
+                                            <% } %>
+                                            <span class="fw-semibold"><%= displayMessage %></span>
+                                        </div>
+                                        <code class="small text-muted" title="Hash do Commit"><%= commit.hash %></code>
+                                    </div>
+                                    
+                                    <% if (commit.body) { %>
+                                        <div class="mt-2 text-muted small border-start ps-2" style="white-space: pre-wrap;"><%= commit.body %></div>
+                                    <% } %>
+
+                                    <div class="text-muted small mt-2">
+                                        <i class="bi bi-person-circle me-1"></i> <%= commit.author %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="alert alert-info">
+                        Nenhum histórico de commit encontrado.
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>

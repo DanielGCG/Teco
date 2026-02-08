@@ -420,12 +420,12 @@ router.patch('/:publicid',
     }
 });
 
-// GET /galerias/user/:userPublicId - Listar galerias de um usuário específico
-router.get('/user/:userPublicId', async (req, res) => {
+// GET /galerias/user/:publicid - Listar galerias de um usuário específico
+router.get('/user/:publicid', async (req, res) => {
     try {
-        const userPublicId = req.params.userPublicId;
+        const publicid = req.params.publicid;
 
-        const targetUser = await User.findOne({ where: { publicid: userPublicId } });
+        const targetUser = await User.findOne({ where: { publicid: publicid } });
         if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
 
         let showPrivate = false;

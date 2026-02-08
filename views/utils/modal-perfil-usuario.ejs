@@ -84,7 +84,7 @@
             // Avatar - com fallback automático
             const avatarImg = document.getElementById('profile-modal-avatar');
             avatarImg.src = userData.profileimage;
-            avatarImg.onerror = () => { avatarImg.src = '/images/placeholder.png'; };
+            avatarImg.onerror = () => { avatarImg.src = '/images/placeholder.webp'; };
 
             // Username
             document.getElementById('profile-modal-username').textContent = userData.username;
