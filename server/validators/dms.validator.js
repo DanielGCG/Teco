@@ -25,7 +25,7 @@ const createDmSchema = z.object({
 });
 
 const searchUsersSchema = z.object({
-    q: z.string().optional().transform(val => val ? sanitizeString(val) : undefined)
+    q: z.string().optional()
 });
 
 module.exports = {

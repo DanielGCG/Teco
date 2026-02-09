@@ -74,32 +74,75 @@
 <script src="/js/commons/chat-dm-common.js"></script>
 
 <script>
-    const socket = window.appSocket;
+    let socket = null;
     let allChats = [];
     let selectedChat = null;
-    let currentUser = null;
+    let currentUser = window.UserContext ? window.UserContext.get() : null;
     let allMessages = [];
     const bufferSize = 100;
 
-    const chatMessages = document.getElementById('chat-messages');
-    const inputMsg = document.getElementById('input-msg');
-    const sendBtn = document.getElementById('send-btn');
+    // Elementos do DOM (Resolvidos na inicialização)
+    let chatMessages, inputMsg, sendBtn;
 
     // Inicialização
     document.addEventListener('DOMContentLoaded', async () => {
+        chatMessages = document.getElementById('chat-messages');
+        inputMsg = document.getElementById('input-msg');
+        sendBtn = document.getElementById('send-btn');
+        
+        // Resolve o socket global
+        socket = window.appSocket || (window.SocketConnector ? window.SocketConnector.getSocket() : null);
+
         ChatLayout.init({}); 
         ChatLayout.hideChat(); // Garante que o placeholder aparece primeiro
         
-        const resUser = await fetch('/api/users/me', { credentials: 'include' });
-        currentUser = await resUser.json();
-        
-        await carregarChats();
+        if (socket) {
+            setupSocketListeners();
+        } else {
+            console.warn('[Chats] Socket não disponível imediatamente, aguardando...');
+            setTimeout(() => {
+                socket = window.appSocket || (window.SocketConnector ? window.SocketConnector.getSocket() : null);
+                if (socket) setupSocketListeners();
+            }, 1000);
+        }
 
-        // Se houver um chatName na URL (passado pelo backend)
-        const initialChatName = "<%= locals.chatName || '' %>";
-        if (initialChatName) {
-            const chat = allChats.find(c => c.title === initialChatName || c.publicid.toString() === initialChatName);
-            if (chat) selecionarChat(chat);
+        try {
+            if (!currentUser) {
+                const resUser = await fetch('/api/users/me', { credentials: 'include' });
+                if (resUser.ok) currentUser = await resUser.json();
+            }
+            
+            await carregarChats();
+
+            // Se houver um chatName na URL (passado pelo backend ou histórico)
+            const initialChatName = "<%= locals.chatName || '' %>" || window.location.pathname.split('/').pop();
+            if (initialChatName && initialChatName !== 'chat') {
+                const chat = allChats.find(c => c.title === initialChatName || c.publicid.toString() === initialChatName);
+                if (chat) selecionarChat(chat);
+            }
+        } catch (err) {
+            console.error('[Chats] Erro na inicialização:', err);
+        }
+
+        // Configura inputs
+        if (inputMsg && sendBtn) {
+            ChatUtils.setupMessageInput(inputMsg, sendBtn, (text) => {
+                if (!selectedChat?.publicid || !socket) return;
+                socket.emit('sendMessage', {
+                    chatId: selectedChat.publicid,
+                    mensagem: text,
+                    type: 'chat'
+                });
+            });
+        }
+
+        const searchInput = document.getElementById('search-chat-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const filtered = allChats.filter(c => (c.title || "").toLowerCase().includes(term));
+                renderizarLista(filtered);
+            });
         }
     });
 
@@ -110,12 +153,15 @@
             renderizarLista(allChats);
         } catch (error) {
             console.error('[Chats] Erro ao carregar:', error);
-            document.getElementById('chat-list').innerHTML = '<p class="text-danger text-center p-3">Erro ao carregar salas.</p>';
+            const chatList = document.getElementById('chat-list');
+            if (chatList) chatList.innerHTML = '<p class="text-danger text-center p-3">Erro ao carregar salas.</p>';
         }
     }
 
     function renderizarLista(chats) {
         const container = document.getElementById('chat-list');
+        if (!container) return;
+        
         container.innerHTML = '';
 
         if (chats.length === 0) {
@@ -155,7 +201,7 @@
         renderizarLista(allChats);
         
         allMessages = [];
-        chatMessages.innerHTML = '';
+        if (chatMessages) chatMessages.innerHTML = '';
         
         // Atualiza URL sem recarregar
         window.history.pushState({}, '', `/chat/${chatNome}`);
@@ -168,7 +214,7 @@
         ChatLayout.showChat(`# ${chatNome}`);
 
         // Socket
-        socket.emit('getMessages', { chatId: chat.publicid, page: 1, type: 'chat' });
+        if (socket) socket.emit('getMessages', { chatId: chat.publicid, page: 1, type: 'chat' });
     }
 
     function voltarLista() {
@@ -177,65 +223,54 @@
         window.history.pushState({}, '', '/chat');
     }
 
-    // ==================== Socket.IO Events ====================
-    socket.on('messagesLoaded', ({ chatId: loadedChatId, messages }) => {
-        if (selectedChat && !selectedChat.publicid) selectedChat.publicid = loadedChatId;
-        if (selectedChat?.publicid !== loadedChatId) return;
-
-        allMessages = messages.map(msg => formatMessage(msg));
-        ChatUtils.renderMessages(allMessages, chatMessages, { clearContainer: true, scrollToBottom: true });
-        
-        socket.emit('joinChat', loadedChatId);
-        socket.emit('markAsRead', { chatId: loadedChatId });
-    });
-
-    socket.on('newMessage', ({ chatId, message }) => {
-        const formatted = formatMessage(message);
-        
-        if (selectedChat?.publicid === chatId) {
-            allMessages.push(formatted);
-            ChatUtils.renderMessages([formatted], chatMessages, { clearContainer: false, scrollToBottom: true });
-            
-            if (chatMessages.children.length > bufferSize) {
-                chatMessages.removeChild(chatMessages.firstChild);
-            }
-
-            if (formatted.username !== currentUser.username) {
-                socket.emit('markAsRead', { chatId });
-            }
-        } else {
-            const chat = allChats.find(c => c.publicid === chatId);
-            if (chat && formatted.username !== currentUser.username) {
-                chat.unreadCount = (chat.unreadCount || 0) + 1;
-                renderizarLista(allChats);
-            }
-        }
-    });
-
     function formatMessage(msg) {
+        const user = currentUser || window.currentUser;
         const username = msg.author?.username || msg.username || 'Usuário';
         return {
             ...msg,
             username,
-            isMine: username === currentUser.username,
+            isMine: user ? (username === user.username) : (msg.isMine || false),
             createdat: msg.createdat || new Date().toISOString()
         };
     }
 
-    // ==================== Envio ====================
-    ChatUtils.setupMessageInput(inputMsg, sendBtn, (text) => {
-        if (!selectedChat?.publicid) return;
-        socket.emit('sendMessage', {
-            chatId: selectedChat.publicid,
-            mensagem: text,
-            type: 'chat'
-        });
-    });
+    function setupSocketListeners() {
+        if (!socket) return;
 
-    // Filtro de busca
-    document.getElementById('search-chat-input').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const filtered = allChats.filter(c => (c.title || "").toLowerCase().includes(term));
-        renderizarLista(filtered);
-    });
+        socket.on('messagesLoaded', ({ chatId: loadedChatId, messages }) => {
+            if (selectedChat && !selectedChat.publicid) selectedChat.publicid = loadedChatId;
+            if (selectedChat?.publicid !== loadedChatId) return;
+
+            allMessages = messages.map(msg => formatMessage(msg));
+            ChatUtils.renderMessages(allMessages, chatMessages, { clearContainer: true, scrollToBottom: true });
+            
+            socket.emit('joinChat', loadedChatId);
+            socket.emit('markAsRead', { chatId: loadedChatId });
+        });
+
+        socket.on('newMessage', ({ chatId, message }) => {
+            const formatted = formatMessage(message);
+            
+            if (selectedChat?.publicid === chatId) {
+                allMessages.push(formatted);
+                ChatUtils.renderMessages([formatted], chatMessages, { clearContainer: false, scrollToBottom: true });
+                
+                if (chatMessages && chatMessages.children.length > bufferSize) {
+                    chatMessages.removeChild(chatMessages.firstChild);
+                }
+
+                const myUser = currentUser || window.currentUser;
+                if (myUser && formatted.username !== myUser.username) {
+                    socket.emit('markAsRead', { chatId });
+                }
+            } else {
+                const chat = allChats.find(c => c.publicid === chatId);
+                const myUser = currentUser || window.currentUser;
+                if (chat && myUser && formatted.username !== myUser.username) {
+                    chat.unreadCount = (chat.unreadCount || 0) + 1;
+                    renderizarLista(allChats);
+                }
+            }
+        });
+    }
 </script>

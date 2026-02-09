@@ -11,9 +11,9 @@
                 <div class="card-header">
                     <h5 class="mb-0">Conversas</h5>
                 </div>
-                <div class="p-3">
+                <div class="p-3" style="position: relative; z-index: 5;">
                     <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="search-input" placeholder="Buscar usuários...">
+                        <input type="text" class="form-control" id="search-input" placeholder="Buscar usuários..." style="pointer-events: auto !important;">
                         <button class="btn btn-primary" id="search-btn"><i class="bi bi-search"></i></button>
                     </div>
                 </div>
@@ -69,34 +69,49 @@
 <script src="/js/commons/chat-dm-common.js"></script>
 
 <script>
-    const socket = window.appSocket;
-
+    // Referência ao socket (será resolvida na inicialização)
+    let socket = null;
     let selectedChatId = null;
     let allMessages = [];
     let todasConversas = []; // Cache local das conversas
-    let currentUser = null;
+    let currentUser = window.UserContext ? window.UserContext.get() : null;
     let currentChatOtherUser = null;
 
-    // Elementos do DOM
-    const chatMessages = document.getElementById('chat-messages');
-    const chatInput = document.getElementById('dm-input-msg');
-    const sendBtn = document.getElementById('dm-send-btn');
+    // Elementos do DOM (Resolvidos após o carregamento)
+    let chatMessages, chatInput, sendBtn, searchInput, searchBtn;
+
+    function formatMessage(msg) {
+        const user = currentUser || window.currentUser;
+        const username = msg.Sender?.username || msg.username || 'Usuário';
+        return {
+            ...msg,
+            username,
+            isMine: user ? (username === user.username) : (msg.isMine || false),
+            createdat: msg.createdat || new Date().toISOString()
+        };
+    }
 
     // Carrega lista de conversas
     async function carregarDMs() {
         try {
+            console.log('[DMs] Carregando conversas...');
             const res = await fetch('/api/dms', { credentials: 'include' });
+            if (!res.ok) throw new Error('Falha ao carregar DMs');
+            
             todasConversas = await res.json();
             renderizarListaDMs();
         } catch (error) {
             console.error('[DMs] Erro ao carregar:', error);
-            document.getElementById('dm-list').innerHTML = '<p class="text-danger text-center p-3">Erro ao carregar conversas.</p>';
+            const dmList = document.getElementById('dm-list');
+            if (dmList) dmList.innerHTML = '<p class="text-danger text-center p-3">Erro ao carregar conversas.</p>';
         }
     }
 
     // Renderiza a lista de cards na sidebar
     function renderizarListaDMs() {
         const dmList = document.getElementById('dm-list');
+        if (!dmList) return;
+        
         dmList.innerHTML = '';
 
         if (!todasConversas.length) {
@@ -105,9 +120,11 @@
         }
 
         // Ordena por data da última mensagem (mais recente primeiro)
-        todasConversas.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+        const sortedConversas = [...todasConversas].sort((a, b) => 
+            new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0)
+        );
 
-        todasConversas.forEach(conversa => {
+        sortedConversas.forEach(conversa => {
             const card = UIUtils.createUserCard({
                 ...conversa.otherUser,
                 lastMessage: conversa.lastMessage,
@@ -117,6 +134,7 @@
             
             card.classList.add('conversation-card');
             card.dataset.chatId = conversa.publicid;
+            card.setAttribute('data-user-id', conversa.otherUser?.publicid); // Para tracking de status
             if (selectedChatId === conversa.publicid) card.classList.add('active');
             card.addEventListener('click', () => abrirDM(conversa.publicid, conversa.otherUser?.username, conversa.otherUser));
             dmList.appendChild(card);
@@ -127,9 +145,10 @@
 
     // Atualiza card de conversa específica sem dar fetch em tudo
     function atualizarCardDM(chatId, novaMensagem = null, isReadEvent = false) {
-        const conversa = todasConversas.find(c => c.publicid === chatId);
+        const conversaIndex = todasConversas.findIndex(c => c.publicid === chatId);
         
-        if (conversa) {
+        if (conversaIndex !== -1) {
+            const conversa = todasConversas[conversaIndex];
             if (novaMensagem) {
                 conversa.lastMessage = novaMensagem.message;
                 conversa.lastMessageAt = novaMensagem.createdat;
@@ -142,53 +161,72 @@
             }
             renderizarListaDMs();
         } else {
-            // Se a conversa não existe no cache, aí sim buscamos do servidor
+            // Se a conversa não existe no cache, buscamos do servidor
             carregarDMs();
         }
     }
 
     // Busca usuários
     async function buscarUsuarios() {
-        const query = document.getElementById('search-input').value.trim();
+        if (!searchInput) return;
+        const query = searchInput.value.trim();
         const resultsContainer = document.getElementById('search-results');
         
         if (!query) return resultsContainer.innerHTML = '';
 
         resultsContainer.innerHTML = '<p class="text-muted small"><span class="spinner-border spinner-border-sm"></span> Buscando...</p>';
-        const res = await fetch(`/api/dms/search?q=${encodeURIComponent(query)}`, { credentials: 'include' });
-        const data = await res.json();
+        try {
+            const res = await fetch(`/api/dms/search?q=${encodeURIComponent(query)}`, { credentials: 'include' });
+            const data = await res.json();
 
-        if (!data.users.length) return resultsContainer.innerHTML = '<p class="text-muted small">Nenhum usuário encontrado</p>';
+            if (!data.users || !data.users.length) {
+                resultsContainer.innerHTML = '<p class="text-muted small p-2">Nenhum usuário encontrado</p>';
+                return;
+            }
 
-        resultsContainer.innerHTML = '';
-        data.users.forEach(user => {
-            const btn = UIUtils.createActionButton({ icon: 'bi bi-chat', variant: 'primary', size: 'sm', onClick: () => {} });
-            const card = UIUtils.createUserCard(user, { type: 'search', avatarSize: 40, actions: [btn] });
-            card.setAttribute('data-user-id', user.publicid);
-            card.querySelector('button').addEventListener('click', (e) => {
-                e.stopPropagation();
-                iniciarDM(user.username);
+            resultsContainer.innerHTML = '';
+            data.users.forEach(user => {
+                const btn = UIUtils.createActionButton({ icon: 'bi bi-chat', variant: 'primary', size: 'sm', onClick: () => {} });
+                const card = UIUtils.createUserCard(user, { type: 'search', avatarSize: 40, actions: [btn] });
+                card.setAttribute('data-user-id', user.publicid);
+                card.querySelector('button').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    iniciarDM(user.username);
+                });
+                resultsContainer.appendChild(card);
             });
-            resultsContainer.appendChild(card);
-        });
+        } catch (err) {
+            console.error('[DMs] Erro na busca:', err);
+            resultsContainer.innerHTML = '<p class="text-danger small p-2">Erro ao realizar busca</p>';
+        }
     }
 
     // Inicia nova DM
     async function iniciarDM(username) {
-        const res = await fetch('/api/dms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ username })
-        });
-        const data = await res.json();
-        
-        if (res.status === 201 || res.status === 409) {
-            await carregarDMs();
-            const conversasRes = await fetch('/api/dms', { credentials: 'include' });
-            const conversas = await conversasRes.json();
-            const conversa = conversas.find(c => c.publicid === data.dmId);
-            abrirDM(data.dmId, username, conversa?.otherUser);
+        try {
+            const res = await fetch('/api/dms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ username })
+            });
+            const data = await res.json();
+            
+            // Limpa resultados de busca
+            const resultsContainer = document.getElementById('search-results');
+            if (resultsContainer) resultsContainer.innerHTML = '';
+            if (searchInput) searchInput.value = '';
+
+            if (res.status === 201 || res.status === 409) {
+                await carregarDMs();
+                const conversa = todasConversas.find(c => c.publicid === data.dmId);
+                abrirDM(data.dmId, username, conversa?.otherUser);
+            } else {
+                if (window.mostrarAviso) window.mostrarAviso(data.message || 'Erro ao iniciar conversa');
+                else alert(data.message || 'Erro ao iniciar conversa');
+            }
+        } catch (err) {
+            console.error('[DMs] Erro ao iniciar conversa:', err);
         }
     }
 
@@ -199,8 +237,8 @@
         
         ChatLayout.showChat(chatName);
 
-        chatInput.disabled = false;
-        sendBtn.disabled = false;
+        if (chatInput) chatInput.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
         
         document.querySelectorAll('.conversation-card').forEach(card => card.classList.remove('active'));
         const activeCard = document.querySelector(`[data-chat-id="${chatId}"]`);
@@ -210,11 +248,13 @@
             if (badge) badge.remove();
         }
         
-        chatMessages.innerHTML = '';
+        if (chatMessages) chatMessages.innerHTML = '';
         allMessages = [];
         
-        socket.emit('joinChat', chatId);
-        socket.emit('getMessages', { chatId, page: 1, type: 'dm' });
+        if (socket) {
+            socket.emit('joinChat', chatId);
+            socket.emit('getMessages', { chatId, page: 1, type: 'dm' });
+        }
     }
 
     function voltarLista() {
@@ -223,76 +263,125 @@
         document.querySelectorAll('.conversation-card').forEach(card => card.classList.remove('active'));
     }
 
-    ChatUtils.setupMessageInput(chatInput, sendBtn, (mensagem) => {
-        if (!selectedChatId) return;
-        socket.emit('sendMessage', { 
-            chatId: selectedChatId, 
-            mensagem,
-            type: 'dm'
-        });
-    });
+    // Inicialização da página
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Inicializa elementos
+        chatMessages = document.getElementById('chat-messages');
+        chatInput = document.getElementById('dm-input-msg');
+        sendBtn = document.getElementById('dm-send-btn');
+        searchInput = document.getElementById('search-input');
+        searchBtn = document.getElementById('search-btn');
 
-    // ---------------- Socket.IO Events ----------------
-    socket.on('joinedChat', (data) => {
-        if (data?.success) console.log('[Socket] Entrou no chat:', data.chatId);
-    });
+        // Resolve o socket global
+        socket = window.appSocket || (window.SocketConnector ? window.SocketConnector.getSocket() : null);
 
-    socket.on('messagesLoaded', (data) => {
-        if (!data || data.chatId !== selectedChatId) return;
+        ChatLayout.init({});
+        ChatLayout.hideChat(); 
         
-        const { chatId, messages } = data;
-        allMessages = messages.map(msg => {
-            const username = msg.Sender?.username || msg.username || 'Usuário';
-            return { ...msg, username, isMine: username === currentUser.username };
-        });
-
-        ChatUtils.renderMessages(allMessages, chatMessages, { 
-            clearContainer: true, scrollToBottom: true, showUsername: false 
-        });
-        
-        socket.emit('markAsRead', { chatId });
-        atualizarCardDM(chatId, null, true); // Zera as não lidas no cache
-    });
-
-    socket.on('newMessage', (data) => {
-        if (!data?.chatId || !data.message?.message) return;
-        const { chatId, message } = data;
-        
-        if (chatId === selectedChatId) {
-            const username = message.username || 'Usuário';
-            const newMsg = { ...message, username, isMine: username === currentUser.username };
+        // Garante que o input de busca está ativo
+        if (searchInput) {
+            searchInput.disabled = false;
+            searchInput.style.pointerEvents = 'auto';
             
-            allMessages.push(newMsg);
-            ChatUtils.renderMessages([newMsg], chatMessages, { 
-                clearContainer: false, scrollToBottom: true, showUsername: false 
+            if (searchBtn) searchBtn.onclick = buscarUsuarios;
+            searchInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    buscarUsuarios();
+                }
+            };
+        }
+
+        if (chatInput && sendBtn) {
+            ChatUtils.setupMessageInput(chatInput, sendBtn, (mensagem) => {
+                if (!selectedChatId || !socket) return;
+                socket.emit('sendMessage', { 
+                    chatId: selectedChatId, 
+                    mensagem,
+                    type: 'dm'
+                });
+            });
+        }
+
+        if (socket) {
+            setupSocketListeners();
+        } else {
+            console.warn('[DMs] Socket não disponível imediatamente, aguardando...');
+            // Tenta novamente em breve
+            setTimeout(() => {
+                socket = window.appSocket || (window.SocketConnector ? window.SocketConnector.getSocket() : null);
+                if (socket) setupSocketListeners();
+            }, 1000);
+        }
+
+        try {
+            // Atualiza usuário se necessário
+            if (!currentUser) {
+                const resUser = await fetch('/api/users/me', { credentials: 'include' });
+                if (resUser.ok) currentUser = await resUser.json();
+            }
+            
+            await carregarDMs();
+            
+            // Suporte para abrir DM via query param ?user=username
+            const urlParams = new URLSearchParams(window.location.search);
+            const userParaAbrir = urlParams.get('user');
+            if (userParaAbrir) iniciarDM(userParaAbrir);
+            
+        } catch (err) {
+            console.error('[DMs] Erro na inicialização:', err);
+        }
+    });
+
+    function setupSocketListeners() {
+        if (!socket) return;
+
+        socket.on('joinedChat', (data) => {
+            if (data?.success) console.log('[Socket] Entrou no chat:', data.chatId);
+        });
+
+        socket.on('messagesLoaded', (data) => {
+            if (!data || data.chatId !== selectedChatId) return;
+            
+            const { messages } = data;
+            allMessages = messages.map(msg => formatMessage(msg));
+
+            ChatUtils.renderMessages(allMessages, chatMessages, { 
+                clearContainer: true, scrollToBottom: true, showUsername: false 
             });
             
-            if (!newMsg.isMine) socket.emit('markAsRead', { chatId });
-        }
-        atualizarCardDM(chatId, message);
-    });
+            socket.emit('markAsRead', { chatId: selectedChatId });
+            atualizarCardDM(selectedChatId, null, true);
+        });
 
-    socket.on('messageRead', (data) => {
-        if (!data) return;
-        const { chatId, userId, lastReadMessageId } = data;
-        
-        if (userId !== currentUser.publicid && chatId === selectedChatId) {
-            allMessages.forEach(msg => { if (msg.isMine) msg.isread = true; });
-            ChatUtils.updateReadStatus(chatMessages, lastReadMessageId);
-        }
-        atualizarCardDM(chatId, null, true);
-    });
+        socket.on('newMessage', (data) => {
+            if (!data?.chatId || !data.message?.message) return;
+            const { chatId, message } = data;
+            
+            if (chatId === selectedChatId) {
+                const newMsg = formatMessage(message);
+                allMessages.push(newMsg);
+                ChatUtils.renderMessages([newMsg], chatMessages, { 
+                    clearContainer: false, scrollToBottom: true, showUsername: false 
+                });
+                
+                if (!newMsg.isMine) socket.emit('markAsRead', { chatId });
+            }
+            atualizarCardDM(chatId, message);
+        });
 
-    socket.on('error', (err) => console.error('[Socket] Erro:', err));
+        socket.on('messageRead', (data) => {
+            if (!data) return;
+            const { chatId, userId, lastReadMessageId } = data;
+            
+            const myUser = currentUser || window.currentUser;
+            if (myUser && userId !== myUser.publicid && chatId === selectedChatId) {
+                allMessages.forEach(msg => { if (msg.isMine) msg.isread = true; });
+                ChatUtils.updateReadStatus(chatMessages, lastReadMessageId);
+            }
+            atualizarCardDM(chatId, null, true);
+        });
 
-    // Inicialização
-    (async () => {
-        ChatLayout.init({});
-        ChatLayout.hideChat(); // Garante que o placeholder aparece primeiro
-        
-        const resUser = await fetch('/api/users/me', { credentials: 'include' });
-        await carregarDMs();
-        document.getElementById('search-btn').onclick = buscarUsuarios;
-        document.getElementById('search-input').onkeypress = (e) => e.key === 'Enter' && buscarUsuarios();
-    })();
+        socket.on('error', (err) => console.error('[Socket] Erro:', err));
+    }
 </script>

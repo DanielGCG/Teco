@@ -92,32 +92,6 @@ const ChatUtils = (() => {
         if (scrollToBottom) container.scrollTop = container.scrollHeight;
     }
 
-    // Configura o input de mensagem (textarea + botão)
-    function setupMessageInput(input, button, onSend) {
-        const handleSend = () => {
-            const text = input.value.trim();
-            if (text) {
-                onSend(text);
-                input.value = '';
-                input.style.height = 'auto'; // Reseta altura se for auto-resize
-            }
-        };
-
-        button.onclick = handleSend;
-        input.onkeypress = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-            }
-        };
-
-        // Auto-resize opcional
-        input.addEventListener('input', () => {
-            input.style.height = 'auto';
-            input.style.height = (input.scrollHeight) + 'px';
-        });
-    }
-
     // Atualiza checks de visualização das mensagens (apenas para DMs)
     function updateReadStatus(container, lastReadMessageId = null) {
         const messages = container.querySelectorAll('.mensagem.usuario[data-msg-id]');

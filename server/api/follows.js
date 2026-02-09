@@ -1,6 +1,6 @@
 const express = require("express");
 const FollowsRouter = express.Router();
-const { Follow, User, sequelize } = require("../models");
+const { Follow, User, DM, sequelize } = require("../models");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const { createNotification } = require("./notifications");
 const validate = require("../middlewares/validate");
@@ -52,6 +52,23 @@ FollowsRouter.post('/:publicid', protect(20), validate(publicidSchema, 'params')
 
         // Notificação
         if (isMutual) {
+            // Garante que existe uma DM
+            const existingDM = await DM.findOne({
+                where: {
+                    [Op.or]: [
+                        { userId1: followerId, userId2: targetId },
+                        { userId1: targetId, userId2: followerId }
+                    ]
+                }
+            });
+
+            if (!existingDM) {
+                await DM.create({
+                    userId1: followerId,
+                    userId2: targetId
+                });
+            }
+
             await createNotification({
                 userId: targetId,
                 type: 'followaccept',

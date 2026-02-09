@@ -693,6 +693,9 @@ module.exports = (io) => {
                         msg.createdat = m.createdat;
                         return msg;
                     });
+
+                    // Garante que o usuário está na sala da DM para receber atualizações em tempo real
+                    socket.join(`chat_${publicChatId}`);
                 } else {
                     // Chat Público
                     const chat = await Chat.findByPk(realChatId);

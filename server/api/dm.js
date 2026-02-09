@@ -27,6 +27,46 @@ DMsRouter.get('/', async (req, res) => {
     try {
         const userId = req.user.id;
         
+        // --- AUTO-CRIAÇÃO DE DMs PARA AMIGOS ---
+        // Busca todos os amigos (seguimento mútuo)
+        const friends = await User.findAll({
+            include: [
+                {
+                    model: Follow,
+                    as: 'followers',
+                    where: { followerUserId: userId },
+                    attributes: []
+                },
+                {
+                    model: Follow,
+                    as: 'following',
+                    where: { followedUserId: userId },
+                    attributes: []
+                }
+            ],
+            attributes: ['id', 'publicid', 'username']
+        });
+
+        // For cada amigo, garante que existe uma DM
+        for (const friend of friends) {
+            const existingDM = await DM.findOne({
+                where: {
+                    [Op.or]: [
+                        { userId1: userId, userId2: friend.id },
+                        { userId1: friend.id, userId2: userId }
+                    ]
+                }
+            });
+
+            if (!existingDM) {
+                await DM.create({
+                    userId1: userId,
+                    userId2: friend.id
+                });
+            }
+        }
+        // --- FIM AUTO-CRIAÇÃO ---
+
         const dms = await DM.findAll({
             where: {
                 [Op.or]: [
@@ -206,13 +246,12 @@ DMsRouter.get('/friends', async (req, res) => {
 
 // GET /conversas/search - Buscar usuários para iniciar conversa
 DMsRouter.get('/search', validate(searchUsersSchema, 'query'), async (req, res) => {
-    const query = req.query.q || '';
-    
-    if (!query.trim()) {
-        return res.json({ users: [] });
-    }
-
     try {
+        const query = (req.query.q || '').toString();
+        if (!query.trim()) {
+            return res.json({ users: [] });
+        }
+        
         const userId = req.user.id;
         const searchTerm = `%${query.toLowerCase()}%`;
 
@@ -290,11 +329,8 @@ DMsRouter.post('/', validate(createDmSchema), async (req, res) => {
             });
         }
 
-        const { v4: uuidv4 } = require('uuid');
-
         // Cria novo DM
         const dm = await DM.create({
-            publicid: uuidv4(),
             userId1: req.user.id,
             userId2: otherUser.id
         });
