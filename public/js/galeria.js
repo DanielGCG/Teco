@@ -13,7 +13,7 @@ const Utils = {
 };
 
 const GaleriaManager = {
-    data: null,
+    data: {},
     galleryId: null,
     collaborators: [],
     originalStyles: null,
@@ -28,16 +28,23 @@ const GaleriaManager = {
         if (!mainEl) return;
         
         let id = mainEl.dataset.galleryId;
-        if (!id || id === 'undefined') {
+        if (!id || id === 'undefined' || id === '') {
             const parts = window.location.pathname.split('/').filter(p => p);
             const last = parts.pop();
-            if (last && !['galeria', 'galerias'].includes(last.toLowerCase())) id = last;
+            // Evita pegar 'galeria' ou 'galerias' como ID
+            if (last && !['galeria', 'galerias', 'features'].includes(last.toLowerCase())) {
+                id = last;
+            }
         }
 
-        if (!id) return Utils.alert('ID da galeria não encontrado.', 'Erro Crítico');
+        if (!id) {
+            console.error('Gallery ID is missing');
+            return;
+        }
         
         this.galleryId = id;
         
+        // Inicializa observador de redimensionamento
         this.resizeObserver = new ResizeObserver(Utils.debounce(() => this.updateGridMetrics(), 50));
         const grid = document.getElementById('image-list');
         if (grid) this.resizeObserver.observe(grid);
@@ -68,8 +75,17 @@ const GaleriaManager = {
             // Computar grid_w e grid_h para os itens
             if (this.data.items) {
                 this.data.items.forEach(item => {
+                    // Garantir coordenadas mínimas de 1
+                    item.startpositionx = Math.max(1, parseInt(item.startpositionx) || 1);
+                    item.startpositiony = Math.max(1, parseInt(item.startpositiony) || 1);
+                    
+                    // Cálculo consistente da largura/altura
                     item.grid_w = item.endpositionx ? (item.endpositionx - item.startpositionx + 1) : 1;
                     item.grid_h = item.endpositiony ? (item.endpositiony - item.startpositiony + 1) : 1;
+                    
+                    // Sanity check
+                    if (item.grid_w < 1) item.grid_w = 1;
+                    if (item.grid_h < 1) item.grid_h = 1;
                 });
             }
 
@@ -80,16 +96,16 @@ const GaleriaManager = {
 
     updateGridMetrics() {
         const grid = document.getElementById('image-list');
-        if (!grid) return;
+        if (!grid || !this.data || !this.data.gridxsize) return;
 
-        const cols = parseInt(this.data.gridxsize);
+        const cols = parseInt(this.data.gridxsize) || 12;
         const gap = 15;
         const containerWidth = grid.getBoundingClientRect().width;
 
         if (containerWidth > 0) {
             const cellWidth = (containerWidth - ((cols - 1) * gap)) / cols;
             grid.style.setProperty('--cell-size', `${cellWidth}px`);
-            grid.style.setProperty('--row-height', `${Math.floor(cellWidth)}px`);
+            grid.style.setProperty('--row-height', `${cellWidth}px`);
         }
     },
 
@@ -390,11 +406,20 @@ const GaleriaManager = {
         const prog = document.getElementById('upload-progress-wrapper');
         btn.disabled = true; prog.style.display = 'block';
 
+        const cols = parseInt(this.data.gridxsize) || 12;
+        const suggestedSize = (cols >= 9 ? 3 : (cols >= 6 ? 2 : 1));
+
         try {
-            const res = await this.uploadFileXHR(file, form);
+            // Criar FormData manualmente para incluir sugestão de tamanho
+            const fd = new FormData(form);
+            fd.delete('fileInput');
+            fd.append('media', file);
+            fd.append('grid_w', suggestedSize);
+            fd.append('grid_h', suggestedSize);
+
+            const res = await this.uploadFileXHR(file, fd); // Passar o FD já pronto
             if (res.success) {
-                const cols = parseInt(this.data.gridxsize);
-                res.item.grid_w = res.item.grid_h = (cols >= 9 ? 3 : (cols >= 6 ? 2 : 1));
+                res.item.grid_w = res.item.grid_h = suggestedSize;
                 this.data.items.push(res.item);
                 this.ensureCoordinates();
                 this.renderGrid();
@@ -406,12 +431,14 @@ const GaleriaManager = {
         finally { btn.disabled = false; prog.style.display = 'none'; this.resetProgress(); }
     },
 
-    uploadFileXHR(file, form) {
+    uploadFileXHR(file, formDataOrForm) {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            const data = new FormData(form);
-            data.delete('fileInput'); 
-            data.append('media', file);
+            const data = (formDataOrForm instanceof FormData) ? formDataOrForm : new FormData(formDataOrForm);
+            if (!(formDataOrForm instanceof FormData)) {
+                data.delete('fileInput'); 
+                data.append('media', file);
+            }
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const pct = Math.round((e.loaded / e.total) * 100) + '%';

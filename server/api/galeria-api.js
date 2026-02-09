@@ -129,6 +129,10 @@ router.get('/:publicid', async (req, res) => {
                     as: 'collaborators',
                     attributes: ['username', 'publicid'] 
                 }
+            ],
+            order: [
+                [{ model: GaleriaItem, as: 'items' }, 'positionz', 'ASC'],
+                [{ model: GaleriaItem, as: 'items' }, 'id', 'ASC']
             ]
         });
 
@@ -194,10 +198,10 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
             type: mediaType,
             editedbyUserId: req.user.id,
             positionz: (maxZ || 0) + 1,
-            startpositionx: req.body.startpositionx ? parseInt(req.body.startpositionx) : 0,
-            startpositiony: req.body.startpositiony ? parseInt(req.body.startpositiony) : 0,
-            endpositionx: (req.body.startpositionx ? parseInt(req.body.startpositionx) : 0) + 1,
-            endpositiony: (req.body.startpositiony ? parseInt(req.body.startpositiony) : 0) + 1
+            startpositionx: req.body.startpositionx ? parseInt(req.body.startpositionx) : 1,
+            startpositiony: req.body.startpositiony ? parseInt(req.body.startpositiony) : 1,
+            endpositionx: (req.body.startpositionx ? parseInt(req.body.startpositionx) : 1) + (parseInt(req.body.grid_w) || 1) - 1,
+            endpositiony: (req.body.startpositiony ? parseInt(req.body.startpositiony) : 1) + (parseInt(req.body.grid_h) || 1) - 1
         });
         
         return res.status(201).json({ success: true, item });
@@ -386,12 +390,12 @@ router.patch('/:publicid',
                     if (objectfit !== undefined) updateData.objectfit = objectfit;
                     
                     if (startpositionx !== undefined) {
-                        updateData.startpositionx = parseInt(startpositionx);
-                        if (grid_w !== undefined) updateData.endpositionx = updateData.startpositionx + parseInt(grid_w);
+                        updateData.startpositionx = parseInt(startpositionx) || 1;
+                        if (grid_w !== undefined) updateData.endpositionx = updateData.startpositionx + (parseInt(grid_w) || 1) - 1;
                     }
                     if (startpositiony !== undefined) {
-                        updateData.startpositiony = parseInt(startpositiony);
-                        if (grid_h !== undefined) updateData.endpositiony = updateData.startpositiony + parseInt(grid_h);
+                        updateData.startpositiony = parseInt(startpositiony) || 1;
+                        if (grid_h !== undefined) updateData.endpositiony = updateData.startpositiony + (parseInt(grid_h) || 1) - 1;
                     }
 
                     try {
