@@ -24,9 +24,11 @@ function mostrarAviso(mensagem, titulo = 'Aviso') {
     document.getElementById("avisoTexto").textContent = mensagem;
     document.getElementById("avisoModalTitle").textContent = titulo;
     
-    // Reproduzir som de alerta
+    // Reproduzir som (alert para confirmações/avisos, error para erros)
     try {
-        const audio = new Audio('/sounds/alert.mp3');
+        const isError = titulo.toLowerCase().includes('erro') || mensagem.toLowerCase().includes('erro');
+        const soundFile = isError ? '/sounds/error.mp3' : '/sounds/alert.mp3';
+        const audio = new Audio(soundFile);
         audio.volume = 0.3;
         audio.play().catch(err => console.log('Não foi possível reproduzir o som:', err));
     } catch (err) {

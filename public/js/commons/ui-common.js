@@ -162,16 +162,29 @@ if (typeof window.UIUtils !== 'undefined') {
             const data = new Date(dataISO);
             const agora = new Date();
             const diffMs = agora - data;
-            const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffSegundos = Math.floor(diffMs / 1000);
+            const diffMinutos = Math.floor(diffSegundos / 60);
+            const diffHoras = Math.floor(diffMinutos / 60);
+            
+            // Verifica se é o mesmo dia (para evitar problemas com fusos horários e viradas de dia)
+            const isHoje = data.toDateString() === agora.toDateString();
+            const ontem = new Date(agora);
+            ontem.setDate(agora.getDate() - 1);
+            const isOntem = data.toDateString() === ontem.toDateString();
 
-            if (diffDias === 0) {
-                return `Hoje às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-            } else if (diffDias === 1) {
-                return `Ontem às ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-            } else if (diffDias < 7) {
-                return `${diffDias} dias atrás`;
+            if (diffSegundos < 60) {
+                return 'Agora';
+            } else if (diffMinutos < 60) {
+                return `${diffMinutos}m`;
+            } else if (diffHoras < 24) {
+                return `${diffHoras}h`;
+            } else if (isOntem) {
+                return 'Ontem';
+            } else if (diffMs < 7 * 24 * 60 * 60 * 1000) {
+                const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                return diasSemana[data.getDay()];
             } else {
-                return data.toLocaleDateString('pt-BR');
+                return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
             }
         } catch (e) {
             return dataISO;

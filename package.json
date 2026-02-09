@@ -1,6 +1,6 @@
 {
   "name": "Teco",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "main": "main.js",
   "scripts": {
     "dev": "nodemon --watch . --ext js,ejs,html,css main.js",

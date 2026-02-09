@@ -72,7 +72,7 @@ window.PostUI = {
                     <div class="d-flex align-items-center gap-2 mb-1">
                         <img src="${post.parent.author.profileimage}" class="rounded object-fit-cover" style="width: 20px; height: 20px;">
                         <span class="post-author-name fw-bold small">${parentUsername}</span>
-                        <span class="text-muted small">· ${new Date(post.parent.createdat).toLocaleDateString()}</span>
+                        <span class="text-muted small">· ${typeof UIUtils !== 'undefined' ? UIUtils.formatarData(post.parent.createdat) : new Date(post.parent.createdat).toLocaleDateString()}</span>
                     </div>
                     <div class="post-content small mb-0">${this.formatContent(post.parent.content, post.parent.mentions)}</div>
                     ${parentMediaHtml}
@@ -100,7 +100,7 @@ window.PostUI = {
                 <div class="flex-grow-1 min-width-0">
                     <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
                         <a href="/${authorUsername}" class="post-author-name fw-bold text-decoration-none" onclick="event.stopPropagation()">${authorUsername}</a>
-                        <span class="text-muted">· ${new Date(post.createdat).toLocaleDateString()}</span>
+                        <span class="text-muted">· ${typeof UIUtils !== 'undefined' ? UIUtils.formatarData(post.createdat) : new Date(post.createdat).toLocaleDateString()}</span>
                     </div>
                     <div class="post-content mb-2 text-break">${this.formatContent(post.content, post.mentions)}</div>
                     ${mediaHtml}

@@ -64,6 +64,9 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
             type: type
         });
 
+        // Incrementar contador de posts do usuário
+        await User.increment('postcount', { where: { id: userId } });
+
         // Incrementar contadores no post pai se for reply ou repost
         if (attachedPostId) {
             if (type === 'repost' || type === 'reply') {
@@ -511,8 +514,11 @@ PostsRouter.delete('/:publicid', async (req, res) => {
             await deleteFromFileServer({ fileUrl: m.url });
         }
 
-        // Buscar autor para emitir via socket
+        // Buscar autor para emitir via socket e decrementar postcount
         const author = await User.findByPk(post.authorUserId);
+        if (author) {
+            await author.decrement('postcount');
+        }
 
         // Hard delete: remove completamente (o banco cuida dos ON DELETE CASCADE para mídia, likes, etc.)
         await post.destroy();

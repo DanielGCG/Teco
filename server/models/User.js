@@ -74,6 +74,11 @@ const User = sequelize.define('User', {
     profileimage: {
         type: DataTypes.STRING(255)
     },
+    postcount: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0
+    },
     createdat: {
         type: DataTypes.DATE,
         allowNull: false,

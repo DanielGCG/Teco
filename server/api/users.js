@@ -390,7 +390,7 @@ UsersRouter.get('/:username', protect(20), async (req, res) => {
 
         const user = await User.findOne({
             where: { username: username },
-            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'createdat', 'lastaccess']
+            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess']
         });
         if (!user) return res.status(404).json({
             message: "Usuário não encontrado"

@@ -84,6 +84,11 @@
     const notificationsList = document.getElementById('notificationsList');
     const markAllReadBtn = document.getElementById('markAllReadBtn');
 
+    // Variáveis para controle do título e flash
+    let originalTitle = document.title;
+    let flashInterval = null;
+    let currentUnreadCount = 0;
+
     // Função de reconexão - executada ao conectar/reconectar
     function onSocketConnect() {
         notificationsSocket.emit('joinUserRoom');
@@ -128,11 +133,55 @@
 
         // Update badge count
         function updateNotificationsBadge(count) {
+            currentUnreadCount = count;
             if (count > 0) {
                 notificationsBadge.textContent = count > 99 ? '99+' : count;
                 notificationsBadge.style.display = 'inline-block';
             } else {
                 notificationsBadge.style.display = 'none';
+            }
+            updateTabTitle(count);
+        }
+
+        // Atualiza o título da aba
+        function updateTabTitle(count) {
+            if (count > 0) {
+                document.title = `(${count}) ${originalTitle}`;
+            } else {
+                document.title = originalTitle;
+            }
+        }
+
+        // Faz o título da aba piscar
+        function startFlashTitle(message) {
+            if (flashInterval) clearInterval(flashInterval);
+            
+            let showOriginal = false;
+            flashInterval = setInterval(() => {
+                if (showOriginal) {
+                    updateTabTitle(currentUnreadCount);
+                } else {
+                    document.title = `🔔 ${message}`;
+                }
+                showOriginal = !showOriginal;
+            }, 1000);
+
+            // Para de piscar após foco ou de algum jeito
+            const stopFocus = () => {
+                stopFlashTitle();
+                window.removeEventListener('focus', stopFocus);
+            };
+            window.addEventListener('focus', stopFocus);
+            
+            // Também para após 15 segundos para não ser irritante
+            setTimeout(stopFlashTitle, 15000);
+        }
+
+        function stopFlashTitle() {
+            if (flashInterval) {
+                clearInterval(flashInterval);
+                flashInterval = null;
+                updateTabTitle(currentUnreadCount);
             }
         }
 
@@ -309,14 +358,17 @@
             // Update count
             notificationsSocket.emit('getNotificationsCount');
 
+            // Piscar aba
+            startFlashTitle(data.title || 'Nova Notificação');
+
+            // Sempre tocar som e animar o sino
+            animateBell();
+            tryPlaySound(data?.type);
+
             // Reload list if dropdown is open
             const dropdown = document.querySelector('#notificationsDropdownBtn + .dropdown-menu');
             if (dropdown && dropdown.classList.contains('show')) {
                 await loadNotifications();
-            } else {
-                // Indicate new notification on the bell (visual) and try to play sound
-                animateBell();
-                tryPlaySound(data?.type);
             }
         });
 
@@ -339,7 +391,21 @@
         // Try to play a short notification sound using bundled public asset; ignores errors (autoplay blocked)
         function tryPlaySound(type) {
             try {
-                const soundFile = type === 'friend' ? '/sounds/friend.mp3' : '/sounds/notify.mp3';
+                let soundFile = '/sounds/notify.mp3';
+                
+                // Mapeamento de tipos para sons específicos (conforme solicitado pelo usuário)
+                const friendTypes = ['friend', 'follow', 'followaccept', 'followback', 'followarequest', 'friendRequest'];
+                const errorTypes = ['error', 'danger', 'alert-danger'];
+                const alertTypes = ['alert', 'warning', 'info-alert'];
+
+                if (friendTypes.includes(type)) {
+                    soundFile = '/sounds/friend.mp3';
+                } else if (errorTypes.includes(type)) {
+                    soundFile = '/sounds/error.mp3';
+                } else if (alertTypes.includes(type)) {
+                    soundFile = '/sounds/alert.mp3';
+                }
+
                 const audio = new Audio(soundFile);
                 audio.preload = 'auto';
                 audio.volume = 0.3;
@@ -349,8 +415,11 @@
             }
         }
 
-        // Time ago helper
+        // Time ago helper (usando UIUtils se disponível)
         function getTimeAgo(dateString) {
+            if (typeof UIUtils !== 'undefined' && UIUtils.formatarData) {
+                return UIUtils.formatarData(dateString);
+            }
             const date = new Date(dateString);
             const now = new Date();
             const seconds = Math.floor((now - date) / 1000);

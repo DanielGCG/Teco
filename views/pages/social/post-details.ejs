@@ -154,8 +154,7 @@
             : '';
 
         const date = new Date(post.createdat);
-        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateStr = date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
+        const dateStr = typeof UIUtils !== 'undefined' ? UIUtils.formatarData(post.createdat) : date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
 
         const deleteBtn = (window.currentUser && window.currentUser.publicid === post.author.publicid) 
             ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar('${post.publicid}')" title="Deletar">
@@ -189,7 +188,7 @@
                 <div class="post-content mb-3 text-break">${PostUI.formatContent(post.content, post.mentions)}</div>
                 ${mediaHtml}
                 <div class="post-meta py-2 text-muted small border-top">
-                    ${timeStr} · ${dateStr}
+                    ${dateStr}
                 </div>
                 <div class="post-stats d-flex gap-3 py-2 border-top border-bottom">
                     <a href="#" class="stat-item text-decoration-none"><strong class="repost-count">${post.repostcount || 0}</strong> <span class="text-muted">Reposts</span></a>

@@ -229,7 +229,10 @@
                 </div>
                 <div class="profile-meta">
                     <h1 class="profile-name mb-0">...</h1>
-                    <span class="profile-pronouns"></span>
+                    <span class="profile-pronouns d-block"></span>
+                    <div class="text-white-50 mt-1" id="profile-post-count-badge" style="font-size: 0.85rem; display: none;">
+                        <span id="profile-post-count">0</span> Posts
+                    </div>
                 </div>
             </div>
             <div class="profile-actions">
@@ -244,7 +247,7 @@
         <div class="profile-sidebar">
             <div class="bio-container">
                 <div class="section-title">Biografia</div>
-                <div id="bio-text">Carregando...</div>
+                <div id="bio-text" class="text-break">Carregando...</div>
             </div>
             <div class="badges-container">
                 <div class="section-title">Badges</div>
@@ -389,6 +392,14 @@
             document.querySelector(".profile-name").textContent = user.username;
             document.querySelector(".profile-avatar").src = user.profileimage;
             document.querySelector(".profile-pronouns").textContent = user.pronouns || '';
+            
+            const postCountBadge = document.getElementById("profile-post-count-badge");
+            const postCountEl = document.getElementById("profile-post-count");
+            if (postCountBadge && postCountEl) {
+                postCountEl.textContent = user.postcount || 0;
+                postCountBadge.style.display = 'block';
+            }
+
             document.getElementById("bio-text").innerHTML = user.bio ? user.bio.replace(/\n/g, '<br>') : 'Nenhuma biografia disponível.';
             
             if (user.backgroundimage) {
