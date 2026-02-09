@@ -87,7 +87,8 @@
 
     // Inicialização
     document.addEventListener('DOMContentLoaded', async () => {
-        ChatLayout.init({}); // Usa IDs padrão
+        ChatLayout.init({}); 
+        ChatLayout.hideChat(); // Garante que o placeholder aparece primeiro
         
         const resUser = await fetch('/api/users/me', { credentials: 'include' });
         currentUser = await resUser.json();

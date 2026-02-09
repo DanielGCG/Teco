@@ -288,8 +288,9 @@
     // Inicialização
     (async () => {
         ChatLayout.init({});
-        const res = await fetch('/api/users/me', { credentials: 'include' });
-        currentUser = await res.json();
+        ChatLayout.hideChat(); // Garante que o placeholder aparece primeiro
+        
+        const resUser = await fetch('/api/users/me', { credentials: 'include' });
         await carregarDMs();
         document.getElementById('search-btn').onclick = buscarUsuarios;
         document.getElementById('search-input').onkeypress = (e) => e.key === 'Enter' && buscarUsuarios();
