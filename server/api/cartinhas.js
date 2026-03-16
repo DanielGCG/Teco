@@ -37,7 +37,7 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
             where: {
                 senderUserId: req.user.id
             },
-            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem
+            attributes: { exclude: ['body'] }, // Mantém o título, oculta apenas o corpo
             include: [{
                 model: User,
                 as: 'destinatario',
@@ -74,7 +74,7 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
             where: {
                 recipientUserId: req.user.id
             },
-            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem
+            attributes: { exclude: ['body'] }, // Mantém o título, oculta apenas o corpo
             include: [{
                 model: User,
                 as: 'remetente',
@@ -112,7 +112,7 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
                 recipientUserId: req.user.id,
                 isfavorited: true
             },
-            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem
+            attributes: { exclude: ['body'] }, // Mantém o título, oculta apenas o corpo
             include: [{
                 model: User,
                 as: 'remetente',
@@ -141,8 +141,16 @@ CartinhasRouter.get('/:publicid', validate(publicidSchema, 'params'), async (req
 
         if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
 
-        const hasAccess = req.user.roleId <= 11 || cartinha.senderUserId === req.user.id || cartinha.recipientUserId === req.user.id;
-        if (!hasAccess) return res.status(403).json({ message: "Acesso negado" });
+        // Acesso ao CONTEÚDO (body e title) só para remetente ou destinatário
+        const isParticipant = cartinha.senderUserId === req.user.id || cartinha.recipientUserId === req.user.id;
+        
+        if (!isParticipant) {
+            // Mascarar título e corpo para qualquer um que não seja participante (incluindo Admin/Staff)
+            const cartinhaLimitada = cartinha.toJSON();
+            cartinhaLimitada.title = "[Conteúdo privado]";
+            cartinhaLimitada.body = "Conteúdo privado. Apenas remetente e destinatário podem ler.";
+            return res.json(cartinhaLimitada);
+        }
 
         res.json(cartinha);
     } catch (err) {

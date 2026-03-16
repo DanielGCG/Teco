@@ -1,67 +1,59 @@
-﻿<style>
-.container-escrever { max-width: 800px; margin: 0 auto; }
-.card-cartinha { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #eee; }
-.header-cartinha { background: var(--marrom); color: white; padding: 1.5rem; border-radius: 12px 12px 0 0; }
-.form-label { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #6c757d; }
-.sugestoes-usuarios { background: white; border: 1px solid #dee2e6; border-radius: 8px; position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 6px 15px rgba(0,0,0,0.1); z-index: 1000; }
-.sugestao-usuario { padding: 0.75rem 1rem; border-bottom: 1px solid #f8f9fa; cursor: pointer; display: flex; align-items: center; }
-.sugestao-usuario:hover { background-color: #f8f9fa; }
-.avatar-sugestao { width: 32px; height: 32px; border-radius: 50%; margin-right: 0.75rem; object-fit: cover; }
-.textarea-cartinha { min-height: 300px; resize: none; }
-</style>
+﻿<link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
+<script src="/js/commons/cartinhas-common.js"></script>
 
 <div class="container py-4">
     <div class="mb-4 d-flex justify-content-between align-items-center">
-        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary">
+        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary border-0">
             <i class="bi bi-arrow-left me-1"></i> Voltar
         </a>
-        <button type="button" class="btn btn-sm btn-outline-primary" id="btnGerenciarRascunhos">
+        <button type="button" class="btn btn-sm btn-outline-primary border-0" id="btnGerenciarRascunhos">
             <i class="bi bi-journal-text me-1"></i> Meus Rascunhos
         </button>
     </div>
 
-    <div class="container-escrever">
-        <div class="card card-cartinha">
-            <div class="header-cartinha">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>Escrever Cartinha</h5>
+    <div class="mx-auto" style="max-width: 700px;">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-header border-0 pt-4 px-4">
+                <h5 class="mb-0 fw-bold">Escrever Cartinha</h5>
+                <p class="text-muted small mb-0">Envie uma mensagem especial para um amigo</p>
             </div>
             
-            <div class="p-4">
+            <div class="card-body p-4">
                 <form id="formCartinha">
                     <div class="mb-4 position-relative">
-                        <label class="form-label">Para:</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-person"></i></span>
-                            <input type="text" class="form-control border-start-0" id="destinatario" placeholder="Digite o nome do amigo..." autocomplete="off">
+                        <label class="form-label small fw-bold text-muted">Para:</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-person text-muted"></i></span>
+                            <input type="text" class="form-control border-0 bg-light" id="destinatario" placeholder="Nome do usuário..." autocomplete="off">
                             <input type="hidden" id="destinatarioId">
                         </div>
-                        <div id="sugestoesUsuarios" class="sugestoes-usuarios"></div>
+                        <div id="sugestoesUsuarios" class="sugestoes-usuarios shadow-sm border-0 rounded-3 mt-1 overflow-hidden" style="display: none; position: absolute; z-index: 1000; width: 100%; background: white;"></div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Assunto:</label>
-                        <input type="text" class="form-control" id="titulo" maxlength="160" placeholder="Sobre o que é a cartinha?">
-                        <div class="text-end mt-1"><small class="text-muted contador-titulo">0/160</small></div>
+                        <label class="form-label small fw-bold text-muted">Assunto:</label>
+                        <input type="text" class="form-control form-control-sm border-0 bg-light" id="titulo" maxlength="160" placeholder="Título da sua cartinha">
+                        <div class="text-end mt-1"><small class="text-muted" id="cnt-t">0/160</small></div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Mensagem:</label>
-                        <textarea class="form-control textarea-cartinha" id="conteudo" maxlength="2000" placeholder="Sua mensagem..."></textarea>
+                        <label class="form-label small fw-bold text-muted">Mensagem:</label>
+                        <textarea class="form-control border-0 bg-light" id="conteudo" maxlength="2000" rows="8" placeholder="Escreva aqui seu sentimento..."></textarea>
                         <div class="d-flex justify-content-between mt-1">
-                            <small class="text-muted">Atenciosamente, <strong id="nomeRemetente">...</strong></small>
-                            <small class="text-muted contador-conteudo">0/2000</small>
+                            <small class="text-muted italic">Atenciosamente, <span id="nomeRemetente" class="fw-bold">...</span></small>
+                            <small class="text-muted" id="cnt-c">0/2000</small>
                         </div>
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary" id="btnSalvarRascunho">
-                            <i class="bi bi-bookmark-plus me-1"></i> Salvar Rascunho
+                        <button type="button" class="btn btn-sm btn-light text-muted" id="btnSalvarRascunho" title="Salvar Rascunho">
+                            <i class="bi bi-bookmark"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-danger" id="btnLimpar">
+                        <button type="button" class="btn btn-sm btn-light text-danger" id="btnLimpar" title="Limpar tudo">
                             <i class="bi bi-trash"></i>
                         </button>
-                        <button type="button" class="btn btn-primary ms-auto px-4" id="btnEnviar">
-                            <i class="bi bi-send me-1"></i> Enviar Cartinha
+                        <button type="button" class="btn btn-sm btn-primary ms-auto px-4" id="btnEnviar">
+                            Enviar <i class="bi bi-send-fill ms-1"></i>
                         </button>
                     </div>
                 </form>
@@ -71,255 +63,165 @@
 </div>
 
 <div class="modal fade" id="modalListaRascunhos" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold">Rascunhos Salvos</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bg-light">
-                <div id="gradeRascunhos" class="row g-3"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalSalvarRascunho" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold">Salvar como Rascunho</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">Rascunhos</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Nome identificador:</label>
-                    <input type="text" class="form-control" id="nomeRascunho" placeholder="Ex: Cartinha para @fulano">
-                </div>
-                <div class="p-3 bg-light rounded small text-muted">
-                    <p class="mb-1"><strong>Para:</strong> <span id="resumoPara"></span></p>
-                    <p class="mb-0"><strong>Título:</strong> <span id="resumoTítulo"></span></p>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-primary w-100 py-2" onclick="composer.salvarRascunhoNomeado()">Salvar Agora</button>
+                <div id="gradeRascunhos" class="list-group list-group-flush"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    class EscreverCartinha {
-        constructor() {
-            this.destinatario = null;
-            this.me = null;
-            this.inputs = {
-                busca: document.getElementById('destinatario'),
-                id: document.getElementById('destinatarioId'),
-                titulo: document.getElementById('titulo'),
-                conteudo: document.getElementById('conteudo')
-            };
-            this.init();
-        }
+    const composer = {
+        dest: null,
+        me: null,
+        el: {
+            bus: document.getElementById('destinatario'),
+            id: document.getElementById('destinatarioId'),
+            tit: document.getElementById('titulo'),
+            con: document.getElementById('conteudo'),
+            sug: document.getElementById('sugestoesUsuarios')
+        },
 
         async init() {
-            try {
-                const res = await fetch('/api/users/me');
-                if (res.ok) {
-                    this.me = await res.json();
-                    document.getElementById('nomeRemetente').textContent = this.me.username;
-                }
-            } catch (e) {}
-            this.configurarEventos();
-            this.verificarURL();
-            this.carregarAutosave();
-            this.iniciarAutosaveLoop();
-        }
-
-        configurarEventos() {
-            this.inputs.busca.addEventListener('input', UIUtils.debounce(() => this.buscar(this.inputs.busca.value), 300));
-            this.inputs.titulo.addEventListener('input', () => this.atualizarContadores());
-            this.inputs.conteudo.addEventListener('input', () => this.atualizarContadores());
-            document.getElementById('btnGerenciarRascunhos').onclick = () => this.abrirModalLista();
-            document.getElementById('btnSalvarRascunho').onclick = () => this.abrirModalSalvar();
-            document.getElementById('btnLimpar').onclick = () => this.limpar();
-            document.getElementById('btnEnviar').onclick = () => this.enviar();
-            document.addEventListener('click', e => !e.target.closest('.position-relative') && this.fecharSugestoes());
-        }
-
-        verificarURL() {
-            const p = new URLSearchParams(window.location.search);
-            if (p.get('para') && p.get('nome')) {
-                this.selecionar({ publicid: p.get('para'), username: decodeURIComponent(p.get('nome')) });
+            const res = await fetch('/api/users/me');
+            if (res.ok) {
+                this.me = await res.json();
+                document.getElementById('nomeRemetente').textContent = this.me.username;
             }
-        }
+            this.bind();
+            this.checkURL();
+            this.load();
+        },
 
-        async buscar(q) {
-            if (!q || q.length < 2) return this.fecharSugestoes();
-            try {
-                const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(q)}`);
-                const data = await res.json();
-                const users = (data.usuarios || []).filter(u => u.username !== this.me?.username);
-                this.renderizarSugestoes(users);
-            } catch (e) { this.fecharSugestoes(); }
-        }
+        bind() {
+            this.el.bus.oninput = UIUtils.debounce(() => this.search(this.el.bus.value), 300);
+            this.el.tit.oninput = this.el.con.oninput = () => this.update();
+            document.getElementById('btnGerenciarRascunhos').onclick = () => this.list();
+            document.getElementById('btnSalvarRascunho').onclick = () => this.save();
+            document.getElementById('btnLimpar').onclick = () => this.clear();
+            document.getElementById('btnEnviar').onclick = () => this.send();
+            document.onclick = e => !e.target.closest('.position-relative') && (this.el.sug.style.display = 'none');
+        },
 
-        renderizarSugestoes(users) {
-            const container = document.getElementById('sugestoesUsuarios');
-            if (!users.length) {
-                container.innerHTML = '<div class="p-3 text-muted small">Nenhum amigo encontrado</div>';
-            } else {
-                container.innerHTML = users.map(u => `
-                    <div class="sugestao-usuario" onclick="composer.selecionar({publicid: '${u.publicid}', username: '${u.username}'})">
-                        <img src="${u.profileimage}" class="avatar-sugestao">
-                        <span class="small fw-bold">${u.username}</span>
-                    </div>
-                `).join('');
-            }
-            container.style.display = 'block';
-        }
+        checkURL() {
+            const p = new URLSearchParams(location.search);
+            if (p.get('para')) this.select({ publicid: p.get('para'), username: decodeURIComponent(p.get('nome')) });
+        },
 
-        selecionar(u) {
-            this.destinatario = u;
-            this.inputs.id.value = u.publicid;
-            this.inputs.busca.value = u.username;
-            this.fecharSugestoes();
-            this.inputs.titulo.focus();
-        }
-
-        fecharSugestoes() { document.getElementById('sugestoesUsuarios').style.display = 'none'; }
-
-        atualizarContadores() {
-            const t = this.inputs.titulo.value.length, c = this.inputs.conteudo.value.length;
-            const elT = document.querySelector('.contador-titulo'), elC = document.querySelector('.contador-conteudo');
-            if (elT) { elT.textContent = t + '/160', elT.className = 'text-' + (t > 150 ? 'danger' : 'muted') + ' contador-titulo'; }
-            if (elC) { elC.textContent = c + '/2000', elC.className = 'text-' + (c > 1900 ? 'danger' : 'muted') + ' contador-conteudo'; }
-        }
-
-        carregarAutosave() {
-            const r = localStorage.getItem('cartinha_rascunho');
-            if (!r) return;
-            try {
-                const d = JSON.parse(r);
-                this.inputs.titulo.value = d.titulo || '';
-                this.inputs.conteudo.value = d.conteudo || '';
-                if (d.destinatarioPublicId && d.destinatarioNome) {
-                    this.selecionar({ publicid: d.destinatarioPublicId, username: d.destinatarioNome });
-                }
-                this.atualizarContadores();
-            } catch(e) {}
-        }
-
-        iniciarAutosaveLoop() {
-            setInterval(() => {
-                const t = this.inputs.titulo.value, c = this.inputs.conteudo.value;
-                if (t || c) localStorage.setItem('cartinha_rascunho', JSON.stringify({
-                    titulo: t, conteudo: c, destinatarioPublicId: this.inputs.id.value, destinatarioNome: this.destinatario?.username
-                }));
-            }, 30000);
-        }
-
-        abrirModalSalvar() {
-            if (!this.inputs.titulo.value && !this.inputs.conteudo.value) return UIUtils.mostrarFeedback('Escreva algo primeiro', 'warning');
-            document.getElementById('resumoPara').textContent = this.destinatario?.username || 'Não definido';
-            document.getElementById('resumoTítulo').textContent = this.inputs.titulo.value || '(Sem título)';
-            new bootstrap.Modal(document.getElementById('modalSalvarRascunho')).show();
-        }
-
-        salvarRascunhoNomeado() {
-            const nome = document.getElementById('nomeRascunho').value.trim() || this.inputs.titulo.value || 'Rascunho sem título';
-            const rList = JSON.parse(localStorage.getItem('cartinhas_rascunhos') || '[]');
-            rList.push({
-                id: Date.now(),
-                nome,
-                titulo: this.inputs.titulo.value,
-                conteudo: this.inputs.conteudo.value,
-                destinatarioId: this.inputs.id.value,
-                destinatarioNome: this.destinatario?.username || '',
-                timestamp: Date.now()
-            });
-            localStorage.setItem('cartinhas_rascunhos', JSON.stringify(rList));
-            bootstrap.Modal.getInstance(document.getElementById('modalSalvarRascunho')).hide();
-            UIUtils.mostrarFeedback('Rascunho salvo!', 'success');
-        }
-
-        abrirModalLista() {
-            this.renderizarLista();
-            new bootstrap.Modal(document.getElementById('modalListaRascunhos')).show();
-        }
-
-        renderizarLista() {
-            const grade = document.getElementById('gradeRascunhos');
-            const rList = JSON.parse(localStorage.getItem('cartinhas_rascunhos') || '[]');
-            if (!rList.length) { grade.innerHTML = '<div class="col-12 text-center py-5 text-muted">Nenhum rascunho salvo</div>'; return; }
-            grade.innerHTML = rList.sort((a,b) => b.timestamp - a.timestamp).map(x => `
-                <div class="col-md-6 mb-2">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <h6 class="fw-bold text-truncate mb-1">${x.nome}</h6>
-                            <p class="small text-muted mb-3 text-truncate">Para: ${x.destinatarioNome || '?'}</p>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary w-100" onclick="composer.aplicarRascunho(${x.id})">Abrir</button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="composer.excluirRascunho(${x.id})"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
+        async search(q) {
+            if (!q) return this.el.sug.style.display = 'none';
+            
+            const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            const users = (data.usuarios || []).filter(u => u.username !== this.me?.username);
+            this.el.sug.innerHTML = users.map(u => `
+                <div class="p-2 border-bottom small hover-bg" style="cursor:pointer" onclick="composer.select({publicid:'${u.publicid}',username:'${u.username}'})">
+                    <img src="${u.profileimage}" class="rounded-circle me-2" width="24" height="24"><b>${u.username}</b>
                 </div>
-            `).join('');
-        }
+            `).join('') || '<div class="p-3 text-muted small">Nenhum usuário...</div>';
+            this.el.sug.style.display = 'block';
+        },
 
-        aplicarRascunho(id) {
-            const rList = JSON.parse(localStorage.getItem('cartinhas_rascunhos') || '[]');
-            const x = rList.find(i => i.id === id);
-            if (!x) return;
-            this.inputs.titulo.value = x.titulo || '';
-            this.inputs.conteudo.value = x.conteudo || '';
-            if (x.destinatarioId) this.selecionar({ publicid: x.destinatarioId, username: x.destinatarioNome });
-            this.atualizarContadores();
-            bootstrap.Modal.getInstance(document.getElementById('modalListaRascunhos')).hide();
-        }
+        select(u) {
+            this.dest = u;
+            this.el.id.value = u.publicid;
+            this.el.bus.value = u.username;
+            this.el.sug.style.display = 'none';
+        },
 
-        async excluirRascunho(id) {
-            if (!await mostrarConfirmacao('Excluir este rascunho?')) return;
-            let rList = JSON.parse(localStorage.getItem('cartinhas_rascunhos') || '[]');
-            localStorage.setItem('cartinhas_rascunhos', JSON.stringify(rList.filter(x => x.id !== id)));
-            this.renderizarLista();
-        }
+        update() {
+            const t = this.el.tit.value.length, c = this.el.con.value.length;
+            document.getElementById('cnt-t').textContent = t + '/160';
+            document.getElementById('cnt-c').textContent = c + '/2000';
+            localStorage.setItem('cartinha_tmp', JSON.stringify({t:this.el.tit.value, c:this.el.con.value, d:this.dest}));
+        },
 
-        async limpar() {
-            if (!await mostrarConfirmacao('Deseja limpar todos os campos?')) return;
-            this.inputs.titulo.value = '', this.inputs.conteudo.value = '', this.inputs.id.value = '', this.inputs.busca.value = '';
-            this.destinatario = null;
-            localStorage.removeItem('cartinha_rascunho');
-            this.atualizarContadores();
-        }
+        load() {
+            const r = JSON.parse(localStorage.getItem('cartinha_tmp') || '{}');
+            if (r.t) this.el.tit.value = r.t;
+            if (r.c) this.el.con.value = r.c;
+            if (r.d) this.select(r.d);
+            this.update();
+        },
 
-        async enviar() {
-            const t = this.inputs.titulo.value.trim(), c = this.inputs.conteudo.value.trim(), d = this.inputs.id.value;
-            if (!d || !this.destinatario) return UIUtils.mostrarFeedback('Escolha um destinatário', 'warning');
-            if (!t || !c) return UIUtils.mostrarFeedback('Preencha todos os campos', 'warning');
-            if (!await mostrarConfirmacao("Enviar esta cartinha para " + this.destinatario.username + "?")) return;
+        save() {
+            if (!this.el.tit.value && !this.el.con.value) return;
+            const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
+            rList.push({ id: Date.now(), t: this.el.tit.value, c: this.el.con.value, d: this.dest, ts: Date.now() });
+            localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList));
+            mostrarFeedback('Rascunho salvo!');
+        },
+
+        list() {
+            const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
+            const container = document.getElementById('gradeRascunhos');
+            container.innerHTML = rList.map(x => `
+                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                    <div style="cursor:pointer" onclick="composer.apply(${x.id})">
+                        <div class="fw-bold small text-truncate" style="max-width:200px">${x.t || '(Sem título)'}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Para: ${x.d?.username || '?'}</div>
+                    </div>
+                    <button class="btn btn-sm text-danger" onclick="composer.delR(${x.id})"><i class="bi bi-trash"></i></button>
+                </div>
+            `).join('') || '<p class="text-center text-muted py-3">Nenhum rascunho</p>';
+            new bootstrap.Modal(document.getElementById('modalListaRascunhos')).show();
+        },
+
+        apply(id) {
+            const r = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]').find(x => x.id === id);
+            if (r) { this.el.tit.value = r.t; this.el.con.value = r.c; if(r.d) this.select(r.d); this.update(); }
+            const mod = bootstrap.Modal.getInstance(document.getElementById('modalListaRascunhos'));
+            if (mod) mod.hide();
+        },
+
+        delR(id) {
+            let rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
+            localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList.filter(x => x.id !== id)));
+            this.list();
+        },
+
+        async clear() {
+            if (!confirm('Limpar campos?')) return;
+            this.el.tit.value = this.el.con.value = this.el.bus.value = this.el.id.value = '';
+            this.dest = null;
+            localStorage.removeItem('cartinha_tmp');
+            this.update();
+        },
+
+        async send() {
+            if (!this.dest || !this.el.tit.value || !this.el.con.value) return mostrarFeedback('Preencha tudo', 'warning');
             const btn = document.getElementById('btnEnviar');
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            btn.disabled = true;
             try {
                 const res = await fetch('/api/cartinhas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recipientusername: this.destinatario.username, title: t, body: c })
+                    body: JSON.stringify({ recipientusername: this.dest.username, title: this.el.tit.value, body: this.el.con.value })
                 });
                 if (res.ok) {
-                    UIUtils.mostrarFeedback('Cartinha enviada!', 'success');
-                    localStorage.removeItem('cartinha_rascunho');
-                    window.location.href = '/cartinhas';
+                    mostrarFeedback('Enviada!');
+                    localStorage.removeItem('cartinha_tmp');
+                    location.href = '/cartinhas';
                 } else {
                     const err = await res.json();
-                    UIUtils.mostrarFeedback(err.message || 'Erro ao enviar', 'danger');
+                    mostrarFeedback(err.message, 'danger');
                 }
-            } catch (e) { UIUtils.mostrarFeedback('Erro de conexão', 'danger'); }
-            finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i> Enviar Cartinha'; }
+            } catch (e) { mostrarFeedback('Erro técnico', 'danger'); }
+            finally { btn.disabled = false; }
         }
-    }
-    const composer = new EscreverCartinha();
+    };
+    composer.init();
 </script>
+
+<style>
+    .hover-bg:hover { background-color: #f8f9fa; }
+    .textarea-cartinha:focus { box-shadow: none !important; }
+</style>
 
 <%- include('../../utils/modal-confirmacao') %>

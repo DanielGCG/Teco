@@ -1,0 +1,44 @@
+/* 
+   SISTEMA DE CARTINHAS - UNIFICADO E SIMPLIFICADO
+*/
+
+.carta-hover {
+    transition: all 0.2s ease;
+}
+
+.carta-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.italic {
+    font-style: italic;
+}
+
+/* Sugestões de usuários no escrever */
+.sugestoes-usuarios {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.hover-bg:hover {
+    background-color: #f8f9fa;
+}
+
+/* Modal adjustments */
+.modal-content {
+    border-radius: 12px;
+}
+
+.modal-header .btn-close {
+    font-size: 0.8rem;
+}
+
+/* Status dots or markers could go here if needed */

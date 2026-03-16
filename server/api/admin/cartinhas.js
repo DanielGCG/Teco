@@ -113,7 +113,7 @@ AdminCartinhasRouter.get('/', async (req, res) => {
 
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
-            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem admin
+            attributes: { exclude: ['body'] }, // Não vazar conteúdo na listagem admin, mas permitir título mascarado
             include: [
                 { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
                 { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
@@ -123,8 +123,15 @@ AdminCartinhasRouter.get('/', async (req, res) => {
             offset
         });
 
+        // Mascarar títulos na listagem para manter a regra de privacidade
+        const rowsMasked = rows.map(r => {
+            const json = r.toJSON();
+            json.title = "[Conteúdo privado]";
+            return json;
+        });
+
         res.json({
-            cartinhas: rows,
+            cartinhas: rowsMasked,
             total: count,
             pages: Math.ceil(count / limit)
         });
@@ -160,17 +167,25 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
 
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
-            attributes: { exclude: ['title', 'body'] }, // Não vazar assunto/conteúdo na listagem admin
+            attributes: { exclude: ['body'] }, // Não vazar conteúdo na listagem admin, mas permitir título mascarado
             include: [
-                { model: User, as: 'remetente', attributes: ['username', 'publicid'] }
+                { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
+                { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
             ],
             order: [['createdat', 'DESC']],
             limit: parseInt(limit),
             offset: parseInt(offset)
         });
 
+        // Mascarar títulos na listagem para manter a regra de privacidade
+        const rowsMasked = rows.map(r => {
+            const json = r.toJSON();
+            json.title = "[Conteúdo privado]";
+            return json;
+        });
+
         res.json({
-            cartinhas: rows,
+            cartinhas: rowsMasked,
             totalItems: count,
             currentPage: parseInt(page),
             totalPages: Math.ceil(count / limit)
@@ -192,7 +207,13 @@ AdminCartinhasRouter.get('/:publicid', async (req, res) => {
             ]
         });
         if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
-        res.json(cartinha);
+        
+        // Bloqueia acesso ao conteúdo real para Admins/Staff na rota admin
+        const infoRestrita = cartinha.toJSON();
+        infoRestrita.title = "[Conteúdo privado]";
+        infoRestrita.body = "Conteúdo privado.";
+        
+        res.json(infoRestrita);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao buscar detalhes da cartinha" });

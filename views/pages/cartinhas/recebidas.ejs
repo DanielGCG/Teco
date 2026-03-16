@@ -1,195 +1,80 @@
-<link rel="stylesheet" href="/styles/cartinhas/cartinhas-modals.css">
+<link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
 <script src="/js/commons/cartinhas-common.js"></script>
 
-<div class="container mt-4">
+<div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h3 fw-bold mb-0">Caixa de Entrada</h2>
-        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar ao Menu
+        <h2 class="h4 fw-bold mb-0">Caixa de Entrada</h2>
+        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary border-0">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
         </a>
     </div>
 
-    <div class="row">
-        <div class="col-12">  
-            <div id="loading" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Carregando...</span>
-                </div>
-            </div>
+    <div id="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
 
-            <div id="cartinhas-container" style="display: none;">
-                <div id="cartas-grid"></div>
-            </div>
+    <div id="cartinhas-container" style="display: none;">
+        <div id="cartas-grid"></div>
+    </div>
 
-            <div id="sem-cartinhas" class="text-center py-5" style="display: none;">
-                <div class="display-1 text-muted mb-3"><i class="bi bi-mailbox"></i></div>
-                <h4>Nenhuma cartinha recebida</h4>
-                <p class="text-muted">Você ainda não recebeu nenhuma cartinha.</p>
-            </div>
-        </div>
+    <div id="sem-cartinhas" class="text-center py-5" style="display: none;">
+        <div class="display-1 text-muted mb-3 opacity-25"><i class="bi bi-mailbox"></i></div>
+        <p class="text-muted">Caixa de entrada vazia...</p>
     </div>
 </div>
 
 <script>
-// Configuração do tipo de cartinhas
 window.tipoCartinhas = 'recebidas';
+let dataCache = [];
 
-// Dados locais da página
-let usuariosProcessados = [];
-
-// ==================== CARREGAR CARTINHAS ====================
 async function carregarCartinhas() {
-    const loading = document.getElementById('loading');
-    const container = document.getElementById('cartinhas-container');
-    const empty = document.getElementById('sem-cartinhas');
-
+    const l = document.getElementById('loading');
     try {
-        const response = await fetch('/api/cartinhas/recebidas', {
-            credentials: 'include'
-        });
+        const res = await fetch('/api/cartinhas/recebidas', { credentials: 'include' });
+        if (!res.ok) throw new Error();
+        dataCache = await res.json();
+        l.style.display = 'none';
 
-        if (!response.ok) throw new Error('Erro ao carregar cartinhas');
+        renderizarGridCartinhas(dataCache, '#cartas-grid', {
+            abrirCartinha: async (id) => {
+                const c = encontrarCartinha(id, dataCache), u = encontrarUsuarioPorCartinha(id, dataCache);
+                if (!c || !u) return;
 
-        usuariosProcessados = await response.json();
-        loading.style.display = 'none';
-
-        // Hooks para integração com o common
-        const hooks = {
-            abrirCartinha: async (cartinhaId) => {
-                const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
-                if (!cartinha) return;
-
-                const usuario = encontrarUsuarioPorCartinha(cartinhaId, usuariosProcessados);
-                if (!usuario) return;
-
-                if (!cartinha.isread) {
-                    try { await marcarComoLida(cartinhaId); } catch (e) {}
-                }
+                if (!c.isread) fetch(`/api/cartinhas/${id}/lida`, { method: 'PUT', credentials: 'include' });
 
                 window.modalCartinha.abrir({
-                    cartinha: cartinha,
-                    usuario: usuario,
-                    tipo: 'recebidas',
-                    titulo: 'Lendo Cartinha',
-                    badges: [
-                        { texto: cartinha.isread ? 'Lida' : 'Novo', cor: cartinha.isread ? '#6c757d' : '#0d6efd' }
-                    ],
+                    tipo: 'recebidas', cartinha: c, usuario: u,
                     acoes: [
-                        {
-                            id: 'responder',
-                            label: 'Responder',
-                            classe: 'btn-primary',
-                            callback: () => responderCartinha(usuario.userId, usuario.username)
-                        },
-                        {
-                            id: 'favoritar',
-                            label: cartinha.isfavorited ? 'Remover Favorito' : 'Favoritar',
-                            classe: cartinha.isfavorited ? 'btn-warning' : 'btn-outline-warning',
-                            callback: () => toggleFavoritoCommon(cartinhaId, usuariosProcessados)
-                        },
-                        {
-                            id: 'excluir',
-                            label: 'Excluir',
-                            classe: 'btn-danger',
-                            callback: () => confirmarExclusao(cartinhaId)
-                        }
+                        { label: 'Responder', classe: 'btn-primary', callback: () => location.href=`/cartinhas/escrever?para=${u.userId}&nome=${u.username}` },
+                        { label: c.isfavorited ? 'Desfavoritar' : 'Favoritar', classe: c.isfavorited ? 'btn-warning' : 'btn-outline-warning', callback: () => toggleFav(id) },
+                        { label: 'Excluir', classe: 'btn-outline-danger', callback: () => confirmDel(id) }
                     ]
                 });
+                c.isread = true;
             }
-        };
-
-        renderizarGridCartinhas(usuariosProcessados, '#cartas-grid', hooks);
-
-    } catch (error) {
-        console.error('Erro:', error);
-        loading.innerHTML = '<div class="alert alert-danger">Erro ao carregar mensagens. Tente novamente mais tarde.</div>';
-    } finally {
-        loading.style.display = 'none';
-    }
-}
-
-// ==================== MARCAR COMO LIDA ====================
-async function marcarComoLida(cartinhaId) {
-    try {
-        const response = await fetch(`/api/cartinhas/${cartinhaId}/lida`, {
-            method: 'PUT',
-            credentials: 'include'
         });
-
-        if (!response.ok) return false;
-
-        const cartinha = encontrarCartinha(cartinhaId, usuariosProcessados);
-        if (cartinha) {
-            cartinha.isread = true;
-            // No grid, apenas re-renderizamos ou ignoramos (o status visual muda ao reabrir o grid ou modal)
-            renderizarGridCartinhas(usuariosProcessados, '#cartas-grid', hooks);
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Erro ao marcar cartinha como lida:', error);
-        return false;
+    } catch (e) {
+        l.innerHTML = '<div class="alert alert-danger mx-auto" style="max-width:400px">Erro ao carregar mensagens.</div>';
     }
 }
 
-// ==================== RESPONDER ====================
-function responderCartinha(userId, username) {
+async function toggleFav(id) {
+    await toggleFavoritoCommon(id, dataCache);
     window.modalCartinha.fechar();
-    window.location.href = `/cartinhas/escrever?para=${userId}&nome=${encodeURIComponent(username)}`;
-}
-
-// ==================== EXCLUIR ====================
-async function confirmarExclusao(cartinhaId) {
-    window.modalCartinha.fechar();
-    
-    const confirmado = await mostrarConfirmacao(
-        'Tem certeza que deseja excluir permanentemente esta cartinha?\n\nEsta ação não pode ser desfeita!',
-        'Confirmar Exclusão'
-    );
-    
-    if (confirmado) {
-        excluirCartinha(cartinhaId);
-    }
-}
-
-async function excluirCartinha(cartinhaId) {
-    try {
-        const response = await fetch(`/api/cartinhas/${cartinhaId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-
-        if (!response.ok) throw new Error('Erro ao excluir');
-
-        // Remover cartinha do array local
-        for (let usuario of usuariosProcessados) {
-            const index = usuario.cartinhas.findIndex(c => (c.publicid || c.id) == cartinhaId);
-            if (index !== -1) {
-                usuario.cartinhas.splice(index, 1);
-                
-                // Se não há mais cartas deste usuário, remover usuário
-                if (usuario.cartinhas.length === 0) {
-                    const usuarioIndex = usuariosProcessados.indexOf(usuario);
-                    usuariosProcessados.splice(usuarioIndex, 1);
-                }
-                break;
-            }
-        }
-
-        // Re-renderizar
-        carregarCartinhas();
-        mostrarFeedback('Cartinha excluída com sucesso!', 'success');
-        
-    } catch (error) {
-        console.error('Erro ao excluir cartinha:', error);
-        mostrarFeedback('Erro ao excluir cartinha. Tente novamente.', 'danger');
-    }
-}
-
-// ==================== INICIALIZAÇÃO ====================
-document.addEventListener('DOMContentLoaded', () => {
     carregarCartinhas();
-});
+}
+
+async function confirmDel(id) {
+    if (!confirm('Excluir esta mensagem?')) return;
+    try {
+        await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
+        window.modalCartinha.fechar();
+        carregarCartinhas();
+        mostrarFeedback('Excluída!');
+    } catch (e) { mostrarFeedback('Erro', 'danger'); }
+}
+
+document.addEventListener('DOMContentLoaded', carregarCartinhas);
 </script>
 
 <%- include('../../utils/modal-confirmacao') %>

@@ -1,21 +1,35 @@
-<div class="container">
-    <h2 class="mb-4"><span class="marca-texto-roxo">Gerenciar Chats & DMs</span></h2>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><span class="marca-texto-roxo">Gerenciar Chats & DMs</span></h2>
+        <div id="estatisticasGerais" class="d-flex gap-3">
+            <div class="text-center">
+                <h5 class="mb-0" id="statChats">-</h5>
+                <small class="text-muted">Chats</small>
+            </div>
+            <div class="text-center border-start ps-3">
+                <h5 class="mb-0" id="statDms">-</h5>
+                <small class="text-muted">DMs</small>
+            </div>
+            <div class="text-center border-start ps-3">
+                <h5 class="mb-0" id="statMsgs">-</h5>
+                <small class="text-muted">Mensagens</small>
+            </div>
+        </div>
+    </div>
 
-    <!-- Mensagens de alerta -->
-    <div id="alertsContainer"></div>
-
-    <div class="row">
+    <div class="row g-3 mb-4">
         <!-- Criar chat público -->
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><span class="marca-texto-verde">Criar Chat Público</span></h5>
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><span class="marca-texto-verde">Novo Chat Público</span></h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">Crie um chat público visível para todos.</p>
                     <div class="mb-2">
-                        <input type="text" id="publicChatName" class="form-control mb-2" placeholder="Nome do chat">
-                        <select id="publicChatTopic" class="form-select mb-2"></select>
+                        <label class="form-label small">Nome do Chat</label>
+                        <input type="text" id="publicChatName" class="form-control mb-2" placeholder="Ex: Cantinho do Café">
+                        <label class="form-label small">Assunto/Tópico</label>
+                        <select id="publicChatTopic" class="form-select mb-3"></select>
                         <button class="btn btn-primary w-100" id="createPublicChatBtn">
                             <i class="fas fa-plus-circle me-1"></i> Criar Chat
                         </button>
@@ -26,15 +40,16 @@
 
         <!-- Criar DM entre dois usuários -->
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0">
                     <h5 class="mb-0"><span class="marca-texto-verde">Criar DM (Admin)</span></h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">Crie uma conversa direta entre dois usuários.</p>
                     <div id="adminDmPanel">
+                        <label class="form-label small">Usuário 1 (Remetente)</label>
                         <select id="adminUser1" class="form-select mb-2"></select>
-                        <select id="adminUser2" class="form-select mb-2"></select>
+                        <label class="form-label small">Usuário 2 (Destinatário)</label>
+                        <select id="adminUser2" class="form-select mb-3"></select>
                         <button class="btn btn-success w-100" id="createAdminDmBtn">
                             <i class="fas fa-comments me-1"></i> Criar DM
                         </button>
@@ -44,25 +59,40 @@
         </div>
     </div>
 
-    <!-- Lista de chats -->
-    <div id="chatSearchContainer" class="mb-3" style="display:none;">
-        <div class="input-group">
-            <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input type="text" id="chatSearchInput" class="form-control" placeholder="Buscar por título ou participante...">
+    <!-- Lista de chats com busca -->
+    <div class="card shadow-sm">
+        <div class="card-header py-3">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <h5 class="mb-0">Conversas Ativas</h5>
+                </div>
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="chatSearchInput" class="form-control border-start-0" placeholder="Buscar por título ou participante...">
+                        <button class="btn btn-outline-secondary" id="refreshBtn">🔄</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="chatList">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer border-top-0 py-3">
+            <nav id="paginationContainer">
+                <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
+            </nav>
         </div>
     </div>
-
-    <div class="chat-list mb-4" id="chatList">
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="text-muted mt-2">Carregando...</p>
-        </div>
-    </div>  
 </div>
 
 <!-- Modal de edição -->
 <div class="modal fade" id="editChatModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Administrar Conversa</h5>
@@ -76,148 +106,184 @@
           </div>
           <div class="mb-3" id="editParticipantsContainer" style="display:none;">
             <label class="form-label">Participantes</label>
-            <select id="editParticipant1" class="form-select mb-2"></select>
-            <select id="editParticipant2" class="form-select mb-2"></select>
+            <div class="row g-2">
+                <div class="col-6"><select id="editParticipant1" class="form-select"></select></div>
+                <div class="col-6"><select id="editParticipant2" class="form-select"></select></div>
+            </div>
           </div>
         </div>
-        <div class="alert alert-warning">
+        <div class="alert alert-warning small py-2">
             <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Cuidado:</strong> Excluir um chat removerá todas as mensagens permanentemente.
+            A exclusão removerá todas as mensagens permanentemente.
         </div>
-        <button class="btn btn-danger w-100" id="deleteChatBtn">
-            <i class="fas fa-trash-alt me-1"></i> Excluir Chat/DM
-        </button>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="saveChatBtn">Salvar Alterações</button>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary" id="saveChatBtn">Salvar Alterações</button>
+            <button class="btn btn-outline-danger" id="deleteChatBtn">
+                <i class="fas fa-trash-alt me-1"></i> Excluir Definitivamente
+            </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <style>
-    .chat-card { cursor: pointer; transition: all 0.2s ease-in-out; margin-bottom: 12px; }
-    .chat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .border-primary { border-left: 4px solid #007bff !important; }
-    .border-success { border-left: 4px solid #28a745 !important; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    .alert { animation: fadeIn 0.5s; }
+    .chat-row { transition: background 0.2s; border-bottom: 1px solid #eee; }
+    .chat-row:last-child { border-bottom: none; }
+    .chat-row:hover { background-color: #f8f9fa; }
+    .status-indicator { width: 4px; height: 100%; position: absolute; left: 0; top: 0; }
+    .type-public { background: #0d6efd; }
+    .type-dm { background: #198754; }
+    .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
 </style>
 
 <script>
-// ==================== Estado Global ====================
-const state = {
-    currentChat: null,
-    loggedUser: null,
-    searchTimeout: null
-};
+// ==================== Estado & Configs ====================
+let currentPage = 1;
+let currentChat = null;
+const ITEMS_PER_PAGE = 15;
 
-// ==================== Utilitários UI ====================
-function showAlert(message, type = 'success') {
-    const alertDiv = document.createElement("div");
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-    `;
-    document.querySelector(".container").prepend(alertDiv);
-    setTimeout(() => alertDiv.remove(), 5000);
+// ==================== Inicialização ====================
+document.addEventListener('DOMContentLoaded', () => {
+    carregarTudo();
+    
+    const debounceSearch = (typeof UIUtils !== 'undefined' && UIUtils.debounce) 
+        ? UIUtils.debounce(() => { currentPage = 1; carregarChats(); }, 500)
+        : () => {};
+
+    document.getElementById('chatSearchInput').addEventListener('input', debounceSearch);
+    document.getElementById('refreshBtn').addEventListener('click', carregarTudo);
+    document.getElementById('saveChatBtn').addEventListener('click', salvarAlteracoes);
+    document.getElementById('deleteChatBtn').addEventListener('click', deletarChat);
+});
+
+function carregarTudo() {
+    carregarChats();
+    carregarEstatisticas();
+    carregarTopicos();
+    carregarUsuariosAdmin();
 }
 
-// ==================== Carregamento de Dados ====================
+// ==================== APIs ====================
 async function carregarChats() {
-    const chatList = document.getElementById("chatList");
+    const list = document.getElementById("chatList");
     try {
-        const search = document.getElementById("chatSearchInput")?.value || "";
-        const res = await fetch(`/api/admin/chats?search=${encodeURIComponent(search)}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Erro ao carregar");
-        
+        const search = document.getElementById("chatSearchInput").value.trim();
+        const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
+        if (search) params.append('search', search);
+
+        const res = await fetch(`/api/admin/chats?${params}`, { credentials: "include" });
         const data = await res.json();
-        const chats = data.chats || [];
         
-        if (chats.length === 0) {
-            chatList.innerHTML = `<div class="alert alert-info">Nenhuma conversa encontrada.</div>`;
-            return;
-        }
-
-        chatList.innerHTML = "<h5 class='mb-3'><span class='marca-texto-verde'>Gerenciar Conversas</span></h5>";
-        document.getElementById("chatSearchContainer").style.display = "block";
-
-        chats.forEach(chat => {
-            const date = chat.lastmessageat ? new Date(chat.lastmessageat).toLocaleString('pt-BR') : 'Sem atividade';
-            const card = document.createElement("div");
-            card.className = `card mb-2 chat-card border-${chat.type === 'public' ? 'primary' : 'success'}`;
-            
-            card.innerHTML = `
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <h6 class="card-title">${chat.title}</h6>
-                        <span class="badge bg-${chat.type === 'public' ? 'primary' : 'success'}" style="color: white !important">${chat.type.toUpperCase()}</span>
-                    </div>
-                    <small class="text-muted d-block">
-                        Assunto: ${chat.topic} | Criador: ${chat.creatorusername} | Msg: ${chat.messagecount}
-                    </small>
-                    <small class="text-muted">Atividade: ${date}</small>
-                    <div class="mt-2 text-end">
-                        <button class="btn btn-sm btn-outline-primary edit-btn">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <a href="/chat/${chat.publicid}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-external-link-alt"></i></a>
-                    </div>
-                </div>
-            `;
-
-            card.querySelector(".edit-btn").onclick = (e) => {
-                e.stopPropagation();
-                abrirModalEdicao(chat);
-            };
-
-            chatList.appendChild(card);
-        });
+        renderizarChats(data.chats || []);
+        renderizarPaginacao(data.currentPage, data.totalPages);
     } catch (err) {
-        chatList.innerHTML = `<div class="alert alert-danger">Erro: ${err.message}</div>`;
+        list.innerHTML = `<div class="p-4 text-danger">Erro ao carregar conversas.</div>`;
     }
 }
 
-// ==================== Ações de Chat ====================
-async function abrirModalEdicao(chat) {
-    state.currentChat = chat;
-    document.getElementById("editChatName").value = chat.title || "";
+async function carregarEstatisticas() {
+    try {
+        const res = await fetch('/api/admin/chats/estatisticas', { credentials: "include" });
+        if (res.ok) {
+            const s = await res.json();
+            document.getElementById('statChats').textContent = s.chatcount || 0;
+            document.getElementById('statDms').textContent = s.dmcount || 0;
+            document.getElementById('statMsgs').textContent = s.messagecount || 0;
+        }
+    } catch (e) {}
+}
+
+// ==================== Renderização ====================
+function renderizarChats(chats) {
+    const container = document.getElementById("chatList");
+    if (!chats.length) {
+        container.innerHTML = `<div class="p-5 text-center text-muted">Nenhuma conversa encontrada.</div>`;
+        return;
+    }
+
+    container.innerHTML = chats.map(chat => {
+        const date = chat.lastmessageat ? (typeof UIUtils !== 'undefined' ? UIUtils.formatarData(chat.lastmessageat) : new Date(chat.lastmessageat).toLocaleDateString()) : '-';
+        const isPublic = chat.type === 'public';
+        
+        return `
+            <div class="chat-row p-3 position-relative d-flex align-items-center">
+                <div class="status-indicator ${isPublic ? 'type-public' : 'type-dm'}"></div>
+                <div class="flex-grow-1 ms-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0 fw-bold">${chat.title}</h6>
+                        <span class="badge ${isPublic ? 'bg-primary' : 'bg-success'} opacity-75 small">${chat.type.toUpperCase()}</span>
+                    </div>
+                    <small class="text-muted">
+                        ${isPublic ? `Tópico: ${chat.topic}` : 'DM Privada'} | 
+                        Criador: ${chat.creatorusername} | 
+                        ${chat.messagecount} mensagens
+                    </small>
+                </div>
+                <div class="text-end me-3 d-none d-md-block">
+                    <small class="text-muted d-block">Atividade</small>
+                    <small class="fw-bold">${date}</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-icon" onclick="abrirEdicao(${JSON.stringify(chat).replace(/"/g, '&quot;')})" title="Editar Configurações">
+                        <i class="bi bi-nut-fill"></i>
+                    </button>
+                    ${isPublic ? `
+                        <a href="/chat/${chat.publicid}" target="_blank" class="btn btn-success btn-icon border-0" title="Abrir Chat Público">
+                            <i class="bi bi-chat-fill"></i>
+                        </a>
+                    ` : `
+                        <button class="btn btn-outline-secondary btn-icon" disabled title="Acesso a DMs restrito por privacidade">
+                            <i class="bi bi-chat"></i>
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderizarPaginacao(curr, total) {
+    const container = document.getElementById("pagination");
+    if (total <= 1) { container.innerHTML = ''; return; }
     
+    let html = `<li class="page-item ${curr === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${curr - 1})">«</a></li>`;
+    for (let i = Math.max(1, curr - 2); i <= Math.min(total, curr + 2); i++) {
+        html += `<li class="page-item ${i === curr ? 'active' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${i})">${i}</a></li>`;
+    }
+    html += `<li class="page-item ${curr === total ? 'disabled' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${curr + 1})">»</a></li>`;
+    container.innerHTML = html;
+}
+
+// ==================== Logica de Negocio ====================
+function abrirEdicao(chat) {
+    currentChat = chat;
     const isDM = chat.type === 'dm';
-    const isOwner = state.loggedUser?.roleId === 1;
-
-    document.getElementById("editChatNameGroup").style.display = !isDM ? "block" : "none";
+    
+    document.getElementById("editChatName").value = chat.title || "";
+    document.getElementById("editChatNameGroup").style.display = isDM ? "none" : "block";
     document.getElementById("editParticipantsContainer").style.display = isDM ? "block" : "none";
-    document.getElementById("editChatFields").style.display = isOwner ? "block" : "none";
-    document.getElementById("saveChatBtn").style.display = isOwner ? "block" : "none";
 
-    if (isDM && isOwner) {
-        await carregarUsuariosAdmin();
-        const u1 = document.getElementById("editParticipant1");
-        const u2 = document.getElementById("editParticipant2");
-        if (u1) u1.value = chat.participants[0]?.publicid || "";
-        if (u2) u2.value = chat.participants[1]?.publicid || "";
+    if (isDM) {
+        document.getElementById("editParticipant1").value = chat.participants[0]?.publicid || "";
+        document.getElementById("editParticipant2").value = chat.participants[1]?.publicid || "";
     }
     
     new bootstrap.Modal(document.getElementById('editChatModal')).show();
 }
 
-document.getElementById("saveChatBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("saveChatBtn");
+async function salvarAlteracoes() {
     try {
-        btn.disabled = true;
         const body = { 
             title: document.getElementById("editChatName").value.trim(),
-            type: state.currentChat.type,
-            participants: state.currentChat.type === 'dm' ? [
+            type: currentChat.type,
+            participants: currentChat.type === 'dm' ? [
                 document.getElementById("editParticipant1").value,
                 document.getElementById("editParticipant2").value
             ] : []
         };
 
-        const res = await fetch(`/api/admin/chats/${state.currentChat.publicid}`, {
+        const res = await fetch(`/api/admin/chats/${currentChat.publicid}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -225,41 +291,35 @@ document.getElementById("saveChatBtn").addEventListener("click", async () => {
         });
 
         if (res.ok) {
-            showAlert("Atualizado com sucesso!");
+            mostrarToast("Conversa atualizada!");
             carregarChats();
             bootstrap.Modal.getInstance(document.getElementById('editChatModal')).hide();
-        } else {
-            const d = await res.json();
-            alert(d.message);
         }
-    } catch (e) { alert(e.message); }
-    finally { btn.disabled = false; }
-});
+    } catch (e) { mostrarToast("Erro ao salvar", "danger"); }
+}
 
-document.getElementById("deleteChatBtn").addEventListener("click", async () => {
-    if (!(await confirm("Excluir permanentemente?"))) return;
+async function deletarChat() {
+    if (!confirm("Excluir permanentemente todas as mensagens?")) return;
     try {
-        const res = await fetch(`/api/admin/chats/${state.currentChat.publicid}?type=${state.currentChat.type}`, {
+        const res = await fetch(`/api/admin/chats/${currentChat.publicid}?type=${currentChat.type}`, {
             method: "DELETE",
             credentials: "include"
         });
         if (res.ok) {
-            showAlert("Excluído!");
+            mostrarToast("Excluído com sucesso");
             carregarChats();
             bootstrap.Modal.getInstance(document.getElementById('editChatModal')).hide();
         }
-    } catch (e) { alert(e.message); }
-});
+    } catch (e) { mostrarToast("Erro ao excluir", "danger"); }
+}
 
-// ==================== Criação de Chat/DM ====================
+// Criação
 document.getElementById("createPublicChatBtn").addEventListener("click", async () => {
     const title = document.getElementById("publicChatName").value.trim();
     const topic = document.getElementById("publicChatTopic").value;
-    if (!title) return alert("Digite um nome");
+    if (!title) return mostrarToast("Digite um nome", "warning");
 
-    const btn = document.getElementById("createPublicChatBtn");
     try {
-        btn.disabled = true;
         const res = await fetch(`/api/admin/chats/public`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -267,46 +327,38 @@ document.getElementById("createPublicChatBtn").addEventListener("click", async (
             credentials: "include"
         });
         if (res.ok) {
-            showAlert("Chat criado!");
+            mostrarToast("Chat criado!");
             document.getElementById("publicChatName").value = "";
             carregarChats();
         }
-    } catch (e) { alert(e.message); }
-    finally { btn.disabled = false; }
+    } catch (e) { mostrarToast("Erro ao criar", "danger"); }
 });
 
 document.getElementById("createAdminDmBtn").addEventListener("click", async () => {
-    const user1 = document.getElementById("adminUser1").value;
-    const user2 = document.getElementById("adminUser2").value;
-    if (!user1 || !user2 || user1 === user2) return alert("Selecione usuários diferentes");
+    const u1 = document.getElementById("adminUser1").value;
+    const u2 = document.getElementById("adminUser2").value;
+    if (!u1 || !u2 || u1 === u2) return mostrarToast("Selecione usuários diferentes", "warning");
 
-    const btn = document.getElementById("createAdminDmBtn");
     try {
-        btn.disabled = true;
         const res = await fetch(`/api/admin/chats/dm`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ otherUserPublicId: user2, creatorPublicId: user1 }),
+            body: JSON.stringify({ otherUserPublicId: u2, creatorPublicId: u1 }),
             credentials: "include"
         });
         if (res.ok) {
-            showAlert("DM criada!");
+            mostrarToast("DM criada!");
             carregarChats();
-        } else {
-            const d = await res.json();
-            alert(d.message);
         }
-    } catch (e) { alert(e.message); }
-    finally { btn.disabled = false; }
+    } catch (e) { mostrarToast("Erro ao criar DM", "danger"); }
 });
 
-// ==================== Carregamento de Auxiliares ====================
+// Auxiliares
 async function carregarTopicos() {
     try {
         const res = await fetch(`/api/admin/chats/topics`, { credentials: "include" });
         const topics = await res.json();
-        const select = document.getElementById("publicChatTopic");
-        select.innerHTML = topics.map(t => `<option value="${t.name}" ${t.name==='Geral'?'selected':''}>Assunto: ${t.name}</option>`).join("");
+        document.getElementById("publicChatTopic").innerHTML = topics.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
     } catch (e) {}
 }
 
@@ -315,37 +367,20 @@ async function carregarUsuariosAdmin() {
         const res = await fetch(`/api/admin/users`, { credentials: "include" });
         const data = await res.json();
         const users = data.users || data;
-        
-        const selects = ["adminUser1", "adminUser2", "editParticipant1", "editParticipant2"];
-        selects.forEach(id => {
+        const html = '<option value="">Selecione...</option>' + users.map(u => `<option value="${u.publicid}">${u.username}</option>`).join("");
+        ["adminUser1", "adminUser2", "editParticipant1", "editParticipant2"].forEach(id => {
             const el = document.getElementById(id);
-            if (!el) return;
-            const currentVal = el.value;
-            el.innerHTML = '<option value="">Selecione...</option>' + 
-                users.map(u => `<option value="${u.publicid}">${u.username}</option>`).join("");
-            el.value = currentVal;
+            if (el) el.innerHTML = html;
         });
     } catch (e) {}
 }
 
-async function buscarUsuarioLogado() {
-    try {
-        const res = await fetch('/api/users/me', { credentials: "include" });
-        if (res.ok) state.loggedUser = await res.json();
-    } catch (e) {}
+function mudarPagina(p) { currentPage = p; carregarChats(); }
+
+function mostrarToast(m, t = "success") {
+    if (typeof UIUtils !== 'undefined' && UIUtils.mostrarFeedback) {
+        UIUtils.mostrarFeedback(m, t);
+    } else { alert(m); }
 }
-
-// ==================== Inicialização ====================
-window.addEventListener("DOMContentLoaded", () => {
-    // Busca em tempo real
-    document.getElementById("chatSearchInput")?.addEventListener("input", () => {
-        clearTimeout(state.searchTimeout);
-        state.searchTimeout = setTimeout(carregarChats, 500);
-    });
-
-    buscarUsuarioLogado();
-    carregarChats();
-    carregarUsuariosAdmin();
-    carregarTopicos();
-});
+</script>
 </script>

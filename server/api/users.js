@@ -339,11 +339,16 @@ UsersRouter.put('/me/password', protect(20), validate(updatePasswordSchema), asy
 
 // GET /users/buscar - Buscar usuários por nome
 UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), async (req, res) => {
-    const { q = '', page = 1, limit = 10 } = req.query;
+    let { q = '', page = 1, limit = 10 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
     const offset = (page - 1) * limit;
 
     try {
-        const searchTerm = `%${q.toLowerCase()}%`;
+        let queryStr = q.toLowerCase();
+        if (!queryStr.startsWith('@')) queryStr = '@' + queryStr;
+        
+        const searchTerm = `${queryStr}%`;
 
         const { count, rows: usuarios } = await User.findAndCountAll({
             where: {
