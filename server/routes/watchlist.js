@@ -4,7 +4,7 @@ const WatchListRouter = express.Router();
 WatchListRouter.get('/', async (req, res) => {
     const locals = {
         title: `Watchlist`,
-        description: "Lista de Filmes",
+        description: "Lista de filmes",
         version: process.env.VERSION,
     }
     res.render('pages/watchlist', {

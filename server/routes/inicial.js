@@ -3,6 +3,20 @@ const InicialRouter = express.Router();
 
 InicialRouter.get('/', async (req, res) => {
     const locals = {
+        title: "Página inicial",
+        description: "Página inicial",
+        version: process.env.VERSION,
+        loggedUser: req.user // Garante que o usuário logado chegue ao front-end
+    }
+    res.render('pages/retro_index', {
+        layout: 'layouts/retro',
+        locals: locals,
+        HOST: process.env.HOST
+    });
+});
+
+InicialRouter.get('/modern', async (req, res) => {
+    const locals = {
         title: "Teco",
         description: "Página inicial",
         version: process.env.VERSION,
@@ -17,8 +31,8 @@ InicialRouter.get('/', async (req, res) => {
 
 InicialRouter.get('/register', async (req, res) => {
     const locals = {
-        title: "Registrar - Teco",
-        description: "Crie sua conta no Teco",
+        title: "Registro",
+        description: "Crie sua conta do Teco",
         version: process.env.VERSION,
     }
     res.render('pages/auth/register', {
@@ -30,7 +44,7 @@ InicialRouter.get('/register', async (req, res) => {
 
 InicialRouter.get('/login', async (req, res) => {
     const locals = {
-        title: "Login - Teco",
+        title: "Login",
         description: "Faça login na sua conta do Teco",
         version: process.env.VERSION,
     }

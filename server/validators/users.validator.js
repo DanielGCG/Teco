@@ -23,20 +23,12 @@ const loginSchema = z.object({
 });
 
 const updateProfileSchema = z.object({
-    username: z.string()
-        .min(1, "Username é obrigatório")
-        .max(16, "Username deve ter no máximo 16 caracteres")
-        .transform(sanitizeString),
-    pronouns: z.string()
-        .max(12, "Pronomes devem ter no máximo 12 caracteres")
-        .optional()
-        .transform(val => val ? sanitizeString(val) : undefined),
-    backgroundimage: z.string().url().optional().or(z.literal('')),
-    profileimage: z.string().url().optional().or(z.literal('')),
-    bio: z.string()
-        .max(160, "Bio deve ter no máximo 160 caracteres")
-        .optional()
-        .transform(val => val ? sanitizeString(val) : undefined)
+    username: z.string().optional(),
+    pronouns: z.string().optional().nullable().or(z.literal('')),
+    backgroundimage: z.any().optional().nullable().or(z.literal('')),
+    profileimage: z.any().optional().nullable().or(z.literal('')),
+    bio: z.string().optional().nullable().or(z.literal('')),
+    lastfmusername: z.preprocess(val => Array.isArray(val) ? val[0] : val, z.string().optional().nullable().or(z.literal('')))
 });
 
 const updatePasswordSchema = z.object({

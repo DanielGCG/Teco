@@ -35,6 +35,9 @@ class ModalCartinha {
         const content = document.getElementById('modal-cartinha-content');
         const footer = document.getElementById('modal-cartinha-footer');
         
+        // Limpar o footer para não duplicar botões
+        footer.innerHTML = '';
+        
         const labelNome = tipo === 'enviadas' ? 'Para: ' : 'De: ';
         const assinatura = tipo === 'enviadas' ? 'Você' : `<a href="/${usuario.username}" class="text-decoration-none fw-bold text-dark">${usuario.username}</a>`;
 
@@ -68,7 +71,7 @@ class ModalCartinha {
 
         content.innerHTML = `
             <div class="d-flex align-items-center mb-4 py-3 border-bottom">
-                <img src="${usuario.profileimage}" class="rounded-circle me-3" style="width: 48px; height: 48px; object-fit: cover;">
+                <img src="${usuario.profileimage}" class="rounded me-3" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
                     <div class="d-flex justify-content-between">
                         <div>
@@ -141,7 +144,7 @@ function renderizarGridCartinhas(usuarios, containerSelector = '#cartas-grid', h
                 <div class="card h-100 border-0 shadow-sm carta-hover" onclick="window.cartinhasHooks?.abrirCartinha('${c.publicid || c.id}')" style="cursor: pointer;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center mb-2">
-                            <img src="${c.usuario.profileimage}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                            <img src="${c.usuario.profileimage}" class="rounded me-2" style="width: 28px; height: 28px; object-fit: cover;">
                             <div class="flex-grow-1 overflow-hidden">
                                 <div class="fw-bold text-truncate small">${c.usuario.username}</div>
                             </div>

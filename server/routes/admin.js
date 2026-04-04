@@ -3,9 +3,8 @@ const AdminRouter = express.Router();
 
 AdminRouter.get('', async (req, res) => {
     const locals = {
-        title: `Area de Administrador`,
-        description: "Tenha cuidado!",
-        icon: '⚠️',
+        title: `Area de administrador`,
+        description: "Use com cuidado!",
         version: process.env.VERSION,
     }
     res.render('pages/admin', {
@@ -18,7 +17,7 @@ AdminRouter.get('', async (req, res) => {
 AdminRouter.get('/criar-chat', async (req, res) => {
     const locals = {
         title: `Gerenciar Chats & DMs`,
-        description: "Crie, edite ou remova chats e conversas diretas",
+        description: "Crie, edite ou remova chats e DMs",
         version: process.env.VERSION,
     }
     res.render('pages/admin/criar-chat', {
@@ -28,13 +27,9 @@ AdminRouter.get('/criar-chat', async (req, res) => {
     })
 });
 
-AdminRouter.get('/editar-chat', async (req, res) => {
-    res.redirect('/admin/criar-chat');
-});
-
 AdminRouter.get('/editar-usuario', async (req, res) => {
     const locals = {
-        title: `Editar Usuário`,
+        title: `Editar usuários`,
         description: "Edite usuários existentes",
         version: process.env.VERSION,
     }
@@ -60,7 +55,7 @@ AdminRouter.get('/resetar-senha-usuario', async (req, res) => {
 
 AdminRouter.get('/editar-cartinha', async (req, res) => {
     const locals = {
-        title: `Gerenciar Cartinhas`,
+        title: `Gerenciar cartinhas`,
         description: "Gerencie e remova cartinhas",
         version: process.env.VERSION,
     }
@@ -73,8 +68,7 @@ AdminRouter.get('/editar-cartinha', async (req, res) => {
 
 AdminRouter.get('/teste-notificacoes', async (req, res) => {
     const locals = {
-        title: `Teste de Notificações`,
-        icon: '🔔',
+        title: `Teste de notificações`,
         description: "Teste o sistema de notificações externas",
         version: process.env.VERSION,
     }
@@ -87,7 +81,7 @@ AdminRouter.get('/teste-notificacoes', async (req, res) => {
 
 AdminRouter.get('/imagemdodia', async (req, res) => {
     const locals = {
-        title: `Gerenciar Imagem do Dia`,
+        title: `Gerenciar imagem do dia`,
         description: "Controle a fila e molduras",
         version: process.env.VERSION,
     }

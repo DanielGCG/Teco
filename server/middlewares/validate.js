@@ -8,6 +8,12 @@ const validate = (schema, source = 'body') => {
             req[source] = validated; // Substitui pelos dados validados
             next();
         } catch (error) {
+            console.error('[VALIDATION ERROR]:', {
+                path: req.path,
+                method: req.method,
+                error: error.errors || error.message,
+                data: req[source]
+            });
             if (error instanceof z.ZodError) {
                 const errors = error.errors?.map(err => ({
                     field: err.path?.join('.') || 'unknown',

@@ -4,7 +4,7 @@ const ChatsRouter = express.Router();
 // Rota para listar chats públicos
 ChatsRouter.get('/', async (req, res) => {
     const locals = {
-        title: "Chats Públicos",
+        title: "Chats públicos",
         description: "Escolha uma sala para conversar!",
         version: process.env.VERSION,
         loggedUser: req.user

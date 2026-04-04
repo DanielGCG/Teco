@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teco - <%= locals.title %></title>
+    <link rel="stylesheet" href="/styles/retro.css">
+</head>
+<body>
+    <div class="window" style="width: 100%; margin-bottom: 10px;">
+        <div class="window-header">
+            <span>Boteco Explorer v1.0</span>
+            <div style="display: flex; gap: 4px;">
+                <button disabled style="width: 20px; height: 16px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 10px;">_</button>
+                <button disabled style="width: 20px; height: 16px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 10px;">X</button>
+            </div>
+        </div>
+        <div class="window-content" style="background: #c0c0c0; border-bottom: 1px solid #808080;">
+            <a href="/">[Home]</a>
+            <a href="<%= locals.loggedUser ? `/@${locals.loggedUser.username}` : '/login' %>">[Perfil]</a>
+            <a href="/chat">[Chat]</a>
+            <a href="/logout">[Sair]</a>
+        </div>
+    </div>
+
+    <marquee>Bem-vindo ao Boteco! O site mais retrô da internet! * Novidade: Novo layout anos 2000! *</marquee>
+
+    <div id="main-content">
+        <%- body %>
+    </div>
+
+    <div class="window" style="margin-top: 20px;">
+        <div class="window-content" style="text-align: center;">
+            <p>Otimizado para Internet Explorer 5.5 e Netscape Navigator</p>
+            <p>&copy; 2000-2026 Boteco Corporation</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/global/user-context.js"></script>
+    <script src="/js/commons/ui-common.js"></script>
+</body>
+</html>

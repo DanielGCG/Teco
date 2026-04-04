@@ -203,7 +203,7 @@ UsersRouter.post('/logout', async (req, res) => {
 UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['publicid', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'pronouns']
+            attributes: ['publicid', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'lastfmusername']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
@@ -217,7 +217,7 @@ UsersRouter.get('/me', protect(20), async (req, res) => {
 
 // Atualizar perfil próprio
 UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
-    let { username, backgroundimage, profileimage, bio, pronouns } = req.body;
+    let { username, backgroundimage, profileimage, bio, pronouns, lastfmusername } = req.body;
 
     // Força @ no início
     if (!username.startsWith('@')) {
@@ -294,7 +294,7 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
         }
 
         await User.update(
-            { username, backgroundimage, profileimage, bio, pronouns },
+            { username, backgroundimage, profileimage, bio, pronouns, lastfmusername },
             { where: { id: req.user.id } }
         );
 

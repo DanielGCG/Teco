@@ -18,7 +18,9 @@
 
 <script>
 // Função global para mostrar avisos
-let avisoModalInstance = null;
+if (typeof avisoModalInstance === 'undefined') {
+    var avisoModalInstance = null;
+}
 
 function mostrarAviso(mensagem, titulo = 'Aviso') {
     document.getElementById("avisoTexto").textContent = mensagem;

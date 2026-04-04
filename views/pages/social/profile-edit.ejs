@@ -148,6 +148,11 @@
                       <div class="input-group">
                         <input type="text" class="form-control" id="pronouns" name="pronouns" maxlength="12" placeholder="ele/ela/elu">
                       </div>
+                      <label for="lastfmusername" class="form-label fw-bold mt-3">Usuário Last.fm</label>
+                      <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-music-note-beamed"></i></span>
+                        <input type="text" class="form-control" id="lastfmusername" name="lastfmusername" maxlength="64" placeholder="seu username">
+                      </div>
                     </div>
                     <div class="col-md-12 mb-4">
                       <label for="bio" class="form-label fw-bold">Bio</label>
@@ -271,6 +276,7 @@ function atualizarPreviews(user) {
   
   document.getElementById('bio').value = user.bio || '';
   document.getElementById('pronouns').value = user.pronouns || '';
+  document.getElementById('lastfmusername').value = user.lastfmusername || '';
   document.getElementById('preview-pronouns-text').textContent = user.pronouns || '';
   atualizarContadorBio();
 }
@@ -357,6 +363,7 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
   formData.append('profileimage', document.getElementById('profileimage').value);
   formData.append('bio', document.getElementById('bio').value);
   formData.append('pronouns', document.getElementById('pronouns').value);
+  formData.append('lastfmusername', document.getElementById('lastfmusername').value);
 
   const bgFile = document.getElementById('background_file').files[0];
   const pfFile = document.getElementById('profile_file').files[0];

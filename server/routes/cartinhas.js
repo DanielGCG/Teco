@@ -4,8 +4,7 @@ const CartinhasRouter = express.Router();
 CartinhasRouter.get('/', async (req, res) => {
     const locals = {
         title: `Correio`,
-        description: "Gerencie suas cartinhas",
-        icon: "",
+        description: "Suas cartinhas",
         version: process.env.VERSION,
         loggedUser: req.user
     }
@@ -20,7 +19,6 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
     const locals = {
         title: `Caixa de entrada`,
         description: "Suas cartinhas recebidas",
-        icon: "📩",
         version: process.env.VERSION,
         loggedUser: req.user
     }
@@ -33,9 +31,8 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
 
 CartinhasRouter.get('/escrever', async (req, res) => {
     const locals = {
-        title: `Escrever Cartinha`,
+        title: `Escrever cartinha`,
         description: "Escreva uma nova cartinha",
-        icon: "✏️",
         version: process.env.VERSION,
         loggedUser: req.user
     }
@@ -48,9 +45,8 @@ CartinhasRouter.get('/escrever', async (req, res) => {
 
 CartinhasRouter.get('/favoritas', async (req, res) => {
     const locals = {
-        title: `Cartinhas Favoritas`,
-        description: "Suas cartinhas favoritas guardadas com carinho",
-        icon: "⭐",
+        title: `Cartinhas favoritas`,
+        description: "Suas cartinhas favoritas",
         version: process.env.VERSION,
         loggedUser: req.user
     }
@@ -63,9 +59,8 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
 
 CartinhasRouter.get('/enviadas', async (req, res) => {
     const locals = {
-        title: `Cartinhas Enviadas`,
-        description: "Gerencie as cartinhas que você enviou",
-        icon: "📤",
+        title: `Cartinhas enviadas`,
+        description: "Gerencie as cartinhas enviou",
         version: process.env.VERSION,
         loggedUser: req.user
     }

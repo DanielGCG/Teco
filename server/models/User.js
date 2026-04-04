@@ -74,6 +74,10 @@ const User = sequelize.define('User', {
     profileimage: {
         type: DataTypes.STRING(255)
     },
+    lastfmusername: {
+        type: DataTypes.STRING(64),
+        allowNull: true
+    },
     postcount: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,

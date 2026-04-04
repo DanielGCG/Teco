@@ -83,9 +83,26 @@
     }
 }
 
-    function openEdit(id) {
+    async function openEdit(id) {
         const c = encontrarCartinha(id, dataCache);
         if (!c) return;
+        
+        // Se a cartinha não tiver body (veio da listagem que exclui esse campo), buscar os detalhes
+        if (c.body === undefined) {
+             try {
+                const res = await fetch(`/api/cartinhas/${c.publicid || c.id}`, { credentials: 'include' });
+                if (!res.ok) throw new Error();
+                const fullData = await res.json();
+                
+                // Atualiza o cache local para não ter que buscar de novo se abrir o modal de novo
+                c.body = fullData.body;
+                c.title = fullData.title; // Garante que o título também esteja atualizado
+            } catch (e) {
+                mostrarFeedback('Erro ao carregar conteúdo para edição', 'danger');
+                return;
+            }
+        }
+
         document.getElementById('edit-cartinha-id').value = id;
         document.getElementById('edit-titulo').value = c.title;
         document.getElementById('edit-conteudo').value = c.body;

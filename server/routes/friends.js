@@ -3,7 +3,7 @@ const FriendRouter = express.Router();
 
 FriendRouter.get('/', async (req, res) => {
     const locals = {
-        title: `Painel Social`,
+        title: `Painel social`,
         description: "Gerencie suas conexões",
         icon: '',
         version: process.env.VERSION,

@@ -23,7 +23,7 @@ PerfilRouter.get('/:username', async (req, res, next) => {
 
     const locals = {
         title: `Perfil`,
-        description: "Veja seu perfil",
+        description: "Seu perfil",
         version: process.env.VERSION,
         username: req.params.username,
         user: req.user,

@@ -19,7 +19,9 @@
 
 <script>
 // Função global para mostrar confirmação
-let confirmacaoModalInstance = null;
+if (typeof confirmacaoModalInstance === 'undefined') {
+    var confirmacaoModalInstance = null;
+}
 
 function mostrarConfirmacao(mensagem, titulo = 'Confirmação') {
     return new Promise((resolve) => {

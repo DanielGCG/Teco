@@ -4,7 +4,7 @@ const FeaturesRouter = express.Router();
 FeaturesRouter.get('/watchlist', async (req, res) => {
     const locals = {
         title: `Watchlist`,
-        description: "Lista de Filmes",
+        description: "Lista de filmes",
         version: process.env.VERSION,
     }
     res.render('pages/features/watchlist', {
@@ -17,7 +17,7 @@ FeaturesRouter.get('/watchlist', async (req, res) => {
 FeaturesRouter.get('/galerias', async (req, res) => {
     const locals = {
         title: `Galerias`,
-        description: "Veja as galerias disponíveis",
+        description: "Galerias disponíveis",
         version: process.env.VERSION,
     }
     res.render('pages/features/galerias', {
@@ -58,7 +58,7 @@ FeaturesRouter.get('/imagemdodia', async (req, res) => {
 FeaturesRouter.get('/imagemdodia/sugerir', async (req, res) => {
     const locals = {
         title: `Imagem do Dia`,
-        description: "Imagem destacada do dia!",
+        description: "Sugira uma imagem do dia!",
         icon: '',
         version: process.env.VERSION,
     }
@@ -72,7 +72,7 @@ FeaturesRouter.get('/imagemdodia/sugerir', async (req, res) => {
 FeaturesRouter.get('/credits', async (req, res) => {
     const locals = {
         title: `Créditos`,
-        description: "Agracedimentos e Créditos",
+        description: "Agracedimentos e créditos",
         version: process.env.VERSION,
     }
     res.render('utils/credits', {

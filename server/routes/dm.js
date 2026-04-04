@@ -4,7 +4,7 @@ const DMsRouter = express.Router();
 DMsRouter.get('/', async (req, res) => {
     const locals = {
         title: `Mensagens Diretas`,
-        description: "Lista de mensagens diretas",
+        description: "Suas DMs",
         version: process.env.VERSION,
         loggedUser: req.user
     }

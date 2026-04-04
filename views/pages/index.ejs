@@ -65,10 +65,10 @@
                     <a href="/imagemdodia/sugerir" class="btn btn-link btn-sm p-0">Sugerir Imagem do Dia</a>
                 </div>
 
-                <div class="nav-group-label">Em breve</div>
+                <div class="nav-group-label">Novidade</div>
 
                 <div class="boteco-analytics-section d-flex flex-column align-self-center">
-                    <a href="/manutencao" target="_blank" class="btn btn-link btn-sm mt-2 p-0"><img src="/images/BotecoAnalytics.webp" style="max-height: 75px; opacity: 70%;"></a>
+                    <a href="https://analytics.sitedoboteco.com.br" target="_blank" class="btn btn-link btn-sm mt-2 p-0"><img src="/images/BotecoAnalytics.webp" style="max-height: 75px; opacity: 85%;"></a>
                 </div>
             </div>
         </div>
@@ -160,9 +160,6 @@
 
                 // Não adiciona comentários diretos ao feed principal
                 if (post.type === 'comment') return;
-
-                // Só adiciona se estivermos na aba "Seguindo" ou se for um post relevante
-                // O socket room 'profile_username' já garante que é alguém que seguimos ou nós mesmos
                 
                 // Remove empty state se existir
                 const emptyState = feed.querySelector('.text-muted');
