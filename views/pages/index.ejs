@@ -1,212 +1,117 @@
-<link rel="stylesheet" href="/styles/posts.css">
-
-<style>
-    .feed-sidebar {
-        flex-shrink: 0;
-        position: sticky;
-        top: 0;
-        max-height: calc(100vh - 2rem);
-        overflow-y: auto;
-    }
-    .feed-tabs-container {
-        position: sticky;
-        flex-shrink: 0;
-        z-index: 5;
-        background-color: var(--fundo-global);
-        top: 0;
-    }
-    .daily-image-section {
-        background: transparent;
-        padding: 8px;
-    }
-    .daily-image-card {
-        position: relative;
-        aspect-ratio: 1/1;
-        width: 220px;
-        height: 220px;
-        overflow: hidden;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-    }
-    .daily-image-img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        padding: 12px;
-        object-fit: cover;
-    }
-    .daily-image-border {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        object-fit: cover;
-    }
-    .daily-image-text {
-        font-size: 0.95rem;
-    }
-</style>
-
-<div class="container-xxl">
-    <div class="row justify-content-center">
-        <div class="col-4 d-flex flex-column">
-            <!-- Tab lateral do feed -->
-            <div class="feed-sidebar rounded shadow-sm p-3">
-                <div class="nav-group-label">Imagem do Dia</div>
-                <div class="daily-image-section d-flex flex-column align-self-center">
-                    <div id="imagem-do-dia" class="d-flex flex-column align-self-center text-center">
-                        <div class="daily-image-card">
-                            <img id="imagem-do-dia-img" class="daily-image-img" src="" alt="Imagem do Dia">
-                            <img id="imagem-do-dia-border" class="daily-image-border" src="" alt="Moldura" style="display:none">
-                        </div>
-                        <div id="imagem-do-dia-text" class="daily-image-text mt-2 text-center w-100"></div>
-                    </div>
-                    <a href="/imagemdodia" class="btn btn-link btn-sm mt-2 p-0">Ver mais Imagens do Dia</a>
-                    <a href="/imagemdodia/sugerir" class="btn btn-link btn-sm p-0">Sugerir Imagem do Dia</a>
-                </div>
-
-                <div class="nav-group-label">Novidade</div>
-
-                <div class="boteco-analytics-section d-flex flex-column align-self-center">
-                    <a href="https://analytics.sitedoboteco.com.br" target="_blank" class="btn btn-link btn-sm mt-2 p-0"><img src="/images/BotecoAnalytics.webp" style="max-height: 75px; opacity: 85%;"></a>
-                </div>
+<div class="window">
+    <div class="window-content">
+        <textarea id="retro-post-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="No que você está pensando agora?"></textarea>
+        <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
+        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <div style="flex-grow: 1;">
+                <label for="retro-post-media" style="cursor: pointer; display: inline-block;">
+                    <button type="button" onclick="document.getElementById('retro-post-media').click()" style="padding: 2px 15px; font-size: 11px;">ADICIONAR MÍDIA</button>
+                </label>
+                <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="display: none;">
             </div>
-        </div>
-        <div class="col-8">
-            <!-- Tabs de Feed -->
-            <div class="feed-tabs-container d-flex border-bottom mb-3 rounded-top">
-                <button class="btn flex-grow-1 py-1 fw-bold feed-tab active" data-type="for-you" onclick="changeFeed('for-you')">For you</button>
-                <button class="btn flex-grow-1 py-1 fw-bold feed-tab" data-type="following" onclick="changeFeed('following')">Seguindo</button>
-            </div>
-
-            <!-- Área de Novo Post -->
-            <div class="card mb-3 border-0 shadow-sm post-composer-card">
-                <div class="card-body">
-                    <div class="d-flex gap-3">
-                        <% const u = locals.loggedUser; %>
-                        <img src="<%= u ? u.profileimage : '' %>" class="rounded post-composer-avatar">
-                        <div class="flex-grow-1">
-                            <textarea id="feed-novo-post-textarea" class="form-control border-0 shadow-none post-composer-textarea" placeholder="O que está acontecendo?" rows="2"></textarea>
-                            <div id="feed-novo-post-preview" class="post-preview-container mt-2"></div>
-                            <div class="d-flex justify-content-between align-items-center border-top">
-                                <div class="d-flex gap-2">
-                                    <label for="feed-novo-post-media" class="btn btn-outline-primary btn-sm rounded-pill border-0">
-                                        <i class="bi bi-image"></i>
-                                    </label>
-                                    <input type="file" id="feed-novo-post-media" hidden multiple accept="image/*,video/*">
-                                </div>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <span id="feed-novo-post-char-counter" class="text-muted small me-3">0/400</span>
-                                    <button id="btn-feed-postar" class="btn btn-primary rounded-pill px-4 fw-bold">Postar</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feed de Posts -->
-            <div id="feed-container" class="rounded shadow-sm">
-                <!-- Posts serão carregados aqui -->
-            </div>
+            <button id="btn-retro-postar" style="padding: 2px 20px;">POSTAR</button>
         </div>
     </div>
 </div>
 
-<%- include('../partials/post-modals') %>
+<div class="window">
+    <div class="window-header">Posts recentes</div>
+    <div class="window-content" id="retro-feed-container">
+        <p style="text-align: center; color: #808080;">Aguardando posts do servidor...</p>
+    </div>
+</div>
 
 <script src="/js/post.js"></script>
 <script>
-    window.selectedFiles = [];
-
-    function changeFeed(type) {
-        // Atualiza UI das tabs
-        document.querySelectorAll('.feed-tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.type === type);
-        });
-        
-        // Troca o feed
-        PostFeed.switchFeed(type);
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-        // Inicializa o feed
-        PostFeed.init('feed-container');
+        // Inicializar Handlers Globais do Posts Retrô
+        RetroPosts.initHandlers(() => loadPosts());
 
-        // Configura o mini-form de post no feed
-        PostUI.setupNewPostForm({
-            textareaId: 'feed-novo-post-textarea',
-            mediaInputId: 'feed-novo-post-media',
-            btnId: 'btn-feed-postar',
-            previewId: 'feed-novo-post-preview',
-            extraData: { type: 'post' }
-        });
-        // Inicializa Socket e listeners para novos posts (mantém o feed atualizado)
-        try {
-            const socket = SocketConnector.init();
+        // Inicializar Feed Retrô
+        async function loadPosts() {
+            try {
+                const res = await fetch('/api/posts/feed?type=for-you&limit=20&offset=0', { credentials: 'include' });
+                if (res.ok) {
+                    const posts = await res.json();
+                    const container = document.getElementById('retro-feed-container');
+                    container.innerHTML = '';
+                    
+                    if (!posts || posts.length === 0) {
+                        container.innerHTML = '<p style="text-align: center;">Nenhum post encontrado.</p>';
+                        return;
+                    }
 
-            function joinFollowed() {
-                socket.emit('joinFollowed');
-            }
-
-            SocketConnector.onReconnect(joinFollowed);
-            joinFollowed();
-
-            socket.on('newPost', (post) => {
-                const feed = document.getElementById('feed-container');
-                
-                // Verifica se o post já existe no feed para evitar duplicatas
-                if (document.getElementById(`post-${post.publicid}`)) return;
-
-                // Não adiciona comentários diretos ao feed principal
-                if (post.type === 'comment') return;
-                
-                // Remove empty state se existir
-                const emptyState = feed.querySelector('.text-muted');
-                if (emptyState && !feed.querySelector('.post-card')) {
-                    feed.innerHTML = '';
+                    const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
+                    posts.forEach(post => {
+                        container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(post, currentUsername));
+                    });
                 }
-
-                const postHtml = PostUI.renderPost(post, window.currentUser);
-                feed.insertAdjacentHTML('afterbegin', postHtml);
-            });
-
-            socket.on('postUpdate', (data) => {
-                PostUI.updatePostStats(data.publicid, data);
-            });
-
-            socket.on('postDeleted', (publicid) => {
-                const postEl = document.getElementById(`post-${publicid}`);
-                if (postEl) postEl.remove();
-            });
-        } catch (e) {
-            console.error('[Feed] Socket init failed:', e);
+            } catch (e) {
+                console.error('Erro ao carregar posts:', e);
+            }
         }
-        // Carrega Imagem do Dia
-        (async function loadImagemDoDia(){
-            try{
-                const res = await fetch('/api/imagemdodia', { credentials: 'include' });
-                if (!res.ok) return;
-                const img = await res.json();
+        
+        loadPosts();
 
-                const container = document.getElementById('imagem-do-dia');
-                const imgEl = document.getElementById('imagem-do-dia-img');
-                const borderEl = document.getElementById('imagem-do-dia-border');
-                const txtEl = document.getElementById('imagem-do-dia-text');
+        // Variável para armazenar arquivos do post
+        let selectedRetroFiles = [];
 
-                imgEl.src = img.url;
-                txtEl.textContent = img.text;
-                if (img.border.url) {
-                    borderEl.src = img.border.url;
-                    borderEl.style.display = '';
+        // Preview de imagens ao selecionar
+        document.getElementById('retro-post-media').addEventListener('change', (e) => {
+            const preview = document.getElementById('retro-media-preview');
+            preview.innerHTML = '';
+            selectedRetroFiles = Array.from(e.target.files);
+            
+            selectedRetroFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // Lógica simplificada de postar
+        document.getElementById('btn-retro-postar').addEventListener('click', async () => {
+            const textarea = document.getElementById('retro-post-textarea');
+            const content = textarea.value.trim();
+            const btn = document.getElementById('btn-retro-postar');
+
+            if (!content && selectedRetroFiles.length === 0) return;
+
+            btn.disabled = true;
+            btn.textContent = 'ENVIANDO...';
+
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('type', 'post');
+            selectedRetroFiles.forEach(file => formData.append('media', file));
+
+            try {
+                const res = await fetch('/api/posts', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    textarea.value = '';
+                    document.getElementById('retro-post-media').value = '';
+                    document.getElementById('retro-media-preview').innerHTML = '';
+                    selectedRetroFiles = [];
+                    await loadPosts();
                 } else {
-                    borderEl.style.display = 'none';
+                    const err = await res.json();
+                    alert(err.error || 'Erro ao postar!');
                 }
-
-                container.style.display = '';
-            }catch(err){
-                console.error('[ImagemDoDia] erro:', err);
+            } catch (e) {
+                alert('Erro de conexão!');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'POSTAR';
             }
-        })();
+        });
     });
 </script>

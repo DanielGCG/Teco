@@ -8,22 +8,8 @@ InicialRouter.get('/', async (req, res) => {
         version: process.env.VERSION,
         loggedUser: req.user // Garante que o usuário logado chegue ao front-end
     }
-    res.render('pages/retro_index', {
-        layout: 'layouts/retro',
-        locals: locals,
-        HOST: process.env.HOST
-    });
-});
-
-InicialRouter.get('/modern', async (req, res) => {
-    const locals = {
-        title: "Teco",
-        description: "Página inicial",
-        version: process.env.VERSION,
-        loggedUser: req.user // Garante que o usuário logado chegue ao front-end
-    }
     res.render('pages/index', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });

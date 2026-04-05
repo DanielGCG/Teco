@@ -1,80 +1,59 @@
-﻿<link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
+<link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
 <script src="/js/commons/cartinhas-common.js"></script>
 
-<div class="container py-4">
-    <div class="mb-4 d-flex justify-content-between align-items-center">
-        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary border-0">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
-        </a>
-        <button type="button" class="btn btn-sm btn-outline-primary border-0" id="btnGerenciarRascunhos">
-            <i class="bi bi-journal-text me-1"></i> Meus Rascunhos
-        </button>
-    </div>
-
-    <div class="mx-auto" style="max-width: 700px;">
-        <div class="card border-0 shadow-sm overflow-hidden">
-            <div class="card-header border-0 pt-4 px-4">
-                <h5 class="mb-0 fw-bold">Escrever Cartinha</h5>
-                <p class="text-muted small mb-0">Envie uma mensagem especial</p>
-            </div>
-            
-            <div class="card-body p-4">
-                <form id="formCartinha">
-                    <div class="mb-4 position-relative">
-                        <label class="form-label small fw-bold text-muted">Para:</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light border-0"><i class="bi bi-person text-muted"></i></span>
-                            <input type="text" class="form-control border-0 bg-light" id="destinatario" placeholder="Nome do usuário..." autocomplete="off">
-                            <input type="hidden" id="destinatarioId">
-                        </div>
-                        <div id="sugestoesUsuarios" class="sugestoes-usuarios shadow-sm border-0 rounded-3 mt-1 overflow-hidden" style="display: none; position: absolute; z-index: 1000; width: 100%; background: white;"></div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">Assunto:</label>
-                        <input type="text" class="form-control form-control-sm border-0 bg-light" id="titulo" maxlength="160" placeholder="Título da sua cartinha">
-                        <div class="text-end mt-1"><small class="text-muted" id="cnt-t">0/160</small></div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">Mensagem:</label>
-                        <textarea class="form-control border-0 bg-light" id="conteudo" maxlength="2000" rows="8" placeholder="Escreva aqui o que está pensando..."></textarea>
-                        <div class="d-flex justify-content-between mt-1">
-                            <small class="text-muted italic">Atenciosamente, <span id="nomeRemetente" class="fw-bold">...</span></small>
-                            <small class="text-muted" id="cnt-c">0/2000</small>
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm text-muted" id="btnSalvarRascunho" title="Salvar Rascunho">
-                            <i class="bi bi-bookmark"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm text-danger" id="btnLimpar" title="Limpar tudo">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-primary ms-auto px-4" id="btnEnviar">
-                            Enviar <i class="bi bi-send-fill ms-1"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
+<div class="window" style="max-width: 600px; margin: 0 auto;">
+    <div class="window-header">
+        <span>Escrever Cartinha</span>
+        <div style="float: right;">
+            <a href="/cartinhas" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
         </div>
+    </div>
+    <div class="window-content" style="background: var(--retro-bg);">
+        <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+            <span style="font-size: 11px;">De: <b id="nomeRemetente">...</b></span>
+            <button type="button" id="btnGerenciarRascunhos" style="font-size: 10px;">Meus Rascunhos</button>
+        </div>
+
+        <form id="formCartinha">
+            <div style="margin-bottom: 10px; position: relative;">
+                <label style="font-size: 11px; font-weight: bold;">Para:</label><br>
+                <input type="text" id="destinatario" placeholder="Digite o nome do usuário..." autocomplete="off" style="width: 100%; box-sizing: border-box;">
+                <input type="hidden" id="destinatarioId">
+                <div id="sugestoesUsuarios" class="window" style="display: none; position: absolute; width: 100%; z-index: 100; max-height: 150px; overflow-y: auto; background: white;"></div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 11px; font-weight: bold;">Assunto:</label>
+                <span id="cnt-t" style="float: right; font-size: 10px; color: #666;">0/160</span><br>
+                <input type="text" id="titulo" maxlength="160" style="width: 100%; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 11px; font-weight: bold;">Mensagem:</label>
+                <span id="cnt-c" style="float: right; font-size: 10px; color: #666;">0/2000</span><br>
+                <textarea id="conteudo" rows="8" maxlength="2000" style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 5px; justify-content: flex-end;">
+                <button type="button" id="btnLimpar">Limpar</button>
+                <button type="button" id="btnSalvarRascunho">Salvar Rascunho</button>
+                <button type="button" id="btnEnviar" style="font-weight: bold;">ENVIAR</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="modal fade" id="modalListaRascunhos" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h6 class="modal-title fw-bold">Rascunhos</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="gradeRascunhos" class="list-group list-group-flush"></div>
-            </div>
-        </div>
+<!-- Modal Rascunhos -->
+<div id="modalRascunhosRetro" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; min-width: 300px; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
+    <div class="window-header">
+        <span>Rascunhos</span>
+        <button onclick="document.getElementById('modalRascunhosRetro').style.display='none'" style="float: right; padding: 0 4px;">X</button>
+    </div>
+    <div class="window-content" style="background: white; max-height: 300px; overflow-y: auto; padding: 0;">
+        <div id="gradeRascunhos"></div>
     </div>
 </div>
+<div id="overlayRetroMsg" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 10000;"></div>
 
 <script>
     const composer = {
@@ -116,15 +95,16 @@
 
         async search(q) {
             if (!q) return this.el.sug.style.display = 'none';
-            
             const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
             const data = await res.json();
             const users = (data.usuarios || []).filter(u => u.username !== this.me?.username);
+            
             this.el.sug.innerHTML = users.map(u => `
-                <div class="p-2 border-bottom small hover-bg" style="cursor:pointer" onclick="composer.select({publicid:'${u.publicid}',username:'${u.username}'})">
-                    <img src="${u.profileimage}" class="rounded me-2" width="24" height="24"><b>${u.username}</b>
+                <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" onclick="composer.select({publicid:'${u.publicid}',username:'${u.username}'})">
+                    <img src="${u.profileimage}" style="vertical-align: middle; width: 20px; height: 20px; margin-right: 5px; border: 1px solid #ccc;">
+                    <b>${u.username}</b>
                 </div>
-            `).join('') || '<div class="p-3 text-muted small">Nenhum usuário...</div>';
+            `).join('') || '<div style="padding: 10px; font-size: 11px; color: #666;">Nenhum usuário...</div>';
             this.el.sug.style.display = 'block';
         },
 
@@ -155,29 +135,31 @@
             const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
             rList.push({ id: Date.now(), t: this.el.tit.value, c: this.el.con.value, d: this.dest, ts: Date.now() });
             localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList));
-            mostrarFeedback('Rascunho salvo!');
+            alert('Rascunho salvo!');
         },
 
         list() {
             const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
             const container = document.getElementById('gradeRascunhos');
             container.innerHTML = rList.map(x => `
-                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                    <div style="cursor:pointer" onclick="composer.apply(${x.id})">
-                        <div class="fw-bold small text-truncate" style="max-width:200px">${x.t || '(Sem título)'}</div>
-                        <div class="text-muted" style="font-size:0.7rem">Para: ${x.d?.username || '?'}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px solid #eee;">
+                    <div style="cursor:pointer; flex-grow: 1;" onclick="composer.apply(${x.id})">
+                        <div style="font-size: 11px; font-weight: bold;">${x.t || '(Sem assunto)'}</div>
+                        <div style="font-size: 10px; color: #666;">Para: ${x.d ? x.d.username : '??'}</div>
                     </div>
-                    <button class="btn btn-sm text-danger" onclick="composer.delR(${x.id})"><i class="bi bi-trash"></i></button>
+                    <button style="padding: 0 4px; color: red;" onclick="composer.delR(${x.id})">X</button>
                 </div>
-            `).join('') || '<p class="text-center text-muted py-3">Nenhum rascunho</p>';
-            new bootstrap.Modal(document.getElementById('modalListaRascunhos')).show();
+            `).join('') || '<p style="text-align: center; padding: 10px; font-size: 11px;">Nenhum rascunho</p>';
+            
+            document.getElementById('modalRascunhosRetro').style.display = 'block';
+            document.getElementById('overlayRetroMsg').style.display = 'block';
         },
 
         apply(id) {
             const r = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]').find(x => x.id === id);
             if (r) { this.el.tit.value = r.t; this.el.con.value = r.c; if(r.d) this.select(r.d); this.update(); }
-            const mod = bootstrap.Modal.getInstance(document.getElementById('modalListaRascunhos'));
-            if (mod) mod.hide();
+            document.getElementById('modalRascunhosRetro').style.display = 'none';
+            document.getElementById('overlayRetroMsg').style.display = 'none';
         },
 
         delR(id) {
@@ -187,7 +169,7 @@
         },
 
         async clear() {
-            if (!confirm('Limpar campos?')) return;
+            if (!await window.confirmRetro('Limpar campos?', 'Aviso')) return;
             this.el.tit.value = this.el.con.value = this.el.bus.value = this.el.id.value = '';
             this.dest = null;
             localStorage.removeItem('cartinha_tmp');
@@ -195,7 +177,7 @@
         },
 
         async send() {
-            if (!this.dest || !this.el.tit.value || !this.el.con.value) return mostrarFeedback('Preencha tudo', 'warning');
+            if (!this.dest || !this.el.tit.value || !this.el.con.value) return alert('Preencha todos os campos!');
             const btn = document.getElementById('btnEnviar');
             btn.disabled = true;
             try {
@@ -205,23 +187,22 @@
                     body: JSON.stringify({ recipientusername: this.dest.username, title: this.el.tit.value, body: this.el.con.value })
                 });
                 if (res.ok) {
-                    mostrarFeedback('Enviada!');
+                    alert('Cartinha enviada com sucesso!');
                     localStorage.removeItem('cartinha_tmp');
                     location.href = '/cartinhas';
                 } else {
                     const err = await res.json();
-                    mostrarFeedback(err.message, 'danger');
+                    alert(err.message || 'Erro ao enviar');
                 }
-            } catch (e) { mostrarFeedback('Erro técnico', 'danger'); }
+            } catch (e) { alert('Erro técnico de conexão'); }
             finally { btn.disabled = false; }
         }
     };
     composer.init();
+
+    // Fechar overlays ao clicar neles
+    document.getElementById('overlayRetroMsg').onclick = () => {
+        document.getElementById('modalRascunhosRetro').style.display = 'none';
+        document.getElementById('overlayRetroMsg').style.display = 'none';
+    };
 </script>
-
-<style>
-    .hover-bg:hover { background-color: #f8f9fa; }
-    .textarea-cartinha:focus { box-shadow: none !important; }
-</style>
-
-<%- include('../../utils/modal-confirmacao') %>

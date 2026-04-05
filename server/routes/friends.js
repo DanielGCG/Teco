@@ -7,9 +7,10 @@ FriendRouter.get('/', async (req, res) => {
         description: "Gerencie suas conexões",
         icon: '',
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/social/lista-amigos', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });

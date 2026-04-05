@@ -1,25 +1,25 @@
 <link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
 <script src="/js/commons/cartinhas-common.js"></script>
 
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 fw-bold mb-0">Mensagens Favoritas</h2>
-        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary border-0">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
-        </a>
+<div class="window">
+    <div class="window-header">
+        <span>Cartinhas Favoritas</span>
+        <div style="float: right;">
+            <a href="/cartinhas" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
+        </div>
     </div>
+    <div class="window-content">
+        <div id="loading" style="text-align: center; padding: 20px;">
+            <p>Carregando seus tesouros...</p>
+        </div>
 
-    <div id="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-    </div>
+        <div id="cartinhas-container" style="display: none;">
+            <div id="cartas-grid"></div>
+        </div>
 
-    <div id="cartinhas-container" style="display: none;">
-        <div id="cartas-grid"></div>
-    </div>
-
-    <div id="sem-cartinhas" class="text-center py-5" style="display: none;">
-        <div class="display-1 text-muted mb-3 opacity-25"><i class="bi bi-star"></i></div>
-        <p class="text-muted">Nenhuma cartinha favoritada...</p>
+        <div id="sem-cartinhas" style="display: none; text-align: center; padding: 20px;">
+            <p>Nenhuma cartinha favoritada...</p>
+        </div>
     </div>
 </div>
 
@@ -29,12 +29,14 @@ let dataCache = [];
 
 async function carregarCartinhas() {
     const l = document.getElementById('loading');
+    const container = document.getElementById('cartinhas-container');
+    const empty = document.getElementById('sem-cartinhas');
+
     try {
         const res = await fetch('/api/cartinhas/favoritas', { credentials: 'include' });
         if (!res.ok) throw new Error();
         const raw = await res.json();
         
-        // Agrupar por remetente para o grid common
         const grouped = {};
         raw.forEach(c => {
             const rid = c.remetente?.publicid || 'anon';
@@ -44,6 +46,15 @@ async function carregarCartinhas() {
         
         dataCache = Object.values(grouped);
         l.style.display = 'none';
+
+        if (dataCache.length === 0) {
+            empty.style.display = 'block';
+            container.style.display = 'none';
+            return;
+        }
+
+        empty.style.display = 'none';
+        container.style.display = 'block';
 
         renderizarGridCartinhas(dataCache, '#cartas-grid', {
             abrirCartinha: (id) => {
@@ -61,27 +72,25 @@ async function carregarCartinhas() {
             }
         });
     } catch (e) {
-        l.innerHTML = '<div class="alert alert-danger mx-auto" style="max-width:400px">Erro ao carregar favoritas.</div>';
+        l.innerHTML = '<div style="color: red; text-align: center;">Erro ao carregar favoritas.</div>';
     }
 }
 
 async function toggleFav(id) {
+    if (!await window.confirmRetro('Desfavoritar esta mensagem?')) return;
     await toggleFavoritoCommon(id, dataCache);
     window.modalCartinha.fechar();
     carregarCartinhas();
 }
 
 async function confirmDel(id) {
-    if (!confirm('Excluir permanentemente?')) return;
+    if (!await window.confirmRetro('Excluir esta favorita permanentemente?')) return;
     try {
         await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
         window.modalCartinha.fechar();
         carregarCartinhas();
-        mostrarFeedback('Excluída!');
-    } catch (e) { mostrarFeedback('Erro', 'danger'); }
+    } catch (e) { alert('Erro ao excluir'); }
 }
 
 document.addEventListener('DOMContentLoaded', carregarCartinhas);
 </script>
-
-<%- include('../../utils/modal-confirmacao') %>

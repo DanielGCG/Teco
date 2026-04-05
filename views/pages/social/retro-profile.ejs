@@ -25,9 +25,9 @@
                         </div>
                     </div>
                 </div>
-                <div id="retro-banner-container" class="window" style="display: none; margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; flex-direction: column;">
-                    <div class="window-content" style="padding: 0; flex-grow: 1; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden;">
-                        <img id="retro-banner-img" src="" style="width: 100%; max-height: 150px; object-fit: cover; display: block; image-rendering: pixelated; cursor: pointer;" onclick="window.open(this.src)">
+                <div id="retro-banner-container" class="window" style="display: none; margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+                    <div class="window-content" style="padding: 0; flex-grow: 1; height: 100%; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden;">
+                        <img id="retro-banner-img" src="" style="width: 100%; height: 100%; min-height: 125px; max-height: 170px; object-fit: cover; display: block; image-rendering: pixelated; cursor: pointer;" onclick="window.open(this.src)">
                     </div>
                 </div>
             </div>
@@ -62,11 +62,12 @@
             <div class="window-content">
                 <textarea id="retro-post-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="No que você está pensando agora?"></textarea>
                 <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
-                <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="font-size: 11px;">
+                <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div style="flex-grow: 1;">
+                        <button type="button" onclick="document.getElementById('retro-post-media').click()" style="padding: 2px 15px; font-size: 11px;">ADICIONAR MÍDIA</button>
+                        <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="display: none;">
                     </div>
-                    <button id="btn-retro-postar">POSTAR</button>
+                    <button id="btn-retro-postar" style="padding: 2px 20px;">POSTAR</button>
                 </div>
             </div>
         </div>
@@ -107,9 +108,13 @@
             const user = await response.json();
             window.profileUserId = user.publicid;
 
-            // Status notification
+            // Identificador para o SocketUI atualizar o status em tempo real
             const avatarContainer = document.getElementById('profile-avatar-container');
-            if (avatarContainer) avatarContainer.setAttribute('data-user-id', user.publicid);
+            if (avatarContainer) {
+                avatarContainer.setAttribute('data-user-id', user.publicid);
+                const statusDot = document.getElementById('user-status-dot');
+                if (statusDot) statusDot.classList.add('status-dot');
+            }
 
             document.getElementById("retro-username").textContent = user.username;
             document.getElementById("retro-avatar").src = user.profileimage;
@@ -242,8 +247,12 @@
                 <a href="/${f.username}" class="retro-friend-item" data-user-id="${f.publicid}">
                     <img src="${f.profileimage}" border="1">
                     <span>${f.username}</span>
+                    <span class="status-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: auto;"></span>
                 </a>
             `).join('');
+            
+            // Solicita os status iniciais dos amigos carregados
+            if (typeof SocketUI !== 'undefined') SocketUI.requestInitialStatus();
         } else {
             list.innerHTML = '<span style="font-size: 11px;">Nenhum amigo</span>';
         }

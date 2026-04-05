@@ -17,7 +17,7 @@
                 <a href="/"><img src="/images/Teco.png" alt="Logo" style="height: 40px;"></a>
             </div>
             <div style="display: flex; align-items: center; flex-grow: 1; justify-content: center;">
-                <div class="window" style="width: 400px; margin: 0;"><marquee style="background-color: var(--retro-header-bg); color: var(--retro-header-text);">Bem-vindo ao Site do Boteco! * Pedro Cock fascista!</marquee></div>
+                <div class="window" style="width: 400px; margin: 0;"><marquee style="background-color: var(--retro-header-bg); color: var(--retro-header-text);">Bem-vindo ao Site do Boteco!</marquee></div>
             </div>
             <div id="retro-notifications-container" style="position: relative;">
                 <a href="javascript:void(0)" id="notificationsDropdownBtn" style="text-decoration: none; display: inline-block;">
@@ -84,6 +84,18 @@
                             </div>
                         </div>
 
+                        <div class="window">
+                            <div id="botecoanalytics" class="window-content" style="text-align: center;">
+                                <div style="position: relative; margin: 0 auto 5px; overflow: hidden;">
+                                    <a href="https://analytics.sitedoboteco.com.br" target="_blank">
+                                    <img id="botecoanalytics-img" src="/images/BotecoAnalytics.webp" border="0" style="width: 100%; object-fit: fit; display: block; align-content:center; box-sizing: border-box;">
+                                    </a>
+                                </div>
+                                <div id="retro-img-txt"></div>
+                            </div>
+                        </div>
+
+
                         <script>
                             (async function loadImgDia() {
                                 try {
@@ -129,10 +141,16 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/global/socket-connector.js"></script>
+    <script src="/js/global/socket-ui.js"></script>
     <script>
         // Inicializa conexão Socket.IO global
         const notificationsSocket = SocketConnector.init();
         window.appSocket = notificationsSocket;
+        
+        // Inicializa o gerenciador de UI de Socket
+        if (typeof SocketUI !== 'undefined') {
+            SocketUI.init(window.appSocket);
+        }
         
         const notificationsDropdownBtn = document.getElementById('notificationsDropdownBtn');
         const notificationsBadge = document.getElementById('notificationsBadge');

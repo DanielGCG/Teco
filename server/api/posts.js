@@ -220,18 +220,30 @@ PostsRouter.get('/feed', async (req, res) => {
         // Incluir o próprio usuário no feed
         followingIds.push(userId);
 
+        // Filtrar o feed: apenas posts normais, reposts e qrt (quote-posts).
+        // Comentários ('comment') NUNCA aparecem no feed, a menos que sejam repostados.
+        // Se o usuário B repostar o comentário do usuário A, o tipo do post de B será 'repost', por isso aparece.
+        let filterTypes = { [Op.in]: ['post', 'repost', 'reply'] };
+
         let where = {
-            type: { [Op.ne]: 'comment' }
+            type: filterTypes
         };
 
         if (type === 'following') {
             where.authorUserId = { [Op.in]: followingIds };
         } else {
-            // for-you: posts de quem segue + posts públicos (tipo 'post')
-            where[Op.or] = [
-                { authorUserId: { [Op.in]: followingIds } },
-                { type: 'post' }
-            ];
+            // for-you: posts de quem segue OU posts globais (respeitando o filtro de tipo)
+            where = {
+                [Op.and]: [
+                    { type: filterTypes },
+                    {
+                        [Op.or]: [
+                            { authorUserId: { [Op.in]: followingIds } },
+                            { type: 'post' } // Opcional: mostrar posts públicos mesmo de quem não segue
+                        ]
+                    }
+                ]
+            };
         }
 
         const posts = await Post.findAll({
@@ -262,7 +274,9 @@ PostsRouter.get('/user/:username', async (req, res) => {
         const posts = await Post.findAll({
             where: { 
                 authorUserId: user.id, 
-                type: { [Op.ne]: 'comment' }
+                // No perfil também só mostramos posts principais e reposts.
+                // Comentários ficam escondidos a menos que sejam repostados por ele.
+                type: { [Op.in]: ['post', 'repost', 'reply'] }
             },
             include: POST_INCLUDES,
             order: [['createdat', 'DESC']],
@@ -277,7 +291,7 @@ PostsRouter.get('/user/:username', async (req, res) => {
     }
 });
 
-// GET /posts/:publicid/replies - Listar respostas de um post
+// GET /posts/:publicid/replies - Listar respostas de um post (incluindo respostas de respostas)
 PostsRouter.get('/:publicid/replies', async (req, res) => {
     try {
         const { publicid } = req.params;
@@ -287,7 +301,8 @@ PostsRouter.get('/:publicid/replies', async (req, res) => {
         const replies = await Post.findAll({
             where: { 
                 attachedPostId: parentPost.id, 
-                type: 'comment'
+                // Agora o tipo pode ser 'comment' ou 'reply' (repost com comentário no contexto de thread)
+                type: { [Op.in]: ['comment', 'reply'] }
             },
             include: POST_INCLUDES,
             order: [

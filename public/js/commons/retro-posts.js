@@ -43,15 +43,18 @@ const RetroPosts = {
         }
         
         const isAuthor = post.author.username === currentUsername;
-        const deleteBtn = isAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETAR]</a>` : '';
+        const deleteBtn = isAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETER]</a>` : '';
 
         return `
             <div class="feed-post" id="post-${post.publicid}" style="border-bottom: 1px solid var(--retro-border-light); padding-bottom: 10px; margin-bottom: 15px;">
                 <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
                     <img src="${post.author.profileimage}" style="width: 32px; height: 32px; border: 1px solid var(--retro-border-dark); object-fit: cover; cursor: pointer;" onclick="window.location.href='/${post.author.username}'">
-                    <div>
+                    <div style="flex-grow: 1;">
                         <strong class="post-author" style="cursor: pointer;" onclick="window.location.href='/${post.author.username}'">${post.author.username}</strong>
                         <div style="font-size: 10px; color: var(--retro-border-dark);">${date}</div>
+                    </div>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        ${deleteBtn}
                     </div>
                 </div>
                 <div style="word-wrap: break-word; margin: 10px 0; line-height: 1.4;">${post.content || ''}</div>
@@ -59,10 +62,11 @@ const RetroPosts = {
                 ${mediaHtml}
                 <div style="margin-top: 10px; font-size: 11px; border-top: 1px dashed var(--retro-border-dark); padding-top: 5px; display: flex; gap: 15px; align-items: center;">
                     <a href="/${post.author.username}/status/${post.publicid}" style="font-weight: bold;">[ABRIR POST]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[CURTIR]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: var(--retro-header-bg);">[REPOSTAR]</a>
-                    ${deleteBtn}
-                    <span style="margin-left: auto;"></b>Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</span>
+                    <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[CURTIR ${post.likecount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroReply('${post.publicid}', '${post.author.username}')" style="color: var(--retro-header-bg);">[RESPONDER ${post.replycount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: #555;">[REPOSTAR ${post.repostcount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroCopyLink('${post.author.username}', '${post.publicid}')" style="color: var(--retro-link);">[COPIAR LINK]</a>
+                    <span style="margin-left: auto; color: #888; display: none;"></b>Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</span>
                 </div>
             </div>
         `;
@@ -89,6 +93,20 @@ const RetroPosts = {
                 const res = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
                 if (res.ok && callbackReload) callbackReload();
             } catch (e) { console.error(e); }
+        };
+
+        window.handleRetroReply = (postId, username) => {
+            // No modo retrô, "responder" apenas abre o post para ver a caixa de comentário
+            // ou poderíamos abrir um modal de resposta rápida. 
+            // Seguindo o padrão Twitter/Bluesky de foco no post:
+            window.location.href = `/${username}/status/${postId}`;
+        };
+
+        window.handleRetroCopyLink = (username, postId) => {
+            const url = `${window.location.origin}/${username}/status/${postId}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copiado para a área de transferência!');
+            });
         };
 
         window.handleRetroRepost = async (postId) => {

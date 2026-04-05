@@ -1,12 +1,12 @@
 <!-- Modal de Confirmação Retrô -->
-<div id="retro-modal-confirmacao" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; min-width: 300px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
+<div id="retro-modal-confirmacao" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20001; min-width: 300px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
     <div class="window-header">
         <span id="retro-confirm-title">Confirmar</span>
         <button onclick="closeRetroConfirm()" style="padding: 0 5px; height: 16px; line-height: 12px; font-size: 10px;">X</button>
     </div>
     <div class="window-content" style="background: var(--retro-bg); text-align: center;">
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; text-align: left;">
-            <div style="background: #ffff00; border: 2px solid #000; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px;">!</div>
+            <div style="background: #ffff00; border: 2px solid #000; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px;">?</div>
             <p id="retro-confirm-text" style="margin: 0;"></p>
         </div>
         <div style="display: flex; justify-content: center; gap: 10px;">
@@ -16,30 +16,41 @@
     </div>
 </div>
 
-<div id="retro-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 9998;"></div>
+<div id="retro-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 20000;"></div>
 
 <script>
     function closeRetroConfirm() {
         document.getElementById('retro-modal-confirmacao').style.display = 'none';
         document.getElementById('retro-modal-overlay').style.display = 'none';
+        
+        // Remover classe de body-lock se houver para evitar tela travada
+        document.body.style.overflow = '';
     }
 
     window.confirmRetro = function(message, title = 'Confirmação') {
         return new Promise((resolve) => {
+            // Fechar qualquer outro overlay que possa estar aberto e causando bug
+            document.getElementById('retro-modal-overlay').style.display = 'block';
+            document.getElementById('retro-modal-confirmacao').style.display = 'block';
+            
             document.getElementById('retro-confirm-text').textContent = message;
             document.getElementById('retro-confirm-title').textContent = title;
-            document.getElementById('retro-modal-confirmacao').style.display = 'block';
-            document.getElementById('retro-modal-overlay').style.display = 'block';
+            
+            // Tentar focar no botão "Sim" para melhor UX
+            setTimeout(() => document.getElementById('retro-confirm-yes').focus(), 50);
 
             const btnYes = document.getElementById('retro-confirm-yes');
             const btnNo = document.getElementById('retro-confirm-no');
+            const overlay = document.getElementById('retro-modal-overlay');
 
-            const handleYes = () => {
+            const handleYes = (e) => {
+                e.stopPropagation();
                 cleanup();
                 resolve(true);
             };
 
-            const handleNo = () => {
+            const handleNo = (e) => {
+                e.stopPropagation();
                 cleanup();
                 resolve(false);
             };
@@ -47,11 +58,13 @@
             const cleanup = () => {
                 btnYes.removeEventListener('click', handleYes);
                 btnNo.removeEventListener('click', handleNo);
+                overlay.removeEventListener('click', handleNo);
                 closeRetroConfirm();
             };
 
             btnYes.addEventListener('click', handleYes);
             btnNo.addEventListener('click', handleNo);
+            overlay.addEventListener('click', handleNo); // Clicar fora cancela
         });
     };
 </script>

@@ -1,77 +1,64 @@
-<link rel="stylesheet" href="/styles/posts.css">
+<div class="window" style="margin-bottom: 10px;">
+    <div class="window-header">Painel Social - Estatísticas</div>
+    <div class="window-content">
+        <table width="100%" border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; background: white; text-align: center;">
+            <tr>
+                <td width="33%">
+                    <div style="font-size: 10px; color: #666;">Amigos</div>
+                    <b id="stat-friends" style="font-size: 14px;">0</b>
+                </td>
+                <td width="33%">
+                    <div style="font-size: 10px; color: #666;">Seguindo</div>
+                    <b id="stat-following" style="font-size: 14px;">0</b>
+                </td>
+                <td width="34%">
+                    <div style="font-size: 10px; color: #666;">Seguidores</div>
+                    <b id="stat-followers" style="font-size: 14px;">0</b>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
 
-<style>
-    .feed-sidebar {
-        flex-shrink: 0;
-        position: sticky;
-        top: 0;
-        max-height: calc(100vh - 2rem);
-        overflow-y: auto;
-    }
-    .feed-tabs-container {
-        position: sticky;
-        flex-shrink: 0;
-        z-index: 5;
-        background-color: var(--fundo-global);
-        top: 0;
-    }
-</style>
-
-<div class="container-xxl mt-4">
-    <div class="row justify-content-center">
-        <!-- Sidebar -->
-        <div class="col-4 d-flex flex-column">
-            <div class="feed-sidebar rounded shadow-sm">
-                <h3 class="fw-bold px-3 pt-3">
-                    <span class="marca-texto-roxo">Painel social</span>
-                </h3>
-                <div class="p-3">
-                    <div class="d-flex justify-content-between text-center mb-3 bg-white rounded shadow-sm p-2 gap-1">
-                        <div class="flex-grow-1 border-end">
-                            <div class="small text-muted" style="font-size: 0.75rem;">Amigos</div>
-                            <div class="fw-bold h6 mb-0" id="stat-friends">0</div>
-                        </div>
-                        <div class="flex-grow-1 border-end">
-                            <div class="small text-muted" style="font-size: 0.75rem;">Seguindo</div>
-                            <div class="fw-bold h6 mb-0" id="stat-following">0</div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="small text-muted" style="font-size: 0.75rem;">Seguidores</div>
-                            <div class="fw-bold h6 mb-0" id="stat-followers">0</div>
-                        </div>
-                    </div>
-                    
-                    <div class="search-section mt-3">
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="user-search-input" class="form-control" placeholder="Buscar usuários...">
-                            <button class="btn btn-primary" id="btn-search"><i class="bi bi-search"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="window" style="margin-bottom: 10px;">
+    <div class="window-header">Buscar Usuários</div>
+    <div class="window-content">
+        <div style="display: flex; gap: 5px;">
+            <input type="text" id="user-search-input" style="flex-grow: 1;" placeholder="Digite o nome...">
+            <button id="btn-search">BUSCAR</button>
+            <button id="btn-clear-search" style="display: none;">X</button>
         </div>
+    </div>
+</div>
 
-        <!-- Main Content -->
-        <div class="col-8">
-            <div id="tabs-container" class="feed-tabs-container d-flex border-bottom mb-3 rounded-top">
-                <button class="btn flex-grow-1 py-1 fw-bold feed-tab active" data-type="following" onclick="changeSection('following')">Seguindo</button>
-                <button class="btn flex-grow-1 py-1 fw-bold feed-tab" data-type="followers" onclick="changeSection('followers')">Seguidores</button>
-            </div>
+<div id="search-header" class="window" style="display: none; margin-bottom: 10px; background: #ffffcc; border: 1px dashed #808080;">
+    <div class="window-content" style="padding: 5px; font-size: 11px;">
+        <b>Resultados da busca:</b>
+    </div>
+</div>
 
-            <div id="search-header" class="d-none mb-3 d-flex justify-content-between align-items-center bg-white p-2 rounded shadow-sm">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-search me-2"></i>Resultados da busca</h6>
-                <button class="btn btn-sm btn-outline-danger border-0" onclick="clearSearch()"><i class="bi bi-x-lg"></i></button>
-            </div>
-
-            <div id="social-list-container" class="row row-cols-1 g-3">
-                <!-- Lista será renderizada aqui -->
-                <div class="col-12 text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                </div>
+<div class="window">
+    <div id="tabs-container" class="window-header" style="padding: 0; display: flex; height: 30px; line-height: 30px; background: var(--retro-sidebar-bg); border-bottom: 2px solid var(--retro-border-dark);">
+        <div class="feed-tab active" data-type="following" onclick="changeSection('following')" style="padding: 0 20px; cursor: pointer; border-right: 2px solid var(--retro-border-dark); height: 100%; box-sizing: border-box;">Seguindo</div>
+        <div class="feed-tab" data-type="followers" onclick="changeSection('followers')" style="padding: 0 20px; cursor: pointer; border-right: 2px solid var(--retro-border-dark); height: 100%; box-sizing: border-box;">Seguidores</div>
+    </div>
+    <div class="window-content" style="padding: 0;">
+        <div id="social-list-container">
+            <div style="text-align: center; padding: 20px;">
+                <p style="font-size: 11px;">Carregando dados sociais...</p>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .feed-tab:not(.active) { color: #555; border-bottom: 2px solid var(--retro-border-dark); }
+    .feed-tab.active { background: white; font-weight: bold; color: #000; border-bottom: none; border-top: 2px solid var(--retro-border-light); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 1px solid #000; }
+    
+    .retro-user-row { transition: background 0.1s; }
+    .retro-user-row:hover { background: #fdfde4; }
+</style>
 
 <script src="/js/commons/follow-common.js"></script>
 <script>
@@ -82,73 +69,86 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            // Tenta obter usuário do contexto global ou via refresh se necessário
-            loggedUser = window.currentUser || (await UserContext.refresh());
+            // No layout retro, UserContext ou window.currentUser devem estar disponíveis
+            loggedUser = window.currentUser || (typeof UserContext !== 'undefined' ? await UserContext.refresh() : null);
+            
+            if (!loggedUser) {
+                // Tentar buscar direto da API se falhar
+                const res = await fetch('/api/users/me');
+                if (res.ok) loggedUser = await res.json();
+            }
 
             await loadAllData();
-            changeSection('following');
-
+            
             const searchInput = document.getElementById('user-search-input');
             const searchBtn = document.getElementById('btn-search');
+            const clearBtn = document.getElementById('btn-clear-search');
 
-            const performSearch = debounce(async () => {
+            const performSearch = async () => {
                 const query = searchInput.value.trim();
                 if (query.length > 0) {
                     isSearching = true;
+                    searchBtn.textContent = '...';
                     await searchUsers(query);
-                    document.getElementById('tabs-container').classList.add('d-none');
-                    document.getElementById('search-header').classList.remove('d-none');
+                    searchBtn.textContent = 'BUSCAR';
+                    document.getElementById('search-header').style.display = 'block';
+                    clearBtn.style.display = 'block';
                     renderList();
                 } else {
                     clearSearch();
                 }
-            }, 400);
+            };
 
-            if (searchInput) searchInput.addEventListener('input', performSearch);
-            if (searchBtn) searchBtn.addEventListener('click', performSearch);
+            searchBtn.onclick = performSearch;
+            clearBtn.onclick = clearSearch;
+            searchInput.onkeydown = (e) => { if(e.key === 'Enter') performSearch(); };
             
+            changeSection('following');
         } catch (err) {
-            console.error('[Social] Erro na inicialização:', err);
+            console.error('[Social] Erro:', err);
         }
     });
 
+    function updateUserStatusInUI(publicid, status) {
+        // Esta função agora é legada, o SocketUI cuida disso globalmente
+        if (typeof SocketUI !== 'undefined') {
+            SocketUI.updateUserStatus(publicid, status);
+        }
+    }
+
     async function loadAllData() {
-        const container = document.getElementById('social-list-container');
+        if (!loggedUser) return;
         try {
             const [friends, followData, followerData] = await Promise.all([
-                FollowAPI.carregarAmigos().catch(e => (console.error(e), [])),
-                fetch(`/api/follows/following/${loggedUser.publicid}`).then(r => r.json()).catch(e => ({ following: [] })),
-                fetch(`/api/follows/followers/${loggedUser.publicid}`).then(r => r.json()).catch(e => ({ followers: [] }))
+                FollowAPI.carregarAmigos().catch(() => []),
+                fetch(`/api/follows/following/${loggedUser.publicid}`).then(r => r.json()).catch(() => ({ following: [] })),
+                fetch(`/api/follows/followers/${loggedUser.publicid}`).then(r => r.json()).catch(() => ({ followers: [] }))
             ]);
             
             dataCache.friends = new Set((friends || []).map(u => u.publicid));
             dataCache.following = followData.following || [];
             dataCache.followers = followerData.followers || [];
 
-            const statFriends = document.getElementById('stat-friends');
-            const statFollowing = document.getElementById('stat-following');
-            const statFollowers = document.getElementById('stat-followers');
-
-            if (statFriends) statFriends.textContent = dataCache.friends.size;
-            if (statFollowing) statFollowing.textContent = dataCache.following.length;
-            if (statFollowers) statFollowers.textContent = dataCache.followers.length;
-            
-        } catch (err) {
-            console.error('[Social] Erro ao carregar dados:', err);
-            if (container) container.innerHTML = '<div class="col-12 text-center py-5 text-danger">Erro ao carregar dados sociais.</div>';
-        }
+            document.getElementById('stat-friends').textContent = dataCache.friends.size;
+            document.getElementById('stat-following').textContent = dataCache.following.length;
+            document.getElementById('stat-followers').textContent = dataCache.followers.length;
+        } catch (err) { console.error(err); }
     }
 
     function clearSearch() {
         isSearching = false;
         document.getElementById('user-search-input').value = '';
-        document.getElementById('tabs-container').classList.remove('d-none');
-        document.getElementById('search-header').classList.add('d-none');
+        document.getElementById('search-header').style.display = 'none';
+        document.getElementById('btn-clear-search').style.display = 'none';
         renderList();
     }
 
     function changeSection(type) {
-        if (isSearching) return;
+        if (isSearching) {
+            isSearching = false;
+            document.getElementById('search-header').style.display = 'none';
+            document.getElementById('btn-clear-search').style.display = 'none';
+        }
         currentSection = type;
         document.querySelectorAll('.feed-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.type === type);
@@ -159,57 +159,92 @@
     function renderList() {
         const container = document.getElementById('social-list-container');
         const list = isSearching ? dataCache.search : dataCache[currentSection];
-        container.innerHTML = '';
-
+        
         if (!list || list.length === 0) {
-            container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><i class="bi bi-info-circle fs-2 d-block mb-2"></i>Nenhum usuário encontrado.</div>`;
+            container.innerHTML = '<div style="text-align: center; padding: 30px; font-size: 11px; color: #666;">Nenhum usuário nesta lista.</div>';
             return;
         }
 
+        let html = `
+            <table width="100%" border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; background: white; font-size: 12px; border-color: var(--retro-border-dark);">
+                <thead>
+                    <tr style="background: var(--retro-sidebar-bg); font-size: 11px; text-transform: uppercase;">
+                        <th width="50" align="center">ID</th>
+                        <th align="left">Usuário</th>
+                        <th align="left">Estado & Biografia</th>
+                        <th width="160" align="center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
         list.forEach(user => {
-            if (user.publicid === loggedUser.publicid) return;
-            const col = document.createElement('div');
-            col.className = 'col';
+            if (loggedUser && user.publicid === loggedUser.publicid) return;
             
-            const isFriend = dataCache.friends.has(user.publicid);
             const isFollowing = dataCache.following.some(f => f.publicid === user.publicid);
+            const isFriend = dataCache.friends.has(user.publicid);
             
-            // Injetar isFriend para o UIUtils usar na badge (em 'search' type)
-            user.isFriend = isFriend;
-
-            const actions = [
-                UIUtils.createActionLink({ icon: 'bi bi-chat-fill', href: `/dms?user=${user.username}`, variant: 'primary', className: 'btn-sm' })
-            ];
-
-            const btnFollowLabel = isFollowing ? 'Deixar de seguir' : 'Seguir';
-            const btnFollowVariant = isFollowing ? 'outline-secondary' : 'success';
-            
-            actions.push(UIUtils.createActionButton({
-                text: btnFollowLabel,
-                icon: isFollowing ? 'bi bi-person-x' : 'bi bi-person-plus',
-                variant: btnFollowVariant,
-                size: 'sm',
-                onClick: async (e) => {
-                    const btn = e.currentTarget;
-                    btn.disabled = true;
-                    const action = isFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
-                    const res = await action(user.publicid, { showAlert: false, confirmMessage: isFollowing ? 'Deseja deixar de seguir?' : null });
-                    if (res.success) { 
-                        await loadAllData(); 
-                        if (isSearching) await searchUsers(document.getElementById('user-search-input').value);
-                        renderList(); 
-                    } else btn.disabled = false;
-                }
-            }));
-
-            // Usar type 'search' porque ele já suporta a badge de Amigo no ui-common.js
-            const card = UIUtils.createUserCard(user, { type: 'search', avatarSize: 48, actions });
-            card.dataset.userId = user.publicid;
-            col.appendChild(card);
-            container.appendChild(col);
+            // Note: O SocketUI cuidará de atualizar as cores e textos assim que carregar
+            html += `
+                <tr class="retro-user-row" data-user-id="${user.publicid}">
+                    <td align="center">
+                        <div style="width: 40px; height: 40px; border: 1px solid #000; background: #eee; overflow: hidden;">
+                            <img src="${user.profileimage}" width="40" height="40" style="display:block; object-fit: cover;">
+                        </div>
+                    </td>
+                    <td>
+                        <div style="margin-bottom: 2px;">
+                            <a href="/${user.username}" style="color: #0000ee; font-weight: bold; text-decoration: underline; font-size: 13px;">${user.username}</a>
+                        </div>
+                        ${isFriend ? '<span style="background: #e0ffe0; color: #008000; border: 1px solid #008000; font-size: 9px; padding: 0 3px; font-weight: bold;">AMIGO</span>' : ''}
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
+                            <span class="status-dot" style="background: #808080;"></span>
+                            <span class="status-text" style="font-weight: bold; font-size: 10px; color: #444;">Offline</span>
+                        </div>
+                        <div style="color: #333; font-size: 11px; line-height: 1.2; max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
+                            ${user.bio || '<i style="color: #999;">Sem biografia informada.</i>'}
+                        </div>
+                    </td>
+                    <td align="center">
+                        <div style="display: flex; flex-direction: column; gap: 4px; padding: 0 5px;">
+                            <button onclick="handleFollow('${user.publicid}', ${isFollowing})" 
+                                    style="width: 100%; height: 24px; cursor: pointer; font-size: 11px; font-weight: ${isFollowing ? 'normal' : 'bold'}; ${isFollowing ? 'color: #aa0000;' : ''}">
+                                ${isFollowing ? 'Deixar Seguir' : 'Seguir +'}
+                            </button>
+                            <button onclick="location.href='/dms?user=${user.username}'" 
+                                    style="width: 100%; height: 24px; cursor: pointer; font-size: 11px;">
+                                Enviar Mensagem
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
         });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        // Solicita atualização de status para os elementos recém-renderizados
+        if (typeof SocketUI !== 'undefined') {
+            SocketUI.requestInitialStatus();
+        }
+    }
+
+    async function handleFollow(id, isFollowing) {
+        const action = isFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
         
-        UIUtils.requestPageStatuses();
+        if (isFollowing) {
+            if (!await window.confirmRetro('Deseja realmente deixar de seguir este usuário?')) return;
+        }
+
+        const res = await action(id, { showAlert: false });
+        if (res.success) { 
+            await loadAllData(); 
+            if (isSearching) await searchUsers(document.getElementById('user-search-input').value);
+            renderList(); 
+        }
     }
 
     async function searchUsers(query) {
@@ -218,17 +253,6 @@
             const res = await fetch(`/api/dms/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             dataCache.search = data.users || [];
-        } catch (err) {
-            console.error('Erro na busca:', err);
-        }
-    }
-
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
+        } catch (err) { console.error('Erro busca:', err); }
     }
 </script>
-

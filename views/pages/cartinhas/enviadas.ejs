@@ -1,53 +1,25 @@
 <link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
 <script src="/js/commons/cartinhas-common.js"></script>
 
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 fw-bold mb-0">Mensagens Enviadas</h2>
-        <a href="/cartinhas" class="btn btn-sm btn-outline-secondary border-0">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
-        </a>
+<div class="window">
+    <div class="window-header">
+        <span>Cartinhas Enviadas</span>
+        <div style="float: right;">
+            <a href="/cartinhas" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
+        </div>
     </div>
+    <div class="window-content">
+        <div id="loading" style="text-align: center; padding: 20px;">
+            <p>Carregando histórico...</p>
+        </div>
 
-    <div id="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-    </div>
-
-    <div id="cartinhas-container" style="display: none;">    
-        <div id="cartas-grid"></div>
-    </div>
-    
-    <div id="sem-cartinhas" class="text-center py-5" style="display: none;">
-        <div class="display-1 text-muted mb-3 opacity-25"><i class="bi bi-send"></i></div>
-        <p class="text-muted">Você ainda não enviou nada...</p>
-        <a href="/cartinhas/escrever" class="btn btn-primary btn-sm mt-2">Escrever agora</a>
-    </div>
-</div>
-
-<div class="modal fade" id="editarModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h6 class="modal-title fw-bold">Editar Cartinha</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="form-editar">
-                    <input type="hidden" id="edit-cartinha-id">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Assunto:</label>
-                        <input type="text" class="form-control form-control-sm border-0 bg-light" id="edit-titulo" maxlength="160">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Mensagem:</label>
-                        <textarea class="form-control border-0 bg-light" id="edit-conteudo" rows="6" maxlength="2000"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-sm btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-sm btn-primary px-3" id="salvar-edicao-btn">Salvar</button>
-            </div>
+        <div id="cartinhas-container" style="display: none;">    
+            <div id="cartas-grid"></div>
+        </div>
+        
+        <div id="sem-cartinhas" style="display: none; text-align: center; padding: 20px;">
+            <p>Você ainda não enviou nada...</p>
+            <a href="/cartinhas/escrever">Escrever agora</a>
         </div>
     </div>
 </div>
@@ -57,94 +29,68 @@
     let dataCache = [];
 
     async function carregarCartinhas() {
-    const l = document.getElementById('loading');
-    try {
-        const res = await fetch('/api/cartinhas/enviadas', { credentials: 'include' });
-        if (!res.ok) throw new Error();
-        dataCache = await res.json();
-        l.style.display = 'none';
+        const l = document.getElementById('loading');
+        const container = document.getElementById('cartinhas-container');
+        const empty = document.getElementById('sem-cartinhas');
 
-        renderizarGridCartinhas(dataCache, '#cartas-grid', {
-            abrirCartinha: (id) => {
-                const c = encontrarCartinha(id, dataCache), u = encontrarUsuarioPorCartinha(id, dataCache);
-                if (!c || !u) return;
+        try {
+            const res = await fetch('/api/cartinhas/enviadas', { credentials: 'include' });
+            if (!res.ok) throw new Error();
+            dataCache = await res.json();
+            l.style.display = 'none';
 
-                window.modalCartinha.abrir({
-                    tipo: 'enviadas', cartinha: c, usuario: u,
-                    acoes: [
-                        { label: 'Excluir', classe: 'btn-outline-danger', callback: () => confirmDel(id) },
-                        { label: 'Editar', classe: 'btn-primary', desabilitado: c.isread, callback: () => openEdit(id) }
-                    ]
-                });
-            }
-        });
-    } catch (e) {
-        l.innerHTML = '<div class="alert alert-danger mx-auto" style="max-width:400px">Erro ao carregar mensagens.</div>';
-    }
-}
-
-    async function openEdit(id) {
-        const c = encontrarCartinha(id, dataCache);
-        if (!c) return;
-        
-        // Se a cartinha não tiver body (veio da listagem que exclui esse campo), buscar os detalhes
-        if (c.body === undefined) {
-             try {
-                const res = await fetch(`/api/cartinhas/${c.publicid || c.id}`, { credentials: 'include' });
-                if (!res.ok) throw new Error();
-                const fullData = await res.json();
-                
-                // Atualiza o cache local para não ter que buscar de novo se abrir o modal de novo
-                c.body = fullData.body;
-                c.title = fullData.title; // Garante que o título também esteja atualizado
-            } catch (e) {
-                mostrarFeedback('Erro ao carregar conteúdo para edição', 'danger');
+            if (dataCache.length === 0) {
+                empty.style.display = 'block';
+                container.style.display = 'none';
                 return;
             }
-        }
 
-        document.getElementById('edit-cartinha-id').value = id;
-        document.getElementById('edit-titulo').value = c.title;
-        document.getElementById('edit-conteudo').value = c.body;
-        window.modalCartinha.fechar();
-        new bootstrap.Modal(document.getElementById('editarModal')).show();
+            empty.style.display = 'none';
+            container.style.display = 'block';
+
+            renderizarGridCartinhas(dataCache, '#cartas-grid', {
+                abrirCartinha: (id) => {
+                    const c = encontrarCartinha(id, dataCache), u = encontrarUsuarioPorCartinha(id, dataCache);
+                    if (!c || !u) return;
+                    window.usuarioCacheEdicao = u; // Cache para voltar da edição
+
+                    window.modalCartinha.abrir({
+                        tipo: 'enviadas', cartinha: c, usuario: u,
+                        acoes: [
+                            { label: 'Excluir', callback: () => confirmDel(id) },
+                            { label: 'Editar', callback: () => {
+                                window.modalCartinha.abrirEdicao(c, async (novoTitulo, novoConteudo) => {
+                                    try {
+                                        const res = await fetch(`/api/cartinhas/${id}`, {
+                                            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                                            credentials: 'include', body: JSON.stringify({ title: novoTitulo, body: novoConteudo })
+                                        });
+                                        if (res.ok) {
+                                            window.modalCartinha.fechar();
+                                            carregarCartinhas();
+                                        }
+                                    } catch (e) { alert('Erro ao salvar'); }
+                                });
+                            }}
+                        ]
+                    });
+                }
+            });
+        } catch (e) {
+            l.innerHTML = '<div style="color: red; text-align: center;">Erro ao carregar mensagens.</div>';
+        }
     }
 
-    document.getElementById('salvar-edicao-btn').onclick = async () => {
-        const id = document.getElementById('edit-cartinha-id').value;
-        const tit = document.getElementById('edit-titulo').value.trim();
-        const con = document.getElementById('edit-conteudo').value.trim();
-        if(!tit || !con) return;
-
-        const btn = document.getElementById('salvar-edicao-btn');
-        btn.disabled = true;
-        try {
-            const res = await fetch(`/api/cartinhas/${id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', body: JSON.stringify({ title: tit, body: con })
-            });
-            if (res.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('editarModal')).hide();
-                carregarCartinhas();
-                mostrarFeedback('Atualizada!');
-            }
-        } catch (e) { mostrarFeedback('Erro ao salvar', 'danger'); }
-        finally { btn.disabled = false; }
-    };
-
     async function confirmDel(id) {
-        if (!confirm('Excluir permanentemente?')) return;
+        if (!await window.confirmRetro('Excluir esta enviada permanentemente?')) return;
         try {
             const res = await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
             if (res.ok) { 
                 window.modalCartinha.fechar();
                 carregarCartinhas();
-                mostrarFeedback('Excluída!');
             }
-        } catch (e) { mostrarFeedback('Erro ao excluir', 'danger'); }
+        } catch (e) { alert('Erro ao excluir'); }
     }
 
     document.addEventListener('DOMContentLoaded', carregarCartinhas);
 </script>
-
-<%- include('../../utils/modal-confirmacao') %>

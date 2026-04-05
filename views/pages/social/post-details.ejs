@@ -1,5 +1,10 @@
 ﻿<div class="window">
-    <div class="window-header">Visualizar Post</div>
+    <div class="window-header">
+        <span>Visualizar Post</span>
+        <div style="float: right;">
+            <a href="/" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
+        </div>
+    </div>
     <div class="window-content" id="retro-post-details">
         <p style="text-align: center;">Carregando post...</p>
     </div>
@@ -10,9 +15,12 @@
     <div class="window-content">
         <textarea id="comment-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="Escreva sua resposta..."></textarea>
         <div id="comment-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
-        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
-            <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="font-size: 11px;">
-            <button onclick="enviarComentario()">POSTAR</button>
+        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <div style="flex-grow: 1;">
+                <button type="button" onclick="document.getElementById('comment-media-input').click()" style="padding: 2px 15px; font-size: 11px;">ADICIONAR MÍDIA</button>
+                <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="display: none;">
+            </div>
+            <button onclick="enviarComentario()" style="padding: 2px 20px;">POSTAR</button>
         </div>
     </div>
 </div>
@@ -48,44 +56,8 @@
         }
 
         function renderPostDetails(post) {  
-            const date = new Date(post.createdat).toLocaleString();
             const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
-            const isAuthor = post.author.username === currentUsername;
-            const deleteBtn = isAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETAR]</a>` : '';
-
-            let mediaHtml = '';
-            if (post.media && post.media.length > 0) {
-                mediaHtml = '<div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">';
-                post.media.forEach(m => {
-                    const borderStyle = 'border: 1px dashed var(--retro-border-dark);';
-                    if (m.type === 'video') {
-                        mediaHtml += `<video src="${m.url}" style="max-width: 100%; max-height: 400px; ${borderStyle} object-fit: cover;" controls></video>`;
-                    } else {
-                        mediaHtml += `<img src="${m.url}" style="max-width: 100%; max-height: 400px; ${borderStyle} cursor: pointer; object-fit: cover;" onclick="window.open('${m.url}')">`;
-                    }
-                });
-                mediaHtml += '</div>';
-            }
-
-            document.getElementById('retro-post-details').innerHTML = `
-                <div class="feed-post" style="border: none; padding-bottom: 0; margin-bottom: 0;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                        <img src="${post.author.profileimage}" style="width: 48px; height: 48px; border: 1px solid var(--retro-border-dark); cursor: pointer; object-fit: cover;" onclick="window.location.href='/${post.author.username}'">
-                        <div style="flex-grow: 1;">
-                            <strong style="font-size: 14px; cursor: pointer;" onclick="window.location.href='/${post.author.username}'">${post.author.username}</strong>
-                            <div style="font-size: 10px; color: var(--retro-border-dark);">${date}</div>
-                        </div>
-                    </div>
-                    <div style="word-wrap: break-word; margin: 10px 0; line-height: 1.4; font-size: 16px;">${post.content || ''}</div>
-                    ${mediaHtml}
-                    <div style="margin-top: 10px; font-size: 11px; border-top: 1px dashed var(--retro-border-dark); padding-top: 5px; display: flex; gap: 15px; align-items: center;">
-                        <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[CURTIR]</a>
-                        <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: var(--retro-header-bg);">[REPOSTAR]</a>
-                        ${deleteBtn}
-                        <span style="margin-left: auto;"></b>Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</span>
-                    </div>
-                </div>
-            `;
+            document.getElementById('retro-post-details').innerHTML = RetroPosts.renderPost(post, currentUsername);
         }
 
         async function carregarComentarios() {
@@ -100,32 +72,9 @@
                     return;
                 }
 
+                const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
                 replies.forEach(r => {
-                    const rDate = new Date(r.createdat).toLocaleString();
-                    const isRAuthor = r.author.username === "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
-                    const rDelBtn = isRAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${r.publicid}')" style="color: red; font-size: 10px; margin-left: 10px;">[DELETAR]</a>` : '';
-
-                    let rMediaHtml = '';
-                    if (r.media && r.media.length > 0) {
-                        rMediaHtml = '<div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">';
-                        r.media.forEach(m => {
-                            rMediaHtml += `<img src="${m.url}" style="max-width: 150px; border: 1px dashed var(--retro-border-dark); object-fit: cover; cursor: pointer;" onclick="window.open('${m.url}')">`;
-                        });
-                        rMediaHtml += '</div>';
-                    }
-
-                    container.insertAdjacentHTML('beforeend', `
-                        <div style="padding: 10px; border-bottom: 1px solid var(--retro-border-light); margin-bottom: 5px;" id="post-${r.publicid}">
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <img src="${r.author.profileimage}" style="width: 24px; height: 24px; border: 1px solid var(--retro-border-dark); cursor: pointer;" onclick="window.location.href='/${r.author.username}'">
-                                <strong style="font-size: 11px; cursor: pointer;" onclick="window.location.href='/${r.author.username}'">${r.author.username}</strong>
-                                <span style="font-size: 9px; color: var(--retro-border-dark);">${rDate}</span>
-                                ${rDelBtn}
-                            </div>
-                            <div style="margin-top: 5px; font-size: 12px;">${r.content || ''}</div>
-                            ${rMediaHtml}
-                        </div>
-                    `);
+                    container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(r, currentUsername));
                 });
             } catch (e) { console.error(e); }
         }
