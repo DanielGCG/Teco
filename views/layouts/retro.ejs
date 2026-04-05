@@ -7,37 +7,304 @@
     <link rel="stylesheet" href="/styles/retro.css">
 </head>
 <body>
-    <div class="window" style="width: 100%; margin-bottom: 10px;">
+    
+    <div class="window" style="width: 100%; margin-bottom: 10px; box-sizing: border-box;">
         <div class="window-header">
-            <span>Boteco Explorer v1.0</span>
-            <div style="display: flex; gap: 4px;">
-                <button disabled style="width: 20px; height: 16px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 10px;">_</button>
-                <button disabled style="width: 20px; height: 16px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 10px;">X</button>
+            <span>Site do Boteco</span>
+        </div>
+        <div class="window-content" style="background: var(--retro-bg); border-bottom: 1px solid var(--retro-border-dark); display: flex; justify-content: space-between; align-items: center; padding-bottom: 5px;padding-top: 5px">
+            <div>
+                <a href="/"><img src="/images/Teco.png" alt="Logo" style="height: 40px;"></a>
+            </div>
+            <div style="display: flex; align-items: center; flex-grow: 1; justify-content: center;">
+                <div class="window" style="width: 400px; margin: 0;"><marquee style="background-color: var(--retro-header-bg); color: var(--retro-header-text);">Bem-vindo ao Site do Boteco! * Pedro Cock fascista!</marquee></div>
+            </div>
+            <div id="retro-notifications-container" style="position: relative;">
+                <a href="javascript:void(0)" id="notificationsDropdownBtn" style="text-decoration: none; display: inline-block;">
+                    <img src="/images/icon3.ico" style="width: 24px; vertical-align: middle;">
+                    <span id="notificationsBadge" style="display: none; background: red; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; position: absolute; top: -5px; right: -10px; border: 1px solid white;">0</span>
+                </a>
+                <div id="retro-notifications-list" class="window" style="display: none; position: absolute; top: 100%; right: 0; width: 300px; z-index: 9999; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
+                    <div class="window-header">
+                        <span>Notificações</span>
+                        <button id="closeNotificationsBtn" style="padding: 0 5px; font-size: 10px;">X</button>
+                    </div>
+                    <div class="window-content" style="background: white; max-height: 400px; overflow-y: auto; padding: 0;">
+                        <div id="notificationsList">
+                            <div style="text-align: center; padding: 10px;">Carregando...</div>
+                        </div>
+                        <div style="border-top: 1px solid var(--retro-border-dark); padding: 5px; text-align: center; background: var(--retro-bg);">
+                            <a href="javascript:void(0)" id="markAllReadBtn" style="font-size: 11px;">Marcar todas como lidas</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="window-content" style="background: #c0c0c0; border-bottom: 1px solid #808080;">
-            <a href="/">[Home]</a>
-            <a href="<%= locals.loggedUser ? `/@${locals.loggedUser.username}` : '/login' %>">[Perfil]</a>
-            <a href="/chat">[Chat]</a>
-            <a href="/logout">[Sair]</a>
-        </div>
     </div>
-
-    <marquee>Bem-vindo ao Boteco! O site mais retrô da internet! * Novidade: Novo layout anos 2000! *</marquee>
-
     <div id="main-content">
-        <%- body %>
+        <div class="retro-table">
+            <table border="1" cellpadding="5" cellspacing="0" width="100%">
+                <tr>
+                    <td width="200" class="retro-sidebar-cell" valign="top">
+                        <div class="window">
+                            <div class="window-header">Menu Lateral</div>
+                            <div class="window-content">
+                                <% if (locals.loggedUser) { %>
+                                    <div style="text-align: center;">
+                                        <a href="<%= `/${locals.loggedUser.username}` %>" style="text-decoration: none;">
+                                        <img src="<%= locals.loggedUser.profileimage %>" border="1" style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
+                                        <div style="font-weight: bold; margin-top: 5px; color: black; text-decoration: none;"><%= locals.loggedUser.username %></div>
+                                        </a>
+                                    </div>
+                                <% } %>
+                                <ul style="list-style-type: none; padding-left: 0;">
+                                    <li><hr></li>
+                                    <li><a href="/chat">- Chat</a></li>
+                                    <li><a href="/dms">- DM</a></li>
+                                    <li><a href="/cartinhas">- Correio</a></li>
+                                    <li><a href="/amigos">- Amigos</a></li>
+                                    <li><a href="/galeria">- Galeria</a></li>
+                                    <li><hr></li>
+                                    <li><a href="/watchlist">- Watchlist</a></li>
+                                    <li><a href="/cutucar">- Cutucar</a></li>
+                                    <li><hr></li>
+                                    <li><a href="/logout">- Sair</a></li>
+                                </ul>
+                            </div>
+                        </div>
+        
+                        <div class="window">
+                            <div class="window-header">Imagem do Dia</div>
+                            <div id="imagem-do-dia-retro" class="window-content" style="text-align: center;">
+                                <div style="position: relative; width: 150px; height: 150px; margin: 0 auto 5px; overflow: hidden;">
+                                    <img id="retro-img-dia" src="" border="1" style="width: 100%; height: 100%; object-fit: cover; display: block; padding: 8px; box-sizing: border-box;">
+                                    <img id="retro-img-border" src="" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; object-fit: cover; display: none;">
+                                </div>
+                                <div id="retro-img-txt"></div>
+                            </div>
+                        </div>
+
+                        <script>
+                            (async function loadImgDia() {
+                                try {
+                                    const res = await fetch('/api/imagemdodia', { credentials: 'include' });
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        const imgEl = document.getElementById('retro-img-dia');
+                                        const borderEl = document.getElementById('retro-img-border');
+                                        const txtEl = document.getElementById('retro-img-txt');
+                                        
+                                        if (imgEl) imgEl.src = data.url;
+                                        if (txtEl) txtEl.textContent = data.text;
+                                        
+                                        if (data.border && data.border.url) {
+                                            borderEl.src = data.border.url;
+                                            borderEl.style.display = 'block';
+                                        } else {
+                                            borderEl.style.display = 'none';
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('Erro ao carregar imagem do dia:', e);
+                                }
+                            })();
+                        </script>
+                    </td>
+                    <td valign="top">
+                        <%- body %>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
     <div class="window" style="margin-top: 20px;">
         <div class="window-content" style="text-align: center;">
-            <p>Otimizado para Internet Explorer 5.5 e Netscape Navigator</p>
-            <p>&copy; 2000-2026 Boteco Corporation</p>
+            <p>Site do Boteco - Teco</p>
+            <p>&copy; 2024-2026 Boteco</p>
         </div>
     </div>
 
+    <%- include('../utils/modal-confirmacao-retro') %>
+
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/global/socket-connector.js"></script>
+    <script>
+        // Inicializa conexão Socket.IO global
+        const notificationsSocket = SocketConnector.init();
+        window.appSocket = notificationsSocket;
+        
+        const notificationsDropdownBtn = document.getElementById('notificationsDropdownBtn');
+        const notificationsBadge = document.getElementById('notificationsBadge');
+        const notificationsListContainer = document.getElementById('retro-notifications-list');
+        const notificationsList = document.getElementById('notificationsList');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+        const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+
+        // Toggle dropdown
+        if (notificationsDropdownBtn) {
+            notificationsDropdownBtn.addEventListener('click', async function(e) {
+                const isVisible = notificationsListContainer.style.display === 'block';
+                
+                notificationsListContainer.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                    notificationsList.innerHTML = '<div style="text-align: center; padding: 10px;">Carregando...</div>';
+                    await loadNotifications();
+                }
+                e.stopPropagation();
+                e.preventDefault();
+            });
+        }
+
+        if (closeNotificationsBtn) {
+            closeNotificationsBtn.addEventListener('click', (e) => {
+                notificationsListContainer.style.display = 'none';
+                e.stopPropagation();
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (notificationsListContainer && notificationsListContainer.style.display === 'block') {
+                if (!notificationsListContainer.contains(e.target) && !notificationsDropdownBtn.contains(e.target)) {
+                    notificationsListContainer.style.display = 'none';
+                }
+            }
+        });
+
+        // Variáveis para controle do título
+        let originalTitle = document.title;
+        let currentUnreadCount = 0;
+
+        // Função de reconexão - executada ao conectar/reconectar
+        function onSocketConnect() {
+            notificationsSocket.emit('joinUserRoom');
+            notificationsSocket.emit('getNotificationsCount');
+        }
+
+        // Registra handler de reconexão
+        SocketConnector.onReconnect(onSocketConnect);
+
+        // Update badge count
+        function updateNotificationsBadge(count) {
+            currentUnreadCount = count;
+            if (notificationsBadge) {
+                if (count > 0) {
+                    notificationsBadge.textContent = count > 99 ? '99+' : count;
+                    notificationsBadge.style.display = 'inline-block';
+                } else {
+                    notificationsBadge.style.display = 'none';
+                }
+            }
+            updateTabTitle(count);
+        }
+
+        // Atualiza o título da aba
+        function updateTabTitle(count) {
+            if (count > 0) {
+                document.title = `(${count}) ${originalTitle}`;
+            } else {
+                document.title = originalTitle;
+            }
+        }
+
+        // Listen for count updates
+        notificationsSocket.on('notificationsCount', (data) => {
+            updateNotificationsBadge(data.count);
+        });
+
+        // Load notifications from API
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications?limit=20');
+                const data = await response.json();
+
+                if (data.success && data.notifications.length > 0) {
+                    notificationsList.innerHTML = '';
+                    
+                    data.notifications.forEach(notification => {
+                        const isUnread = !notification.readat;
+                        const timeAgo = getTimeAgo(notification.createdat);
+
+                        const itemDiv = document.createElement('div');
+                        itemDiv.style.borderBottom = '1px solid #ccc';
+                        itemDiv.style.padding = '8px';
+                        itemDiv.style.cursor = 'pointer';
+                        itemDiv.style.fontSize = '12px';
+                        itemDiv.style.background = isUnread ? '#eef' : 'white';
+                        
+                        itemDiv.innerHTML = `
+                            <div style="font-weight: bold; color: #000080;">${notification.title}</div>
+                            <div style="color: #333; margin: 2px 0;">${notification.body}</div>
+                            <div style="font-size: 10px; color: #666;">${timeAgo}</div>
+                        `;
+                        
+                        itemDiv.addEventListener('click', async () => {
+                            if (isUnread) {
+                                await fetch(`/api/notifications/${notification.publicid}/read`, { method: 'PUT' });
+                                notificationsSocket.emit('getNotificationsCount');
+                            }
+                            if (notification.link && notification.link !== '#') {
+                                window.location.href = notification.link;
+                            }
+                        });
+                        
+                        notificationsList.appendChild(itemDiv);
+                    });
+                } else {
+                    notificationsList.innerHTML = '<div style="text-align: center; padding: 10px; color: #666;">Nenhuma notificação</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar notificações:', err);
+                notificationsList.innerHTML = '<div style="text-align: center; padding: 10px; color: red;">Erro ao carregar</div>';
+            }
+        }
+
+        // Mark all as read
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', async () => {
+                try {
+                    await fetch('/api/notifications/read-all', { method: 'PUT' });
+                    await loadNotifications();
+                    notificationsSocket.emit('getNotificationsCount');
+                } catch (err) {
+                    console.error('Erro ao marcar todas como lidas:', err);
+                }
+            });
+        }
+
+        // Listen for new notifications
+        notificationsSocket.on('newNotification', async (data) => {
+            notificationsSocket.emit('getNotificationsCount');
+            tryPlaySound(data?.type);
+            if (notificationsListContainer.style.display === 'block') {
+                await loadNotifications();
+            }
+        });
+
+        function tryPlaySound(type) {
+            try {
+                const audio = new Audio('/sounds/notify.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
+        }
+
+        function getTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            if (seconds < 60) return 'Agora';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        // Emit Initial Count
+        onSocketConnect();
+    </script>
     <script src="/js/global/user-context.js"></script>
     <script src="/js/commons/ui-common.js"></script>
+    <script src="/js/commons/retro-posts.js"></script>
 </body>
 </html>

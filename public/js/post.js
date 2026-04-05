@@ -25,6 +25,10 @@ window.PostUI = {
 
     // Renderiza o HTML de um post
     renderPost: function(post, currentUser, isThread = false) {
+        // Verifica se é o layout retrô
+        const isRetro = document.querySelector('link[href*="retro.css"]');
+        if (isRetro) return this.renderRetroPost(post, currentUser, isThread);
+
         // Lógica de Post Referenciado Excluído:
         // 1. É um Thread/Comentário e o pai sumiu.
         // 2. É um Repost com conteúdo (Quote) e o pai sumiu.
@@ -123,6 +127,55 @@ window.PostUI = {
                         </button>
                         ${deleteBtn}
                     </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderRetroPost: function(post, currentUser, isThread = false) {
+        const isLiked = post.likes && post.likes.some(l => currentUser && l.user && l.user.publicid === currentUser.publicid);
+        const authorUsername = post.author.username;
+        const date = new Date(post.createdat).toLocaleString();
+
+        let mediaHtml = '';
+        if (post.media && post.media.length > 0) {
+            mediaHtml = '<div class="post-media-grid grid-' + Math.min(post.media.length, 4) + '">';
+            post.media.forEach(m => {
+                mediaHtml += `<img src="${m.url}" class="post-media-item" onclick="event.stopPropagation(); window.open('${m.url}')">`;
+            });
+            mediaHtml += '</div>';
+        }
+
+        let repostHtml = '';
+        if ((post.type === 'repost' || post.type === 'reply') && post.parent) {
+            repostHtml = `
+                <div class="repost-container" onclick="event.stopPropagation(); PostUI.abrirModal('${post.parent.publicid}', '${post.parent.author.username}')">
+                    <strong>@${post.parent.author.username}</strong>: ${post.parent.content}
+                </div>
+            `;
+        }
+
+        const deleteBtn = (currentUser && currentUser.publicid === post.author.publicid) 
+            ? `<button class="post-action" onclick="event.stopPropagation(); PostActions.deletar('${post.publicid}')" style="color:red">[DELETAR]</button>` 
+            : '';
+
+        return `
+            <div class="feed-post" id="post-${post.publicid}" onclick="PostUI.abrirModal('${post.publicid}', '${authorUsername}')" style="cursor: pointer;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
+                    <img src="${post.author.profileimage}" style="width: 32px; height: 32px; border: 1px solid var(--retro-border-dark);">
+                    <div style="flex-grow: 1;">
+                        <a href="/${authorUsername}" style="font-weight: bold; font-size: 12px; text-decoration: none;" onclick="event.stopPropagation()">${authorUsername}</a>
+                        <div style="font-size: 9px; color: var(--retro-border-dark);">${date}</div>
+                    </div>
+                    ${deleteBtn}
+                </div>
+                <div style="font-size: 13px; margin: 8px 0;">${this.formatContent(post.content, post.mentions)}</div>
+                ${mediaHtml}
+                ${repostHtml}
+                <div style="margin-top: 8px; font-size: 11px; display: flex; gap: 10px; border-top: 1px dashed var(--retro-border-dark); padding-top: 5px;">
+                    <a href="javascript:void(0)" onclick="event.stopPropagation(); PostActions.like('${post.publicid}')" style="${isLiked ? 'font-weight:bold;' : ''}">[CURTIR ${post.likecount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="event.stopPropagation(); PostUI.abrirModal('${post.publicid}', '${authorUsername}', true)">[RESPONDER ${post.replycount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="event.stopPropagation(); PostActions.compartilhar('${post.publicid}', '${authorUsername}')">[COPIAR LINK]</a>
                 </div>
             </div>
         `;
@@ -414,7 +467,14 @@ window.PostActions = {
 
     // Deletar post
     deletar: async function(postId) {
-        const confirmacao = await confirm('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.');
+        const isRetro = document.querySelector('link[href*="retro.css"]');
+        let confirmacao;
+        
+        if (isRetro && typeof window.confirmRetro === 'function') {
+            confirmacao = await window.confirmRetro('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.', 'Confirmar Exclusão');
+        } else {
+            confirmacao = await confirm('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.');
+        }
 
         if (!confirmacao) return;
 

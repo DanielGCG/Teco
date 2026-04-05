@@ -1,71 +1,28 @@
-<div class="retro-table">
-    <table border="1" cellpadding="5" cellspacing="0" width="100%">
-        <tr>
-            <td width="200" bgcolor="#e0e0e0">
-                <div class="window">
-                    <div class="window-header">Menu Lateral</div>
-                    <div class="window-content">
-                        <ul style="list-style-type: none; padding-left: 0;">
-                            <li><a href="/">- Início</a></li>
-                            <li><a href="<%= locals.loggedUser ? `/@${locals.loggedUser.username}` : '/login' %>">- Perfil</a></li>
-                            <li><a href="/friends">- Amigos</a></li>
-                            <li><a href="/chat">- Chat</a></li>
-                            <li><a href="/galeria">- Galeria</a></li>
-                            <li><a href="/cartinhas">- Cartinhas</a></li>
-                            <li><hr></li>
-                            <li><a href="/settings">- Configurações</a></li>
-                            <li><a href="/logout">- Sair</a></li>
-                        </ul>
-                    </div>
-                </div>
+<div class="window">
+    <div class="window-content">
+        <textarea id="retro-post-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="No que você está pensando agora?"></textarea>
+        <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
+        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="font-size: 11px;">
+            </div>
+            <button id="btn-retro-postar">POSTAR</button>
+        </div>
+    </div>
+</div>
 
-                <div class="window">
-                    <div class="window-header">Imagem do Dia</div>
-                    <div id="imagem-do-dia-retro" class="window-content" style="text-align: center;">
-                        <img id="retro-img-dia" src="" border="1" style="max-width: 150px; margin-bottom: 5px;">
-                        <div id="retro-img-txt"></div>
-                    </div>
-                </div>
-            </td>
-            
-            <td>
-                <div class="window">
-                    <div class="window-header">O que está acontecendo?</div>
-                    <div class="window-content">
-                        <textarea id="retro-post-textarea" style="width: 100%; height: 60px;"></textarea>
-                        <div style="margin-top: 5px; text-align: right;">
-                            <button id="btn-retro-postar">PUBLICAR POST</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="window">
-                    <div class="window-header">Feeds Recentes</div>
-                    <div class="window-content" id="retro-feed-container">
-                        <p style="text-align: center; color: #808080;">Aguardando posts do servidor...</p>
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </table>
+<div class="window">
+    <div class="window-header">Posts recentes</div>
+    <div class="window-content" id="retro-feed-container">
+        <p style="text-align: center; color: #808080;">Aguardando posts do servidor...</p>
+    </div>
 </div>
 
 <script src="/js/post.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Carregar Imagem do Dia
-        (async function loadImgDia() {
-            try {
-                const res = await fetch('/api/imagemdodia', { credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById('retro-img-dia').src = data.url;
-                    document.getElementById('retro-img-txt').textContent = data.text;
-                }
-            } catch (e) {
-                console.error('Erro ao carregar imagem do dia:', e);
-            }
-        })();
+        // Inicializar Handlers Globais do Posts Retrô
+        RetroPosts.initHandlers(() => loadPosts());
 
         // Inicializar Feed Retrô
         async function loadPosts() {
@@ -81,27 +38,9 @@
                         return;
                     }
 
+                    const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
                     posts.forEach(post => {
-                        const date = new Date(post.createdat).toLocaleString();
-                        const mediaHtml = post.media && post.media.length > 0 
-                            ? `<div style="margin-top: 5px;"><img src="${post.media[0].url}" style="max-width: 100%; border: 1px solid #000"></div>`
-                            : '';
-                        
-                        const postHtml = `
-                            <div class="feed-post" style="border-bottom: 1px solid #808080; padding: 10px 0;">
-                                <div style="margin-bottom: 5px;">
-                                    <strong class="post-author">@${post.author.username}</strong>
-                                    <small style="color: #666; margin-left: 10px;">${date}</small>
-                                </div>
-                                <div style="word-wrap: break-word;">${post.content}</div>
-                                ${mediaHtml}
-                                <div style="margin-top: 5px; font-size: 12px;">
-                                    <a href="/${post.author.username}/status/${post.publicid}">[Ver detalhes]</a>
-                                    <span style="margin-left: 10px;">Curtidas: ${post.likecount || 0}</span>
-                                </div>
-                            </div>
-                        `;
-                        container.insertAdjacentHTML('beforeend', postHtml);
+                        container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(post, currentUsername));
                     });
                 }
             } catch (e) {
@@ -111,26 +50,54 @@
         
         loadPosts();
 
+        // Variável para armazenar arquivos do post
+        let selectedRetroFiles = [];
+
+        // Preview de imagens ao selecionar
+        document.getElementById('retro-post-media').addEventListener('change', (e) => {
+            const preview = document.getElementById('retro-media-preview');
+            preview.innerHTML = '';
+            selectedRetroFiles = Array.from(e.target.files);
+            
+            selectedRetroFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
         // Lógica simplificada de postar
         document.getElementById('btn-retro-postar').addEventListener('click', async () => {
             const textarea = document.getElementById('retro-post-textarea');
             const content = textarea.value.trim();
             const btn = document.getElementById('btn-retro-postar');
 
-            if (!content) return;
+            if (!content && selectedRetroFiles.length === 0) return;
 
             btn.disabled = true;
-            btn.textContent = 'POSTANDO...';
+            btn.textContent = 'ENVIANDO...';
+
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('type', 'post');
+            selectedRetroFiles.forEach(file => formData.append('media', file));
 
             try {
                 const res = await fetch('/api/posts', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content, type: 'post' })
+                    body: formData
                 });
                 
                 if (res.ok) {
                     textarea.value = '';
+                    document.getElementById('retro-post-media').value = '';
+                    document.getElementById('retro-media-preview').innerHTML = '';
+                    selectedRetroFiles = [];
                     await loadPosts();
                 } else {
                     const err = await res.json();
@@ -140,7 +107,7 @@
                 alert('Erro de conexão!');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'PUBLICAR POST';
+                btn.textContent = 'POSTAR';
             }
         });
     });

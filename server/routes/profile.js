@@ -29,8 +29,8 @@ PerfilRouter.get('/:username', async (req, res, next) => {
         user: req.user,
         loggedUser: req.user
     }
-    res.render('pages/social/profile', {
-        layout: 'layouts/main',
+    res.render('pages/social/retro-profile', {
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -51,7 +51,7 @@ PerfilRouter.get('/:username/status/:postId', async (req, res, next) => {
         loggedUser: req.user
     }
     res.render('pages/social/post-details', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });

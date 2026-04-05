@@ -1,0 +1,306 @@
+<div class="window">
+    <div class="window-content">
+        <div style="display: flex; gap: 15px; align-items: flex-start;">
+            <div style="text-align: center; width: 130px; flex-shrink: 0;">
+                <div id="profile-avatar-container" style="position: relative; display: inline-block;">
+                    <img id="retro-avatar" src="" border="1" style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg);  border: 1px solid var(--retro-border-dark);">
+                    <span id="user-status-dot" class="status-dot" style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: gray;"></span>
+                </div>
+                <span id="retro-username">...</span>
+                <div id="retro-pronouns" style="font-size: 11px; margin-top: 3px; color: var(--retro-border-dark);"></div>
+                <div style="margin-top: 8px;">
+                    <button id="btn-edit" style="display: none; width: 100%; font-size: 11px;" onclick="window.location.href='/editar'">EDITAR</button>
+                    <button id="btn-follow" style="display: none; width: 100%; font-size: 11px;">SEGUIR</button>
+                </div>
+            </div>
+            <div style="flex-grow: 1; display: flex; flex-direction: row; gap: 10px; align-items: stretch;">
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 15%; flex-shrink: 0;">
+                    <div class="window" style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column;">
+                        <div id="retro-bio" class="window-content" style="flex-grow: 1; min-height: 40px; max-height: 85px; overflow-y: auto; font-size: 12px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word;"></div>
+                    </div>
+                    <div class="window" style="margin-bottom: 0;">
+                        <div class="window-content" style="padding: 5px; font-size: 11px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <span>Posts: <b id="retro-post-count">0</b></span>
+                            <span id="retro-joined-date" style="color: var(--retro-border-dark);"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="retro-banner-container" class="window" style="display: none; margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; flex-direction: column;">
+                    <div class="window-content" style="padding: 0; flex-grow: 1; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden;">
+                        <img id="retro-banner-img" src="" style="width: 100%; max-height: 150px; object-fit: cover; display: block; image-rendering: pixelated; cursor: pointer;" onclick="window.open(this.src)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display: flex; gap: 10px; margin-top: 10px; flex-direction: row-reverse;">
+    <div style="width: 250px; flex-shrink: 0;">
+        <div class="window">
+            <div class="window-header">Badges</div>
+            <div id="retro-badges" class="window-content" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+                <span style="font-size: 11px; color: gray;">Carregando...</span>
+            </div>
+        </div>
+        <div class="window">
+            <div class="window-header">Galerias</div>
+            <div id="retro-galerias" class="window-content">
+                <span style="font-size: 11px; color: gray;">Carregando...</span>
+            </div>
+        </div>
+        <div class="window">
+            <div class="window-header">Amigos</div>
+            <div id="retro-amigos" class="window-content">
+                <span style="font-size: 11px; color: gray;">Carregando...</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="flex-grow: 1;">
+        <div class="window" id="retro-new-post-area" style="display: none; margin-bottom: 15px;">
+            <div class="window-content">
+                <textarea id="retro-post-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="No que você está pensando agora?"></textarea>
+                <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
+                <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="font-size: 11px;">
+                    </div>
+                    <button id="btn-retro-postar">POSTAR</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="window">
+            <div class="window-content" id="feed-container">
+                <p style="text-align: center; color: #808080;">Aguardando posts do servidor...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-dot.online { background-color: #4caf50 !important; }
+    .status-dot.ausente { background-color: #ffc107 !important; }
+    .retro-badge-item { width: 100%; aspect-ratio: 1; border: 1px solid var(--retro-border-dark); overflow: hidden; background: var(--retro-sidebar-bg); }
+    .retro-badge-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .retro-friend-item { display: flex; align-items: center; gap: 5px; text-decoration: none; margin-bottom: 5px; font-size: 12px; }
+    .retro-friend-item img { width: 24px; height: 24px; border: 1px solid var(--retro-border-dark); }
+    
+    .retro-gallery-item { display: inline-block; width: 45%; margin: 2%; text-decoration: none; font-size: 11px; text-align: center; }
+    .retro-gallery-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--retro-border-dark); background: var(--retro-sidebar-bg); }
+</style>
+
+<script src="/js/commons/follow-common.js"></script>
+<script src="/js/post.js"></script>
+<script>
+    const pathParts = window.location.pathname.split('/');
+    const username = pathParts[1];
+    window.username = username;
+    window.profileUserId = null;
+
+    async function carregarPerfil() {
+        try {
+            const response = await fetch(`/api/users/${username}`, { credentials: "include" });
+            if (!response.ok) return;
+
+            const user = await response.json();
+            window.profileUserId = user.publicid;
+
+            // Status notification
+            const avatarContainer = document.getElementById('profile-avatar-container');
+            if (avatarContainer) avatarContainer.setAttribute('data-user-id', user.publicid);
+
+            document.getElementById("retro-username").textContent = user.username;
+            document.getElementById("retro-avatar").src = user.profileimage;
+            
+            if (user.backgroundimage) {
+                const bannerContainer = document.getElementById("retro-banner-container");
+                const bannerImg = document.getElementById("retro-banner-img");
+                bannerContainer.style.display = "block";
+                bannerImg.src = user.backgroundimage;
+            }
+
+            if (user.createdat) {
+                const date = new Date(user.createdat).toLocaleDateString();
+                document.getElementById("retro-joined-date").textContent = `Membro desde: ${date}`;
+            }
+
+            document.getElementById("retro-pronouns").textContent = user.pronouns || '';
+            document.getElementById("retro-post-count").textContent = user.postcount || 0;
+            document.getElementById("retro-bio").innerHTML = user.bio ? user.bio.replace(/\n/g, '<br>') : 'Nenhuma biografia disponível.';
+
+            if (window.currentUser) {
+                if (window.currentUser.publicid === user.publicid) {
+                    document.getElementById("btn-edit").style.display = "block";
+                    document.getElementById("retro-new-post-area").style.display = "block";
+                } else {
+                    document.getElementById("btn-follow").style.display = "block";
+                    verificarSeguimento(user.publicid);
+                }
+            }
+
+            carregarBadges(user.publicid);
+            carregarGalerias(user.publicid);
+            carregarAmigos(user.publicid);
+
+            // Carregar Feed usando a mesma lógica da home
+            loadUserPosts();
+            
+        } catch (error) {
+            console.error("Erro ao carregar perfil:", error);
+        }
+    }
+
+    async function verificarSeguimento(targetId) {
+        const btn = document.getElementById("btn-follow");
+        try {
+            const status = await FollowAPI.verificarStatus(targetId);
+            const config = status.isMutual 
+                ? { text: 'Amigos', action: FollowAPI.deixarDeSeguir }
+                : status.following 
+                    ? { text: 'Seguindo', action: FollowAPI.deixarDeSeguir }
+                    : status.followedBy 
+                        ? { text: 'Seguir de volta', action: FollowAPI.seguir }
+                        : { text: 'Seguir', action: FollowAPI.seguir };
+
+            btn.textContent = config.text;
+            btn.onclick = async () => {
+                await config.action(targetId, { showAlert: false });
+                verificarSeguimento(targetId);
+                carregarAmigos(profileUserId);
+            };
+        } catch (e) {}
+    }
+
+    async function loadUserPosts() {
+        try {
+            const res = await fetch(`/api/posts/feed?type=user&username=${username}&limit=20&offset=0`, { credentials: 'include' });
+            if (res.ok) {
+                const posts = await res.json();
+                const container = document.getElementById('feed-container');
+                container.innerHTML = '';
+                
+                // Filtrar apenas posts onde o autor é o dono do perfil (username da URL)
+                const userPosts = posts.filter(post => post.author.username === username);
+
+                if (!userPosts || userPosts.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #808080; padding: 20px;">Este usuário ainda não postou nada.</p>';
+                    return;
+                }
+
+                const currentUsername = window.currentUser ? window.currentUser.username : '';
+                userPosts.forEach(post => {
+                    container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(post, currentUsername));
+                });
+            }
+        } catch (e) {
+            console.error('Erro ao carregar posts:', e);
+            document.getElementById('feed-container').innerHTML = '<p style="text-align: center; color: red;">Erro ao carregar posts.</p>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Inicializar Handlers Globais do Posts Retrô
+        RetroPosts.initHandlers(() => loadUserPosts());
+        
+        carregarPerfil();
+    });
+
+    async function carregarBadges(userId) {
+        const res = await fetch(`/api/badges/user/${userId}`);
+        const data = await res.json();
+        const list = document.getElementById("retro-badges");
+        if (data.length) {
+            list.innerHTML = data.map(b => `<div class="retro-badge-item" title="${b.name}"><img src="${b.url}"></div>`).join('');
+        } else {
+            list.innerHTML = '<span style="font-size: 11px;">Nenhum badge</span>';
+        }
+    }
+
+    async function carregarGalerias(userId) {
+        const res = await fetch(`/api/galeria/user/${userId}`);
+        const data = await res.json();
+        const list = document.getElementById("retro-galerias");
+        if (data.success && data.galleries.length) {
+            list.innerHTML = data.galleries.map(g => `
+                <a href="/galeria/${g.publicid}" class="retro-gallery-item">
+                    <img src="${g.coverurl}">
+                    <div>${g.name}</div>
+                </a>
+            `).join('');
+        } else {
+            list.innerHTML = '<span style="font-size: 11px;">Nenhuma galeria</span>';
+        }
+    }
+
+    async function carregarAmigos(userId) {
+        const friends = await FollowAPI.carregarAmigos(userId);
+        const list = document.getElementById("retro-amigos");
+        if (friends && friends.length) {
+            list.innerHTML = friends.map(f => `
+                <a href="/${f.username}" class="retro-friend-item" data-user-id="${f.publicid}">
+                    <img src="${f.profileimage}" border="1">
+                    <span>${f.username}</span>
+                </a>
+            `).join('');
+        } else {
+            list.innerHTML = '<span style="font-size: 11px;">Nenhum amigo</span>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarPerfil();
+
+        // Lógica de Postar Retrô Sincronizada
+        const textarea = document.getElementById('retro-post-textarea');
+        const mediaInput = document.getElementById('retro-post-media');
+        const btnPostar = document.getElementById('btn-retro-postar');
+        const preview = document.getElementById('retro-media-preview');
+        let selectedFiles = [];
+
+        mediaInput.addEventListener('change', (e) => {
+            preview.innerHTML = '';
+            selectedFiles = Array.from(e.target.files);
+            selectedFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        btnPostar.addEventListener('click', async () => {
+            const content = textarea.value.trim();
+            if (!content && selectedFiles.length === 0) return;
+
+            btnPostar.disabled = true;
+            btnPostar.textContent = '...';
+
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('type', 'post');
+            selectedFiles.forEach(file => formData.append('media', file));
+
+            try {
+                const res = await fetch('/api/posts', { method: 'POST', body: formData });
+                if (res.ok) {
+                    textarea.value = '';
+                    mediaInput.value = '';
+                    preview.innerHTML = '';
+                    selectedFiles = [];
+                    loadUserPosts();
+                }
+            } catch (e) {
+                alert('Erro ao postar');
+            } finally {
+                btnPostar.disabled = false;
+                btnPostar.textContent = 'POSTAR';
+            }
+        });
+    });
+</script>

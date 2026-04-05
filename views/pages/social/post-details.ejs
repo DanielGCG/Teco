@@ -1,257 +1,192 @@
-<style>
-    .post-details-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        padding: 0 16px;
-        height: 53px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-    .header-title {
-        font-size: 20px;
-        font-weight: 700;
-        margin: 0;
-    }
-</style>
+﻿<div class="window">
+    <div class="window-header">Visualizar Post</div>
+    <div class="window-content" id="retro-post-details">
+        <p style="text-align: center;">Carregando post...</p>
+    </div>
+</div>
 
-<link rel="stylesheet" href="/styles/posts.css">
-
-<div class="row justify-content-center">
-    <div class="col-md-5 shadow-sm">
-        <div class="post-details-header">
-            <a href="javascript:history.back()" class="back-button">
-                <i class="bi bi-arrow-left"></i>
-            </a>
-            <h2 class="header-title">Post</h2>
-        </div>
-
-        <div id="post-thread-container">
-            <!-- Ancestry (Thread) -->
-            <div id="ancestry-container"></div>
-
-            <!-- Main Post -->
-            <div id="main-post-container">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary"></div>
-                </div>
-            </div>
-
-            <!-- Reply Box -->
-            <div class="reply-section d-flex gap-3 p-3 border-bottom" id="reply-box" style="display: none;">
-                <img src="" id="current-user-avatar" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
-                <div class="flex-grow-1">
-                    <textarea class="reply-textarea" id="reply-textarea" placeholder="Postar sua resposta" rows="1"></textarea>
-                    <div id="reply-preview" class="post-preview-container"></div>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <div class="d-flex gap-2">
-                            <label for="reply-media-input" class="post-action reply" style="cursor: pointer;">
-                                <i class="bi bi-image"></i>
-                            </label>
-                            <input type="file" id="reply-media-input" hidden multiple accept="image/*,video/*" onchange="PostUI.handleMediaSelect(event, 'reply-preview')">
-                        </div>
-                        <button class="btn btn-primary rounded-pill px-4 fw-bold" id="btn-enviar-resposta" onclick="enviarResposta()">Responder</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Replies -->
-            <div id="replies-container"></div>
+<div class="window" id="retro-comment-box" style="display: none;">
+    <div class="window-header">Responder a este post</div>
+    <div class="window-content">
+        <textarea id="comment-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="Escreva sua resposta..."></textarea>
+        <div id="comment-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
+        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
+            <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="font-size: 11px;">
+            <button onclick="enviarComentario()">POSTAR</button>
         </div>
     </div>
 </div>
 
-<script src="/js/post.js"></script>
+<div class="window">
+    <div class="window-header">Comentários e Respostas</div>
+    <div class="window-content" id="retro-comments-list">
+        <!-- Comentários aqui -->
+    </div>
+</div>
+
 <script>
-    const postId = "<%= locals.postId %>";
-    const username = "<%= locals.username %>";
-    window.selectedFiles = [];
+    document.addEventListener('DOMContentLoaded', () => {
+        const postId = "<%= locals.postId %>";
+        let selectedCommentFiles = [];
 
-    async function carregarPostCompleto() {
-        try {
-            // Configurar avatar do usuário logado se existir
-            if (window.currentUser) {
-                document.getElementById('current-user-avatar').src = window.currentUser.profileimage;
-                document.getElementById('reply-box').style.display = 'flex';
-            }
+        // Inicializar Handlers Globais do Posts Retrô
+        RetroPosts.initHandlers(() => carregarPost());
 
-            // Inicializar Socket
-            const socket = SocketConnector.init();
-            socket.emit('joinPost', postId);
-
-            socket.on('postUpdate', (data) => {
-                PostUI.updatePostStats(data.publicid, data);
-            });
-
-            socket.on('newReply', (reply) => {
-                const container = document.getElementById('replies-container');
-                if (document.getElementById(`post-${reply.publicid}`)) return;
+        async function carregarPost() {
+            try {
+                const res = await fetch(`/api/posts/${postId}`);
+                if (!res.ok) throw new Error('Falha ao carregar');
+                const post = await res.json();
                 
-                const replyHtml = PostUI.renderPost(reply, window.currentUser);
-                container.insertAdjacentHTML('afterbegin', replyHtml);
-            });
+                document.getElementById('retro-comment-box').style.display = 'block';
 
-            socket.on('postDeleted', (deletedPostId) => {
-                if (deletedPostId === postId) {
-                    alert('Este post foi deletado.');
-                    window.history.back();
-                } else {
-                    const el = document.getElementById(`post-${deletedPostId}`);
-                    if (el) el.remove();
-                }
-            });
-
-            const res = await fetch(`/api/posts/${postId}`);
-            if (!res.ok) throw new Error('Post não encontrado');
-            
-            const post = await res.json();
-            
-            // Renderizar Ancestralidade
-            const ancestryContainer = document.getElementById('ancestry-container');
-            if (post.ancestry && post.ancestry.length > 0) {
-                ancestryContainer.innerHTML = post.ancestry.map(p => PostUI.renderPost(p, window.currentUser, true)).join('');
+                renderPostDetails(post);
+                carregarComentarios();
+            } catch (e) {
+                document.getElementById('retro-post-details').innerHTML = '<p style="color:red;">Erro ao localizar post.</p>';
             }
+        }
 
-            // Renderizar Post Principal (com estilo diferente)
-            renderMainPost(post);
+        function renderPostDetails(post) {  
+            const date = new Date(post.createdat).toLocaleString();
+            const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
+            const isAuthor = post.author.username === currentUsername;
+            const deleteBtn = isAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETAR]</a>` : '';
 
-            // Carregar Respostas
-            carregarRespostas();
-
-            // Se tiver ?reply=true na URL, foca no textarea
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('reply') === 'true') {
-                setTimeout(() => {
-                    const textarea = document.getElementById('reply-textarea');
-                    if (textarea) {
-                        textarea.focus();
-                        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            let mediaHtml = '';
+            if (post.media && post.media.length > 0) {
+                mediaHtml = '<div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">';
+                post.media.forEach(m => {
+                    const borderStyle = 'border: 1px dashed var(--retro-border-dark);';
+                    if (m.type === 'video') {
+                        mediaHtml += `<video src="${m.url}" style="max-width: 100%; max-height: 400px; ${borderStyle} object-fit: cover;" controls></video>`;
+                    } else {
+                        mediaHtml += `<img src="${m.url}" style="max-width: 100%; max-height: 400px; ${borderStyle} cursor: pointer; object-fit: cover;" onclick="window.open('${m.url}')">`;
                     }
-                }, 500);
+                });
+                mediaHtml += '</div>';
             }
 
-        } catch (error) {
-            console.error(error);
-            document.getElementById('main-post-container').innerHTML = `
-                <div class="alert alert-danger m-3">Erro ao carregar post.</div>
-            `;
-        }
-    }
-
-    function renderMainPost(post) {
-        const container = document.getElementById('main-post-container');
-        const isLiked = post.likes && post.likes.some(l => window.currentUser && l.user && l.user.publicid === window.currentUser.publicid);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => window.currentUser && b.user && b.user.publicid === window.currentUser.publicid);
-        
-        const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
-        const mediaHtml = mediaCount > 0 
-            ? `<div class="post-media-grid grid-${mediaCount} mb-2">
-                ${post.media.slice(0, 4).map(m => m.type === 'video' 
-                    ? `<video src="${m.url}" class="post-media-item" controls></video>` 
-                    : `<img src="${m.url}" class="post-media-item" loading="lazy" onclick="window.open('${m.url}')">`).join('')}
-               </div>`
-            : '';
-
-        const date = new Date(post.createdat);
-        const dateStr = typeof UIUtils !== 'undefined' ? UIUtils.formatarData(post.createdat) : date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
-
-        const deleteBtn = (window.currentUser && window.currentUser.publicid === post.author.publicid) 
-            ? `<button class="post-action delete d-flex align-items-center" onclick="PostActions.deletar('${post.publicid}')" title="Deletar">
-                <i class="bi bi-trash"></i>
-               </button>` 
-            : '';
-
-        let deletedParentHtml = '';
-        const isQuote = post.type === 'reply';
-        const isComment = post.type === 'comment';
-
-        if ((isQuote || isComment) && !post.parent) {
-            deletedParentHtml = `
-                <div class="post-card deleted-post p-3 border-bottom bg-light">
-                    <div class="post-content text-muted fst-italic">
-                        <i class="bi bi-info-circle"></i> O post referenciado foi excluído.
+            document.getElementById('retro-post-details').innerHTML = `
+                <div class="feed-post" style="border: none; padding-bottom: 0; margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <img src="${post.author.profileimage}" style="width: 48px; height: 48px; border: 1px solid var(--retro-border-dark); cursor: pointer; object-fit: cover;" onclick="window.location.href='/${post.author.username}'">
+                        <div style="flex-grow: 1;">
+                            <strong style="font-size: 14px; cursor: pointer;" onclick="window.location.href='/${post.author.username}'">${post.author.username}</strong>
+                            <div style="font-size: 10px; color: var(--retro-border-dark);">${date}</div>
+                        </div>
+                    </div>
+                    <div style="word-wrap: break-word; margin: 10px 0; line-height: 1.4; font-size: 16px;">${post.content || ''}</div>
+                    ${mediaHtml}
+                    <div style="margin-top: 10px; font-size: 11px; border-top: 1px dashed var(--retro-border-dark); padding-top: 5px; display: flex; gap: 15px; align-items: center;">
+                        <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[CURTIR]</a>
+                        <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: var(--retro-header-bg);">[REPOSTAR]</a>
+                        ${deleteBtn}
+                        <span style="margin-left: auto;"></b>Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</span>
                     </div>
                 </div>
             `;
         }
 
-        container.innerHTML = deletedParentHtml + `
-            <div class="main-post p-3 border-bottom" id="post-${post.publicid}">
-                <div class="d-flex gap-3 mb-2">
-                    <img src="${post.author.profileimage}" class="rounded object-fit-cover" style="width: 48px; height: 48px;">
-                    <div class="d-flex flex-column">
-                        <a href="/${post.author.username}" class="post-author-name fw-bold text-decoration-none">${post.author.username}</a>
-                        <span class="text-muted small">${post.author.username}</span>
-                    </div>
-                </div>
-                <div class="post-content mb-3 text-break">${PostUI.formatContent(post.content, post.mentions)}</div>
-                ${mediaHtml}
-                <div class="post-meta py-2 text-muted small border-top">
-                    ${dateStr}
-                </div>
-                <div class="post-stats d-flex gap-3 py-2 border-top border-bottom">
-                    <a href="#" class="stat-item text-decoration-none"><strong class="repost-count">${post.repostcount || 0}</strong> <span class="text-muted">Reposts</span></a>
-                    <a href="#" class="stat-item text-decoration-none"><strong class="like-count">${post.likecount || 0}</strong> <span class="text-muted">Curtidas</span></a>
-                </div>
-                <div class="post-actions d-flex justify-content-around py-2">
-                    <button class="post-action reply d-flex align-items-center" onclick="document.getElementById('reply-textarea').focus()" title="Responder">
-                        <i class="bi bi-chat" style="font-size: 20px;"></i>
-                    </button>
-                    <button class="post-action repost d-flex align-items-center ${post.type === 'repost' ? 'reposted' : ''}" onclick="PostUI.abrirModalInteracao('${post.publicid}', 'repost')" title="Repostar">
-                        <i class="bi bi-arrow-repeat" style="font-size: 20px;"></i>
-                    </button>
-                    <button class="post-action like d-flex align-items-center ${isLiked ? 'liked' : ''}" onclick="PostActions.like('${post.publicid}')" title="Curtir">
-                        <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}" style="font-size: 20px;"></i>
-                    </button>
-                    <button class="post-action bookmark d-flex align-items-center ${isBookmarked ? 'bookmarked' : ''}" onclick="PostActions.toggleBookmark('${post.publicid}')" title="Salvar">
-                        <i class="bi ${isBookmarked ? 'bi-bookmark-fill' : 'bi-bookmark'}" style="font-size: 20px;"></i>
-                    </button>
-                    <button class="post-action share d-flex align-items-center" onclick="PostActions.compartilhar('${post.publicid}', '${post.author.username}')" title="Compartilhar">
-                        <i class="bi bi-share" style="font-size: 20px;"></i>
-                    </button>
-                    ${deleteBtn}
-                </div>
-            </div>
-        `;
-    }
+        async function carregarComentarios() {
+            try {
+                const res = await fetch(`/api/posts/${postId}/replies`);
+                const replies = await res.json();
+                const container = document.getElementById('retro-comments-list');
+                container.innerHTML = '';
 
-    async function carregarRespostas() {
-        const container = document.getElementById('replies-container');
-        try {
-            const res = await fetch(`/api/posts/${postId}/replies`);
-            const replies = await res.json();
-            container.innerHTML = replies.map(r => PostUI.renderPost(r, window.currentUser)).join('');
-        } catch (e) {
-            console.error(e);
+                if (replies.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #808080;">Ninguém comentou ainda. Seja o primeiro!</p>';
+                    return;
+                }
+
+                replies.forEach(r => {
+                    const rDate = new Date(r.createdat).toLocaleString();
+                    const isRAuthor = r.author.username === "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
+                    const rDelBtn = isRAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${r.publicid}')" style="color: red; font-size: 10px; margin-left: 10px;">[DELETAR]</a>` : '';
+
+                    let rMediaHtml = '';
+                    if (r.media && r.media.length > 0) {
+                        rMediaHtml = '<div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">';
+                        r.media.forEach(m => {
+                            rMediaHtml += `<img src="${m.url}" style="max-width: 150px; border: 1px dashed var(--retro-border-dark); object-fit: cover; cursor: pointer;" onclick="window.open('${m.url}')">`;
+                        });
+                        rMediaHtml += '</div>';
+                    }
+
+                    container.insertAdjacentHTML('beforeend', `
+                        <div style="padding: 10px; border-bottom: 1px solid var(--retro-border-light); margin-bottom: 5px;" id="post-${r.publicid}">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <img src="${r.author.profileimage}" style="width: 24px; height: 24px; border: 1px solid var(--retro-border-dark); cursor: pointer;" onclick="window.location.href='/${r.author.username}'">
+                                <strong style="font-size: 11px; cursor: pointer;" onclick="window.location.href='/${r.author.username}'">${r.author.username}</strong>
+                                <span style="font-size: 9px; color: var(--retro-border-dark);">${rDate}</span>
+                                ${rDelBtn}
+                            </div>
+                            <div style="margin-top: 5px; font-size: 12px;">${r.content || ''}</div>
+                            ${rMediaHtml}
+                        </div>
+                    `);
+                });
+            } catch (e) { console.error(e); }
         }
-    }
 
-    async function enviarResposta() {
-        const textarea = document.getElementById('reply-textarea');
-        const btn = document.getElementById('btn-enviar-resposta');
-        const content = textarea.value.trim();
-        
-        if (!content && window.selectedFiles.length === 0) return;
+        window.handleRetroDelete = async (targetId) => {
+            const confirmed = await window.confirmRetro('Tem certeza que deseja apagar esta mensagem?', 'Confirmar Exclusão');
+            if (!confirmed) return;
 
-        await PostActions.enviarPost(content, window.selectedFiles, { 
-            type: 'comment', 
-            attachedPostPublicId: postId 
-        }, btn);
+            try {
+                const res = await fetch(`/api/posts/${targetId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    if (targetId === postId) {
+                        alert('Post principal deletado. Voltando...');
+                        window.history.back();
+                    } else {
+                        const el = document.getElementById(`post-${targetId}`);
+                        if (el) el.style.display = 'none';
+                    }
+                }
+            } catch (e) { console.error(e); }
+        };
 
-        textarea.value = '';
-        window.selectedFiles = [];
-        document.getElementById('reply-preview').innerHTML = '';
-        // As respostas agora são atualizadas via Socket (newReply)
-    }
+        window.enviarComentario = async function() {
+            const textarea = document.getElementById('comment-textarea');
+            const content = textarea.value.trim();
+            if (!content && selectedCommentFiles.length === 0) return;
 
-    // Auto-resize textarea
-    document.getElementById('reply-textarea').addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('type', 'comment');
+            formData.append('attachedPostPublicId', postId);
+            selectedCommentFiles.forEach(file => formData.append('media', file));
+
+            try {
+                const res = await fetch('/api/posts', { method: 'POST', body: formData });
+                if (res.ok) {
+                    textarea.value = '';
+                    document.getElementById('comment-media-input').value = '';
+                    document.getElementById('comment-media-preview').innerHTML = '';
+                    selectedCommentFiles = [];
+                    carregarPost(); 
+                }
+            } catch (e) { alert('Erro ao comentar!'); }
+        }
+
+        document.getElementById('comment-media-input').addEventListener('change', (e) => {
+            const preview = document.getElementById('comment-media-preview');
+            preview.innerHTML = '';
+            selectedCommentFiles = Array.from(e.target.files);
+            selectedCommentFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.style = "width: 40px; height: 40px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        carregarPost();
     });
-
-    carregarPostCompleto();
 </script>
-
-<%- include('../../partials/post-modals') %>
