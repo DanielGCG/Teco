@@ -32,10 +32,12 @@
         <div class="window">
             <div class="window-header">Distribuição de Badges</div>
             <div class="window-content">
-                <div style="display: flex; gap: 5px; align-items: center; margin-bottom: 10px; background: var(--retro-bg); padding: 5px; border: 2px outset var(--retro-border-light);">
-                    <input type="text" id="userSearch" placeholder="Buscar @username..." style="flex-grow: 1;" autocomplete="off">
-                    <button onclick="carregarAtribuicoes()">Buscar</button>
-                    <div id="searchResults" style="display: none; position: absolute; z-index: 100; background: white; border: 1px solid black; width: 100%; max-height: 150px; overflow-y: auto; top: 100%; left: 0;"></div>
+                <div style="position: relative; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 5px; align-items: center; background: var(--retro-bg); padding: 5px; border: 2px outset var(--retro-border-light);">
+                        <input type="text" id="userSearch" placeholder="Buscar @username..." style="flex-grow: 1;" autocomplete="off">
+                        <button onclick="carregarAtribuicoes()">Buscar</button>
+                    </div>
+                    <div id="searchResults" style="display: none; position: absolute; z-index: 999; background: white; border: 2px outset var(--retro-border-light); width: 100%; max-height: 150px; overflow-y: auto; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);"></div>
                 </div>
 
                 <div id="userNotFound" style="display: none; margin-top: 10px; color: red; text-align: center;">
@@ -262,17 +264,21 @@
             if (userPublicId) {
                 user = await (await fetch(`/api/admin/users/${userPublicId}`)).json();
             } else {
-                const users = await (await fetch(`/api/admin/users?search=${encodeURIComponent(query)}`)).json();
-                const exact = users.find(u => ('@' + u.username).toLowerCase() === (query.startsWith('@') ? query : '@' + query).toLowerCase());
+                const searchParam = query.startsWith('@') ? query.substring(1) : query;
+                const users = await (await fetch(`/api/admin/users?search=${encodeURIComponent(searchParam)}`)).json();
+                const exact = users.find(u => u.username.toLowerCase() === searchParam.toLowerCase());
                 
                 if (!exact && users.length > 0) {
                     searchResults.innerHTML = users.map(u => {
-                        const avatarHTML = typeof UIUtils !== 'undefined' ? UIUtils.createAvatarWithStatus(u, 24) : `<img src="${u.profileimage || '/images/default-avatar.png'}" width="24" height="24">`;
-                        return `<div style="padding: 5px; border-bottom: 1px dashed var(--retro-border-dark); cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="userSearch.value='${u.username}'; document.getElementById('searchResults').style.display='none'; carregarAtribuicoes('${u.publicid}')">
-                            <div style="width: 24px; height: 24px; flex-shrink: 0; overflow: hidden; border: 1px inset var(--retro-border-dark);">
+                        const avatarHTML = (typeof UIUtils !== 'undefined' && UIUtils.createAvatarWithStatus) 
+                            ? UIUtils.createAvatarWithStatus(u, 24) 
+                            : `<img src="${u.profileimage || '/images/default-avatar.png'}" width="24" height="24" style="object-fit: cover;">`;
+                        
+                        return `<div style="padding: 5px; border-bottom: 1px dashed var(--retro-border-dark); cursor: pointer; display: flex; align-items: center; gap: 8px; background: white;" onclick="document.getElementById('userSearch').value='${u.username}'; document.getElementById('searchResults').style.display='none'; carregarAtribuicoes('${u.publicid}')">
+                            <div style="width: 24px; height: 24px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--retro-border-dark); background: #eee;">
                                 ${avatarHTML}
                             </div>
-                            <span style="font-size: 13px;">${u.username}</span>
+                            <span style="font-size: 13px; color: black;">${u.username}</span>
                         </div>`;
                     }).join('');
                     searchResults.style.display = 'block';

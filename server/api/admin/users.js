@@ -17,9 +17,9 @@ AdminUsersRouter.get('/', async (req, res) => {
 
         if (search) {
             let term = search.trim().toLowerCase();
-            if (!term.startsWith('@')) term = '@' + term;
+            if (term.startsWith('@')) term = term.substring(1);
             whereClause = {
-                username: { [Op.like]: `%${term.substring(1)}%` }
+                username: { [Op.like]: `%${term}%` }
             };
         }
 
