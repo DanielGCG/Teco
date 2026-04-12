@@ -1,64 +1,56 @@
 <link rel="stylesheet" href="/styles/commons/chat-dm-common.css">
 
-<style>
-#dms-container { height: 100%; }
-</style>
-<div id="dms-container" class="container-fluid" style="padding: 0px;">
-    <div class="row h-100 g-3">
-        <!-- Sidebar -->
-        <div class="col-12 col-md-3 d-flex flex-column">
-            <div class="card h-100 d-flex flex-column" id="sidebar">
-                <div class="card-header">
-                    <h5 class="mb-0">Conversas</h5>
+<!-- Estilos removidos daqui e unificados em chat-dm-common.css para padronização -->
+
+<div id="dms-container" class="chat-layout-container">
+    <!-- Sidebar -->
+    <div class="sidebar-retro" id="sidebar">
+        <div class="window" style="height: 100%; display: flex; flex-direction: column; margin: 0;">
+            <div class="window-header">
+                <span>Conversas</span>
+            </div>
+            <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column; padding: 5px;">
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <input type="text" id="search-input" placeholder="Buscar usuários..." class="chat-textarea" style="pointer-events: auto; padding: 2px; height: 30px;">
+                    <button id="search-btn" style="padding: 2px 10px;">Buscar</button>
                 </div>
-                <div class="p-3" style="position: relative; z-index: 5;">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="search-input" placeholder="Buscar usuários..." style="pointer-events: auto !important;">
-                        <button class="btn btn-primary" id="search-btn"><i class="bi bi-search"></i></button>
-                    </div>
+                <div id="search-results"></div>
+                <hr style="margin: 5px 0;">
+                <div id="dm-list" style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+                    <p style="text-align: center; color: gray; padding: 10px;">Carregando...</p>
                 </div>
-                <div id="search-results" class="px-2"></div>
-                <hr>
-                <div id="dm-list" class="flex-grow-1 overflow-auto px-2">
-                    <p class="text-muted text-center p-3">Carregando...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-area-retro">
+        <!-- Área de Chat -->
+        <div class="window" id="chat-area" style="height: 100%; flex-direction: column; margin: 0; display: none;">
+            <div class="window-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="chat-title">Selecione uma conversa</span>
+                <button onclick="voltarLista()" class="btn-voltar-mobile">Voltar</button>
+            </div>
+            
+            <div class="window-content" id="chat-messages" style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); margin: 5px; padding: 5px;">
+            </div>
+            
+            <div class="window-content" style="border-top: none; padding: 0;">
+                <div class="chat-input-area">
+                    <textarea id="dm-input-msg" class="chat-textarea" placeholder="Digite sua mensagem..."></textarea>
+                    <button id="dm-send-btn" class="chat-send-btn">Enviar</button>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-9">
-            <!-- Área de Chat -->
-            <div id="chat-area" class="card h-100 d-flex flex-column">
-                <div class="card-header d-flex align-items-center justify-content-between" id="chat-header">
-                    <h5 class="mb-0 flex-grow-1" id="chat-title">Selecione uma conversa</h5>
-                    <div>
-                        <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="voltarLista()">
-                            <i class="bi bi-arrow-left"></i> Voltar
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="card-body flex-grow-1 overflow-auto" id="chat-messages">
-                </div>
-                
-                <div class="card-footer border-top" id="chat-input-footer">
-                    <div class="input-group flex-nowrap" style="align-items: stretch;">
-                        <textarea id="dm-input-msg" class="form-control" placeholder="Digite sua mensagem..." style="resize: none; max-height: 170px; min-height: 40px; line-height: 1.25; overflow-y: auto;"></textarea>
-                        <button id="dm-send-btn" class="btn btn-primary">Enviar</button>
-                    </div>
-                </div>
+        <!-- Placeholder quando nada selecionado -->
+        <div class="window" id="info-area" style="height: 100%; display: flex; flex-direction: column; margin: 0;">
+            <div class="window-header">
+                <span>Detalhes da Conversa</span>
             </div>
-
-            <!-- Placeholder quando nada selecionado -->
-            <div id="info-area" class="card h-100 d-flex flex-column">
-                <div class="card-header">
-                    <h5 class="mb-0">Detalhes da Conversa</h5>
-                </div>
-                <div class="card-body d-flex flex-column align-items-center justify-content-center">
-                    <div class="chat-preview-info">
-                        <i class="bi bi-chat-quote chat-preview-icon"></i>
-                        <h4>Selecione uma conversa</h4>
-                        <p class="text-muted">Escolha uma das conversas ao lado para iniciar um bate-papo.</p>
-                    </div>
+            <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                <div>
+                    <h4>Selecione uma conversa</h4>
+                    <p style="color: gray;">Escolha uma das conversas ao lado para iniciar um bate-papo.</p>
                 </div>
             </div>
         </div>
@@ -125,18 +117,34 @@
         );
 
         sortedConversas.forEach(conversa => {
-            const card = UIUtils.createUserCard({
-                ...conversa.otherUser,
-                lastMessage: conversa.lastMessage,
-                lastMessageAt: conversa.lastMessageAt,
-                unreadCount: conversa.unreadCount
-            }, { type: 'conversation', avatarSize: 40, showUnreadBadge: true });
-            
-            card.classList.add('conversation-card');
+            const otherUser = conversa.otherUser || {};
+            const card = document.createElement('div');
             card.dataset.chatId = conversa.publicid;
-            card.setAttribute('data-user-id', conversa.otherUser?.publicid); // Para tracking de status
-            if (selectedChatId === conversa.publicid) card.classList.add('active');
-            card.addEventListener('click', () => abrirDM(conversa.publicid, conversa.otherUser?.username, conversa.otherUser));
+            card.setAttribute('data-user-id', otherUser.publicid);
+            card.className = `conversation-card ${selectedChatId === conversa.publicid ? 'active' : ''}`;
+            
+            const badge = conversa.unreadCount > 0 
+                ? `<span class="unread-badge" style="background: red; color: white; border-radius: 5px; padding: 2px 5px; font-size: 10px;">${conversa.unreadCount}</span>` 
+                : '';
+                
+            card.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center; width: 100%; padding: 0 10px;">
+                    <div style="width: 25px; height: 25px; overflow: hidden; flex-shrink: 0; border: 1px inset var(--retro-border-dark);">
+                        <img src="${otherUser.profileimage || '/images/default-avatar.png'}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="Avatar">
+                    </div>
+                    <div style="flex:1; min-width:0; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 14px;">${otherUser.username || 'Usuário'}</strong>
+                            ${badge}
+                        </div>
+                        <small style="color: gray; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">
+                            ${conversa.lastMessage || 'Nova conversa'}
+                        </small>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => abrirDM(conversa.publicid, otherUser.username, otherUser));
             dmList.appendChild(card);
         });
 

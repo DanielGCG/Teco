@@ -22,7 +22,7 @@ InicialRouter.get('/register', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/auth/register', {
-        layout: 'layouts/main-sem-barra',
+        layout: 'layouts/retro-empty',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -35,7 +35,7 @@ InicialRouter.get('/login', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/auth/login', {
-        layout: 'layouts/main-sem-barra',
+        layout: 'layouts/retro-empty',
         locals: locals,
         HOST: process.env.HOST
     });

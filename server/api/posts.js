@@ -494,8 +494,15 @@ PostsRouter.delete('/:publicid', async (req, res) => {
         const post = await Post.findOne({ where: { publicid: publicid } });
         if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
 
-        // Apenas o autor pode deletar
-        if (post.authorUserId !== req.user.id) {
+        const isOwner = req.user.roleId === 1;
+        const isAdmin = req.user.roleId <= 5;
+        const isMod = req.user.roleId <= 10;
+        const isAuthor = post.authorUserId === req.user.id;
+
+        // Regra de permissão: 
+        // 1. Autor pode deletar o próprio post
+        // 2. Moderador (<=10) pode deletar posts de qualquer um (conforme solicitado e confirmado para Dono/Admin)
+        if (!isAuthor && !isMod) {
             return res.status(403).json({ error: 'Você não tem permissão para deletar este post.' });
         }
 

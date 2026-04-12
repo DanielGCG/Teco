@@ -57,7 +57,8 @@
 
         function renderPostDetails(post) {  
             const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
-            document.getElementById('retro-post-details').innerHTML = RetroPosts.renderPost(post, currentUsername);
+            const currentUserRole = parseInt("<%= locals.loggedUser ? locals.loggedUser.roleId : 20 %>");
+            document.getElementById('retro-post-details').innerHTML = RetroPosts.renderPost(post, currentUsername, currentUserRole);
         }
 
         async function carregarComentarios() {
@@ -73,8 +74,9 @@
                 }
 
                 const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
+                const currentUserRole = parseInt("<%= locals.loggedUser ? locals.loggedUser.roleId : 20 %>");
                 replies.forEach(r => {
-                    container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(r, currentUsername));
+                    container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(r, currentUsername, currentUserRole));
                 });
             } catch (e) { console.error(e); }
         }

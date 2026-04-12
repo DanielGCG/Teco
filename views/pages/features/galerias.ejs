@@ -1,50 +1,49 @@
-<main class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Galerias</h2>
-        <button class="btn btn-primary" onclick="abrirModalCriarGaleria()">+ Nova Galeria</button>
+<div class="window mt-3">
+    <div class="window-header">
+        <span class="window-title">Galerias</span>
+        <button class="window-btn" onclick="abrirModalCriarGaleria()" style="float: right;">+ Nova Galeria</button>
     </div>
-
-    <div class="galeria" id="lista-galerias">
-        <!-- Galerias serão carregadas aqui -->
-        <div class="col-12 text-center text-muted">Carregando...</div>
-    </div>
-
-    <!-- Modal Criar Galeria -->
-    <div class="modal fade" id="modalCriarGaleria" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Criar nova galeria</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formCriarGaleria">
-                        <div class="mb-3">
-                            <label class="form-label">Nome da Galeria</label>
-                            <!-- CORREÇÃO: name="nome" -> name="name" -->
-                            <input type="text" class="form-control" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Descrição</label>
-                            <!-- CORREÇÃO: name="descricao" -> name="description" -->
-                            <textarea class="form-control" name="description" rows="2"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Capa (opcional)</label>
-                            <!-- CORREÇÃO: name="capa" -> name="cover" -->
-                            <input type="file" class="form-control" name="cover" accept="image/*,video/*">
-                        </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" name="ispublic" id="isPublicSwitch">
-                            <label class="form-check-label" for="isPublicSwitch">Público (todos podem modificar)</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Criar</button>
-                    </form>
-                </div>
-            </div>
+    <div class="window-content">
+        <div class="galeria" id="lista-galerias">
+            <!-- Galerias serão carregadas aqui -->
+            <div style="text-align: center; color: gray;">Carregando...</div>
         </div>
     </div>
-</main>
+</div>
+
+<!-- Modal Criar Galeria -->
+<div id="modalCriarGaleria" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 400px; max-width: 90%; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
+    <div class="window-header">
+        <span class="window-title">Criar nova galeria</span>
+        <button type="button" class="window-btn" onclick="fecharModalCriarGaleria()" style="float: right;">X</button>
+    </div>
+    <div class="window-content">
+        <form id="formCriarGaleria" style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px;">Nome da Galeria</label>
+                <!-- CORREÇÃO: name="nome" -> name="name" -->
+                <input type="text" name="name" required style="width: 100%; box-sizing: border-box;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px;">Descrição</label>
+                <!-- CORREÇÃO: name="descricao" -> name="description" -->
+                <textarea name="description" rows="2" style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px;">Capa (opcional)</label>
+                <!-- CORREÇÃO: name="capa" -> name="cover" -->
+                <input type="file" name="cover" accept="image/*,video/*">
+            </div>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" name="ispublic" id="isPublicSwitch">
+                <label for="isPublicSwitch">Público (todos podem modificar)</label>
+            </div>
+            <button type="submit" style="margin-top: 10px; padding: 5px;">Criar</button>
+        </form>
+    </div>
+</div>
+<!-- Fundo do Modal -->
+<div id="modalBackdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 999;" onclick="fecharModalCriarGaleria()"></div>
 
 <script>
     document.addEventListener('DOMContentLoaded', carregarGalerias);
@@ -59,7 +58,7 @@
                 const container = document.getElementById('lista-galerias');
                 
                 if (data.galleries.length === 0) {
-                    container.innerHTML = '<div class="col-12 text-center text-muted p-5">Nenhuma galeria encontrada. Crie a primeira!</div>';
+                    container.innerHTML = '<div style="text-align: center; color: gray; padding: 20px;">Nenhuma galeria encontrada. Crie a primeira!</div>';
                     return;
                 }
 
@@ -82,8 +81,13 @@
     }
 
     function abrirModalCriarGaleria() {
-        const modal = new bootstrap.Modal(document.getElementById('modalCriarGaleria'));
-        modal.show();
+        document.getElementById('modalCriarGaleria').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function fecharModalCriarGaleria() {
+        document.getElementById('modalCriarGaleria').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
     }
 
     document.getElementById('formCriarGaleria').addEventListener('submit', async (e) => {
@@ -102,7 +106,7 @@
             const data = await res.json();
             
             if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('modalCriarGaleria')).hide();
+                fecharModalCriarGaleria();
                 form.reset();
                 carregarGalerias();
                 if(typeof mostrarAviso === 'function') mostrarAviso('Álbum criado com sucesso!', 'Sucesso');
@@ -131,10 +135,9 @@
         width: 100%;
         height: 0;
         padding-top: 100%; /* Aspect Ratio 1:1 */
-        border-radius: 12px;
+        border: 2px solid #000;
         overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        background: #fff;
     }
 
     .imagem a {
@@ -150,12 +153,11 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        image-rendering: pixelated;
     }
 
     .imagem:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        z-index: 10;
+        border-color: var(--retro-primary, #000080);
     }
 
     .texto-hover {

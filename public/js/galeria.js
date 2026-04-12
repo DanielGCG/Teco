@@ -179,13 +179,17 @@ const GaleriaManager = {
             
             const showTitle = (item.showtitle !== false);
             const fit = item.objectfit; 
-            const previewSrc = item.coverurl || (type === 'image' ? item.contenturl : '');
+            
+            // Ignorar coverurl caso seja idêntico ao arquivo de mídia para áudio e vídeo
+            let previewSrc = item.coverurl;
+            if (previewSrc === item.contenturl && type !== 'image') previewSrc = '';
+            if (!previewSrc && type === 'image') previewSrc = item.contenturl;
             
             let content;
             if (type === 'video') {
-                content = item.coverurl ? `<img src="${item.coverurl}" class="media-preview-box fit-${fit}" loading="lazy">` : `<video src="${item.contenturl}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<video src="${item.contenturl}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
             } else if (type === 'audio') {
-                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-volume-up-fill audio-icon"></i></div></div>`;
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-music-note-beamed audio-icon display-1"></i></div></div>`;
             } else {
                 content = `<img src="${previewSrc || item.contenturl || ''}" class="media-preview-box fit-${fit}" loading="lazy">`;
             }
@@ -346,12 +350,27 @@ const GaleriaManager = {
         if (!el) return;
         const bg = s.backgroundurl;
         
-        Object.assign(el.style, {
+        // Remove as tags do body (revertendo caso tenha testado antes na página toda)
+        document.body.style.backgroundColor = '';
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundRepeat = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundAttachment = '';
+        
+        // Alvo preferencial: a TD (#retro-body-td) que abraça o body para não sobrar fundo nas bordas e menus
+        const bgTarget = document.getElementById('retro-body-td') || el.closest('td') || el;
+        
+        Object.assign(bgTarget.style, {
             backgroundColor: s.backgroundcolor,
             backgroundImage: bg ? `url('${bg}')` : 'none',
             backgroundRepeat: s.backgroundfill === 'repeat' ? 'repeat' : 'no-repeat',
             backgroundSize: s.backgroundfill === 'repeat' ? 'auto' : 'cover',
             backgroundAttachment: 'fixed',
+            color: s.fontcolor
+        });
+        
+        // Aplica a cor da fonte também no container principal
+        Object.assign(el.style, {
             color: s.fontcolor
         });
 
@@ -642,6 +661,17 @@ const GaleriaManager = {
                 if (this.originalStyles) {
                     const el = document.getElementById('conteudo-principal'); // ID corrigido
                     if (el) el.setAttribute('style', this.originalStyles);
+                    
+                    const bgTarget = document.getElementById('retro-body-td') || (el ? el.closest('td') : null);
+                    if (bgTarget && bgTarget !== el) {
+                        bgTarget.style.backgroundImage = '';
+                        bgTarget.style.backgroundColor = '';
+                        bgTarget.style.backgroundRepeat = '';
+                        bgTarget.style.backgroundSize = '';
+                        bgTarget.style.backgroundAttachment = '';
+                        bgTarget.style.color = '';
+                    }
+
                     if (document.getElementById('image-list')) document.getElementById('image-list').style.setProperty('--gallery-columns', this.data.gridxsize || 12);
                     this.originalStyles = null; this.previewBgUrl = null; this.lastAppliedFont = null;
                 }

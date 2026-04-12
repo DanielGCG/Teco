@@ -1,10 +1,9 @@
 /**
- * Utilitários de Posts para o tema Retrô
- * Unifica a renderização de feeds e posts entre index e perfil
+ * Utilitários de Posts
  */
 
 const RetroPosts = {
-    renderPost: function(post, currentUsername) {
+    renderPost: function(post, currentUsername, currentUserRole = 20) {
         const date = new Date(post.createdat).toLocaleString();
         
         // Renderizar múltiplas imagens/vídeos
@@ -43,17 +42,18 @@ const RetroPosts = {
         }
         
         const isAuthor = post.author.username === currentUsername;
-        const deleteBtn = isAuthor ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETER]</a>` : '';
+        const isMod = currentUserRole <= 10;
+        const deleteBtn = (isAuthor || isMod) ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETAR]</a>` : '';
 
         return `
             <div class="feed-post" id="post-${post.publicid}" style="border-bottom: 1px solid var(--retro-border-light); padding-bottom: 10px; margin-bottom: 15px;">
-                <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+                <div style="margin-bottom: 5px; display: flex; align-items: start; gap: 8px;">
                     <img src="${post.author.profileimage}" style="width: 32px; height: 32px; border: 1px solid var(--retro-border-dark); object-fit: cover; cursor: pointer;" onclick="window.location.href='/${post.author.username}'">
                     <div style="flex-grow: 1;">
                         <strong class="post-author" style="cursor: pointer;" onclick="window.location.href='/${post.author.username}'">${post.author.username}</strong>
                         <div style="font-size: 10px; color: var(--retro-border-dark);">${date}</div>
                     </div>
-                    <div style="display: flex; gap: 5px; align-items: center;">
+                    <div style="display: flex; gap: 5px; align-items: center; align-self: flex-start;">
                         ${deleteBtn}
                     </div>
                 </div>
@@ -74,7 +74,6 @@ const RetroPosts = {
 
     /**
      * Handlers globais para ações de post (Delete, Like, Repost)
-     * Estes devem ser disparados por window.handleRetro...
      */
     initHandlers: function(callbackReload) {
         window.handleRetroDelete = async (postId) => {
@@ -96,9 +95,6 @@ const RetroPosts = {
         };
 
         window.handleRetroReply = (postId, username) => {
-            // No modo retrô, "responder" apenas abre o post para ver a caixa de comentário
-            // ou poderíamos abrir um modal de resposta rápida. 
-            // Seguindo o padrão Twitter/Bluesky de foco no post:
             window.location.href = `/${username}/status/${postId}`;
         };
 
@@ -122,6 +118,84 @@ const RetroPosts = {
                     if (callbackReload) callbackReload();
                 }
             } catch (e) { console.error(e); }
+        };
+    },
+
+    /**
+     * Gerenciador de scroll infinito (Lazy Loading)
+     */
+    setupInfiniteScroll: function(containerId, fetchUrl, currentUsername) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        let offset = 20;
+        let limit = 20;
+        let loading = false;
+        let hasMore = true;
+
+        // Criar o sensor de scroll ao final do container
+        const sentinel = document.createElement('div');
+        sentinel.id = `sentinel-${containerId}`;
+        sentinel.style.padding = '20px 0';
+        sentinel.innerHTML = '<p style="text-align: center; color: #888; font-size: 11px;">Carregando mais posts...</p>';
+        container.after(sentinel);
+
+        const observer = new IntersectionObserver(async (entries) => {
+            if (entries[0].isIntersecting && !loading && hasMore) {
+                loading = true;
+                const msg = sentinel.querySelector('p');
+                if (msg) msg.textContent = 'Carregando mais posts...';
+
+                try {
+                    // Se for uma URL relativa, precisamos construir corretamente
+                    let targetUrl = fetchUrl;
+                    if (!targetUrl.startsWith('http') && !targetUrl.startsWith('/')) {
+                        targetUrl = '/' + targetUrl;
+                    }
+                    
+                    const url = new URL(targetUrl, window.location.origin);
+                    url.searchParams.set('offset', offset);
+                    url.searchParams.set('limit', limit);
+
+                    const res = await fetch(url.toString(), { credentials: 'include' });
+                    if (res.ok) {
+                        const posts = await res.json();
+                        
+                        if (!posts || posts.length < limit) {
+                            hasMore = false;
+                            sentinel.innerHTML = '<hr style="border: 0; border-top: 1px dashed var(--retro-border-dark); margin: 20px 0;"><p style="text-align: center; color: #888; font-size: 11px;">Fim do feed.</p>';
+                        }
+
+                        if (posts && posts.length > 0) {
+                            const currentTargetUsername = new URL(fetchUrl, window.location.origin).searchParams.get('username');
+                            
+                            posts.forEach(post => {
+                                if (currentTargetUsername && post.author.username !== currentTargetUsername) return;
+                                container.insertAdjacentHTML('beforeend', this.renderPost(post, currentUsername));
+                            });
+                            offset += limit;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro no lazy loading:', e);
+                } finally {
+                    loading = false;
+                }
+            }
+        }, { 
+            rootMargin: '400px',
+            threshold: 0.1 
+        });
+
+        observer.observe(sentinel);
+
+        // Retorna função para resetar o estado
+        return () => {
+            offset = 20;
+            hasMore = true;
+            loading = false;
+            const msg = sentinel.querySelector('p');
+            if (msg) msg.textContent = 'Carregando mais posts...';
         };
     }
 };

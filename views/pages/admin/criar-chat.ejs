@@ -1,141 +1,127 @@
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><span class="marca-texto-roxo">Gerenciar Chats & DMs</span></h2>
-        <div id="estatisticasGerais" class="d-flex gap-3">
-            <div class="text-center">
-                <h5 class="mb-0" id="statChats">-</h5>
-                <small class="text-muted">Chats</small>
-            </div>
-            <div class="text-center border-start ps-3">
-                <h5 class="mb-0" id="statDms">-</h5>
-                <small class="text-muted">DMs</small>
-            </div>
-            <div class="text-center border-start ps-3">
-                <h5 class="mb-0" id="statMsgs">-</h5>
-                <small class="text-muted">Mensagens</small>
-            </div>
-        </div>
+<title>Gerenciar Chats & DMs - Administração</title>
+
+<div class="window" style="margin-bottom: 20px;">
+    <div class="window-header">
+        <span>Estatísticas de Chats & DMs</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
     </div>
-
-    <div class="row g-3 mb-4">
-        <!-- Criar chat público -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-transparent border-0">
-                    <h5 class="mb-0"><span class="marca-texto-verde">Novo Chat Público</span></h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <label class="form-label small">Nome do Chat</label>
-                        <input type="text" id="publicChatName" class="form-control mb-2" placeholder="Ex: Cantinho do Café">
-                        <label class="form-label small">Assunto/Tópico</label>
-                        <select id="publicChatTopic" class="form-select mb-3"></select>
-                        <button class="btn btn-primary w-100" id="createPublicChatBtn">
-                            <i class="fas fa-plus-circle me-1"></i> Criar Chat
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Criar DM entre dois usuários -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-transparent border-0">
-                    <h5 class="mb-0"><span class="marca-texto-verde">Criar DM (Admin)</span></h5>
-                </div>
-                <div class="card-body">
-                    <div id="adminDmPanel">
-                        <label class="form-label small">Usuário 1 (Remetente)</label>
-                        <select id="adminUser1" class="form-select mb-2"></select>
-                        <label class="form-label small">Usuário 2 (Destinatário)</label>
-                        <select id="adminUser2" class="form-select mb-3"></select>
-                        <button class="btn btn-success w-100" id="createAdminDmBtn">
-                            <i class="fas fa-comments me-1"></i> Criar DM
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lista de chats com busca -->
-    <div class="card shadow-sm">
-        <div class="card-header py-3">
-            <div class="row align-items-center">
-                <div class="col-md-4">
-                    <h5 class="mb-0">Conversas Ativas</h5>
-                </div>
-                <div class="col-md-8">
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="chatSearchInput" class="form-control border-start-0" placeholder="Buscar por título ou participante...">
-                        <button class="btn btn-outline-secondary" id="refreshBtn">🔄</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <div id="chatList">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                </div>
-            </div>
-        </div>
-        <div class="card-footer border-top-0 py-3">
-            <nav id="paginationContainer">
-                <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
-            </nav>
-        </div>
+    <div class="window-content">
+        <table width="100%">
+            <tr>
+                <td align="center"><strong>Chats:</strong> <span id="statChats">-</span></td>
+                <td align="center"><strong>DMs:</strong> <span id="statDms">-</span></td>
+                <td align="center"><strong>Mensagens:</strong> <span id="statMsgs">-</span></td>
+            </tr>
+        </table>
     </div>
 </div>
 
-<!-- Modal de edição -->
-<div class="modal fade" id="editChatModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Administrar Conversa</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <div id="editChatFields">
-          <div class="mb-3" id="editChatNameGroup">
-            <label for="editChatName" class="form-label">Nome do chat</label>
-            <input type="text" id="editChatName" class="form-control">
-          </div>
-          <div class="mb-3" id="editParticipantsContainer" style="display:none;">
-            <label class="form-label">Participantes</label>
-            <div class="row g-2">
-                <div class="col-6"><select id="editParticipant1" class="form-select"></select></div>
-                <div class="col-6"><select id="editParticipant2" class="form-select"></select></div>
+<table width="100%" cellpadding="10" cellspacing="0" border="0" style="margin-bottom: 20px;">
+    <tr>
+        <td valign="top" width="50%" style="border-right: 2px outset var(--retro-border-light);">
+            <!-- Novo Chat Público -->
+            <div class="window">
+                <div class="window-header">Novo Chat Público</div>
+                <div class="window-content">
+                    <table width="100%" cellpadding="5">
+                        <tr>
+                            <td>Nome do Chat:</td>
+                            <td><input type="text" id="publicChatName" placeholder="Ex: Cantinho do Café" style="width: 100%; box-sizing: border-box;"></td>
+                        </tr>
+                        <tr>
+                            <td>Assunto/Tópico:</td>
+                            <td><select id="publicChatTopic" style="width: 100%; box-sizing: border-box;"></select></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" align="right">
+                                <button id="createPublicChatBtn" style="font-weight: bold;">Criar Chat</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
-          </div>
+        </td>
+        <td valign="top" width="50%">
+            <!-- Criar DM (Admin) -->
+            <div class="window">
+                <div class="window-header">Criar DM (Admin)</div>
+                <div class="window-content">
+                    <table width="100%" cellpadding="5">
+                        <tr>
+                            <td>Usuário 1 (Remetente):</td>
+                            <td><select id="adminUser1" style="width: 100%; box-sizing: border-box;"></select></td>
+                        </tr>
+                        <tr>
+                            <td>Usuário 2 (Destinado):</td>
+                            <td><select id="adminUser2" style="width: 100%; box-sizing: border-box;"></select></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" align="right">
+                                <button id="createAdminDmBtn" style="font-weight: bold;">Criar DM</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Lista de chats com busca -->
+<div class="window">
+    <div class="window-header">
+        Conversas Ativas
+    </div>
+    <div style="background: var(--retro-bg); border-bottom: 2px solid var(--retro-border-dark); padding: 5px; display: flex; gap: 5px; align-items: center;">
+        <input type="text" id="chatSearchInput" placeholder="Buscar por título ou participante..." style="flex-grow: 1;">
+        <button id="refreshBtn">Atualizar</button>
+    </div>
+    <div class="window-content" style="padding: 0; background: white; height: 400px; overflow-y: auto;">
+        <div id="chatList">
+            <div style="padding: 20px; text-align: center; color: gray;">Carregando...</div>
         </div>
-        <div class="alert alert-warning small py-2">
-            <i class="fas fa-exclamation-triangle me-2"></i>
+    </div>
+    <div style="padding: 5px; background: var(--retro-window-bg); border-top: 2px outset var(--retro-border-light); text-align: center;" id="pagination">
+        <!-- Paginação -->
+    </div>
+</div>
+
+<!-- Modal de edição nativo -->
+<dialog id="editChatModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
+    <div class="window-header">
+        <span id="editChatModalTitle">Administrar Conversa</span>
+        <button onclick="document.getElementById('editChatModal').close()">X</button>
+    </div>
+    <div class="window-content" style="padding: 10px;">
+        <table width="100%" cellpadding="5">
+            <tr id="editChatNameGroup">
+                <td>Nome do chat:</td>
+                <td><input type="text" id="editChatName" style="width: 100%; box-sizing: border-box;"></td>
+            </tr>
+            <tr id="editParticipantsContainer" style="display: none;">
+                <td colspan="2">
+                    Participantes:
+                    <table width="100%" style="margin-top: 5px;">
+                        <tr>
+                            <td><select id="editParticipant1" style="width: 100%; box-sizing: border-box;"></select></td>
+                            <td><select id="editParticipant2" style="width: 100%; box-sizing: border-box;"></select></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 10px; color: red; font-size: 11px;">
             A exclusão removerá todas as mensagens permanentemente.
         </div>
-        <div class="d-grid gap-2">
-            <button class="btn btn-primary" id="saveChatBtn">Salvar Alterações</button>
-            <button class="btn btn-outline-danger" id="deleteChatBtn">
-                <i class="fas fa-trash-alt me-1"></i> Excluir Definitivamente
-            </button>
+        
+        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
+            <button id="deleteChatBtn" style="color: red; float: left;">Excluir Definitivamente</button>
+            <button onclick="document.getElementById('editChatModal').close()">Cancelar</button>
+            <button id="saveChatBtn" style="font-weight: bold;">Salvar Alterações</button>
         </div>
-      </div>
     </div>
-  </div>
-</div>
-
-<style>
-    .chat-row { transition: background 0.2s; border-bottom: 1px solid #eee; }
-    .chat-row:last-child { border-bottom: none; }
-    .chat-row:hover { background-color: #f8f9fa; }
-    .status-indicator { width: 4px; height: 100%; position: absolute; left: 0; top: 0; }
-    .type-public { background: #0d6efd; }
-    .type-dm { background: #198754; }
-    .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
-</style>
+</dialog>
 
 <script>
 // ==================== Estado & Configs ====================
@@ -152,6 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
         : () => {};
 
     document.getElementById('chatSearchInput').addEventListener('input', debounceSearch);
+    document.getElementById('chatSearchInput').addEventListener('keypress', (e) => { 
+        if (e.key === 'Enter') { currentPage = 1; carregarChats(); }
+    });
+    
     document.getElementById('refreshBtn').addEventListener('click', carregarTudo);
     document.getElementById('saveChatBtn').addEventListener('click', salvarAlteracoes);
     document.getElementById('deleteChatBtn').addEventListener('click', deletarChat);
@@ -178,7 +168,7 @@ async function carregarChats() {
         renderizarChats(data.chats || []);
         renderizarPaginacao(data.currentPage, data.totalPages);
     } catch (err) {
-        list.innerHTML = `<div class="p-4 text-danger">Erro ao carregar conversas.</div>`;
+        list.innerHTML = `<div style="padding: 20px; color: red; text-align: center;">Erro ao carregar conversas.</div>`;
     }
 }
 
@@ -198,60 +188,82 @@ async function carregarEstatisticas() {
 function renderizarChats(chats) {
     const container = document.getElementById("chatList");
     if (!chats.length) {
-        container.innerHTML = `<div class="p-5 text-center text-muted">Nenhuma conversa encontrada.</div>`;
+        container.textContent = "";
+        const emptyMsg = document.createElement("div");
+        emptyMsg.style.cssText = "padding: 20px; text-align: center; color: gray;";
+        emptyMsg.textContent = "Nenhuma conversa encontrada.";
+        container.appendChild(emptyMsg);
         return;
     }
 
-    container.innerHTML = chats.map(chat => {
-        const date = chat.lastmessageat ? (typeof UIUtils !== 'undefined' ? UIUtils.formatarData(chat.lastmessageat) : new Date(chat.lastmessageat).toLocaleDateString()) : '-';
+    // Criar fragmento para melhor performance
+    const fragment = document.createDocumentFragment();
+
+    chats.forEach(chat => {
+        const date = chat.lastmessageat && !isNaN(new Date(chat.lastmessageat)) 
+            ? (typeof UIUtils !== 'undefined' ? UIUtils.formatarData(chat.lastmessageat) : new Date(chat.lastmessageat).toLocaleDateString('pt-BR')) 
+            : 'Nenhuma msg';
         const isPublic = chat.type === 'public';
+        const color = isPublic ? '#000080' : '#008000';
+        const tipoText = chat.type.toUpperCase();
+
+        const row = document.createElement("div");
+        row.style.cssText = "border-bottom: 2px outset var(--retro-border-light); padding: 8px; background: white; display: flex; align-items: center; gap: 10px;";
         
-        return `
-            <div class="chat-row p-3 position-relative d-flex align-items-center">
-                <div class="status-indicator ${isPublic ? 'type-public' : 'type-dm'}"></div>
-                <div class="flex-grow-1 ms-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <h6 class="mb-0 fw-bold">${chat.title}</h6>
-                        <span class="badge ${isPublic ? 'bg-primary' : 'bg-success'} opacity-75 small">${chat.type.toUpperCase()}</span>
-                    </div>
-                    <small class="text-muted">
-                        ${isPublic ? `Tópico: ${chat.topic}` : 'DM Privada'} | 
-                        Criador: ${chat.creatorusername} | 
-                        ${chat.messagecount} mensagens
-                    </small>
-                </div>
-                <div class="text-end me-3 d-none d-md-block">
-                    <small class="text-muted d-block">Atividade</small>
-                    <small class="fw-bold">${date}</small>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary btn-icon" onclick="abrirEdicao(${JSON.stringify(chat).replace(/"/g, '&quot;')})" title="Editar Configurações">
-                        <i class="bi bi-nut-fill"></i>
-                    </button>
-                    ${isPublic ? `
-                        <a href="/chat/${chat.publicid}" target="_blank" class="btn btn-success btn-icon border-0" title="Abrir Chat Público">
-                            <i class="bi bi-chat-fill"></i>
-                        </a>
-                    ` : `
-                        <button class="btn btn-outline-secondary btn-icon" disabled title="Acesso a DMs restrito por privacidade">
-                            <i class="bi bi-chat"></i>
-                        </button>
-                    `}
+        row.innerHTML = `
+            <div style="width: 4px; height: 32px; background: ${color}; flex-shrink: 0;"></div>
+            <div style="flex-grow: 1;">
+                <strong style="font-size: 14px;">${chat.title}</strong> 
+                <span style="background: ${color}; color: white; border: 1px inset var(--retro-border-light); padding: 0 4px; font-size: 10px; vertical-align: middle;">${tipoText}</span>
+                <div style="margin-top: 2px; color: #444; font-size: 11px;">
+                    ${isPublic ? 'Tópico: ' + chat.topic : 'DM Privada'} | 
+                    Criador: ${chat.creatorusername} | 
+                    <strong>${chat.messagecount}</strong> msgs
                 </div>
             </div>
+            <div style="text-align: right; font-size: 11px; color: #666; width: 100px; font-family: monospace;">
+                Atividade<br>
+                <strong style="color: black;">${date}</strong>
+            </div>
         `;
-    }).join('');
+
+        const actions = document.createElement("div");
+        actions.style.cssText = "display: flex; flex-direction: column; gap: 3px;";
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Editar";
+        editBtn.onclick = () => abrirEdicao(chat);
+        actions.appendChild(editBtn);
+
+        if (isPublic) {
+            const openLink = document.createElement("a");
+            openLink.href = `/chat/${chat.publicid}`;
+            openLink.target = "_blank";
+            openLink.style.textDecoration = "none";
+            const openBtn = document.createElement("button");
+            openBtn.textContent = "Abrir";
+            openBtn.style.width = "100%";
+            openLink.appendChild(openBtn);
+            actions.appendChild(openLink);
+        }
+
+        row.appendChild(actions);
+        fragment.appendChild(row);
+    });
+
+    container.innerHTML = "";
+    container.appendChild(fragment);
 }
 
 function renderizarPaginacao(curr, total) {
     const container = document.getElementById("pagination");
     if (total <= 1) { container.innerHTML = ''; return; }
     
-    let html = `<li class="page-item ${curr === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${curr - 1})">«</a></li>`;
+    let html = `<button ${curr === 1 ? 'disabled' : ''} onclick="mudarPagina(${curr - 1})">&laquo;</button> `;
     for (let i = Math.max(1, curr - 2); i <= Math.min(total, curr + 2); i++) {
-        html += `<li class="page-item ${i === curr ? 'active' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${i})">${i}</a></li>`;
+        html += `<button ${i === curr ? 'disabled style="font-weight: bold;"' : ''} onclick="mudarPagina(${i})">${i}</button> `;
     }
-    html += `<li class="page-item ${curr === total ? 'disabled' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${curr + 1})">»</a></li>`;
+    html += `<button ${curr === total ? 'disabled' : ''} onclick="mudarPagina(${curr + 1})">&raquo;</button>`;
     container.innerHTML = html;
 }
 
@@ -261,15 +273,15 @@ function abrirEdicao(chat) {
     const isDM = chat.type === 'dm';
     
     document.getElementById("editChatName").value = chat.title || "";
-    document.getElementById("editChatNameGroup").style.display = isDM ? "none" : "block";
-    document.getElementById("editParticipantsContainer").style.display = isDM ? "block" : "none";
+    document.getElementById("editChatNameGroup").style.display = isDM ? "none" : ""; // Tr é display:table-row ou ""  
+    document.getElementById("editParticipantsContainer").style.display = isDM ? "" : "none";
 
     if (isDM) {
         document.getElementById("editParticipant1").value = chat.participants[0]?.publicid || "";
         document.getElementById("editParticipant2").value = chat.participants[1]?.publicid || "";
     }
     
-    new bootstrap.Modal(document.getElementById('editChatModal')).show();
+    document.getElementById('editChatModal').showModal();
 }
 
 async function salvarAlteracoes() {
@@ -293,13 +305,21 @@ async function salvarAlteracoes() {
         if (res.ok) {
             mostrarToast("Conversa atualizada!");
             carregarChats();
-            bootstrap.Modal.getInstance(document.getElementById('editChatModal')).hide();
+            document.getElementById('editChatModal').close();
+        } else {
+            const err = await res.json();
+            mostrarToast("Erro: " + (err.error || "Tente novamente"), "error");
         }
-    } catch (e) { mostrarToast("Erro ao salvar", "danger"); }
+    } catch (e) { mostrarToast("Erro ao salvar", "error"); }
 }
 
 async function deletarChat() {
-    if (!confirm("Excluir permanentemente todas as mensagens?")) return;
+    let conf = typeof mostrarConfirmacao !== 'undefined' 
+        ? await mostrarConfirmacao('Excluir permanentemente todas as mensagens deste chat?', 'Excluir Chat')
+        : confirm('Excluir permanentemente todas as mensagens?');
+        
+    if (!conf) return;
+
     try {
         const res = await fetch(`/api/admin/chats/${currentChat.publicid}?type=${currentChat.type}`, {
             method: "DELETE",
@@ -308,9 +328,9 @@ async function deletarChat() {
         if (res.ok) {
             mostrarToast("Excluído com sucesso");
             carregarChats();
-            bootstrap.Modal.getInstance(document.getElementById('editChatModal')).hide();
+            document.getElementById('editChatModal').close();
         }
-    } catch (e) { mostrarToast("Erro ao excluir", "danger"); }
+    } catch (e) { mostrarToast("Erro ao excluir", "error"); }
 }
 
 // Criação
@@ -331,7 +351,7 @@ document.getElementById("createPublicChatBtn").addEventListener("click", async (
             document.getElementById("publicChatName").value = "";
             carregarChats();
         }
-    } catch (e) { mostrarToast("Erro ao criar", "danger"); }
+    } catch (e) { mostrarToast("Erro ao criar", "error"); }
 });
 
 document.getElementById("createAdminDmBtn").addEventListener("click", async () => {
@@ -349,8 +369,11 @@ document.getElementById("createAdminDmBtn").addEventListener("click", async () =
         if (res.ok) {
             mostrarToast("DM criada!");
             carregarChats();
+        } else {
+            const err = await res.json();
+            mostrarToast("Erro: " + (err.error || "Tente novamente"), "error");
         }
-    } catch (e) { mostrarToast("Erro ao criar DM", "danger"); }
+    } catch (e) { mostrarToast("Erro ao criar DM", "error"); }
 });
 
 // Auxiliares
@@ -379,8 +402,9 @@ function mudarPagina(p) { currentPage = p; carregarChats(); }
 
 function mostrarToast(m, t = "success") {
     if (typeof UIUtils !== 'undefined' && UIUtils.mostrarFeedback) {
-        UIUtils.mostrarFeedback(m, t);
-    } else { alert(m); }
+        UIUtils.mostrarFeedback(m, t === "error" ? "danger" : t);
+    } else { 
+        alert(m); 
+    }
 }
-</script>
 </script>

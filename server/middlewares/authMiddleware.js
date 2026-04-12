@@ -22,6 +22,7 @@ const setUserCookie = (res, user) => {
 };
 
 // authMiddleware(minRole, refresh = true)
+// 1=dono, 5=admin, 10=moderador, 11=botecor, 20=usuário
 const authMiddleware = (minRole = 20, refresh = true) => {
     return async (req, res, next) => {
         let isPublic = false;
@@ -68,11 +69,22 @@ const authMiddleware = (minRole = 20, refresh = true) => {
 
             const user = session.User;
 
-            // Verifica role mínima (apenas se não for rota pública ou se minRole < 20)
-            // 1=dono, 5=admin, 10=moderador, 11=botecor, 20=usuário
-            if (!isPublic && user.roleId > minRole) {
+            // Dono (1) sempre tem acesso a tudo
+            const isDono = user.roleId === 1;
+
+            // Verifica role mínima
+            if (!isPublic && !isDono && user.roleId > minRole) {
                 if (res && res.status) {
-                    return res.status(403).json({ message: "Acesso negado" });
+                    const message = "Acesso negado: nível de privilégio insuficiente.";
+                    if (req.accepts('html')) {
+                        // Poderíamos redirecionar para um erro 403 amigável
+                        return res.status(403).render('utils/modal-aviso', {
+                            layout: 'layouts/retro-empty',
+                            locals: { title: '403', description: 'Acesso Negado', version: process.env.VERSION },
+                            aviso: { titulo: "Acesso Negado", mensagem: message, botao: "Voltar", link: "javascript:history.back()" }
+                        });
+                    }
+                    return res.status(403).json({ message });
                 }
                 return next(new Error("Acesso negado"));
             }

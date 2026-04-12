@@ -1,12 +1,32 @@
-<div class="container mt-5">
-    <h2 class="mb-4">Resetar Senha de Usuário</h2>
+<title>Resetar Senha - Administração</title>
 
-    <div class="mb-3">
-        <label for="selectUser" class="form-label">Selecione o usuário</label>
-        <select id="selectUser" class="form-select"></select>
+<div class="window" style="max-width: 500px; margin: 40px auto;">
+    <div class="window-header">
+        <span>Resetar Senha</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
     </div>
+    <div class="window-content" style="padding: 15px;">
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/images/naorelacionado/easter_egg/alert.png" alt="Aviso" style="width: 48px; height: 48px; display: none;" onerror="this.style.display='none'">
+            <h3 style="margin: 0;">Resetar Senha</h3>
+            <p style="color: gray; font-size: 12px; margin-top: 5px;">Selecione um usuário para redefinir a senha de acesso para o padrão.</p>
+        </div>
 
-    <button id="resetBtn" class="btn btn-warning w-100">Resetar senha para 12345</button>
+        <div style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+            <div><strong>Selecione o usuário alvo:</strong></div>
+            <div>
+                <select id="selectUser" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 14px;">
+                    <option value="">Carregando usuários...</option>
+                </select>
+            </div>
+            <div style="padding-top: 5px; text-align: center;">
+                <button id="resetBtn" style="width: 100%; padding: 8px; font-weight: bold; color: #cc0000; border: 2px outset var(--retro-border-light);">
+                    [ ! ] Resetar senha para 12345
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -51,7 +71,8 @@ async function carregarUsuarios() {
         });
     } catch(err) {
         console.error(err);
-        mostrarAviso("Erro ao carregar usuários");
+        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
+        else alert("Erro ao carregar usuários");
     }
 }
 
@@ -59,9 +80,20 @@ async function carregarUsuarios() {
 document.getElementById("resetBtn").addEventListener("click", async () => {
     const select = document.getElementById("selectUser");
     const userId = select.value;
-    if(!userId) return mostrarAviso("Selecione um usuário");
+    
+    if(!userId) {
+        if (typeof mostrarAviso !== 'undefined') return mostrarAviso("Selecione um usuário");
+        return alert("Selecione um usuário");
+    }
 
-    if(!await mostrarConfirmacao("Tem certeza que deseja resetar a senha para 12345?")) return;
+    let confirmado = false;
+    if (typeof mostrarConfirmacao !== 'undefined') {
+        confirmado = await mostrarConfirmacao("Tem certeza que deseja resetar a senha para 12345?");
+    } else {
+        confirmado = confirm("Tem certeza que deseja resetar a senha para 12345?");
+    }
+
+    if(!confirmado) return;
 
     try {
         const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
@@ -71,13 +103,16 @@ document.getElementById("resetBtn").addEventListener("click", async () => {
 
         const data = await res.json();
         if(res.ok){
-            mostrarAviso("Senha resetada com sucesso!");
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Senha resetada com sucesso!");
+            else alert("Senha resetada com sucesso!");
         } else {
-            mostrarAviso("Erro: " + data.message);
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
+            else alert("Erro: " + data.message);
         }
     } catch(err) {
         console.error(err);
-        mostrarAviso("Erro ao resetar senha");
+        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao resetar senha");
+        else alert("Erro ao resetar senha");
     }
 });
 

@@ -9,7 +9,7 @@ DMsRouter.get('/', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/chats/dm', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });

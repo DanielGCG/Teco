@@ -1,225 +1,141 @@
 ﻿<style>
-  .profile-preview-card {
-    position: relative;
+  .edit-container {
+    display: flex; 
+    flex-direction: column;
+    gap: 15px; 
+    align-items: center;
+  }
+  .preview-col {
     width: 100%;
-    max-width: 500px;
-    margin: 0 auto 2rem;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    background: rgba(0, 0, 0, 0.07);
+    max-width: 400px;
   }
-
-  .preview-bg {
-    height: 150px;
-    background-color: #6c5ce7;
-    background-size: cover;
-    background-position: center;
-    transition: background 0.3s ease;
-  }
-
-  .preview-avatar-container {
-    position: relative;
-    margin-top: -50px;
-    padding: 0 1.5rem;
-    display: flex;
-    align-items: flex-end;
-    gap: 1rem;
-  }
-
-  .preview-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 15px;
-    border: 4px solid rgba(255, 255, 255, 0.5);
-    object-fit: cover;
-    background: #eee;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
-
-  .preview-info {
-    padding-bottom: 0.5rem;
-  }
-
-  .preview-username {
-    font-weight: 700;
-    font-size: 1.2rem;
-    margin: 0;
-    color: #2d3436;
-  }
-
-  .preview-bio {
-    padding: 1rem 1.5rem;
-    font-size: 0.9rem;
-    color: #636e72;
-    min-height: 60px;
-  }
-
-  .nav-tabs-custom {
-    border-bottom: 2px solid #eee;
-    margin-bottom: 1.5rem;
-  }
-
-  .nav-tabs-custom .nav-link {
-    border: none;
-    color: #636e72;
-    font-weight: 600;
-    padding: 1rem 1.5rem;
-    transition: all 0.3s ease;
-  }
-
-  .nav-tabs-custom .nav-link.active {
-    color: var(--marrom-escuro, #A39178);
-    background: none;
-    border-bottom: 3px solid var(--marrom-escuro, #A39178);
-  }
-
-  .upload-zone {
-    border: 2px dashed #dfe6e9;
-    border-radius: 10px;
-    padding: 1rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-  }
-
-  .upload-zone:hover {
-    border-color: var(--marrom-escuro, #A39178);
-    background: #f9f9f9;
-  }
-
-  .input-group-text {
-    background-color: #f8f9fa;
-    border-right: none;
-  }
-
-  .form-control:focus {
-    box-shadow: none;
-    border-color: var(--marrom-escuro, #A39178);
+  .form-col {
+    width: 100%;
+    max-width: 600px;
   }
 </style>
 
-<div class="container py-3">
-  <div class="row justify-content-center">
-    <!-- Cria duas colunas -->
-    <div class="row">
-      <div class="col-md-6">
-        <div class="profile-preview-card">
-          <div id="preview-bg" class="preview-bg"></div>
-          <div class="preview-avatar-container">
-            <img id="preview-pf" src="" class="preview-avatar" alt="Avatar">
-            <div class="preview-info">
-              <p id="preview-username-text" class="preview-username">@usuario</p>
-              <small id="preview-pronouns-text" class="text-muted"></small>
+<div class="window" style="max-width: 800px; margin: 10px auto;">
+  <div class="window-header">
+    <span>Editar Perfil</span>
+  </div>
+  <div class="window-content" style="padding: 10px;">
+    <div class="edit-container" style="gap: 10px;">
+      <!-- Preview em Cima (Cópia fiel do retro-profile) -->
+      <div class="preview-col" style="width: 100%; max-width: 100%;">
+        <div class="window" style="margin-bottom: 10px;">
+          <div class="window-header" style="font-size: 10px;">Preview do Perfil</div>
+          <div class="window-content" style="padding: 10px;">
+            <div style="display: flex; gap: 15px; align-items: flex-start;">
+              <div style="text-align: center; width: 130px; flex-shrink: 0;">
+                <div style="position: relative; display: inline-block;">
+                  <img id="preview-pf" src="" border="1" style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
+                  <span class="status-dot" style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: #4caf50;"></span>
+                </div>
+                <div id="preview-username-text" style="display: block; margin-top: 3px;">...</div>
+                <div id="preview-pronouns-text" style="font-size: 11px; margin-top: 3px; color: var(--retro-border-dark);"></div>
+                <div style="margin-top: 8px;">
+                  <button style="width: 100%; font-size: 11px; cursor: default;">EDITAR</button>
+                </div>
+              </div>
+              <div style="flex-grow: 1; display: flex; flex-direction: row; gap: 15px; align-items: stretch;">
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 180px; flex-shrink: 0;">
+                  <div class="window" style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column;">
+                    <div id="preview-bio-text" class="window-content" style="flex-grow: 1; min-height: 40px; max-height: 85px; overflow-y: auto; font-size: 12px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word;"></div>
+                  </div>
+                  <div class="window" style="margin-bottom: 0;">
+                    <div class="window-content" style="padding: 5px; font-size: 11px; display: flex; gap: 10px; flex-wrap: wrap;">
+                      <span>Posts: <b id="preview-post-count">0</b></span>
+                      <span id="preview-joined-date" style="color: var(--retro-border-dark);">...</span>
+                    </div>
+                  </div>
+                </div>
+                <div id="preview-banner-container" class="window" style="display: none; margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; min-width: 250px;">
+                  <div class="window-content" style="padding: 0; flex-grow: 1; height: 100%; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden;">
+                    <img id="preview-banner-img" src="" style="width: 100%; height: 100%; height: 160px; object-fit: cover; display: block; image-rendering: pixelated;">
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div id="preview-bio-text" class="preview-bio">Sua bio aparecerá aqui...</div>
         </div>
       </div>
-      <div class="col-md-6">
-        <!-- Tabs de Edição -->
-        <div class="card shadow-sm border-0 rounded-4">
-          <div class="card-body p-4">
-            <ul class="nav nav-tabs nav-tabs-custom" id="profileTabs" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab">
-                  <i class="bi bi-person-circle me-2"></i>Perfil
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-pane" type="button" role="tab">
-                  <i class="bi bi-shield-lock me-2"></i>Segurança
-                </button>
-              </li>
-            </ul>
 
-            <div class="tab-content" id="profileTabsContent">
-              <!-- Aba de Informações -->
-              <div class="tab-pane fade show active" id="info-pane" role="tabpanel">
-                <form id="edit-profile-form">
-                  <div class="row">
-                    <div class="col-md-6 mb-3">
-                      <label for="username" class="form-label fw-bold">Nome de usuário</label>
-                      <div class="input-group">
-                        <span class="input-group-text">@</span>
-                        <input type="text" class="form-control" id="username" name="username" maxlength="12" required placeholder="seu_nome">
-                      </div>
-                      <label for="pronouns" class="form-label fw-bold">Pronomes</label>
-                      <div class="input-group">
-                        <input type="text" class="form-control" id="pronouns" name="pronouns" maxlength="12" placeholder="ele/ela/elu">
-                      </div>
-                      <label for="lastfmusername" class="form-label fw-bold mt-3">Usuário Last.fm</label>
-                      <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-music-note-beamed"></i></span>
-                        <input type="text" class="form-control" id="lastfmusername" name="lastfmusername" maxlength="64" placeholder="seu username">
-                      </div>
-                    </div>
-                    <div class="col-md-12 mb-4">
-                      <label for="bio" class="form-label fw-bold">Bio</label>
-                      <textarea class="form-control" id="bio" name="bio" rows="2" maxlength="80" oninput="atualizarContadorBio()" placeholder="Conte um pouco sobre você..."></textarea>
-                      <div class="text-end">
-                        <small id="bio-contador" class="text-muted">0 / 80</small>
-                      </div>
-                    </div>
+      <!-- Campos em Baixo -->
+      <div class="form-col" style="overflow: hidden;">
+        <form id="edit-profile-form">
+          <table border="0" cellpadding="2" cellspacing="0" width="100%" style="font-size: 11px; table-layout: fixed;">
+            <tr>
+              <td width="60"><b>Usuário:</b></td>
+              <td>
+                <input type="text" id="username" name="username" maxlength="12" style="width: 100%; box-sizing: border-box; height: 18px;" required>
+              </td>
+            </tr>
+            <tr>
+              <td><b>Pronomes:</b></td>
+              <td>
+                <input type="text" id="pronouns" name="pronouns" maxlength="12" style="width: 100%; box-sizing: border-box; height: 18px;" placeholder="ele/ela/elu">
+              </td>
+            </tr>
+            <tr>
+              <td><b>Last.fm:</b></td>
+              <td>
+                <input type="text" id="lastfmusername" name="lastfmusername" maxlength="64" style="width: 100%; box-sizing: border-box; height: 18px;">
+              </td>
+            </tr>
+            <tr>
+              <td valign="top"><b>Bio:</b></td>
+              <td>
+                <textarea id="bio" name="bio" rows="2" maxlength="80" style="width: 100%; resize: none; box-sizing: border-box; display: block; height: 35px; font-family: sans-serif; font-size: 11px;" oninput="atualizarContadorBio()"></textarea>
+                <div align="right"><small id="bio-contador" style="font-size: 9px;">0 / 80</small></div>
+              </td>
+            </tr>
+            <tr>
+              <td><b>Avatar:</b></td>
+              <td>
+                <input type="url" id="profileimage" name="profileimage" style="width: 100%; box-sizing: border-box; height: 18px; font-size: 10px;">
+                <input type="file" id="profile_file" name="profile_file" accept="image/*" style="font-size: 9px; margin-top: 2px; width: 100%;">
+              </td>
+            </tr>
+            <tr>
+              <td><b>Fundo:</b></td>
+              <td>
+                <input type="url" id="backgroundimage" name="backgroundimage" style="width: 100%; box-sizing: border-box; height: 18px; font-size: 10px;">
+                <input type="file" id="background_file" name="background_file" accept="image/*" style="font-size: 9px; margin-top: 2px; width: 100%;">
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" align="center" style="padding-top: 10px;">
+                <button type="submit" style="padding: 2px 15px; cursor: pointer; font-weight: bold; font-size: 11px;">GRAVAR ALTERAÇÕES</button>
+              </td>
+            </tr>
+          </table>
+        </form>
 
-                    <hr class="my-4 opacity-25">
-
-                    <div class="col-md-6 mb-4">
-                      <label class="form-label fw-bold">Foto de Perfil</label>
-                      <div class="mb-2">
-                        <input type="url" class="form-control form-control-sm mb-2" id="profileimage" name="profileimage" placeholder="URL da imagem">
-                        <div class="upload-zone" onclick="document.getElementById('profile_file').click()">
-                          <i class="bi bi-cloud-arrow-up fs-4 d-block"></i>
-                          <span class="small">Clique para upload</span>
-                          <input type="file" id="profile_file" name="profile_file" accept="image/*" hidden>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col-md-6 mb-4">
-                      <label class="form-label fw-bold">Imagem de Fundo</label>
-                      <div class="mb-2">
-                        <input type="url" class="form-control form-control-sm mb-2" id="backgroundimage" name="backgroundimage" placeholder="URL da imagem">
-                        <div class="upload-zone" onclick="document.getElementById('background_file').click()">
-                          <i class="bi bi-image fs-4 d-block"></i>
-                          <span class="small">Clique para upload</span>
-                          <input type="file" id="background_file" name="background_file" accept="image/*" hidden>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="text-center mt-3">
-                    <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold">
-                      Salvar Alterações
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <!-- Aba de Segurança -->
-              <div class="tab-pane fade" id="security-pane" role="tabpanel">
-                <form id="change-password-form" style="max-width: 400px; margin: 0 auto;">
-                  <div class="mb-3">
-                    <label for="current_password" class="form-label fw-bold">Senha Atual</label>
-                    <input type="password" class="form-control" id="current_password" required>
-                  </div>
-                  <div class="mb-3">
-                    <label for="new_password" class="form-label fw-bold">Nova Senha</label>
-                    <input type="password" class="form-control" id="new_password" required>
-                  </div>
-                  <div class="mb-4">
-                    <label for="confirm_password" class="form-label fw-bold">Confirmar Nova Senha</label>
-                    <input type="password" class="form-control" id="confirm_password" required>
-                  </div>
-                  <div class="text-center">
-                    <button type="submit" class="btn btn-secondary px-5 py-2 rounded-pill fw-bold">
-                      Alterar Senha
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+        <div class="window" style="margin-top: 10px;">
+          <div class="window-header">Segurança</div>
+          <div class="window-content" style="padding: 5px;">
+            <form id="change-password-form">
+              <table border="0" cellpadding="2" cellspacing="0" width="100%" style="font-size: 11px; table-layout: fixed;">
+                <tr>
+                  <td width="60"><b>Senha:</b></td>
+                  <td><input type="password" id="current_password" required style="width: 100%; box-sizing: border-box; height: 18px;"></td>
+                </tr>
+                <tr>
+                  <td><b>Nova:</b></td>
+                  <td><input type="password" id="new_password" required style="width: 100%; box-sizing: border-box; height: 18px;"></td>
+                </tr>
+                <tr>
+                  <td><b>Repetir:</b></td>
+                  <td><input type="password" id="confirm_password" required style="width: 100%; box-sizing: border-box; height: 18px;"></td>
+                </tr>
+                <tr>
+                  <td colspan="2" align="center" style="padding-top: 5px;">
+                    <button type="submit" style="cursor: pointer; font-size: 11px;">ALTERAR SENHA</button>
+                  </td>
+                </tr>
+              </table>
+            </form>
           </div>
         </div>
       </div>
@@ -227,119 +143,95 @@
   </div>
 </div>
 
-<!-- Modais necessários -->
-<%- include('../../utils/modal-aviso') %>
-<%- include('../../utils/modal-confirmacao') %>
-
 <script>
-// ================= Funções utilitárias =================
-
-// Atualiza contador da bio e prévia
 function atualizarContadorBio() {
   const bio = document.getElementById('bio');
   const contador = document.getElementById('bio-contador');
   const previewBio = document.getElementById('preview-bio-text');
-  
   contador.textContent = `${bio.value.length} / 80`;
-  previewBio.textContent = bio.value || 'Sua bio aparecerá aqui...';
+  previewBio.innerHTML = bio.value ? bio.value.replace(/\n/g, '<br>') : '...';
 }
 
-// Normaliza username: remove @ se o usuário digitar e limita 12 caracteres
 function normalizarUsername(username) {
   username = username.trim();
   if (username.startsWith('@')) username = username.substring(1);
-  if (username.length > 12) username = username.slice(0, 12);
   return username.toLowerCase();
 }
 
-// Atualiza previews de imagens e campos do perfil
 function atualizarPreviews(user) {
-  const previewBg = document.getElementById('preview-bg');
+  const previewBannerImg = document.getElementById('preview-banner-img');
+  const previewBannerContainer = document.getElementById('preview-banner-container');
   const previewPf = document.getElementById('preview-pf');
   const previewUser = document.getElementById('preview-username-text');
+  const previewPronouns = document.getElementById('preview-pronouns-text');
+  const previewPostCount = document.getElementById('preview-post-count');
+  const previewJoinedDate = document.getElementById('preview-joined-date');
 
   if(user.backgroundimage){
-    previewBg.style.backgroundImage = `url('${user.backgroundimage}')`;
+    previewBannerImg.src = user.backgroundimage;
+    previewBannerContainer.style.display = 'flex';
     document.getElementById('backgroundimage').value = user.backgroundimage;
+  } else {
+    previewBannerContainer.style.display = 'none';
   }
 
   if(user.profileimage){
     previewPf.src = user.profileimage;
     document.getElementById('profileimage').value = user.profileimage;
   }
-
-  const username = user.username || '';
-  // Remove o @ para o input, mas mantém na prévia
-  const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
-  document.getElementById('username').value = cleanUsername;
-  previewUser.textContent = '@' + cleanUsername;
   
+  const cleanUsername = user.username.startsWith('@') ? user.username.substring(1) : user.username;
+  document.getElementById('username').value = cleanUsername;
+  previewUser.textContent = cleanUsername;
   document.getElementById('bio').value = user.bio || '';
   document.getElementById('pronouns').value = user.pronouns || '';
+  previewPronouns.textContent = user.pronouns || '';
   document.getElementById('lastfmusername').value = user.lastfmusername || '';
-  document.getElementById('preview-pronouns-text').textContent = user.pronouns || '';
+  
+  if (previewPostCount) previewPostCount.textContent = user.postcount || 0;
+  if (previewJoinedDate && user.createdat) {
+    const date = new Date(user.createdat).toLocaleDateString();
+    previewJoinedDate.textContent = `Membro desde: ${date}`;
+  }
+
   atualizarContadorBio();
 }
 
-// ================= Funções principais =================
-
-// Carrega perfil do usuário
 async function carregarPerfil() {
   try {
     const res = await fetch('/api/users/me', { credentials: 'include' });
     if(res.ok){
       const user = await res.json();
       atualizarPreviews(user);
-    } else {
-      mostrarAviso("Não foi possível carregar os dados do perfil.");
     }
-  } catch(err){
-    console.error(err);
-    mostrarAviso("Erro ao conectar com o servidor.");
-  }
+  } catch(err){ console.error(err); }
 }
 
-// ================= Eventos =================
-
-// Atualiza prévia do username em tempo real
 document.getElementById('username').addEventListener('input', function() {
   const val = normalizarUsername(this.value);
-  document.getElementById('preview-username-text').textContent = val ? '@' + val : '@usuario';
+  document.getElementById('preview-username-text').textContent = val || '...';
 });
 
-// Atualiza prévia dos pronomes em tempo real
 document.getElementById('pronouns').addEventListener('input', function() {
-  if (this.value) {
-    document.getElementById('preview-pronouns-text').textContent = this.value;
-  }
+  document.getElementById('preview-pronouns-text').textContent = this.value;
 });
 
-// Atualiza prévia da URL da imagem de fundo
 document.getElementById('backgroundimage').addEventListener('input', function() {
+  const img = document.getElementById('preview-banner-img');
+  const container = document.getElementById('preview-banner-container');
   if (this.value) {
-    document.getElementById('preview-bg').style.backgroundImage = `url('${this.value}')`;
+    img.src = this.value;
+    container.style.display = 'flex';
+  } else {
+    container.style.display = 'none';
   }
 });
 
-// Atualiza prévia da URL da foto de perfil
 document.getElementById('profileimage').addEventListener('input', function() {
-  if (this.value) {
-    document.getElementById('preview-pf').src = this.value;
-  }
+  document.getElementById('preview-pf').src = this.value;
 });
 
-// Previews de arquivos locais
-document.getElementById('background_file').addEventListener('change', function() {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('preview-bg').style.backgroundImage = `url('${e.target.result}')`;
-    }
-    reader.readAsDataURL(file);
-  }
-});
-
+// Preview em tempo real para arquivos
 document.getElementById('profile_file').addEventListener('change', function() {
   const file = this.files[0];
   if (file) {
@@ -351,14 +243,24 @@ document.getElementById('profile_file').addEventListener('change', function() {
   }
 });
 
-// Submissão formulário de perfil
+document.getElementById('background_file').addEventListener('change', function() {
+  const file = this.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('preview-banner-img');
+      const container = document.getElementById('preview-banner-container');
+      img.src = e.target.result;
+      container.style.display = 'flex';
+    }
+    reader.readAsDataURL(file);
+  }
+});
+
 document.getElementById('edit-profile-form').addEventListener('submit', async function(e){
   e.preventDefault();
-
   const formData = new FormData();
-  const rawUsername = document.getElementById('username').value;
-  // Garante que o username enviado comece com @
-  formData.append('username', '@' + normalizarUsername(rawUsername));
+  formData.append('username', '@' + normalizarUsername(document.getElementById('username').value));
   formData.append('backgroundimage', document.getElementById('backgroundimage').value);
   formData.append('profileimage', document.getElementById('profileimage').value);
   formData.append('bio', document.getElementById('bio').value);
@@ -367,75 +269,57 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
 
   const bgFile = document.getElementById('background_file').files[0];
   const pfFile = document.getElementById('profile_file').files[0];
-
-  if (bgFile) formData.append('background_file', bgFile);
-  if (pfFile) formData.append('profile_file', pfFile);
+  if(bgFile) formData.append('background_file', bgFile);
+  if(pfFile) formData.append('profile_file', pfFile);
 
   try {
-    const res = await fetch('/api/users/me', {
-      method: 'PUT',
-      credentials: 'include',
-      body: formData
-    });
-
+    const res = await fetch('/api/users/me', { method: 'PUT', body: formData });
     const data = await res.json();
-    if(res.ok){
-      mostrarAviso(data.message || "Perfil atualizado com sucesso!");
-      
-      // Atualiza com as URLs permanentes retornadas pelo servidor
-      if(data.backgroundimage) document.getElementById('backgroundimage').value = data.backgroundimage;
-      if(data.profileimage) document.getElementById('profileimage').value = data.profileimage;
-      
-      // Limpa inputs de arquivo
-      document.getElementById('background_file').value = '';
-      document.getElementById('profile_file').value = '';
-
-    } else {
-      mostrarAviso(data.message || "Erro ao atualizar perfil.");
+    if(res.ok) {
+        await alert("Perfil atualizado com sucesso!");
+        location.reload();
+    } else { 
+        let msg = data.message;
+        if (data.errors && Array.isArray(data.errors)) {
+            msg = data.errors.map(err => err.message || err.msg).join('\n');
+        }
+        await alert(new Error(msg || "Erro ao atualizar perfil.")); 
     }
-  } catch(err){
-    console.error(err);
-    mostrarAviso("Erro de conexão com o servidor");
+  } catch(err){ 
+      await alert(new Error("Erro de conexão ao salvar perfil.")); 
   }
 });
 
-// Submissão formulário de alteração de senha
 document.getElementById('change-password-form').addEventListener('submit', async function(e){
   e.preventDefault();
-
-  const currentPassword = document.getElementById('current_password').value.trim();
-  const newPassword = document.getElementById('new_password').value.trim();
-  const confirmPassword = document.getElementById('confirm_password').value.trim();
-
-  if(newPassword !== confirmPassword){
-    mostrarAviso("As senhas novas não coincidem.");
-    return;
-  }
+  const currentPassword = document.getElementById('current_password').value;
+  const newPassword = document.getElementById('new_password').value;
+  const confirmPassword = document.getElementById('confirm_password').value;
+  if(newPassword !== confirmPassword) return await alert(new Error("A nova senha e a confirmação não coincidem."));
 
   try {
     const res = await fetch('/api/users/me/password', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ currentPassword, newPassword })
     });
-
+    
     const data = await res.json();
-
-    if(res.ok){
-      mostrarAviso(data.message || "Senha alterada com sucesso!");
-      document.getElementById('current_password').value = '';
-      document.getElementById('new_password').value = '';
-      document.getElementById('confirm_password').value = '';
-    } else {
-      mostrarAviso(data.message || "Erro ao alterar senha.");
+    if(res.ok) {
+        await alert("Senha alterada com sucesso!");
+        this.reset();
+    } else { 
+        // Formatar o aviso para evitar vazamento do banco
+        let msg = data.message;
+        if (data.errors && Array.isArray(data.errors)) {
+            msg = data.errors.map(err => err.msg || err.message).join('\n');
+        }
+        await alert(new Error(msg || "Ocorreu um problema ao mudar a senha.")); 
     }
-  } catch(err){
-    console.error(err);
-    mostrarAviso("Erro de conexão com o servidor.");
+  } catch(err){ 
+      await alert(new Error("Erro de conexão ao mudar a senha. Verifique sua internet.")); 
   }
 });
 
-// Executa ao carregar
 carregarPerfil();
 </script>

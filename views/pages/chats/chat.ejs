@@ -1,69 +1,56 @@
 <link rel="stylesheet" href="/styles/commons/chat-dm-common.css">
 
-<style>
-#chats-container { height: 100%; }
+<!-- Módulo de estilos centralizados para Chat e DMs -->
 
-.chat-card { @extend .conversation-card; }
-</style>
-
-<div id="chats-container" class="container-fluid" style="padding: 0px;">
-    <div class="row h-100 g-3">
-        <!-- Sidebar -->
-        <div class="col-12 col-md-3 d-flex flex-column">
-            <div class="card h-100 d-flex flex-column" id="sidebar">
-                <div class="card-header">
-                    <h5 class="mb-0">Salas Públicas</h5>
+<div id="chats-container" class="chat-layout-container">
+    <!-- Sidebar -->
+    <div class="sidebar-retro" id="sidebar">
+        <div class="window" style="height: 100%; display: flex; flex-direction: column; margin: 0;">
+            <div class="window-header">
+                <span>Salas Públicas</span>
+            </div>
+            <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column; padding: 5px;">
+                <div style="margin-bottom: 5px; display: flex;">
+                    <input type="text" id="search-chat-input" placeholder="Filtrar salas..." class="chat-textarea" style="height: 30px;">
                 </div>
-                <div class="p-3">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="search-chat-input" placeholder="Filtrar salas...">
-                        <span class="input-group-text"><i class="bi bi-filter"></i></span>
-                    </div>
-                </div>
-                <div id="chat-list" class="flex-grow-1 overflow-auto px-2">
-                    <div class="text-center p-3">
-                        <div class="spinner-border spinner-border-sm text-primary"></div>
-                        <p class="text-muted small mt-2">Carregando salas...</p>
+                <div id="chat-list" style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+                    <div style="text-align: center; padding: 10px;">
+                        Carregando salas...
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Área de Chat -->
-        <div class="col-12 col-md-9">
-            <div id="chat-area" class="card h-100 d-flex flex-column">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0" id="chat-title">Sala</h5>
-                    <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="voltarLista()">
-                        <i class="bi bi-arrow-left"></i> Voltar
-                    </button>
-                </div>
-                
-                <div id="chat-messages" class="card-body position-relative" style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column;">
-                    <!-- Mensagens aqui -->
-                </div>
-
-                <div class="card-footer">
-                    <div class="input-group">
-                        <textarea id="input-msg" class="form-control" placeholder="Digite sua mensagem..." rows="1" style="resize: none; overflow-y: auto; max-height: 120px;"></textarea>
-                        <button id="send-btn" class="btn btn-primary">
-                            <i class="bi bi-send"></i>
-                        </button>
-                    </div>
-                </div>
+    <!-- Área de Chat -->
+    <div class="chat-area-retro">
+        <div class="window" id="chat-area" style="height: 100%; flex-direction: column; margin: 0; display: none;">
+            <div class="window-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="chat-title">Sala</span>
+                <button onclick="voltarLista()" id="btn-voltar" class="btn-voltar-mobile">Voltar</button>
+            </div>
+            
+            <div class="window-content" id="chat-messages" style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); margin: 5px; padding: 5px;">
+                <!-- Mensagens aqui -->
             </div>
 
-            <!-- Placeholder quando nada selecionado -->
-            <div id="info-area" class="card h-100 d-flex flex-column">
-                <div class="card-header">
-                    <h5 class="mb-0">Detalhes da Sala</h5>
+            <div class="window-content" style="border-top: none; padding: 0;">
+                <div class="chat-input-area">
+                    <textarea id="input-msg" class="chat-textarea" placeholder="Digite sua mensagem..."></textarea>
+                    <button id="send-btn" class="chat-send-btn">Enviar</button>
                 </div>
-                <div class="card-body d-flex flex-column align-items-center justify-content-center">
-                    <div class="chat-preview-info">
-                        <i class="bi bi-chat-quote chat-preview-icon"></i>
-                        <h4>Selecione uma sala</h4>
-                        <p class="text-muted">Escolha uma das salas ao lado para ver mais detalhes e entrar na conversa.</p>
-                    </div>
+            </div>
+        </div>
+
+        <!-- Placeholder quando nada selecionado -->
+        <div class="window" id="info-area" style="height: 100%; display: flex; flex-direction: column; margin: 0;">
+            <div class="window-header">
+                <span>Detalhes da Sala</span>
+            </div>
+            <div class="window-content" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; text-align: center;">
+                <div>
+                    <h4>Selecione uma sala</h4>
+                    <p>Escolha uma das salas ao lado para ver mais detalhes e entrar na conversa.</p>
                 </div>
             </div>
         </div>
@@ -172,18 +159,16 @@
         chats.forEach(chat => {
             const card = document.createElement('div');
             card.dataset.id = chat.publicid;
-            card.className = `conversation-card chat-card card ${selectedChat?.publicid === chat.publicid ? 'active' : ''}`;
+            card.className = `conversation-card chat-card ${selectedChat?.publicid === chat.publicid ? 'active' : ''}`;
             card.innerHTML = `
-                <div class="card-body d-flex gap-3 align-items-center">
-                    <div class="chat-icon-circle">
-                        <i class="bi bi-hash"></i>
-                    </div>
-                    <div style="flex:1; min-width:0;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <strong class="text-truncate">${chat.title}</strong>
-                            ${chat.unreadCount > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : ''}
+                <div style="display: flex; gap: 10px; align-items: center; width: 100%; padding: 0 10px;">
+                    <div style="font-weight: bold; color: var(--retro-link); width: 15px; text-align: center;">#</div>
+                    <div style="flex:1; min-width:0; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 14px;">${chat.title}</strong>
+                            ${chat.unreadCount > 0 ? `<span class="unread-badge" style="background: red; color: white; border-radius: 5px; padding: 2px 5px; font-size: 10px;">${chat.unreadCount}</span>` : ''}
                         </div>
-                        <small class="text-muted d-block">por ${chat.creatorusername}</small>
+                        <small style="color: gray; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">por ${chat.creatorusername}</small>
                     </div>
                 </div>
             `;

@@ -1,213 +1,111 @@
-<div class="container mt-4">
-    <!-- Filtros e busca -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <label for="statusFilter" class="form-label">Filtrar por Status</label>
-            <select id="statusFilter" class="form-select">
-                <option value="">Todas as mensagens</option>
+<title>Gerenciar Cartinhas - Administração</title>
+
+<div class="window" style="margin-bottom: 20px;">
+    <div class="window-header">
+        <span>Gerenciar Cartinhas</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
+    <div class="window-content" style="padding: 10px;">
+        <table width="100%">
+            <tr>
+                <td align="center"><strong>Total:</strong> <span id="totalCartinhas">-</span></td>
+                <td align="center"><strong>Não Lidas:</strong> <span id="naoLidas">-</span></td>
+                <td align="center"><strong>Lidas:</strong> <span id="lidas">-</span></td>
+                <td align="center"><strong>Favoritas:</strong> <span id="favoritas">-</span></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<table width="100%" cellpadding="10" cellspacing="0" border="0">
+    <tr>
+        <td valign="top" width="30%" style="border-right: 2px outset var(--retro-border-light);">
+            <!-- Filtros -->
+            <div class="window">
+                <div class="window-header">Filtros & Busca</div>
+                <div class="window-content">
+                    <table width="100%" cellpadding="5">
+                        <tr>
+                            <td>Status:</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <select id="statusFilter" style="width: 100%; box-sizing: border-box;">
+                                    <option value="">Todas as mensagens</option>
+                                    <option value="naolida">Não lidas</option>
+                                    <option value="lida">Lidas</option>
+                                    <option value="favorita">Favoritas</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Buscar Usuário:</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="text" id="searchInput" placeholder="Nome do usuário..." style="width: 100%; box-sizing: border-box;">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="right">
+                                <button id="refreshBtn">Atualizar</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </td>
+        <td valign="top" width="70%">
+            <!-- Lista de Usuários -->
+            <div class="window">
+                <div class="window-header">Usuários e suas Cartinhas</div>
+                <div class="window-content" style="padding: 0; background: white; height: 400px; overflow-y: auto;">
+                    <div id="loading" style="padding: 20px; text-align: center; color: gray; display: none;">Carregando...</div>
+                    <div id="usuariosList"></div>
+                </div>
+                <div style="padding: 5px; background: var(--retro-window-bg); border-top: 2px outset var(--retro-border-light); text-align: center;" id="pagination">
+                    <!-- Paginação -->
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Modal para Cartinhas do Usuário -->
+<dialog id="cartinhasModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 600px; background: var(--retro-window-bg, #c0c0c0);">
+    <div class="window-header">
+        <span id="modalTitle">Cartinhas do Usuário</span>
+        <button onclick="document.getElementById('cartinhasModal').close()">X</button>
+    </div>
+    <div style="background: var(--retro-bg); border-bottom: 2px solid var(--retro-border-dark); padding: 5px; display: flex; gap: 5px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 5px; flex: 1;">
+            <select id="modalStatusFilter" style="flex: 1;">
+                <option value="">Status: Todos</option>
                 <option value="naolida">Não lidas</option>
                 <option value="lida">Lidas</option>
                 <option value="favorita">Favoritas</option>
             </select>
-        </div>
-        <div class="col-md-6">
-            <label for="searchInput" class="form-label">Buscar Usuário (Remetente/Destinatário)</label>
-            <input type="text" id="searchInput" class="form-control" placeholder="Digite o nome do usuário...">
+            <input type="text" id="modalSearch" placeholder="Buscar por remetente..." style="flex: 2;">
         </div>
     </div>
+    <div class="window-content" style="padding: 10px;">
+        <div id="cartinhasList" style="height: 350px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
+        
+        <div style="margin-top: 5px; text-align: center;" id="modalPagination"></div>
 
-    <!-- Estatísticas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h5 id="totalCartinhas">-</h5>
-                    <small>Total de Cartinhas</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
-                <div class="card-body text-center">
-                    <h5 id="naoLidas">-</h5>
-                    <small>Não Lidas</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h5 id="lidas">-</h5>
-                    <small>Lidas</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h5 id="favoritas">-</h5>
-                    <small>Favoritas</small>
-                </div>
-            </div>
+        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <button id="deleteSelectedBtn" style="color: #800000; font-weight: bold;" disabled>Remover Selecionadas</button>
+            <button onclick="document.getElementById('cartinhasModal').close()">Fechar</button>
         </div>
     </div>
-
-    <!-- Lista de usuários com cartinhas -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Usuários e suas Cartinhas</h5>
-            <div>
-                <button class="btn btn-outline-secondary btn-sm" id="refreshBtn">
-                    🔄 Atualizar
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <!-- Loading -->
-            <div id="loading" class="text-center py-4" style="display: none;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Carregando...</span>
-                </div>
-            </div>
-
-            <!-- Lista de usuários -->
-            <div id="usuariosList"></div>
-            
-            <!-- Paginação -->
-            <nav aria-label="Paginação" class="mt-4">
-                <ul class="pagination justify-content-center" id="pagination"></ul>
-            </nav>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para visualizar/gerenciar cartinhas do usuário -->
-<div class="modal fade" id="cartinhasModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Cartinhas do Usuário</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Filtros da modal -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <select id="modalStatusFilter" class="form-select form-select-sm">
-                            <option value="">Todas as cartinhas</option>
-                            <option value="naolida">Não lidas</option>
-                            <option value="lida">Lidas</option>
-                            <option value="favorita">Favoritas</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <input type="text" id="modalSearch" class="form-control form-control-sm" placeholder="Buscar por remetente...">
-                    </div>
-                </div>
-
-                <!-- Lista de cartinhas -->
-                <div id="cartinhasList" style="max-height: 500px; overflow-y: auto;"></div>
-                
-                <!-- Paginação da modal -->
-                <nav aria-label="Paginação de cartinhas" class="mt-3">
-                    <ul class="pagination pagination-sm justify-content-center" id="modalPagination"></ul>
-                </nav>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="deleteSelectedBtn" disabled>
-                    🗑️ Remover Selecionadas
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de confirmação -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmar Ação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body" id="confirmMessage">
-                <!-- Mensagem será inserida aqui -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="confirmBtn">Confirmar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.usuario-card {
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-}
-
-.usuario-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.cartinha-item {
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    transition: all 0.2s;
-}
-
-.cartinha-item:hover {
-    border-color: #6c5ce7;
-    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1);
-}
-
-.cartinha-item.selected {
-    border-color: #007bff;
-    background-color: rgba(0, 123, 255, 0.05);
-}
-
-.status-badge {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-
-.cartinha-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.cartinha-item:hover .cartinha-actions {
-    opacity: 1;
-}
-
-.search-highlight {
-    background-color: yellow;
-    font-weight: bold;
-}
-
-.loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-}
-</style>
+</dialog>
 
 <script>
 // ==================== Variáveis Globais ====================
 let currentPage = 1;
 let currentModalPage = 1;
 let currentUserId = null;
+let currentUsername = null;
 let selectedCartinhas = new Set();
 let searchTimeout = null;
 
@@ -219,25 +117,27 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarUsuarios();
     carregarEstatisticas();
     
-    // Event listeners - Usando UIUtils.debounce se disponível
-    const debounceSearch = typeof UIUtils !== 'undefined' && UIUtils.debounce 
-        ? UIUtils.debounce(aplicarFiltros, 500) 
-        : () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(aplicarFiltros, 500); };
-
-    const debounceModalSearch = typeof UIUtils !== 'undefined' && UIUtils.debounce 
-        ? UIUtils.debounce(() => { currentModalPage = 1; carregarCartinhasUsuario(); }, 500)
-        : () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentModalPage = 1; carregarCartinhasUsuario(); }, 500); };
-
     document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
-    document.getElementById('searchInput').addEventListener('input', debounceSearch);
+    document.getElementById('searchInput').addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(aplicarFiltros, 500);
+    });
     document.getElementById('refreshBtn').addEventListener('click', () => {
         carregarUsuarios();
         carregarEstatisticas();
     });
     
-    // Modal event listeners
-    document.getElementById('modalStatusFilter').addEventListener('change', carregarCartinhasUsuario);
-    document.getElementById('modalSearch').addEventListener('input', debounceModalSearch);
+    document.getElementById('modalStatusFilter').addEventListener('change', () => {
+        currentModalPage = 1;
+        carregarCartinhasUsuario();
+    });
+    document.getElementById('modalSearch').addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentModalPage = 1;
+            carregarCartinhasUsuario();
+        }, 500);
+    });
     document.getElementById('deleteSelectedBtn').addEventListener('click', confirmarRemocaoSelecionadas);
 });
 
@@ -245,14 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
 async function carregarUsuarios() {
     try {
         mostrarLoading(true);
-        
         const status = document.getElementById('statusFilter').value;
         const search = document.getElementById('searchInput').value.trim();
-        
-        const params = new URLSearchParams({
-            page: currentPage,
-            limit: ITEMS_PER_PAGE
-        });
+        const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
         if (status) params.append('status', status);
         if (search) params.append('search', search);
 
@@ -262,10 +157,8 @@ async function carregarUsuarios() {
         const data = await response.json();
         renderizarUsuarios(data.usuarios || []);
         renderizarPaginacao(data.currentPage, data.totalPages, 'pagination');
-        
     } catch (error) {
-        console.error('Erro:', error);
-        mostrarToast('Erro ao carregar usuários', 'danger');
+        alert('Erro ao carregar usuários');
     } finally {
         mostrarLoading(false);
     }
@@ -281,21 +174,15 @@ async function carregarEstatisticas() {
             document.getElementById('lidas').textContent = stats.lidas || 0;
             document.getElementById('favoritas').textContent = stats.favoritas || 0;
         }
-    } catch (error) {
-        console.error('Erro estatísticas:', error);
-    }
+    } catch (error) {}
 }
 
 async function carregarCartinhasUsuario() {
     if (!currentUserId) return;
-    
     try {
         const status = document.getElementById('modalStatusFilter').value;
         const search = document.getElementById('modalSearch').value;
-        const params = new URLSearchParams({
-            page: currentModalPage,
-            limit: CARTINHAS_PER_PAGE
-        });
+        const params = new URLSearchParams({ page: currentModalPage, limit: CARTINHAS_PER_PAGE });
         if (status) params.append('status', status);
         if (search) params.append('search', search);
 
@@ -305,10 +192,8 @@ async function carregarCartinhasUsuario() {
         const data = await response.json();
         renderizarCartinhas(data.cartinhas);
         renderizarPaginacao(data.currentPage, data.totalPages, 'modalPagination');
-        
     } catch (error) {
-        console.error('Erro:', error);
-        mostrarToast('Erro ao carregar cartinhas', 'danger');
+        alert('Erro ao carregar cartinhas');
     }
 }
 
@@ -316,24 +201,26 @@ async function carregarCartinhasUsuario() {
 function renderizarUsuarios(usuarios) {
     const container = document.getElementById('usuariosList');
     if (usuarios.length === 0) {
-        container.innerHTML = '<div class="text-center py-4 text-muted"><p>Nenhum usuário encontrado</p></div>';
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhum usuário encontrado</div>';
         return;
     }
     
     container.innerHTML = usuarios.map(u => `
-        <div class="card mb-2 usuario-card" onclick="abrirCartinhasUsuario('${u.publicid}', '${u.username}')">
-            <div class="card-body p-2 d-flex align-items-center gap-3">
-                <img src="${u.profileimage}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
-                <div class="flex-grow-1">
-                    <h6 class="mb-0">${u.username}</h6>
-                    <small class="text-muted">Total: ${u.totalcartinhas}</small>
-                </div>
-                <div class="d-flex gap-2 text-center small">
-                    <span class="badge bg-warning text-dark">${u.naolidas}</span>
-                    <span class="badge bg-success">${u.lidas}</span>
-                    <span class="badge bg-info">${u.favoritas}</span>
-                </div>
-            </div>
+        <div style="border-bottom: 1px solid var(--retro-border-dark); padding: 5px; cursor: pointer;" onclick="abrirCartinhasUsuario('${u.publicid}', '${u.username}')">
+            <table width="100%">
+                <tr>
+                    <td width="48"><img src="${u.profileimage || '/images/default-avatar.png'}" style="width: 40px; height: 40px; border: 1px solid var(--retro-border-dark);"></td>
+                    <td>
+                        <strong>${u.username}</strong><br>
+                        <small style="color: gray;">Total: ${u.totalcartinhas}</small>
+                    </td>
+                    <td align="right" style="font-size: 11px;">
+                        <span style="background: #ffcc00; padding: 1px 4px; border: 1px inset;">NL: ${u.naolidas}</span> 
+                        <span style="background: #00cc00; color: white; padding: 1px 4px; border: 1px inset;">L: ${u.lidas}</span> 
+                        <span style="background: #0099ff; color: white; padding: 1px 4px; border: 1px inset;">F: ${u.favoritas}</span>
+                    </td>
+                </tr>
+            </table>
         </div>
     `).join('');
 }
@@ -341,35 +228,57 @@ function renderizarUsuarios(usuarios) {
 function renderizarCartinhas(cartinhas) {
     const container = document.getElementById('cartinhasList');
     if (!cartinhas || cartinhas.length === 0) {
-        container.innerHTML = '<div class="text-center py-4 text-muted"><p>Nenhuma cartinha encontrada</p></div>';
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhuma cartinha encontrada</div>';
         return;
     }
     
     container.innerHTML = cartinhas.map(c => {
-        const statusClass = c.isfavorited ? 'info' : (c.isread ? 'success' : 'warning');
-        const statusText = c.isfavorited ? 'Fav' : (c.isread ? 'Lida' : 'NL');
+        const isSelected = selectedCartinhas.has(c.publicid);
+        
+        // Polimento visual dos badges de status
+        let statusBadge = '';
+        if (c.isfavorited) {
+            statusBadge = '<span style="font-size: 10px; border: 1px outset var(--retro-border-light); padding: 0 4px; background: #ffffd0; color: #808000; font-weight: bold; margin-left: 5px;" title="Favoritada">★ FAV</span>';
+        } else if (c.isread) {
+            statusBadge = '<span style="font-size: 10px; border: 1px inset var(--retro-border-light); padding: 0 4px; background: #e0e0e0; color: #666; margin-left: 5px;">LIDA</span>';
+        } else {
+            statusBadge = '<span style="font-size: 10px; border: 2px outset var(--retro-border-light); padding: 0 4px; background: #ffffff; color: #000080; font-weight: bold; margin-left: 5px;">NOVA</span>';
+        }
+
+        const bgColor = isSelected ? 'rgba(0, 0, 128, 0.05)' : 'transparent';
         
         return `
-            <div class="cartinha-item p-2 mb-2 border rounded d-flex align-items-center gap-2 ${selectedCartinhas.has(c.publicid) ? 'selected' : ''}" 
-                 onclick="window.modalCartinha.abrir({ 
-                     cartinha: ${JSON.stringify(c).replace(/"/g, '&quot;')}, 
-                     usuario: ${JSON.stringify(c.remetente).replace(/"/g, '&quot;')}, 
-                     tipo: 'recebidas'
-                 })">
-                <input type="checkbox" class="form-check-input ms-2" 
-                       onclick="event.stopPropagation()"
-                       onchange="toggleSelecaoCartinha(event, '${c.publicid}')"
-                       ${selectedCartinhas.has(c.publicid) ? 'checked' : ''}>
-                <div class="flex-grow-1 min-width-0">
-                    <div class="d-flex justify-content-between">
-                        <span class="fw-bold text-truncate">${highlightSearch(c.title || 'Sem título')}</span>
-                        <span class="badge bg-${statusClass} small">${statusText}</span>
-                    </div>
-                    <small class="text-muted d-block text-truncate">
-                        De: ${c.remetente?.username || 'Ex'} para ${c.destinatario?.username || 'Ex'}
-                    </small>
-                </div>
-                <button class="btn btn-sm text-danger" onclick="event.stopPropagation(); confirmarRemocaoUnica('${c.publicid}')">🗑️</button>
+            <div style="border-bottom: 1px dashed var(--retro-border-dark); padding: 6px; background: ${bgColor}; transition: background 0.2s;">
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td width="25" valign="middle" align="center">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelecaoCartinha(this, '${c.publicid}')" style="cursor: pointer;">
+                        </td>
+                        <td valign="top" style="padding-left: 5px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                                    <strong style="font-size: 13px;">${c.title || '(Sem título)'}</strong>
+                                </div>
+                                <div style="display: flex; gap: 5px; align-items: center;">
+                                    ${c.createdAt ? `<span style="font-size: 10px; color: #666; font-family: monospace; border: 1px inset var(--retro-border-light); padding: 0 3px;">${new Date(c.createdAt).toLocaleDateString('pt-BR')}</span>` : ''}
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                            <div style="margin-top: 2px;">
+                                <small style="color: #444;">
+                                    <span style="color: #800000;">${c.remetente?.username || 'Ex-membro'}</span> 
+                                    <span style="color: #888;">&rarr;</span> 
+                                    <span style="color: #000080;">${c.destinatario?.username || 'Ex-membro'}</span>
+                                </small>
+                            </div>
+                        </td>
+                        <td width="40" align="right" valign="middle">
+                            <button onclick="confirmarRemocaoUnica('${c.publicid}')" 
+                                    style="color: #800000; font-size: 10px; padding: 1px 4px; min-width: 20px;" 
+                                    title="Remover Cartinha">X</button>
+                        </td>
+                    </tr>
+                </table>
             </div>
         `;
     }).join('');
@@ -379,38 +288,53 @@ function renderizarPaginacao(currentPage, totalPages, containerId) {
     const container = document.getElementById(containerId);
     if (totalPages <= 1) { container.innerHTML = ''; return; }
     
-    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${currentPage - 1}, '${containerId}')">«</a></li>`;
-    
+    let html = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="mudarPagina(${currentPage - 1}, '${containerId}')">&laquo;</button> `;
     for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-        html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${i}, '${containerId}')">${i}</a></li>`;
+        html += `<button ${i === currentPage ? 'disabled style="font-weight: bold;"' : ''} onclick="mudarPagina(${i}, '${containerId}')">${i}</button> `;
     }
-    
-    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="mudarPagina(${currentPage + 1}, '${containerId}')">»</a></li>`;
+    html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="mudarPagina(${currentPage + 1}, '${containerId}')">&raquo;</button>`;
     container.innerHTML = html;
 }
 
 // ==================== Ações ====================
 function abrirCartinhasUsuario(userId, username) {
     currentUserId = userId;
+    currentUsername = username;
     currentModalPage = 1;
     selectedCartinhas.clear();
+    document.getElementById('deleteSelectedBtn').disabled = true;
+    document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
     document.getElementById('modalTitle').textContent = `Cartinhas de ${username}`;
     carregarCartinhasUsuario();
-    new bootstrap.Modal(document.getElementById('cartinhasModal')).show();
+    document.getElementById('cartinhasModal').showModal();
 }
 
-function toggleSelecaoCartinha(event, cartinhaId) {
-    if (event.target.checked) selectedCartinhas.add(cartinhaId);
+function toggleSelecaoCartinha(checkbox, cartinhaId) {
+    if (checkbox.checked) selectedCartinhas.add(cartinhaId);
     else selectedCartinhas.delete(cartinhaId);
     
-    event.target.closest('.cartinha-item').classList.toggle('selected', event.target.checked);
+    // Atualizar visual (re-renderiza a lista para aplicar bg-color rápido - ou usa DOM traversal)
+    checkbox.closest('div').style.background = checkbox.checked ? 'rgba(0, 0, 128, 0.1)' : 'transparent';
+    
     const btn = document.getElementById('deleteSelectedBtn');
     btn.disabled = selectedCartinhas.size === 0;
-    btn.textContent = selectedCartinhas.size > 0 ? `🗑️ Remover (${selectedCartinhas.size})` : '🗑️ Remover Selecionadas';
+    btn.textContent = selectedCartinhas.size > 0 ? `Remover (${selectedCartinhas.size})` : 'Remover Selecionadas';
 }
 
-function confirmarRemocaoUnica(id) { mostrarConfirmacao('Deseja remover esta cartinha?', () => removerCartinhas([id])); }
-function confirmarRemocaoSelecionadas() { mostrarConfirmacao(`Remover ${selectedCartinhas.size} cartinhas?`, () => removerCartinhas(Array.from(selectedCartinhas))); }
+async function confirmarRemocaoUnica(id) {
+    let conf = typeof mostrarConfirmacao !== 'undefined' 
+        ? await mostrarConfirmacao('Remover cartinha?', 'Excluir')
+        : confirm('Deseja remover esta cartinha?');
+    if (conf) removerCartinhas([id]);
+}
+
+async function confirmarRemocaoSelecionadas() {
+    if (selectedCartinhas.size === 0) return;
+    let conf = typeof mostrarConfirmacao !== 'undefined' 
+        ? await mostrarConfirmacao(`Remover ${selectedCartinhas.size} cartinhas?`, 'Excluir Selecionadas')
+        : confirm(`Remover ${selectedCartinhas.size} cartinhas?`);
+    if (conf) removerCartinhas(Array.from(selectedCartinhas));
+}
 
 async function removerCartinhas(cartinhaIds) {
     try {
@@ -421,41 +345,24 @@ async function removerCartinhas(cartinhaIds) {
             body: JSON.stringify({ cartinhaIds })
         });
         if (response.ok) {
-            const res = await response.json();
-            mostrarToast(`${res.removidas} removidas`, 'success');
             selectedCartinhas.clear();
+            document.getElementById('deleteSelectedBtn').disabled = true;
+            document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
             carregarCartinhasUsuario();
             carregarUsuarios();
             carregarEstatisticas();
+        } else {
+            alert('Erro ao remover cartinhas');
         }
     } catch (error) {
-        mostrarToast('Erro ao remover', 'danger');
+        alert('Erro de conexão ao remover');
     }
 }
 
 function aplicarFiltros() { currentPage = 1; carregarUsuarios(); }
-function mudarPagina(p, id) { if (id === 'pagination') { currentPage = p; carregarUsuarios(); } else { currentModalPage = p; carregarCartinhasUsuario(); } }
+function mudarPagina(p, id) { 
+    if (id === 'pagination') { currentPage = p; carregarUsuarios(); }
+    else { currentModalPage = p; carregarCartinhasUsuario(); }
+}
 function mostrarLoading(s) { document.getElementById('loading').style.display = s ? 'block' : 'none'; }
-
-function mostrarConfirmacao(m, cb) {
-    document.getElementById('confirmMessage').textContent = m;
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    document.getElementById('confirmBtn').onclick = () => { cb(); modal.hide(); };
-    modal.show();
-}
-
-function mostrarToast(m, t = 'info') {
-    if (typeof UIUtils !== 'undefined' && UIUtils.mostrarFeedback) {
-        UIUtils.mostrarFeedback(m, t === 'danger' ? 'danger' : t);
-        return;
-    }
-    alert(m); // Fallback simples
-}
-
-function highlightSearch(text) {
-    const search = document.getElementById('modalSearch')?.value || document.getElementById('searchInput')?.value || '';
-    if (!search.trim()) return text;
-    const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark class="p-0">$1</mark>');
-}
 </script>

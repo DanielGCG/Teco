@@ -25,10 +25,19 @@ body {
     flex-direction: column;
     min-height: 100vh;
     box-sizing: border-box;
+    cursor: url('/images/cursor.png'), auto;
 }
 
 #main-content {
     flex-grow: 1;
+}
+
+a, button, [onclick], .post-action {
+    cursor: url('/images/cursor-mao.png'), pointer !important;
+}
+
+input[type="text"], input[type="password"], input[type="email"], input[type="number"], input[type="search"], textarea {
+    cursor: url('/images/cursor-texto.png'), text;
 }
 
 .feed-post {
@@ -86,14 +95,40 @@ body {
     margin-bottom: 20px;
 }
 
+dialog.window {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.3);
+}
+
 .window-header {
     background-color: var(--retro-header-bg);
     color: var(--retro-header-text);
-    padding: 4px 8px;
+    padding: 3px 3px 3px 8px;
     font-weight: bold;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 18px;
+}
+
+.window-header button {
+    padding: 0;
+    min-width: 16px;
+    height: 14px;
+    line-height: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px;
 }
 
 .window-content {
@@ -133,6 +168,17 @@ button, input[type="submit"], input[type="button"] {
     padding: 2px 10px;
     font-family: inherit;
     font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover, input[type="submit"]:hover, input[type="button"]:hover {
+    filter: brightness(1.05);
+}
+
+button:disabled, input[type="submit"]:disabled, input[type="button"]:disabled {
+    color: var(--retro-border-dark);
+    cursor: not-allowed;
+    filter: grayscale(1);
 }
 
 button:active {
@@ -142,7 +188,7 @@ button:active {
     border-right: 2px solid var(--retro-border-light);
 }
 
-textarea, input[type="text"] {
+textarea, input[type="text"], input[type="file"], input[type="password"], select {
     background-color: var(--retro-window-bg);
     border-top: 2px solid var(--retro-border-dark);
     border-left: 2px solid var(--retro-border-dark);
@@ -151,6 +197,36 @@ textarea, input[type="text"] {
     color: var(--retro-text);
     padding: 4px;
     font-family: inherit;
+}
+
+textarea:focus, input[type="text"]:focus, input[type="password"]:focus, select:focus {
+    outline: none;
+    background-color: #ffffd0; /* Sutil destaque ao focar */
+}
+
+/* Custom Checkbox/Radio para manter o estilo retro */
+input[type="checkbox"], input[type="radio"] {
+    accent-color: var(--retro-header-bg);
+}
+
+/* Scrollbar estilizada retro */
+::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+    background-color: var(--retro-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--retro-bg);
+    border-top: 2px solid var(--retro-border-light);
+    border-left: 2px solid var(--retro-border-light);
+    border-bottom: 2px solid var(--retro-border-dark);
+    border-right: 2px solid var(--retro-border-dark);
+}
+
+::-webkit-scrollbar-track {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQImWNkYGBoYGBgYGBgYGBgAAAABQAB66666AAAAABJRU5ErkJggg=="); /* Dither pattern opcional */
+    background-color: #dfdfdf;
 }
 
 img {

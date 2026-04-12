@@ -1,6 +1,6 @@
 const express = require("express");
 const UsersRouter = express.Router();
-const { User, UserSession } = require("../models");
+const { User, UserSession, Role } = require("../models");
 const { authMiddleware, setUserCookie } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 const bcrypt = require("bcrypt");
@@ -324,16 +324,16 @@ UsersRouter.put('/me/password', protect(20), validate(updatePasswordSchema), asy
 
         const valid = await bcrypt.compare(currentPassword, user.passwordhash);
         if (!valid) {
-            return res.status(401).json({ message: "Senha atual incorreta" });
+            return res.status(401).json({ message: "Senha atual está incorreta." });
         }
 
         const hash = await bcrypt.hash(newPassword, 10);
         await user.update({ passwordhash: hash });
 
-        res.json({ message: "Senha atualizada com sucesso" });
+        res.json({ message: "Senha atualizada com sucesso!" });
     } catch(err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao atualizar senha" });
+        console.error("Erro interno ao atualizar a senha:", err);
+        return res.status(500).json({ message: "Ocorreu um erro interno. Tente novamente mais tarde." });
     }
 });
 
@@ -395,7 +395,8 @@ UsersRouter.get('/:username', protect(20), async (req, res) => {
 
         const user = await User.findOne({
             where: { username: username },
-            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess']
+            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId'],
+            include: [{ model: Role, as: 'role', attributes: ['name'] }]
         });
         if (!user) return res.status(404).json({
             message: "Usuário não encontrado"

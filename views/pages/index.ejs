@@ -27,6 +27,8 @@
         // Inicializar Handlers Globais do Posts Retrô
         RetroPosts.initHandlers(() => loadPosts());
 
+        let homeLazyReset = null;
+
         // Inicializar Feed Retrô
         async function loadPosts() {
             try {
@@ -42,9 +44,21 @@
                     }
 
                     const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
+                    const currentUserRole = parseInt("<%= locals.loggedUser ? locals.loggedUser.roleId : 20 %>");
                     posts.forEach(post => {
-                        container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(post, currentUsername));
+                        container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(post, currentUsername, currentUserRole));
                     });
+
+                    // Configurar Lazy Loading
+                    if (!homeLazyReset) {
+                        homeLazyReset = RetroPosts.setupInfiniteScroll(
+                            'retro-feed-container', 
+                            '/api/posts/feed?type=for-you', 
+                            currentUsername
+                        );
+                    } else {
+                        homeLazyReset();
+                    }
                 }
             } catch (e) {
                 console.error('Erro ao carregar posts:', e);

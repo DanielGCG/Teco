@@ -111,7 +111,5 @@ User.prototype.toJSON = function () {
     return values;
 };
 
-// Relacionamento
-User.belongsTo(Role, { foreignKey: 'roleId' });
-
-module.exports = User;
+// Relacionamentos expostos via objeto
+module.exports = { User, Role };

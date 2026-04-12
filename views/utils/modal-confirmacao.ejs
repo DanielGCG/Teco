@@ -1,17 +1,17 @@
 <!-- Modal de confirmação global -->
 <div class="modal fade" id="confirmacaoModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmacaoModalTitle">Confirmação</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+    <div class="modal-content window">
+      <div class="modal-header window-header">
+        <h5 class="modal-title" id="confirmacaoModalTitle" style="font-size: 14px; margin: 0;">Confirmação</h5>
+        <button type="button" class="btn-close" style="padding: 0 5px; height: 16px; line-height: 12px; font-size: 10px; cursor: pointer; color: black; background: #c0c0c0; border: 2px solid; border-color: white var(--retro-border-dark) var(--retro-border-dark) white;" data-bs-dismiss="modal" aria-label="Fechar">X</button>
       </div>
-      <div class="modal-body text-center">
-        <p id="confirmacaoTexto" class="mb-0"></p>
+      <div class="modal-body window-content text-center" style="padding: 15px;">
+        <p id="confirmacaoTexto" class="mb-0" style="font-size: 13px; color: var(--retro-text);"></p>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="confirmacaoCancelar">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="confirmacaoConfirmar">Confirmar</button>
+      <div class="modal-footer" style="background: var(--retro-window-bg); border-top: none; padding: 10px; display: flex; justify-content: center; gap: 15px;">
+        <button type="button" class="btn" style="min-width: 80px; font-weight: bold; padding: 4px 10px;" id="confirmacaoConfirmar">Sim</button>
+        <button type="button" class="btn" data-bs-dismiss="modal" style="min-width: 80px; font-weight: bold; padding: 4px 10px;" id="confirmacaoCancelar">Não</button>
       </div>
     </div>
   </div>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teco - <%= locals.title %></title>
+    <link rel="stylesheet" href="/styles/retro.css">
+</head>
+<body>
+    <div id="main-content">
+        <%- body %>
+    </div>
+
+    <!-- Script para sobrescrever alert() e confirm() -->
+    <script src="/js/modal-aviso.js"></script>
+
+    <!-- Modais globais retrô -->
+    <%- include('../utils/modal-aviso') %>
+    <%- include('../utils/modal-confirmacao-retro') %>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/global/socket-connector.js"></script>
+    <script src="/js/global/socket-ui.js"></script>
+    <script>
+        // Inicializa conexão Socket.IO global
+        const notificationsSocket = SocketConnector.init();
+        window.appSocket = notificationsSocket;
+        
+        // Inicializa o gerenciador de UI de Socket
+        if (typeof SocketUI !== 'undefined') {
+            SocketUI.init(window.appSocket);
+        }
+        
+        const notificationsDropdownBtn = document.getElementById('notificationsDropdownBtn');
+        const notificationsBadge = document.getElementById('notificationsBadge');
+        const notificationsListContainer = document.getElementById('retro-notifications-list');
+        const notificationsList = document.getElementById('notificationsList');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+        const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+
+        // Toggle dropdown
+        if (notificationsDropdownBtn) {
+            notificationsDropdownBtn.addEventListener('click', async function(e) {
+                const isVisible = notificationsListContainer.style.display === 'block';
+                
+                notificationsListContainer.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                    notificationsList.innerHTML = '<div style="text-align: center; padding: 10px;">Carregando...</div>';
+                    await loadNotifications();
+                }
+                e.stopPropagation();
+                e.preventDefault();
+            });
+        }
+
+        if (closeNotificationsBtn) {
+            closeNotificationsBtn.addEventListener('click', (e) => {
+                notificationsListContainer.style.display = 'none';
+                e.stopPropagation();
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (notificationsListContainer && notificationsListContainer.style.display === 'block') {
+                if (!notificationsListContainer.contains(e.target) && !notificationsDropdownBtn.contains(e.target)) {
+                    notificationsListContainer.style.display = 'none';
+                }
+            }
+        });
+
+        // Variáveis para controle do título
+        let originalTitle = document.title;
+        let currentUnreadCount = 0;
+
+        // Função de reconexão - executada ao conectar/reconectar
+        function onSocketConnect() {
+            notificationsSocket.emit('joinUserRoom');
+            notificationsSocket.emit('getNotificationsCount');
+        }
+
+        // Registra handler de reconexão
+        SocketConnector.onReconnect(onSocketConnect);
+
+        // Update badge count
+        function updateNotificationsBadge(count) {
+            currentUnreadCount = count;
+            if (notificationsBadge) {
+                if (count > 0) {
+                    notificationsBadge.textContent = count > 99 ? '99+' : count;
+                    notificationsBadge.style.display = 'inline-block';
+                } else {
+                    notificationsBadge.style.display = 'none';
+                }
+            }
+            updateTabTitle(count);
+        }
+
+        // Atualiza o título da aba
+        function updateTabTitle(count) {
+            if (count > 0) {
+                document.title = `(${count}) ${originalTitle}`;
+            } else {
+                document.title = originalTitle;
+            }
+        }
+
+        // Listen for count updates
+        notificationsSocket.on('notificationsCount', (data) => {
+            updateNotificationsBadge(data.count);
+        });
+
+        // Load notifications from API
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications?limit=20');
+                const data = await response.json();
+
+                if (data.success && data.notifications.length > 0) {
+                    notificationsList.innerHTML = '';
+                    
+                    data.notifications.forEach(notification => {
+                        const isUnread = !notification.readat;
+                        const timeAgo = getTimeAgo(notification.createdat);
+
+                        const itemDiv = document.createElement('div');
+                        itemDiv.style.borderBottom = '1px solid #ccc';
+                        itemDiv.style.padding = '8px';
+                        itemDiv.style.cursor = 'pointer';
+                        itemDiv.style.fontSize = '12px';
+                        itemDiv.style.background = isUnread ? '#eef' : 'white';
+                        
+                        itemDiv.innerHTML = `
+                            <div style="font-weight: bold; color: #000080;">${notification.title}</div>
+                            <div style="color: #333; margin: 2px 0;">${notification.body}</div>
+                            <div style="font-size: 10px; color: #666;">${timeAgo}</div>
+                        `;
+                        
+                        itemDiv.addEventListener('click', async () => {
+                            if (isUnread) {
+                                await fetch(`/api/notifications/${notification.publicid}/read`, { method: 'PUT' });
+                                notificationsSocket.emit('getNotificationsCount');
+                            }
+                            if (notification.link && notification.link !== '#') {
+                                window.location.href = notification.link;
+                            }
+                        });
+                        
+                        notificationsList.appendChild(itemDiv);
+                    });
+                } else {
+                    notificationsList.innerHTML = '<div style="text-align: center; padding: 10px; color: #666;">Nenhuma notificação</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar notificações:', err);
+                notificationsList.innerHTML = '<div style="text-align: center; padding: 10px; color: red;">Erro ao carregar</div>';
+            }
+        }
+
+        // Mark all as read
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', async () => {
+                try {
+                    await fetch('/api/notifications/read-all', { method: 'PUT' });
+                    await loadNotifications();
+                    notificationsSocket.emit('getNotificationsCount');
+                } catch (err) {
+                    console.error('Erro ao marcar todas como lidas:', err);
+                }
+            });
+        }
+
+        // Listen for new notifications
+        notificationsSocket.on('newNotification', async (data) => {
+            notificationsSocket.emit('getNotificationsCount');
+            tryPlaySound(data?.type);
+            if (notificationsListContainer.style.display === 'block') {
+                await loadNotifications();
+            }
+        });
+
+        function tryPlaySound(type) {
+            try {
+                const audio = new Audio('/sounds/notify.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
+        }
+
+        function getTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            if (seconds < 60) return 'Agora';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        // Emit Initial Count
+        onSocketConnect();
+    </script>
+    <script src="/js/global/user-context.js"></script>
+    <script src="/js/commons/ui-common.js"></script>
+    <script src="/js/commons/retro-posts.js"></script>
+</body>
+</html>

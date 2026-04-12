@@ -1,6 +1,6 @@
 const sequelize = require('../config/database');
 
-const User = require('./User');
+const { User, Role } = require('./User');
 const UserSession = require('./UserSession');
 const { ChatTopic, Chat, ChatMessage, DM, DMMessage } = require('./Chat');
 const Cartinha = require('./Cartinha');
@@ -11,6 +11,7 @@ const { Filme } = require('./Watchlist');
 const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
 const { Galeria, GaleriaItem, GaleriaContributor } = require('./Galeria');
 const { Badge, BadgeUser } = require('./Badges');
+const SystemConfig = require('./SystemConfig');
 
 // Associações Imagem do Dia
 ImagemDoDia.belongsTo(User, { foreignKey: 'createdbyUserId', as: 'requester' });
@@ -125,6 +126,10 @@ User.hasMany(DMMessage, { foreignKey: 'userId' });
 User.hasMany(UserSession, { foreignKey: 'userId', onDelete: 'CASCADE' });
 UserSession.belongsTo(User, { foreignKey: 'userId' });
 
+// Associações de Role
+User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
+Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
+
 // Associações de Notificação
 User.hasMany(Notification, { foreignKey: 'targetUserId', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'targetUserId' });
@@ -183,5 +188,8 @@ module.exports = {
     GaleriaItem,
     GaleriaContributor,
     Badge,
-    BadgeUser
+    BadgeUser,
+    SystemConfig,
+    User,
+    Role
 };

@@ -9,7 +9,7 @@ PerfilRouter.get('/editar', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/social/profile-edit', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });

@@ -1,19 +1,19 @@
 <div class="window" style="margin-bottom: 10px;">
     <div class="window-header">Painel Social - Estatísticas</div>
-    <div class="window-content">
-        <table width="100%" border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; background: white; text-align: center;">
+    <div class="window-content" style="background: var(--retro-window-bg);">
+        <table width="100%" border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; background: var(--retro-window-bg); text-align: center; border-color: var(--retro-border-dark);">
             <tr>
                 <td width="33%">
-                    <div style="font-size: 10px; color: #666;">Amigos</div>
-                    <b id="stat-friends" style="font-size: 14px;">0</b>
+                    <div style="font-size: 10px; color: var(--retro-border-dark);">Amigos</div>
+                    <b id="stat-friends" style="font-size: 14px; color: var(--retro-text);">0</b>
                 </td>
                 <td width="33%">
-                    <div style="font-size: 10px; color: #666;">Seguindo</div>
-                    <b id="stat-following" style="font-size: 14px;">0</b>
+                    <div style="font-size: 10px; color: var(--retro-border-dark);">Seguindo</div>
+                    <b id="stat-following" style="font-size: 14px; color: var(--retro-text);">0</b>
                 </td>
                 <td width="34%">
-                    <div style="font-size: 10px; color: #666;">Seguidores</div>
-                    <b id="stat-followers" style="font-size: 14px;">0</b>
+                    <div style="font-size: 10px; color: var(--retro-border-dark);">Seguidores</div>
+                    <b id="stat-followers" style="font-size: 14px; color: var(--retro-text);">0</b>
                 </td>
             </tr>
         </table>
@@ -22,42 +22,42 @@
 
 <div class="window" style="margin-bottom: 10px;">
     <div class="window-header">Buscar Usuários</div>
-    <div class="window-content">
+    <div class="window-content" style="background: var(--retro-bg);">
         <div style="display: flex; gap: 5px;">
-            <input type="text" id="user-search-input" style="flex-grow: 1;" placeholder="Digite o nome...">
+            <input type="text" id="user-search-input" style="flex-grow: 1; background: var(--retro-window-bg); color: var(--retro-text);" placeholder="Digite o nome...">
             <button id="btn-search">BUSCAR</button>
             <button id="btn-clear-search" style="display: none;">X</button>
         </div>
     </div>
 </div>
 
-<div id="search-header" class="window" style="display: none; margin-bottom: 10px; background: #ffffcc; border: 1px dashed #808080;">
-    <div class="window-content" style="padding: 5px; font-size: 11px;">
+<div id="search-header" class="window" style="display: none; margin-bottom: 10px; background: var(--retro-bg); border: 1px dashed var(--retro-border-dark);">
+    <div class="window-content" style="padding: 5px; font-size: 11px; color: var(--retro-text);">
         <b>Resultados da busca:</b>
     </div>
 </div>
 
 <div class="window">
-    <div id="tabs-container" class="window-header" style="padding: 0; display: flex; height: 30px; line-height: 30px; background: var(--retro-sidebar-bg); border-bottom: 2px solid var(--retro-border-dark);">
-        <div class="feed-tab active" data-type="following" onclick="changeSection('following')" style="padding: 0 20px; cursor: pointer; border-right: 2px solid var(--retro-border-dark); height: 100%; box-sizing: border-box;">Seguindo</div>
-        <div class="feed-tab" data-type="followers" onclick="changeSection('followers')" style="padding: 0 20px; cursor: pointer; border-right: 2px solid var(--retro-border-dark); height: 100%; box-sizing: border-box;">Seguidores</div>
+    <div id="tabs-container" class="window-header" style="padding: 0 5px; display: flex; height: 30px; line-height: 30px; background: var(--retro-header-bg); border-bottom: 2px solid var(--retro-border-dark); gap: 2px; align-items: flex-end; justify-content: start;">
+        <div class="feed-tab active" data-type="following" onclick="changeSection('following')" style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">Seguindo</div>
+        <div class="feed-tab" data-type="followers" onclick="changeSection('followers')" style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">Seguidores</div>
     </div>
-    <div class="window-content" style="padding: 0;">
+    <div class="window-content" style="padding: 0; background: var(--retro-bg);">
         <div id="social-list-container">
             <div style="text-align: center; padding: 20px;">
-                <p style="font-size: 11px;">Carregando dados sociais...</p>
+                <p style="font-size: 11px; color: var(--retro-border-dark);">Carregando dados sociais...</p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .feed-tab:not(.active) { color: #555; border-bottom: 2px solid var(--retro-border-dark); }
-    .feed-tab.active { background: white; font-weight: bold; color: #000; border-bottom: none; border-top: 2px solid var(--retro-border-light); }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 1px solid #000; }
+    .feed-tab:not(.active) { color: var(--retro-text); opacity: 0.7; filter: grayscale(1); }
+    .feed-tab.active { background: var(--retro-bg) !important; font-weight: bold; color: var(--retro-text); border-top: 1px solid var(--retro-border-light) !important; border-left: 1px solid var(--retro-border-light) !important; opacity: 1; filter: none; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 1px solid var(--retro-text); }
     
-    .retro-user-row { transition: background 0.1s; }
-    .retro-user-row:hover { background: #fdfde4; }
+    .retro-user-row { transition: background 0.1s; color: var(--retro-text); }
+    .retro-user-row:hover { background: var(--retro-sidebar-bg); }
 </style>
 
 <script src="/js/commons/follow-common.js"></script>
@@ -161,14 +161,14 @@
         const list = isSearching ? dataCache.search : dataCache[currentSection];
         
         if (!list || list.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 30px; font-size: 11px; color: #666;">Nenhum usuário nesta lista.</div>';
+            container.innerHTML = `<div style="text-align: center; padding: 30px; font-size: 11px; color: var(--retro-border-dark);">Nenhum usuário nesta lista.</div>`;
             return;
         }
 
         let html = `
-            <table width="100%" border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; background: white; font-size: 12px; border-color: var(--retro-border-dark);">
+            <table width="100%" border="0" cellpadding="8" cellspacing="0" style="background: var(--retro-bg); font-size: 12px;">
                 <thead>
-                    <tr style="background: var(--retro-sidebar-bg); font-size: 11px; text-transform: uppercase;">
+                    <tr style="background: var(--retro-sidebar-bg); font-size: 11px; text-transform: uppercase; color: var(--retro-text); border-bottom: 2px solid var(--retro-border-dark);">
                         <th width="50" align="center">ID</th>
                         <th align="left">Usuário</th>
                         <th align="left">Estado & Biografia</th>
@@ -186,32 +186,32 @@
             
             // Note: O SocketUI cuidará de atualizar as cores e textos assim que carregar
             html += `
-                <tr class="retro-user-row" data-user-id="${user.publicid}">
+                <tr class="retro-user-row" data-user-id="${user.publicid}" style="border-bottom: 1px solid var(--retro-border-dark);">
                     <td align="center">
-                        <div style="width: 40px; height: 40px; border: 1px solid #000; background: #eee; overflow: hidden;">
+                        <div style="width: 40px; height: 40px; border: 1px solid var(--retro-border-dark); background: var(--retro-window-bg); overflow: hidden;">
                             <img src="${user.profileimage}" width="40" height="40" style="display:block; object-fit: cover;">
                         </div>
                     </td>
                     <td>
                         <div style="margin-bottom: 2px;">
-                            <a href="/${user.username}" style="color: #0000ee; font-weight: bold; text-decoration: underline; font-size: 13px;">${user.username}</a>
+                            <a href="/${user.username}" style="color: var(--retro-link); font-weight: bold; text-decoration: underline; font-size: 13px;">${user.username}</a>
                         </div>
-                        ${isFriend ? '<span style="background: #e0ffe0; color: #008000; border: 1px solid #008000; font-size: 9px; padding: 0 3px; font-weight: bold;">AMIGO</span>' : ''}
+                        ${isFriend ? '<span style="background: #e0f0e0; color: #006000; border: 1px solid #006000; font-size: 9px; padding: 0 3px; font-weight: bold; border-radius: 2px;">AMIGO</span>' : ''}
                     </td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
-                            <span class="status-dot" style="background: #808080;"></span>
-                            <span class="status-text" style="font-weight: bold; font-size: 10px; color: #444;">Offline</span>
+                            <span class="status-dot" style="background: var(--retro-border-dark);"></span>
+                            <span class="status-text" style="font-weight: bold; font-size: 10px; color: var(--retro-text); opacity: 0.8;">Offline</span>
                         </div>
-                        <div style="color: #333; font-size: 11px; line-height: 1.2; max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
-                            ${user.bio || '<i style="color: #999;">Sem biografia informada.</i>'}
+                        <div style="color: var(--retro-text); font-size: 11px; line-height: 1.2; max-width: 250px; overflow: hidden; text-overflow: ellipsis; opacity: 0.9;">
+                            ${user.bio || '<i style="color: var(--retro-border-dark);">Sem biografia informada.</i>'}
                         </div>
                     </td>
                     <td align="center">
                         <div style="display: flex; flex-direction: column; gap: 4px; padding: 0 5px;">
                             <button onclick="handleFollow('${user.publicid}', ${isFollowing})" 
-                                    style="width: 100%; height: 24px; cursor: pointer; font-size: 11px; font-weight: ${isFollowing ? 'normal' : 'bold'}; ${isFollowing ? 'color: #aa0000;' : ''}">
-                                ${isFollowing ? 'Deixar Seguir' : 'Seguir +'}
+                                    style="width: 100%; height: 24px; cursor: pointer; font-size: 11px; font-weight: ${isFollowing ? 'normal' : 'bold'}; ${isFollowing ? 'color: var(--retro-author);' : ''}">
+                                ${isFollowing ? 'Deixar Seguir' : 'Seguir'}
                             </button>
                             <button onclick="location.href='/dms?user=${user.username}'" 
                                     style="width: 100%; height: 24px; cursor: pointer; font-size: 11px;">
@@ -235,11 +235,11 @@
     async function handleFollow(id, isFollowing) {
         const action = isFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
         
-        if (isFollowing) {
-            if (!await window.confirmRetro('Deseja realmente deixar de seguir este usuário?')) return;
-        }
+        const res = await action(id, { 
+            showAlert: false, 
+            confirmMessage: isFollowing ? 'Deseja realmente deixar de seguir este usuário?' : null 
+        });
 
-        const res = await action(id, { showAlert: false });
         if (res.success) { 
             await loadAllData(); 
             if (isSearching) await searchUsers(document.getElementById('user-search-input').value);

@@ -12,9 +12,43 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // deleteFileFromServer substituído por deleteFromFileServer universal
 
+// Função para rotacionar a imagem se necessário
+async function checkAndRotateImage() {
+    try {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        // Busca a imagem mais recente ativada
+        const atual = await ImagemDoDia.findOne({
+            where: { position: { [Op.gt]: 0 } },
+            order: [['position', 'DESC']]
+        });
+
+        // Se a imagem atual foi ativada antes de hoje, precisamos de uma nova
+        if (atual && (!atual.activatedat || new Date(atual.activatedat) < hoje)) {
+            // Tenta pegar a próxima da fila
+            const proxima = await ImagemDoDia.findOne({
+                where: { position: 0 },
+                order: [['createdat', 'ASC']]
+            });
+
+            if (proxima) {
+                const maxPos = await ImagemDoDia.max('position') || 0;
+                proxima.position = maxPos + 1;
+                proxima.activatedat = new Date(); // Ativa com a data atual
+                await proxima.save();
+                console.log(`[ImagemDoDia] Rotação automática: imagem ${proxima.id} ativada.`);
+            }
+        }
+    } catch (error) {
+        console.error('[ImagemDoDia] Erro na rotação automática:', error);
+    }
+}
+
 // Busca a imagem do dia ativa (A maior posição, ignorando as da fila com posição 0)
 router.get('/', async (req, res) => {
     try {
+        await checkAndRotateImage();
         const imagem = await ImagemDoDia.findOne({
             where: { position: { [Op.gt]: 0 } },
             order: [['position', 'DESC']],

@@ -1,116 +1,124 @@
-<main class="container py-5">
-    <div class="row">
-        <!-- Coluna de Gerenciamento de Badges -->
-        <div class="col-md-5">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="m-0"><span class="marca-texto-verde">Gerenciar Badges</span></h3>
-                <button class="btn btn-primary btn-sm" onclick="abrirModalBadge()">Nova Badge</button>
+<title>Gerenciar Badges - Administração</title>
+
+<!-- Título da Seção -->
+<div class="window" style="margin-bottom: 20px;">
+    <div class="window-header">
+        <span>Gerenciar Badges</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
+    <div class="window-content">
+        Administração de badges do sistema e atribuições para usuários.
+    </div>
+</div>
+
+<div style="display: flex; gap: 20px; align-items: flex-start;">
+    <!-- Badges Existentes -->
+    <div style="flex: 1;">
+        <div class="window">
+            <div class="window-header">
+                <span>Dicionário de Badges</span>
+                <button onclick="abrirModalBadge()" style="height: 16px; line-height: 12px; font-size: 10px;">+ Nova</button>
             </div>
-            <div id="badgesLista" class="list-group mb-4">
-                <!-- Badges serão carregadas aqui -->
-                <div class="text-center py-3">Carregando badges...</div>
-            </div>
-        </div>
-
-        <!-- Coluna de Atribuições -->
-        <div class="col-md-7">
-            <h3 class="mb-3"><span class="marca-texto-verde">Gerenciar atribuições</span></h3>
-            
-            <div class="card mb-4">
-                <div class="card-body">
-                    <label for="userSearch" class="form-label">Buscar Usuário</label>
-                    <div class="input-group mb-2">
-                        <input type="text" id="userSearch" class="form-control" placeholder="Username do usuário...">
-                        <button class="btn btn-outline-secondary" type="button" onclick="carregarAtribuicoes()">Buscar</button>
-                    </div>
-                    
-                    <div id="searchResults" class="list-group mb-3 border rounded shadow-sm overflow-auto d-none" style="max-height: 200px; z-index: 1000;">
-                        <!-- Resultados da busca parcial aqui -->
-                    </div>
-                    
-                    <div id="userResult" style="display: none;">
-                        <hr>
-                        <div class="d-flex align-items-center mb-3">
-                            <div id="userAvatarPlaceholder"></div>
-                            <div>
-                                <h5 id="userName" class="m-0">@username</h5>
-                                <small id="userInternalId" class="text-muted"></small>
-                            </div>
-                        </div>
-
-                        <h6>Badges Atuais</h6>
-                        <div id="userBadges" class="d-flex flex-wrap gap-2 mb-3">
-                            <!-- Badges do usuário -->
-                        </div>
-
-                        <hr>
-                        <h6>Atribuir Nova Badge</h6>
-                        <div class="input-group">
-                            <select id="badgeSelect" class="form-select">
-                                <option value="">Selecione uma badge...</option>
-                            </select>
-                            <button class="btn btn-success" type="button" onclick="atribuirBadge()">Atribuir</button>
-                        </div>
-                    </div>
-                    <div id="userNotFound" class="text-danger" style="display: none;">Usuário não encontrado.</div>
+            <div class="window-content" style="padding: 0; background: white; height: 350px; overflow-y: auto; border: 2px inset var(--retro-border-dark);">
+                <div id="badgesLista">
+                    <!-- Carregado via JS -->
                 </div>
             </div>
         </div>
     </div>
-</main>
+    
+    <!-- Atribuir Badge -->
+    <div style="flex: 1.5;">
+        <div class="window">
+            <div class="window-header">Distribuição de Badges</div>
+            <div class="window-content">
+                <div style="display: flex; gap: 5px; align-items: center; margin-bottom: 10px; background: var(--retro-bg); padding: 5px; border: 2px outset var(--retro-border-light);">
+                    <input type="text" id="userSearch" placeholder="Buscar @username..." style="flex-grow: 1;" autocomplete="off">
+                    <button onclick="carregarAtribuicoes()">Buscar</button>
+                    <div id="searchResults" style="display: none; position: absolute; z-index: 100; background: white; border: 1px solid black; width: 100%; max-height: 150px; overflow-y: auto; top: 100%; left: 0;"></div>
+                </div>
 
-<!-- Modal Badge (Novo/Editar) -->
-<div class="modal fade" id="badgeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="badgeModalTitle">Nova Badge</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="badgePublicId">
-                <div class="mb-3">
-                    <label for="badgeName" class="form-label">Nome</label>
-                    <input type="text" class="form-control" id="badgeName" required>
+                <div id="userNotFound" style="display: none; margin-top: 10px; color: red; text-align: center;">
+                    Usuário não encontrado.
                 </div>
-                <div class="mb-3">
-                    <label for="badgeDescription" class="form-label">Descrição</label>
-                    <textarea class="form-control" id="badgeDescription" rows="2"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Ícone da Badge</label>
-                    <div class="nav nav-tabs mb-2" id="badgeIconTabs" role="tablist">
-                        <button class="nav-link active py-1" id="tab-file-tab" data-bs-toggle="tab" data-bs-target="#tab-file" type="button" role="tab">Arquivo</button>
-                        <button class="nav-link py-1" id="tab-url-tab" data-bs-toggle="tab" data-bs-target="#tab-url" type="button" role="tab">URL</button>
-                    </div>
-                    <div class="tab-content" id="badgeIconTabContent">
-                        <div class="tab-pane fade show active" id="tab-file" role="tabpanel">
-                            <input type="file" class="form-control" id="badgeFile" accept="image/*">
-                        </div>
-                        <div class="tab-pane fade" id="tab-url" role="tabpanel">
-                            <input type="text" class="form-control" id="badgeUrl" placeholder="https://...">
+
+                <div id="userResult" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--retro-border-dark);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div id="userAvatarPlaceholder" style="width: 50px; height: 50px; flex-shrink: 0; border: 2px inset var(--retro-border-dark);"></div>
+                        <div style="line-height: 1.2;">
+                            <h3 id="userName" style="margin: 0; font-family: 'MS Sans Serif', sans-serif;">-</h3>
+                            <small id="userInternalId" style="color: gray;">-</small>
                         </div>
                     </div>
-                    <div class="mt-2 text-center">
-                        <img id="badgePreview" src="" alt="Preview" style="max-width: 100px; max-height: 100px; display: none; margin: 0 auto;">
+
+                    <p style="margin-bottom: 5px;"><strong>Badges Atuais:</strong></p>
+                    <div id="userBadges" style="min-height: 50px; border: 2px inset var(--retro-border-dark); background: white; padding: 8px; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start;">
+                        <!-- Carregado via JS -->
+                    </div>
+
+                    <div style="margin-top: 15px; background: #eee; padding: 10px; border: 2px outset var(--retro-border-light);">
+                        <strong>Atribuir Nova:</strong>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <select id="badgeSelect" style="flex-grow: 1;">
+                                <option value="">Selecione...</option>
+                            </select>
+                            <button onclick="atribuirBadge()" style="font-weight: bold;">Atribuir</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger me-auto" id="btnExcluirBadge" style="display: none;" onclick="deletarBadge()">Excluir</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                <button type="button" class="btn btn-primary" onclick="salvarBadge()">Salvar</button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal nativo -->
+<dialog id="badgeModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
+    <div class="window-header">
+        <span id="badgeModalTitle">Nova Badge</span>
+        <button onclick="fecharModalBadge()">X</button>
+    </div>
+    <div class="window-content" style="padding: 10px;">
+        <input type="hidden" id="badgePublicId">
+        <table width="100%" cellpadding="5">
+            <tr>
+                <td>Nome:</td>
+                <td><input type="text" id="badgeName" style="width: 100%; box-sizing: border-box;" required></td>
+            </tr>
+            <tr>
+                <td>Descrição:</td>
+                <td><textarea id="badgeDescription" style="width: 100%; box-sizing: border-box;" rows="2"></textarea></td>
+            </tr>
+            <tr>
+                <td colspan="2">Ícone da Badge:</td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <div style="margin-bottom: 5px; border-bottom: 1px solid var(--retro-border-dark); padding-bottom: 5px;">
+                        <label><input type="radio" name="iconType" value="file" checked onchange="document.getElementById('badgeFile').style.display='block'; document.getElementById('badgeUrl').style.display='none';"> Arquivo</label>
+                        <label><input type="radio" name="iconType" value="url" style="margin-left: 10px;" onchange="document.getElementById('badgeFile').style.display='none'; document.getElementById('badgeUrl').style.display='block';"> URL</label>
+                    </div>
+                    <input type="file" id="badgeFile" accept="image/*" style="width: 100%;">
+                    <input type="text" id="badgeUrl" placeholder="https://..." style="width: 100%; display: none; box-sizing: border-box;">
+                    <div style="text-align: center; margin-top: 10px;">
+                        <img id="badgePreview" src="" alt="Preview" style="max-width: 64px; max-height: 64px; display: none;">
+                    </div>
+                </td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
+            <button id="btnExcluirBadge" onclick="deletarBadge()" style="display: none; float: left; color: red;">Excluir</button>
+            <button onclick="fecharModalBadge()">Cancelar</button>
+            <button onclick="salvarBadge()" style="font-weight: bold;">Salvar</button>
+        </div>
+    </div>
+</dialog>
 
 <script>
     let tutteLeBadges = [];
     let currentUserBadges = [];
     let selectedUserPublicId = null;
 
-    // Elementos
     const badgesLista = document.getElementById('badgesLista');
     const badgeSelect = document.getElementById('badgeSelect');
     const userSearch = document.getElementById('userSearch');
@@ -120,149 +128,110 @@
     const searchResults = document.getElementById('searchResults');
     const userName = document.getElementById('userName');
     const userBadges = document.getElementById('userBadges');
-    const badgeModal = new bootstrap.Modal(document.getElementById('badgeModal'));
+    
+    const badgeModal = document.getElementById('badgeModal');
     const badgeFile = document.getElementById('badgeFile');
     const badgeUrl = document.getElementById('badgeUrl');
     const badgePreview = document.getElementById('badgePreview');
 
-    // Preview de imagem ao digitar URL
     badgeUrl.addEventListener('input', (e) => {
-        if (e.target.value) {
-            badgePreview.src = e.target.value;
-            badgePreview.style.display = 'block';
-        } else {
-            badgePreview.style.display = 'none';
-        }
+        badgePreview.src = e.target.value;
+        badgePreview.style.display = e.target.value ? 'inline-block' : 'none';
     });
 
-    // Preview de imagem ao selecionar arquivo
     badgeFile.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 badgePreview.src = event.target.result;
-                badgePreview.style.display = 'block';
+                badgePreview.style.display = 'inline-block';
             };
             reader.readAsDataURL(file);
         }
     });
 
+    function fecharModalBadge() {
+        badgeModal.close();
+    }
+
     async function carregarBadges() {
         try {
             const response = await fetch('/api/admin/badges');
             tutteLeBadges = await response.json();
-            
-            // Renderizar lista de badges
-            badgesLista.innerHTML = '';
-            badgeSelect.innerHTML = '<option value="">Selecione uma badge...</option>';
 
-            tutteLeBadges.forEach(badge => {
-                // Lista lateral
-                const item = document.createElement('div');
-                item.className = 'list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2';
-                item.innerHTML = `
-                    <div class="d-flex align-items-center cursor-pointer" onclick="abrirModalBadge('${badge.publicid}')" style="flex-grow: 1;">
-                        <img src="${badge.url || '/images/default-badge.png'}" class="me-2" style="width: 32px; height: 32px; object-fit: contain;">
-                        <div>
-                            <div class="fw-bold">${badge.name}</div>
-                            <small class="text-muted d-block" style="font-size: 0.75rem;">${badge.description || ''}</small>
-                        </div>
+            // Renderizar Lista e Select usando map/join para eficiência
+            badgesLista.innerHTML = tutteLeBadges.length 
+                ? tutteLeBadges.map(badge => `
+                <div style="border-bottom: 1px dashed var(--retro-border-dark); padding: 5px; cursor: pointer; display: flex; align-items: center; background: white; transition: background 0.2s;" onclick="abrirModalBadge('${badge.publicid}')">
+                    <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eee; border: 1px inset var(--retro-border-light); margin-right: 10px;">
+                        <img src="${badge.url || '/images/default-badge.png'}" style="max-width: 32px; max-height: 32px; object-fit: contain;">
                     </div>
-                `;
-                badgesLista.appendChild(item);
+                    <div style="flex-grow: 1;">
+                        <strong style="font-size: 13px;">${badge.name}</strong><br>
+                        <small style="color: #666;">${badge.description || ''}</small>
+                    </div>
+                    <div style="color: var(--retro-border-dark); font-size: 18px; padding-right: 5px;">&rsaquo;</div>
+                </div>`).join('')
+                : '<div style="text-align:center; padding:10px;">Nenhuma badge encontrada.</div>';
 
-                // Option no select de atribuição
-                const option = document.createElement('option');
-                option.value = badge.publicid;
-                option.textContent = badge.name;
-                badgeSelect.appendChild(option);
-            });
+            badgeSelect.innerHTML = '<option value="">Selecione uma badge...</option>' + 
+                tutteLeBadges.map(b => `<option value="${b.publicid}">${b.name}</option>`).join('');
 
-            if (tutteLeBadges.length === 0) {
-                badgesLista.innerHTML = '<div class="text-center py-3 text-muted">Nenhuma badge encontrada.</div>';
-            }
         } catch (error) {
-            console.error('Erro ao carregar badges:', error);
+            console.error(error);
             alert('Erro ao carregar badges');
         }
     }
 
     function abrirModalBadge(publicid = null) {
-        const title = document.getElementById('badgeModalTitle');
-        const btnExcluir = document.getElementById('btnExcluirBadge');
-        
-        // Reset tabs
-        const firstTab = document.querySelector('#badgeIconTabs button:first-child');
-        bootstrap.Tab.getInstance(firstTab)?.show() || new bootstrap.Tab(firstTab).show();
-
+        document.getElementById('badgeModalTitle').textContent = publicid ? 'Editar Badge' : 'Nova Badge';
+        document.querySelector('input[name="iconType"][value="file"]').click();
         badgeFile.value = '';
         
-        if (publicid) {
-            const badge = tutteLeBadges.find(b => b.publicid === publicid);
-            title.textContent = 'Editar Badge';
-            document.getElementById('badgePublicId').value = badge.publicid;
-            document.getElementById('badgeName').value = badge.name;
-            document.getElementById('badgeDescription').value = badge.description || '';
-            badgeUrl.value = badge.url || '';
-            btnExcluir.style.display = 'block';
-            if (badge.url) {
-                badgePreview.src = badge.url;
-                badgePreview.style.display = 'block';
-            } else {
-                badgePreview.style.display = 'none';
-            }
-        } else {
-            title.textContent = 'Nova Badge';
-            document.getElementById('badgePublicId').value = '';
-            document.getElementById('badgeName').value = '';
-            document.getElementById('badgeDescription').value = '';
-            badgeUrl.value = '';
-            btnExcluir.style.display = 'none';
-            badgePreview.style.display = 'none';
-        }
-        badgeModal.show();
+        const badge = publicid ? tutteLeBadges.find(b => b.publicid === publicid) : null;
+        
+        document.getElementById('badgePublicId').value = badge ? badge.publicid : '';
+        document.getElementById('badgeName').value = badge ? badge.name : '';
+        document.getElementById('badgeDescription').value = badge?.description || '';
+        badgeUrl.value = badge?.url || '';
+        
+        document.getElementById('btnExcluirBadge').style.display = badge ? 'block' : 'none';
+        badgePreview.style.display = badge?.url ? 'inline-block' : 'none';
+        if (badge?.url) badgePreview.src = badge.url;
+
+        badgeModal.showModal();
     }
 
     async function salvarBadge() {
         const publicid = document.getElementById('badgePublicId').value;
         const name = document.getElementById('badgeName').value;
-        const description = document.getElementById('badgeDescription').value;
         
         if (!name) return alert('Nome é obrigatório');
 
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('description', description);
+        formData.append('description', document.getElementById('badgeDescription').value);
 
-        // Verifica qual aba está ativa (Arquivo ou URL)
-        const activeTab = document.querySelector('#badgeIconTabs .active').id;
-        if (activeTab === 'tab-file-tab') {
-            if (badgeFile.files[0]) {
-                formData.append('file', badgeFile.files[0]);
-            }
+        if (document.querySelector('input[name="iconType"]:checked').value === 'file') {
+            if (badgeFile.files[0]) formData.append('file', badgeFile.files[0]);
         } else {
             formData.append('url', badgeUrl.value);
         }
 
-        const method = publicid ? 'PUT' : 'POST';
-        const endpoint = publicid ? `/api/admin/badges/${publicid}` : '/api/admin/badges';
-
         try {
-            const response = await fetch(endpoint, {
-                method,
-                body: formData // Fetch com FormData não precisa de Content-Type header (o navegador define com o boundary)
+            const response = await fetch(publicid ? `/api/admin/badges/${publicid}` : '/api/admin/badges', {
+                method: publicid ? 'PUT' : 'POST',
+                body: formData
             });
 
             if (response.ok) {
-                badgeModal.hide();
+                fecharModalBadge();
                 carregarBadges();
             } else {
-                const err = await response.json();
-                alert('Erro ao salvar: ' + (err.error || err.message || 'Erro desconhecido'));
+                alert('Erro ao salvar');
             }
         } catch (error) {
-            console.error('Erro ao salvar badge:', error);
             alert('Erro ao conectar com o servidor');
         }
     }
@@ -271,166 +240,119 @@
         const publicid = document.getElementById('badgePublicId').value;
         if (!publicid) return;
 
-        if (!await mostrarConfirmacao('Tem certeza que deseja excluir esta badge? Isso a removerá de TODOS os usuários.', 'Excluir Badge')) return;
+        let conf = typeof mostrarConfirmacao !== 'undefined' 
+            ? await mostrarConfirmacao('Tem certeza que deseja excluir esta badge?', 'Excluir')
+            : confirm('Tem certeza que deseja excluir esta badge?');
+            
+        if (!conf) return;
 
-        try {
-            const response = await fetch(`/api/admin/badges/${publicid}`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                badgeModal.hide();
-                carregarBadges();
-            } else {
-                alert('Erro ao excluir badge');
-            }
-        } catch (error) {
-            console.error('Erro ao excluir badge:', error);
+        const response = await fetch(`/api/admin/badges/${publicid}`, { method: 'DELETE' });
+        if (response.ok) {
+            fecharModalBadge();
+            carregarBadges();
         }
     }
 
     async function carregarAtribuicoes(userPublicId = null) {
-        const usernameQuery = userSearch.value.trim();
-        if (!usernameQuery && !userPublicId) return;
+        const query = userSearch.value.trim();
+        if (!query && !userPublicId) return;
 
         try {
-            let user;
+            let user = null;
             if (userPublicId) {
-                const res = await fetch(`/api/admin/users/${userPublicId}`);
-                user = await res.json();
+                user = await (await fetch(`/api/admin/users/${userPublicId}`)).json();
             } else {
-                const resUsers = await fetch(`/api/admin/users?search=${encodeURIComponent(usernameQuery)}`);
-                const users = await resUsers.json();
-                user = users.find(u => u.username.toLowerCase() === (usernameQuery.startsWith('@') ? usernameQuery : '@' + usernameQuery).toLowerCase());
+                const users = await (await fetch(`/api/admin/users?search=${encodeURIComponent(query)}`)).json();
+                const exact = users.find(u => ('@' + u.username).toLowerCase() === (query.startsWith('@') ? query : '@' + query).toLowerCase());
                 
-                // Se não achou exato, mas veio uma lista, mostra os resultados da busca
-                if (!user && users.length > 0) {
-                    searchResults.innerHTML = '';
-                    users.forEach(u => {
-                        const item = document.createElement('button');
-                        item.className = 'list-group-item list-group-item-action d-flex align-items-center p-2';
-                        item.innerHTML = `
-                            ${UIUtils.createAvatarWithStatus(u, 32)}
-                            <span class="ms-2 fw-bold">${u.username}</span>
-                        `;
-                        item.onclick = () => {
-                            userSearch.value = u.username;
-                            searchResults.classList.add('d-none');
-                            carregarAtribuicoes(u.publicid);
-                        };
-                        searchResults.appendChild(item);
-                    });
-                    searchResults.classList.remove('d-none');
+                if (!exact && users.length > 0) {
+                    searchResults.innerHTML = users.map(u => {
+                        const avatarHTML = typeof UIUtils !== 'undefined' ? UIUtils.createAvatarWithStatus(u, 24) : `<img src="${u.profileimage || '/images/default-avatar.png'}" width="24" height="24">`;
+                        return `<div style="padding: 5px; border-bottom: 1px dashed var(--retro-border-dark); cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="userSearch.value='${u.username}'; document.getElementById('searchResults').style.display='none'; carregarAtribuicoes('${u.publicid}')">
+                            <div style="width: 24px; height: 24px; flex-shrink: 0; overflow: hidden; border: 1px inset var(--retro-border-dark);">
+                                ${avatarHTML}
+                            </div>
+                            <span style="font-size: 13px;">${u.username}</span>
+                        </div>`;
+                    }).join('');
+                    searchResults.style.display = 'block';
+                    userResult.style.display = 'none';
+                    userNotFound.style.display = 'none';
+                    return;
+                } else if (exact) {
+                    user = exact;
+                    searchResults.style.display = 'none';
+                } else {
+                    userNotFound.style.display = 'block';
+                    userResult.style.display = 'none';
+                    searchResults.style.display = 'none';
                     return;
                 }
             }
 
-            searchResults.classList.add('d-none');
-
-            if (!user || user.message) {
-                userResult.style.display = 'none';
-                userNotFound.style.display = 'block';
-                selectedUserPublicId = null;
-                return;
-            }
-
-            userNotFound.style.display = 'none';
-            userResult.style.display = 'block';
-            selectedUserPublicId = user.publicid;
-
-            userName.textContent = user.username;
-            userAvatarPlaceholder.innerHTML = UIUtils.createAvatarWithStatus(user, 50);
-            
-            const resBadges = await fetch(`/api/admin/badges/user/${user.publicid}`);
-            currentUserBadges = await resBadges.json();
-
-            userBadges.innerHTML = '';
-            currentUserBadges.forEach(badge => {
-                const badgeDiv = document.createElement('div');
-                badgeDiv.className = 'badge-item border rounded p-1 d-flex align-items-center bg-light';
-                badgeDiv.innerHTML = `
-                    <img src="${badge.url || '/images/default-badge.png'}" width="24" height="24" title="${badge.name}" class="me-1" style="object-fit: contain;">
-                    <span style="font-size: 0.8rem; color: #333;">${badge.name}</span>
-                    <button class="btn-close ms-2" style="font-size: 0.6rem;" onclick="removerAtribuicao('${badge.publicid}')"></button>
-                `;
-                userBadges.appendChild(badgeDiv);
-            });
-
-            if (currentUserBadges.length === 0) {
-                userBadges.innerHTML = '<small class="text-muted">Nenhuma badge.</small>';
-            }
-
+            if (user && !user.message) exibirUsuario(user);
         } catch (error) {
-            console.error('Erro ao carregar atribuições:', error);
-            alert('Erro ao carregar dados do usuário');
+            alert('Erro ao buscar usuário');
         }
+    }
+
+    async function exibirUsuario(user) {
+        selectedUserPublicId = user.publicid;
+        userName.textContent = user.username;
+        document.getElementById('userInternalId').textContent = `ID: ${user.id || '-'}`;
+        
+        userAvatarPlaceholder.innerHTML = typeof UIUtils !== 'undefined' 
+            ? UIUtils.createAvatarWithStatus(user, 48) 
+            : `<img src="${user.profileimage || '/images/default-avatar.png'}" style="width: 48px; border: 1px solid var(--retro-border-dark);">`;
+
+        currentUserBadges = await (await fetch(`/api/admin/badges/user/${user.publicid}`)).json();
+
+        userBadges.innerHTML = currentUserBadges.length ? currentUserBadges.map(b => 
+            `<div style="display: inline-block; margin: 2px; padding: 2px; border: 1px solid var(--retro-border-dark); background: white;">
+                <img src="${b.url || '/images/default-badge.png'}" width="24" height="24" title="${b.name}" style="vertical-align: middle;">
+                <button onclick="removerAtribuicao('${b.publicid}')" style="margin-left: 5px; font-size: 10px;">X</button>
+            </div>`
+        ).join('') : '<span style="color:gray;">Nenhuma badge.</span>';
+
+        userResult.style.display = 'block';
+        userNotFound.style.display = 'none';
     }
 
     async function atribuirBadge() {
         const badgePublicId = badgeSelect.value;
         if (!selectedUserPublicId || !badgePublicId) return alert('Selecione um usuário e uma badge');
+        if (currentUserBadges.some(b => b.publicid === badgePublicId)) return alert('Usuário já possui esta badge');
 
-        // Evitar duplicatas no front-end
-        if (currentUserBadges.some(b => b.publicid === badgePublicId)) {
-            return alert('Este usuário já possui esta badge');
-        }
-
-        try {
-            const response = await fetch('/api/admin/badges/assign', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userPublicId: selectedUserPublicId,
-                    badgePublicId
-                })
-            });
-
-            if (response.ok) {
-                carregarAtribuicoes();
-            } else {
-                const err = await response.json();
-                alert('Erro ao atribuir: ' + (err.error || 'Erro desconhecido'));
-            }
-        } catch (error) {
-            console.error('Erro ao atribuir badge:', error);
-        }
+        const response = await fetch('/api/admin/badges/assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userPublicId: selectedUserPublicId, badgePublicId: badgePublicId })
+        });
+        if (response.ok) carregarAtribuicoes(selectedUserPublicId);
     }
 
     async function removerAtribuicao(badgePublicId) {
         if (!selectedUserPublicId || !badgePublicId) return;
 
-        if (!await mostrarConfirmacao('Deseja remover esta badge do usuário?', 'Remover Atribuição')) return;
+        let conf = typeof mostrarConfirmacao !== 'undefined' 
+            ? await mostrarConfirmacao('Remover badge?', 'Remover Atribuição') 
+            : confirm('Remover badge?');
+            
+        if (!conf) return;
 
-        try {
-            const response = await fetch('/api/admin/badges/unassign', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userPublicId: selectedUserPublicId,
-                    badgePublicId
-                })
-            });
-
-            if (response.ok) {
-                carregarAtribuicoes();
-            } else {
-                alert('Erro ao remover badge');
-            }
-        } catch (error) {
-            console.error('Erro ao remover badge:', error);
-        }
+        const response = await fetch('/api/admin/badges/unassign', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userPublicId: selectedUserPublicId, badgePublicId: badgePublicId })
+        });
+        if (response.ok) carregarAtribuicoes(selectedUserPublicId);
     }
 
     carregarBadges();
-
-    userSearch.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') carregarAtribuicoes();
-    });
-
-    // Fechar resultados ao clicar fora
+    userSearch.addEventListener('keypress', (e) => { if (e.key === 'Enter') carregarAtribuicoes(); });
     document.addEventListener('click', (e) => {
         if (!searchResults.contains(e.target) && e.target !== userSearch) {
-            searchResults.classList.add('d-none');
+            searchResults.style.display = 'none';
         }
     });
 </script>

@@ -1,47 +1,71 @@
+<title>Sugerir Imagem do Dia</title>
 
-<main class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header py-3">
-                    <h4 class="mb-1 fw-bold">Nova Sugestão</h4>
-                </div>
-                <div class="card-body">
-                    <form id="formSugestao" enctype="multipart/form-data">
-                        <div class="mb-4">
-                            <label for="imagem" class="form-label fw-semibold">Selecione uma imagem:</label>
-                            <input type="file" class="form-control" id="imagem" accept="image/png,image/jpeg,image/gif" required>
-                            <div class="mt-3 d-none justify-content-center align-items-center" id="preview-container">
-                                <div style="position:relative;display:inline-block;">
-                                    <img id="preview-img" src="" alt="Preview" style="width:200px;height:200px;object-fit:cover;box-shadow:0 0 8px #ccc;" />
-                                    <img id="preview-border" src="" alt="Border" style="width:200px;height:200px;display:none;position:absolute;left:0;top:0;z-index:2;pointer-events:none;object-fit:cover;" />
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <label for="defaultBorderSelect" class="form-label fw-semibold">Escolha uma moldura:</label>
-                            <select id="defaultBorderSelect" class="form-select mb-3">
-                                <!-- Molduras padrão serão carregadas dinamicamente -->
-                            </select>
-                            <div class="text-center">
-                                <img id="preview-border-img" src="" alt="Preview Moldura" style="width:100px;height:100px;object-fit:cover;border:1px solid #eee;" />
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <label for="texto" class="form-label fw-semibold">Texto da plaquinha:</label>
-                            <input type="text" class="form-control" id="texto" placeholder="Máximo 32 caracteres" maxlength="32" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2" id="adicionarButton">
-                            <span id="btnText">Enviar Sugestão</span>
-                            <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
-                        </button>
-                        <div id="feedback" class="mt-3 text-center"></div>
-                    </form>
-                </div>
-            </div>
+<div class="window" style="max-width: 600px; margin: 40px auto;">
+    <div class="window-header">Nova Sugestão</div>
+    <div class="window-content" style="padding: 15px;">
+        <div style="margin-bottom: 20px; font-weight: bold; text-align: center;">
+            Envie sua proposta para a próxima Imagem do Dia!
         </div>
+
+        <form id="formSugestao" enctype="multipart/form-data" style="margin: 0;">
+            <table width="100%" cellpadding="5" cellspacing="0" style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px;">
+                <tr>
+                    <td colspan="2">
+                        <div id="filaStatus" style="background: #ffffd0; border: 1px solid var(--retro-border-dark); padding: 5px; margin-bottom: 10px; font-size: 11px; text-align: center;">
+                            Carregando status da fila...
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="30%"><strong>Imagem:</strong></td>
+                    <td>
+                        <input type="file" id="imagem" accept="image/png,image/jpeg,image/gif" style="width: 100%; box-sizing: border-box;" required>
+                    </td>
+                </tr>
+                <tr id="previewRow" style="display: none;">
+                    <td colspan="2" align="center" style="padding: 10px 0;">
+                        <div style="display: inline-block; position: relative; border: 2px inset var(--retro-border-dark); padding: 2px; background: var(--retro-window-bg);">
+                            <div style="position: relative; width: 150px; height: 150px; background: black;">
+                                <img id="preview-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img id="preview-border" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none;">
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Moldura:</strong></td>
+                    <td>
+                        <select id="defaultBorderSelect" style="width: 100%; box-sizing: border-box; margin-bottom: 5px;">
+                            <option>Carregando molduras...</option>
+                        </select>
+                        <div style="text-align: right;">
+                            <img id="preview-border-img" src="" style="width: 60px; height: 60px; border: 1px inset var(--retro-border-dark); display: none;">
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Texto/Placa:</strong></td>
+                    <td>
+                        <input type="text" id="texto" placeholder="Máximo 32 caracteres" maxlength="32" style="width: 100%; box-sizing: border-box;" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" align="right" style="padding-top: 15px;">
+                        <button type="submit" id="adicionarButton" style="font-weight: bold; width: 100%; padding: 5px;">
+                            <span id="btnText">Enviar Sugestão</span>
+                            <span id="loadingText" style="display: none;">Enviando...</span>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" align="center">
+                        <div id="feedback" style="margin-top: 10px; font-weight: bold;"></div>
+                    </td>
+                </tr>
+            </table>
+        </form>
     </div>
-</main>
+</div>
 
 <script>
 const imagemInput = document.getElementById("imagem");
@@ -49,18 +73,41 @@ const previewImg = document.getElementById("preview-img");
 const previewBorder = document.getElementById("preview-border");
 const previewBorderImg = document.getElementById("preview-border-img");
 const defaultBorderSelect = document.getElementById("defaultBorderSelect");
+const previewRow = document.getElementById("previewRow");
 let currentBorderUrl = "";
+
+async function carregarStatusFila() {
+    const filaStatus = document.getElementById("filaStatus");
+    try {
+        const res = await fetch("/api/admin/imagemdodia/fila");
+        if (!res.ok) throw new Error();
+        const fila = await res.json();
+        
+        const count = fila.length;
+        if (count === 0) {
+            filaStatus.innerHTML = "A fila está vazia! Sua sugestão pode ser a próxima.";
+            filaStatus.style.background = "#e0ffe0"; // Verde clarinho
+        } else {
+            filaStatus.innerHTML = `Existem <strong>${count}</strong> sugestões na fila à frente.`;
+            filaStatus.style.background = "#ffffd0"; // Amarelo clarinho
+        }
+    } catch (err) {
+        filaStatus.style.display = "none";
+    }
+}
 
 async function carregarMoldurasPadrao() {
     try {
         const res = await fetch("/api/imagemdodia/borders");
         const borders = await res.json();
-        // Armazenar os objetos para recuperar a URL no preview
+        
         window.bordersCache = borders;
         defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.publicid}">${b.name}</option>`).join('');
+        
         if (borders.length > 0) {
             defaultBorderSelect.value = borders[0].publicid;
             atualizarPreviewMoldura(borders[0].url);
+            previewBorderImg.style.display = "inline-block";
         }
     } catch (err) {
         console.error("Erro ao carregar molduras:", err);
@@ -70,7 +117,6 @@ async function carregarMoldurasPadrao() {
 function atualizarPreviewMoldura(url) {
     currentBorderUrl = url;
     previewBorderImg.src = url;
-    // Só mostra a moldura no preview principal se já houver uma imagem carregada
     if (previewImg.src && previewImg.src.startsWith('data:')) {
         previewBorder.src = url;
         previewBorder.style.display = "block";
@@ -88,9 +134,7 @@ imagemInput.addEventListener("change", function() {
         const reader = new FileReader();
         reader.onload = (e) => {
             previewImg.src = e.target.result;
-            const container = document.getElementById("preview-container");
-            container.classList.remove("d-none");
-            container.classList.add("d-flex");
+            previewRow.style.display = "table-row";
             previewBorder.src = currentBorderUrl;
             previewBorder.style.display = "block";
         };
@@ -104,8 +148,8 @@ document.getElementById("formSugestao").addEventListener("submit", async functio
     const feedback = document.getElementById("feedback");
     
     btn.disabled = true;
-    document.getElementById("btnText").classList.add("d-none");
-    document.getElementById("spinner").classList.remove("d-none");
+    document.getElementById("btnText").style.display = "none";
+    document.getElementById("loadingText").style.display = "inline";
 
     const formData = new FormData();
     formData.append("file", imagemInput.files[0]);
@@ -116,27 +160,27 @@ document.getElementById("formSugestao").addEventListener("submit", async functio
         const res = await fetch("/api/imagemdodia", { method: "POST", body: formData });
         if (res.ok) {
             feedback.textContent = "Sugestão enviada com sucesso!";
-            feedback.className = "text-success";
+            feedback.style.color = "green";
             this.reset();
-            const container = document.getElementById("preview-container");
-            container.classList.add("d-none");
-            container.classList.remove("d-flex");
+            previewRow.style.display = "none";
             previewImg.src = "";
             previewBorder.style.display = "none";
+            carregarStatusFila(); // Atualizar fila após enviar
         } else {
             const data = await res.json();
             feedback.textContent = data.message || "Erro ao enviar.";
-            feedback.className = "text-danger";
+            feedback.style.color = "red";
         }
     } catch (err) {
         feedback.textContent = "Erro de conexão.";
-        feedback.className = "text-danger";
+        feedback.style.color = "red";
     } finally {
         btn.disabled = false;
-        document.getElementById("btnText").classList.remove("d-none");
-        document.getElementById("spinner").classList.add("d-none");
+        document.getElementById("btnText").style.display = "inline";
+        document.getElementById("loadingText").style.display = "none";
     }
 });
 
 carregarMoldurasPadrao();
+carregarStatusFila();
 </script>

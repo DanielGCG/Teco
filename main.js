@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const http = require('http');
 const { Server } = require('socket.io');
 const { authMiddleware } = require('./server/middlewares/authMiddleware');
+const { SystemConfig } = require('./server/models');
 
 const servidor = express();
 const httpServer = http.createServer(servidor);
@@ -30,10 +31,18 @@ servidor.set('views', path.join(__dirname, 'views'));
 servidor.use(express.static(path.join(__dirname, 'public')));
 
 // Inicializa variáveis globais para as views (opção certeira)
-servidor.use((req, res, next) => {
+servidor.use(async (req, res, next) => {
     res.locals.loggedUser = null;
     res.locals.user = null;
     res.locals.version = process.env.VERSION;
+
+    try {
+        const marqueeConfig = await SystemConfig.findOne({ where: { key: 'marquee' } });
+        res.locals.marqueeText = marqueeConfig ? marqueeConfig.value : "Bem-vindo ao Teco!";
+    } catch (err) {
+        res.locals.marqueeText = "Bem-vindo ao Teco!";
+    }
+
     next();
 });
 
@@ -53,7 +62,7 @@ servidor.use((req, res) => {
         version: process.env.VERSION
     };
     res.status(404).render('utils/404', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-empty',
         locals,
         HOST: process.env.HOST
     });

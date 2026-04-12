@@ -6,9 +6,10 @@ FeaturesRouter.get('/watchlist', async (req, res) => {
         title: `Watchlist`,
         description: "Lista de filmes",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/features/watchlist', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -19,9 +20,10 @@ FeaturesRouter.get('/galerias', async (req, res) => {
         title: `Galerias`,
         description: "Galerias disponíveis",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/features/galerias', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -32,9 +34,10 @@ FeaturesRouter.get('/galeria/:id', async (req, res) => {
         title: `Galeria`,
         description: "Visualizando galeria",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/features/galeria', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST,
         galleryId: req.params.id
@@ -47,9 +50,10 @@ FeaturesRouter.get('/imagemdodia', async (req, res) => {
         description: "Conheça o álbum de Imagens do Dia!",
         icon: '',
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/imagemdodia/album', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -61,9 +65,10 @@ FeaturesRouter.get('/imagemdodia/sugerir', async (req, res) => {
         description: "Sugira uma imagem do dia!",
         icon: '',
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('pages/imagemdodia/sugerir', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -74,9 +79,10 @@ FeaturesRouter.get('/credits', async (req, res) => {
         title: `Créditos`,
         description: "Agracedimentos e créditos",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.render('utils/credits', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-empty',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -107,10 +113,11 @@ FeaturesRouter.get('/changelog', async (req, res) => {
         title: `Changelog`,
         description: "Histórico de atualizações do sistema",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
 
     res.render('utils/changelog', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-empty',
         locals: locals,
         HOST: process.env.HOST,
         commits: commits
@@ -122,9 +129,10 @@ FeaturesRouter.get('/manutencao', async (req, res) => {
         title: `503`,
         description: "Página em construção",
         version: process.env.VERSION,
+        loggedUser: req.user
     }
     res.status(503).render('utils/503', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-empty',
         locals: locals,
         HOST: process.env.HOST
     });

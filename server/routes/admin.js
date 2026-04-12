@@ -1,5 +1,9 @@
 const express = require('express');
 const AdminRouter = express.Router();
+const { authMiddleware } = require('../middlewares/authMiddleware');
+
+// Protege todas as rotas deste router para Administradores (Cargo 5) ou superior (Dono)
+AdminRouter.use(authMiddleware(5));
 
 AdminRouter.get('', async (req, res) => {
     const locals = {
@@ -8,7 +12,7 @@ AdminRouter.get('', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -21,7 +25,7 @@ AdminRouter.get('/criar-chat', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin/criar-chat', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
@@ -34,7 +38,7 @@ AdminRouter.get('/editar-usuario', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin/editar-usuario', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
@@ -47,7 +51,7 @@ AdminRouter.get('/resetar-senha-usuario', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin/resetar-senha-usuario', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
@@ -60,7 +64,7 @@ AdminRouter.get('/editar-cartinha', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin/editar-cartinha', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
@@ -73,7 +77,7 @@ AdminRouter.get('/teste-notificacoes', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/teste-notificacoes', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
@@ -86,7 +90,7 @@ AdminRouter.get('/imagemdodia', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin/imagemdodia', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
@@ -99,11 +103,23 @@ AdminRouter.get('/badges', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/admin/badges', {
-        layout: 'layouts/main',
+        layout: 'layouts/retro-no-sidebar',
         locals: locals,
         HOST: process.env.HOST
     })
 });
 
+AdminRouter.get('/config', async (req, res) => {
+    const locals = {
+        title: `Configurações globais`,
+        description: "Controle o marquee e outras configurações",
+        version: process.env.VERSION,
+    }
+    res.render('pages/admin/config', {
+        layout: 'layouts/retro-no-sidebar',
+        locals: locals,
+        HOST: process.env.HOST
+    })
+});
 
 module.exports = AdminRouter;

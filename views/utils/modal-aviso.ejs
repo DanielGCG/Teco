@@ -1,46 +1,77 @@
-<!-- Modal de aviso global -->
-<div class="modal fade" id="avisoModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="avisoModalTitle">Aviso</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body text-center">
-        <p id="avisoTexto" class="mb-0"></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-      </div>
+<!-- Modal de Aviso Retrô -->
+<div id="retro-modal-aviso" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20005; min-width: 320px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
+    <div class="window-header">
+        <span id="retro-aviso-title">Aviso</span>
+        <button onclick="closeRetroAviso()" style="padding: 0 5px; height: 16px; line-height: 12px; font-size: 10px;">X</button>
     </div>
-  </div>
+    <div class="window-content" style="background: var(--retro-window-bg); text-align: center; padding: 15px;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; text-align: left;">
+            <div id="retro-aviso-icon" style="background: #0000ff; border: 2px solid var(--retro-border-dark); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; color: white;">!</div>
+            <p id="retro-aviso-text" style="margin: 0; font-size: 13px; color: var(--retro-text);"></p>
+        </div>
+        <div style="display: flex; justify-content: center;">
+            <button id="retro-aviso-ok" onclick="closeRetroAviso()" style="min-width: 80px; font-weight: bold; padding: 4px 10px;">OK</button>
+        </div>
+    </div>
 </div>
 
-<script>
-// Função global para mostrar avisos
-if (typeof avisoModalInstance === 'undefined') {
-    var avisoModalInstance = null;
-}
+<div id="retro-aviso-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 20004;"></div>
 
-function mostrarAviso(mensagem, titulo = 'Aviso') {
-    document.getElementById("avisoTexto").textContent = mensagem;
-    document.getElementById("avisoModalTitle").textContent = titulo;
-    
-    // Reproduzir som (alert para confirmações/avisos, error para erros)
-    try {
-        const isError = titulo.toLowerCase().includes('erro') || mensagem.toLowerCase().includes('erro');
-        const soundFile = isError ? '/sounds/error.mp3' : '/sounds/alert.mp3';
-        const audio = new Audio(soundFile);
-        audio.volume = 0.3;
-        audio.play().catch(err => console.log('Não foi possível reproduzir o som:', err));
-    } catch (err) {
-        console.log('Erro ao carregar som:', err);
+<script>
+    function closeRetroAviso() {
+        document.getElementById('retro-modal-aviso').style.display = 'none';
+        document.getElementById('retro-aviso-overlay').style.display = 'none';
+        if (window._avisoResolve) {
+            window._avisoResolve();
+            window._avisoResolve = null;
+        }
     }
-    
-    const modalElement = document.getElementById('avisoModal');
-    if (!avisoModalInstance) {
-        avisoModalInstance = new bootstrap.Modal(modalElement);
+
+    function mostrarAviso(mensagem, titulo = 'Aviso') {
+        const modal = document.getElementById('retro-modal-aviso');
+        const overlay = document.getElementById('retro-aviso-overlay');
+        const textElement = document.getElementById('retro-aviso-text');
+        const titleElement = document.getElementById('retro-aviso-title');
+        const iconElement = document.getElementById('retro-aviso-icon');
+
+        if (!modal || !overlay) return;
+
+        textElement.textContent = String(mensagem);
+        titleElement.textContent = String(titulo);
+
+        // Ajustar ícone baseado no título
+        const isError = String(titulo).toLowerCase().includes('erro') || String(mensagem).toLowerCase().includes('erro');
+        if (isError) {
+            iconElement.style.background = '#ff0000';
+            iconElement.textContent = 'X';
+        } else {
+            iconElement.style.background = '#0000ff';
+            iconElement.textContent = '!';
+        }
+        
+        // Reproduzir som
+        try {
+            const soundFile = isError ? '/sounds/error.mp3' : '/sounds/alert.mp3';
+            const audio = new Audio(soundFile);
+            audio.volume = 0.3;
+            audio.play().catch(err => console.log('Não foi possível reproduzir o som:', err));
+        } catch (err) {
+            console.log('Erro ao carregar som:', err);
+        }
+        
+        overlay.style.display = 'block';
+        modal.style.display = 'block';
+        
+        // Focar no botão OK
+        setTimeout(() => document.getElementById('retro-aviso-ok').focus(), 50);
+
+        return new Promise(resolve => {
+            window._avisoResolve = resolve;
+        });
     }
-    avisoModalInstance.show();
-}
+
+    // Compatibilidade com código antigo que espera alert síncrono ou mostrarAviso
+    window.alert = function(msg) {
+        mostrarAviso(msg);
+    };
 </script>

@@ -1,3 +1,80 @@
+/* Padronização de Layout (Chat e DMs) */
+.chat-layout-container {
+    display: flex;
+    gap: 10px;
+    height: 70vh; /* Tamanho definido consistente */
+    min-height: 450px;
+    max-height: 800px;
+}
+
+.sidebar-retro {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.chat-area-retro {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.conversation-card {
+    border-bottom: 1px dotted var(--retro-border-dark);
+    cursor: pointer;
+    background: var(--retro-bg);
+    padding: 0;
+    color: var(--retro-text);
+    height: 50px; /* Altura fixa para todos não mudarem de acordo com o conteúdo */
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+.conversation-card:hover {
+    background: var(--retro-sidebar-bg); /* O hover clássico */
+}
+.conversation-card.active {
+    background: var(--retro-header-bg);
+    color: var(--retro-header-text);
+}
+
+.chat-input-area {
+    padding: 0 5px 5px 5px;
+    display: flex;
+    gap: 5px;
+    align-items: stretch;
+}
+
+.chat-textarea {
+    flex-grow: 1;
+    resize: none;
+    height: 50px;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 5px;
+    border: 2px inset var(--retro-border-dark);
+    background: var(--retro-window-bg);
+    color: var(--retro-text);
+}
+
+.chat-send-btn {
+    padding: 5px 15px;
+    font-weight: bold;
+}
+
+.btn-voltar-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar-retro.d-none, .chat-area-retro.d-none { display: none !important; }
+    .sidebar-retro { width: 100%; }
+    .btn-voltar-mobile { display: inline-block; padding: 1px 5px; }
+    .chat-layout-container { height: 80vh; }
+}
+
 /* Estilos compartilhados para mensagens em DMs e Chats */
 
 .msg-group {
@@ -7,8 +84,8 @@
     margin-bottom: 0.8rem;
 }
 
-#chat-area { background-color: var(--verde); }
-#chat-messages { height: 0; }
+#chat-area { display: flex; flex-direction: column; }
+#chat-messages { flex-grow: 1; }
 
 .msg-group.usuario {
     align-items: flex-end;
@@ -20,7 +97,7 @@
 
 .mensagem {
     padding: 0.5rem 0.8rem;
-    border-radius: 1rem;
+    border: 1px solid var(--retro-border-dark);
     max-width: 65%;
     word-break: break-word;
     white-space: pre-wrap;
@@ -28,13 +105,13 @@
 }
 
 .mensagem.usuario {
-    background: var(--mensagem-roxo);
-    color: white;
+    background: var(--retro-header-bg);
+    color: var(--retro-header-text);
 }
 
 .mensagem.outrousuario {
-    background: #e5e7eb;
-    color: black;
+    background: var(--retro-bg);
+    color: var(--retro-text);
 }
 
 .msg-meta {

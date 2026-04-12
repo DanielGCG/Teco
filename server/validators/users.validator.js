@@ -32,8 +32,14 @@ const updateProfileSchema = z.object({
 });
 
 const updatePasswordSchema = z.object({
-    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
-    newPassword: z.string().min(8, "Nova senha deve ter no mínimo 8 caracteres")
+    currentPassword: z.string({
+        required_error: "A senha atual é obrigatória.",
+        invalid_type_error: "A senha atual deve ser um texto."
+    }).min(1, "A senha atual não pode estar vazia."),
+    newPassword: z.string({
+        required_error: "A nova senha é obrigatória.",
+        invalid_type_error: "A nova senha deve ser um texto."
+    }).min(8, "Sua nova senha deve ter no mínimo 8 caracteres para sua segurança.")
 });
 
 const validateSessionSchema = z.object({

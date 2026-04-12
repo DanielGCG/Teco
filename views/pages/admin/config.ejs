@@ -1,0 +1,81 @@
+<div class="window-header">
+    <span>Configurações Globais</span>
+    <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+</div>
+
+<div class="window-content" style="padding: 10px;">
+    <div class="window" style="margin-bottom: 20px;">
+        <div class="window-header">Editar Marquee</div>
+        <div class="window-content" style="padding: 10px;">
+            <p>Este texto aparecerá no topo de todas as páginas com o layout principal.</p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="marquee-input" style="flex-grow: 1; padding: 5px;" placeholder="Digite o texto do marquee...">
+                <button id="save-marquee-btn" class="retro-button">Salvar</button>
+            </div>
+            <p id="marquee-status" style="margin-top: 10px; font-size: 12px; display: none;"></p>
+        </div>
+    </div>
+
+    <!-- Espaço para futuras configurações globais -->
+    <div class="window" style="opacity: 0.7;">
+        <div class="window-header">Outras Configurações (Em breve)</div>
+        <div class="window-content" style="padding: 10px;">
+            <p>Manutenção, cores globais, etc.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const marqueeInput = document.getElementById('marquee-input');
+        const saveBtn = document.getElementById('save-marquee-btn');
+        const statusMsg = document.getElementById('marquee-status');
+
+        function showStatus(text, isError = false) {
+            statusMsg.textContent = text;
+            statusMsg.style.color = isError ? 'red' : 'green';
+            statusMsg.style.display = 'block';
+            setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
+        }
+
+        // Carregar valor atual
+        try {
+            const res = await fetch('/api/admin/config/marquee');
+            if (res.ok) {
+                const config = await res.json();
+                marqueeInput.value = config.value;
+            }
+        } catch (err) {
+            console.error('Erro ao carregar marquee:', err);
+        }
+
+        // Salvar novo valor
+        saveBtn.addEventListener('click', async () => {
+            const newValue = marqueeInput.value.trim();
+            if (!newValue) return showStatus('O texto não pode estar vazio', true);
+
+            saveBtn.disabled = true;
+            try {
+                const res = await fetch('/api/admin/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        key: 'marquee', 
+                        value: newValue,
+                        description: 'Texto que aparece no letreiro do topo do site'
+                    })
+                });
+
+                if (res.ok) {
+                    showStatus('Configuração salva! Atualize a página para ver a mudança.');
+                } else {
+                    showStatus('Erro ao salvar configuração', true);
+                }
+            } catch (err) {
+                showStatus('Erro na requisição', true);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    });
+</script>

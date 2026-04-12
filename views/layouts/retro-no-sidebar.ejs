@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teco - <%= locals.title %></title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.ico">
     <link rel="stylesheet" href="/styles/retro.css">
     <style>
         body {
@@ -26,15 +27,15 @@
         </div>
         <div class="window-content" style="background: var(--retro-bg); border-bottom: 1px solid var(--retro-border-dark); display: flex; justify-content: space-between; align-items: center; padding-bottom: 5px;padding-top: 5px">
             <div>
-                <a href="/"><img src="/images/Teco.png" alt="Logo" style="height: 40px;"></a>
+                <a href="/"><img src="/images/Teco.webp" alt="Logo" style="height: 40px;"></a>
             </div>
             <div style="display: flex; align-items: center; flex-grow: 1; justify-content: center;">
-                <div class="window" style="width: 400px; margin: 0;"><marquee style="background-color: var(--retro-header-bg); color: var(--retro-header-text);">Bem-vindo ao Site do Boteco!</marquee></div>
+                <div class="window" style="width: 400px; margin: 0;"><marquee style="background-color: var(--retro-header-bg); color: var(--retro-header-text);"><%= marqueeText %></marquee></div>
             </div>
             <div id="retro-notifications-container">
-                <a href="javascript:void(0)" id="notificationsDropdownBtn" style="text-decoration: none; position: relative;">
-                    <img src="/images/icon3.ico" style="width: 24px; vertical-align: middle;">
-                    <span id="notificationsBadge" style="display: none; background: red; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; position: absolute; top: -5px; right: -10px; border: 1px solid white;">0</span>
+                <a href="javascript:void(0)" id="notificationsDropdownBtn" style="text-decoration: none; position: relative; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--retro-bg); border-top: 2px solid var(--retro-border-light); border-left: 2px solid var(--retro-border-light); border-bottom: 2px solid var(--retro-border-dark); border-right: 2px solid var(--retro-border-dark); box-sizing: border-box;">
+                    <span style="font-size: 16px; line-height: 1;">🔔</span>
+                    <span id="notificationsBadge" style="display: none; background: red; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; position: absolute; top: -8px; right: -8px; border: 1px solid white; z-index: 10;">0</span>
                 </a>
                 <div id="retro-notifications-list" class="window" style="display: none; position: absolute; right: 10px; width: 300px; z-index: 1000; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
                     <div class="window-header">
@@ -60,11 +61,41 @@
 
     <div class="window" style="margin-top: 20px;">
         <div class="window-content" style="text-align: center;">
-            <p>Site do Boteco - Teco</p>
-            <p>&copy; 2024-2026 Boteco</p>
+            <p><a href="/credits" style="text-decoration: none; color: inherit;">Site do Boteco - Teco</a></p>
+            <p>&copy; 2024-2026 Boteco | <a href="/changelog" style="text-decoration: none; color: inherit;">Versão: <%= locals.version %></a></p>
+            <% if (locals.loggedUser) { %>
+                <p>
+                    <% if (locals.loggedUser.roleId <= 10) { %>
+                        <a href="/admin" style="font-size: 11px;">[Painel Admin]</a> |
+                    <% } %>
+                    <a href="javascript:void(0)" onclick="handleLogout()" style="font-size: 11px;">[Sair]</a>
+                </p>
+            <% } %>
         </div>
     </div>
 
+    <script>
+        async function handleLogout() {
+            if (!(await confirm('Deseja realmente sair?'))) return;
+            try {
+                const res = await fetch('/api/users/logout', { method: 'POST' });
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    window.location.href = '/';
+                }
+            } catch (e) {
+                console.error('Erro no logout:', e);
+                window.location.href = '/';
+            }
+        }
+    </script>
+
+    <!-- Script para sobrescrever alert() e confirm() -->
+    <script src="/js/modal-aviso.js"></script>
+
+    <!-- Modais globais retrô -->
+    <%- include('../utils/modal-aviso') %>
     <%- include('../utils/modal-confirmacao-retro') %>
 
     <script src="/socket.io/socket.io.js"></script>
