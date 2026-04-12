@@ -83,13 +83,25 @@ router.post('/borders', upload.single('file'), async (req, res) => {
     }
 
     try {
-        // Converte para PNG usando sharp
-        const pngBuffer = await sharp(req.file.buffer).png().toBuffer();
+        let processedBuffer;
+        let filename = 'border.png';
+        let mimetype = 'image/png';
+
+        if (req.file.mimetype === 'image/gif') {
+            filename = 'border.gif';
+            mimetype = 'image/gif';
+            // Usa o buffer original para não perder a animação, ou processa com { animated: true }
+            processedBuffer = await sharp(req.file.buffer, { animated: true }).gif().toBuffer();
+        } else {
+            // Converte para PNG usando sharp
+            processedBuffer = await sharp(req.file.buffer).png().toBuffer();
+        }
+
         const url = await uploadToFileServer({
-            buffer: pngBuffer,
-            filename: 'border.png',
+            buffer: processedBuffer,
+            filename: filename,
             folder: 'imagemdodia/borders',
-            mimetype: 'image/png'
+            mimetype: mimetype
         });
         const novaBorder = await ImagemDoDiaBorder.create({
             url,
