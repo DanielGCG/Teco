@@ -408,7 +408,8 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
         const response = await fetch(targetUrl, {
             method: 'GET',
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'User-Agent': 'TecoApp/1.0' // Alguns firewalls como Cloudflare bloqueiam fetches sem user-agent
             }
         });
 
@@ -418,7 +419,15 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
             return res.status(response.status).json({ error: "Erro na API de músicas" });
         }
 
-        const data = await response.json();
+        const rawText = await response.text();
+        
+        // Verifica se a resposta não começa com '{' ou '[' indicando que recebemos HTML invés de JSON
+        if (rawText.trim().startsWith('<')) {
+            console.error(`Erro: A API do BotecoAnalytics retornou HTML invés de JSON na URL ${targetUrl}. Resposta truncada:`, rawText.substring(0, 200));
+            return res.status(502).json({ error: "A API de analytics retornou um formato inválido (HTML). Verifique se a URL/rota está correta no servidor alvo." });
+        }
+
+        const data = JSON.parse(rawText);
         res.json(data);
     } catch (err) {
         console.error("Erro interno no proxy widget:", err);
