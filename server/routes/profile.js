@@ -6,7 +6,8 @@ PerfilRouter.get('/editar', async (req, res) => {
         title: `Editar perfil`,
         description: "Edite seu perfil!",
         version: process.env.VERSION,
-        loggedUser: req.user
+        loggedUser: req.user,
+        botecoAnalyticsUrl: process.env.BOTECOANALYTICS_URL
     }
     res.render('pages/social/profile-edit', {
         layout: 'layouts/retro',
@@ -27,7 +28,8 @@ PerfilRouter.get('/:username', async (req, res, next) => {
         version: process.env.VERSION,
         username: req.params.username,
         user: req.user,
-        loggedUser: req.user
+        loggedUser: req.user,
+        botecoAnalyticsUrl: process.env.BOTECOANALYTICS_URL
     }
     res.render('pages/social/retro-profile', {
         layout: 'layouts/retro',

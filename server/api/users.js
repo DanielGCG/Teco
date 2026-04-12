@@ -388,6 +388,44 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
     }
 });
 
+// ====================
+// = WIDGET LAST.FM  =
+// ====================
+UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
+    try {
+        const lastfmUser = req.params.lastfmUser;
+        const botecoUrl = process.env.BOTECOANALYTICS_URL;
+        const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN;
+
+        if (!botecoUrl || !botecoToken) {
+            return res.status(500).json({ error: "Integração musical não configurada no servidor." });
+        }
+
+        const baseUrl = botecoUrl.replace(/\/$/, "");
+        const targetUrl = `${baseUrl}/api/widget/${encodeURIComponent(lastfmUser)}?token=${botecoToken}`.replace('localhost', '127.0.0.1');
+        
+        // Faz a requisição Back-to-Back enviando o Token de autenticação seguro via Query string
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Falha no BotecoAnalytics: ${response.status} - ${errorText}`);
+            return res.status(response.status).json({ error: "Erro na API de músicas" });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (err) {
+        console.error("Erro interno no proxy widget:", err);
+        res.status(500).json({ error: "Falha na comunicação com o Analytics." });
+    }
+});
+
 // GET /users/:username - Obter perfil de usuário por username
 UsersRouter.get('/:username', protect(20), async (req, res) => {
     try {
@@ -395,7 +433,7 @@ UsersRouter.get('/:username', protect(20), async (req, res) => {
 
         const user = await User.findOne({
             where: { username: username },
-            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId'],
+            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId', 'lastfmusername'],
             include: [{ model: Role, as: 'role', attributes: ['name'] }]
         });
         if (!user) return res.status(404).json({

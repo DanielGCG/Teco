@@ -35,6 +35,7 @@ servidor.use(async (req, res, next) => {
     res.locals.loggedUser = null;
     res.locals.user = null;
     res.locals.version = process.env.VERSION;
+    res.locals.botecoAnalyticsUrl = process.env.BOTECOANALYTICS_URL;
 
     try {
         const marqueeConfig = await SystemConfig.findOne({ where: { key: 'marquee' } });
