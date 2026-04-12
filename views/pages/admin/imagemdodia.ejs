@@ -103,7 +103,10 @@ async function carregarFila() {
             const delBtn = document.createElement("button");
             delBtn.style.cssText = "color: red; font-weight: bold;";
             delBtn.textContent = "X";
-            delBtn.onclick = () => removerImagem(item.publicid, 'fila');
+            delBtn.onclick = (e) => {
+                e.preventDefault();
+                removerImagem(item.publicid, 'fila');
+            };
             
             row.appendChild(delBtn);
             fragment.appendChild(row);
@@ -193,24 +196,29 @@ document.getElementById('ativarProximaBtn').onclick = async () => {
 };
 
 async function removerImagem(id, tipo) {
-    if (!confirm(`Remover esta imagem da ${tipo === 'fila' ? 'fila' : 'histórico'}?`)) return;
+    const confirmado = await confirm(`Remover esta imagem da ${tipo === 'fila' ? 'fila' : 'histórico'}?`);
+    if (!confirmado) return;
 
     try {
-        const res = await fetch(`/api/admin/imagemdodia/${tipo}/${id}`, {
+        const res = await fetch(`/api/admin/imagemdodia/${id}`, {
             method: 'DELETE'
         });
         if (res.ok) {
             if (tipo === 'fila') carregarFila();
             else carregarHistorico();
         }
-        else alert("Erro ao remover.");
+        else {
+            const data = await res.json();
+            alert("Erro ao remover: " + (data.message || "Erro desconhecido"));
+        }
     } catch (err) {
         alert("Erro de conexão.");
     }
 }
 
 async function removerMoldura(id) {
-    if (!confirm("Remover esta moldura?")) return;
+    const confirmado = await confirm("Remover esta moldura?");
+    if (!confirmado) return;
 
     try {
         const res = await fetch(`/api/admin/imagemdodia/borders/${id}`, {

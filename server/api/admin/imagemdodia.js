@@ -37,7 +37,7 @@ router.get('/fila/count', async (req, res) => {
 });
 
 // Remove uma imagem (da fila ou do histórico)
-router.delete('/fila/:publicid', async (req, res) => {
+router.delete('/:publicid', async (req, res) => {
     try {
         const imagem = await ImagemDoDia.findOne({ where: { publicid: req.params.publicid } });
         if (!imagem) return res.status(404).json({ message: 'Imagem não encontrada.' });
