@@ -6,6 +6,44 @@
     <title>Teco - <%= locals.title %></title>
     <link rel="icon" type="image/x-icon" href="/images/icon.ico">
     <link rel="stylesheet" href="/styles/retro.css">
+    <script>
+        // Fallback global para imagens quebradas (404, corrompidas)
+        document.addEventListener('error', function(e) {
+            if (e.target && e.target.tagName === 'IMG') {
+                const fallback = '/images/placeholder.webp';
+                if (!e.target.src.includes('placeholder.webp')) {
+                    e.target.src = fallback;
+                }
+            }
+        }, true); // Capture = true intercepta erros de rede de recursos
+
+        // Intervenção imediata nas propriedades do DOM para 'null', 'undefined' e vazio
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkFallback = (imgs) => {
+                imgs.forEach(img => {
+                    const src = img.getAttribute('src');
+                    if (!src || src === 'null' || src === 'undefined' || src === '') {
+                        if (!img.src.includes('placeholder.webp')) img.src = '/images/placeholder.webp';
+                    }
+                });
+            };
+            
+            checkFallback(document.querySelectorAll('img'));
+            
+            new MutationObserver(mutations => {
+                mutations.forEach(m => {
+                    if (m.type === 'childList') {
+                        m.addedNodes.forEach(n => {
+                            if (n.tagName === 'IMG') checkFallback([n]);
+                            else if (n.querySelectorAll) checkFallback(n.querySelectorAll('img'));
+                        });
+                    } else if (m.type === 'attributes') {
+                        checkFallback([m.target]);
+                    }
+                });
+            }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+        });
+    </script>
 </head>
 <body>
     
