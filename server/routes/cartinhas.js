@@ -9,7 +9,7 @@ CartinhasRouter.get('/', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/cartinhas/cartinhas', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -23,7 +23,7 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/cartinhas/recebidas', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -37,7 +37,7 @@ CartinhasRouter.get('/escrever', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/cartinhas/escrever', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -51,7 +51,7 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/cartinhas/favoritas', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -65,7 +65,7 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/cartinhas/enviadas', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });

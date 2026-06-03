@@ -10,7 +10,7 @@ PerfilRouter.get('/editar', async (req, res) => {
         botecoAnalyticsUrl: process.env.BOTECOANALYTICS_URL
     }
     res.render('pages/social/profile-edit', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -32,7 +32,7 @@ PerfilRouter.get('/:username', async (req, res, next) => {
         botecoAnalyticsUrl: process.env.BOTECOANALYTICS_URL
     }
     res.render('pages/social/retro-profile', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -53,7 +53,7 @@ PerfilRouter.get('/:username/status/:postId', async (req, res, next) => {
         loggedUser: req.user
     }
     res.render('pages/social/post-details', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });

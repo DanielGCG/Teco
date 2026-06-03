@@ -30,13 +30,8 @@ servidor.set('view engine', 'ejs');
 servidor.set('views', path.join(__dirname, 'views'));
 servidor.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializa variáveis globais para as views (opção certeira)
+// Carrega configurações de sistema
 servidor.use(async (req, res, next) => {
-    res.locals.loggedUser = null;
-    res.locals.user = null;
-    res.locals.version = process.env.VERSION;
-    res.locals.botecoAnalyticsUrl = process.env.BOTECOANALYTICS_URL;
-
     try {
         const marqueeConfig = await SystemConfig.findOne({ where: { key: 'marquee' } });
         res.locals.marqueeText = marqueeConfig ? marqueeConfig.value : "Bem-vindo ao Teco!";
@@ -63,7 +58,7 @@ servidor.use((req, res) => {
         version: process.env.VERSION
     };
     res.status(404).render('utils/404', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals,
         HOST: process.env.HOST
     });

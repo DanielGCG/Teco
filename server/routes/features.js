@@ -9,7 +9,7 @@ FeaturesRouter.get('/watchlist', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/features/watchlist', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -23,7 +23,7 @@ FeaturesRouter.get('/galerias', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/features/galerias', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -37,7 +37,7 @@ FeaturesRouter.get('/galeria/:id', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/features/galeria', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST,
         galleryId: req.params.id
@@ -53,7 +53,7 @@ FeaturesRouter.get('/imagemdodia', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/imagemdodia/album', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -68,7 +68,7 @@ FeaturesRouter.get('/imagemdodia/sugerir', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/imagemdodia/sugerir', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -82,7 +82,7 @@ FeaturesRouter.get('/credits', async (req, res) => {
         loggedUser: req.user
     }
     res.render('utils/credits', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -117,7 +117,7 @@ FeaturesRouter.get('/changelog', async (req, res) => {
     }
 
     res.render('utils/changelog', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST,
         commits: commits
@@ -132,7 +132,7 @@ FeaturesRouter.get('/manutencao', async (req, res) => {
         loggedUser: req.user
     }
     res.status(503).render('utils/503', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });

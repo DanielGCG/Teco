@@ -8,7 +8,7 @@ WatchListRouter.get('/', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/watchlist', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });

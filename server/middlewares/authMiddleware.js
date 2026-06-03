@@ -79,7 +79,7 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                     if (req.accepts('html')) {
                         // Poderíamos redirecionar para um erro 403 amigável
                         return res.status(403).render('utils/modal-aviso', {
-                            layout: 'layouts/retro-empty',
+                            layout: 'layouts/empty',
                             locals: { title: '403', description: 'Acesso Negado', version: process.env.VERSION },
                             aviso: { titulo: "Acesso Negado", mensagem: message, botao: "Voltar", link: "javascript:history.back()" }
                         });

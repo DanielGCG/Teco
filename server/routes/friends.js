@@ -10,7 +10,7 @@ FriendRouter.get('/', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/social/lista-amigos', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });

@@ -9,7 +9,7 @@ InicialRouter.get('/', async (req, res) => {
         loggedUser: req.user // Garante que o usuário logado chegue ao front-end
     }
     res.render('pages/index', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -22,7 +22,7 @@ InicialRouter.get('/register', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/auth/register', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -35,7 +35,7 @@ InicialRouter.get('/login', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/auth/login', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });

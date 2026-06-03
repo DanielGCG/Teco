@@ -10,7 +10,7 @@ ChatsRouter.get('/', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/chats/chat', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -26,7 +26,7 @@ ChatsRouter.get('/:id', async (req, res) => {
         loggedUser: req.user
     }
     res.render('pages/chats/chat', {
-        layout: 'layouts/retro',
+        layout: 'layouts/main',
         locals: locals,
         HOST: process.env.HOST
     });

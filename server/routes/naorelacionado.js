@@ -9,7 +9,7 @@ NaoRelacionadoRouter.get('/rpg_site', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/naorelacionado/RPG', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -23,7 +23,7 @@ NaoRelacionadoRouter.get('/easter_egg/carolls', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/naorelacionado/easter_egg/carol', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });
@@ -37,7 +37,7 @@ NaoRelacionadoRouter.get('/easter_egg/velas', async (req, res) => {
         version: process.env.VERSION,
     }
     res.render('pages/naorelacionado/easter_egg/velas', {
-        layout: 'layouts/retro-empty',
+        layout: 'layouts/empty',
         locals: locals,
         HOST: process.env.HOST
     });
