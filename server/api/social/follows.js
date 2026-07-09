@@ -1,10 +1,10 @@
 const express = require("express");
 const FollowsRouter = express.Router();
-const { Follow, User, DM, sequelize } = require("../models");
-const { authMiddleware } = require("../middlewares/authMiddleware");
-const { createNotification } = require("./notifications");
-const validate = require("../middlewares/validate");
-const { publicidSchema } = require("../validators/follows.validator");
+const { Follow, User, DM, sequelize } = require("../../models");
+const { authMiddleware } = require("../../middlewares/authMiddleware");
+const { createNotification } = require("../notifications");
+const validate = require("../../middlewares/validate");
+const { publicidSchema } = require("../../validators/follows.validator");
 const { Op } = require("sequelize");
 
 // Helper para proteger rotas

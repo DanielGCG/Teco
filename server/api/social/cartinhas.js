@@ -1,14 +1,14 @@
 const express = require("express");
 const CartinhasRouter = express.Router();
-const { Cartinha, User, sequelize } = require("../models");
-const { createNotification } = require("./notifications");
-const validate = require("../middlewares/validate");
+const { Cartinha, User, sequelize } = require("../..//models");
+const { createNotification } = require("../notifications");
+const validate = require("../../middlewares/validate");
 const { Op } = require("sequelize");
 const {
     createCartinhaSchema,
     updateCartinhaSchema,
     publicidSchema
-} = require("../validators/cartinhas.validator");
+} = require("../../validators/cartinhas.validator");
 
 // ==================== Auxiliares ====================
 

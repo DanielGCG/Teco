@@ -1,13 +1,13 @@
 const express = require("express");
 const UsersRouter = express.Router();
-const { User, UserSession, Role } = require("../models");
-const { authMiddleware, setUserCookie } = require("../middlewares/authMiddleware");
-const validate = require("../middlewares/validate");
+const { User, UserSession, Role } = require("../../models");
+const { authMiddleware, setUserCookie } = require("../../middlewares/authMiddleware");
+const validate = require("../../middlewares/validate");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
 const multer = require('multer');
-const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
 const axios = require('axios'); // Mantém para outros usos
 const FormData = require('form-data'); // Mantém para outros usos
 const sharp = require('sharp');
@@ -18,13 +18,11 @@ const {
     updatePasswordSchema,
     validateSessionSchema,
     searchUsersSchema
-} = require("../validators/users.validator");
-
-// deleteFileFromServer substituído por deleteFromFileServer universal
+} = require("../../validators/users.validator");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper para proteger rotas específicas dentro deste router
+// Helper para proteger rotas
 const protect = (minRole = 20) => {
     return authMiddleware(minRole);
 };

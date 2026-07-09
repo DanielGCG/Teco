@@ -1,8 +1,8 @@
 const express = require("express");
 const DMsRouter = express.Router();
-const { DM, DMMessage, User, Follow, sequelize } = require("../models");
-const socketRouter = require("../routes/socket.router");
-const validate = require("../middlewares/validate");
+const { DM, DMMessage, User, Follow, sequelize } = require("../../models");
+const socketRouter = require("../../routes/socket.router");
+const validate = require("../../middlewares/validate");
 const { Op } = require("sequelize");
 const {
     publicidSchema,
@@ -10,7 +10,7 @@ const {
     sendMessageSchema,
     createDmSchema,
     searchUsersSchema
-} = require("../validators/dms.validator");
+} = require("../../validators/dms.validator");
 
 // Usa a função getUserStatus do socketRouter que gerencia os 3 estados
 function getUserStatus(userId) {

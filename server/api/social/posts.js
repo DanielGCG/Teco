@@ -1,10 +1,10 @@
 const express = require("express");
 const PostsRouter = express.Router();
-const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Notification, Follow } = require("../models");
-const { createNotification } = require("./notifications");
+const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Notification, Follow } = require("../../models");
+const { createNotification } = require("../notifications");
 const { Op } = require("sequelize");
 const multer = require('multer');
-const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
 
 const upload = multer({ storage: multer.memoryStorage() });
 

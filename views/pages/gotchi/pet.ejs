@@ -1,0 +1,342 @@
+<style>
+  body {
+    background: #1f1f1f;
+    color: #fff;
+    font-family: monospace;
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 0 16px 70px;
+    transition: background 0.2s ease;
+  }
+  body.sleeping { background: #000; }
+  body.danger { background: #220000; }
+  body.dead { background: #440000; }
+  h1 {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  #sleep-indicator {
+    color: #aaa;
+    min-width: 24px;
+  }
+  .bar-row { margin-bottom: 10px; }
+  .bar-label {
+    font-size: 13px;
+    margin-bottom: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bar-value {
+    font-size: 11px;
+    color: #bbb;
+  }
+  .bar-track {
+    width: 100%; height: 14px;
+    background: #222; border: 1px solid #555;
+  }
+  .bar-fill { height: 100%; background: #fff; transition: width 0.3s; }
+  .bar-fill.low { background: #f55; }
+  button, input {
+    background: #000;
+    color: #fff;
+    border: 1px solid #fff;
+    font-family: monospace;
+    padding: 8px;
+    margin: 4px 4px 0 0;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  #status { text-align: center; margin: 14px 0; }
+  #claim-info {
+    font-size: 11px;
+    color: #aaa;
+    margin: 6px 0 10px;
+  }
+  .section-title {
+    font-size: 11px;
+    color: #aaa;
+    margin: 10px 0 4px;
+    text-transform: lowercase;
+  }
+  .btn-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .btn-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-note {
+    font-size: 10px;
+    color: #999;
+    margin-top: 2px;
+    min-height: 12px;
+  }
+  #create-form { display: none; text-align: center; }
+  #create-hint { font-size: 11px; color: #999; min-height: 14px; }
+  #pet-view    { display: none; }
+  #death-view  {
+    display: none;
+    text-align: center;
+    border: 1px solid #f55;
+    padding: 20px;
+    margin-top: 20px;
+  }
+  #death-view h2 { color: #f55; margin: 0 0 10px; }
+  #msg { font-size: 12px; color: #f55; min-height: 16px; margin-top: 8px; }
+  #btn-cemetery {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    text-decoration: none;
+    background: #000;
+    color: #fff;
+    border: 1px solid #fff;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+</style>
+
+<h1>BoteGotchi <span id="sleep-indicator"></span></h1>
+
+<div id="create-form">
+  <p>voce ainda nao tem um pet. da um nome:</p>
+  <input type="text" id="name-input" placeholder="nome do pet" />
+  <button id="btn-create">criar</button>
+  <div id="create-hint"></div>
+</div>
+
+<div id="pet-view">
+  <div id="status">carregando...</div>
+  
+  <div id="stats"></div>
+  
+  <div class="section-title" id="inventory-title"></div>
+  <div class="btn-grid" id="inventory-buttons"></div>
+  
+  <div class="section-title" id="actions-title"></div>
+  <div class="btn-grid" id="action-buttons"></div>
+  
+  <div style="margin-top: 10px;">
+    <div class="btn-wrap">
+      <button id="btn-claim">resgatar</button>
+    </div>
+    <div id="claim-info"></div>
+  </div>
+  
+  <div id="msg"></div>
+</div>
+
+<div id="death-view">
+  <h2>seu pet morreu</h2>
+  <div id="death-cause-text"></div>
+  <div id="death-date-text" style="margin-top:8px;font-size:11px;color:#888;"></div>
+  <button id="btn-create-after-death" style="margin-top:12px;">criar novo pet</button>
+</div>
+
+<a id="btn-cemetery" href="/pet/cemiterio">cemiterio</a>
+
+<script>
+const API_BASE = "/api/pet/";
+let msgTimeout = null;
+
+function showMsg(text) {
+  const el = document.getElementById("msg");
+  el.textContent = text;
+  clearTimeout(msgTimeout);
+  msgTimeout = setTimeout(() => { el.textContent = ""; }, 2500);
+}
+
+function setPageState(ui) {
+  document.body.classList.remove("sleeping", "danger", "dead");
+  if (ui.isDead) {
+    document.body.classList.add("dead");
+    return;
+  }
+  if (ui.isDanger) {
+    document.body.classList.add("danger");
+    return;
+  }
+  if (ui.isSleeping) {
+    document.body.classList.add("sleeping");
+  }
+}
+
+function renderStats(stats) {
+  const statsEl = document.getElementById("stats");
+  if (!stats || !stats.length) {
+    statsEl.innerHTML = "";
+    return;
+  }
+  statsEl.innerHTML = stats.map((stat) => {
+    return [
+      '<div class="bar-row">',
+      '<div class="bar-label"><span>' + stat.label + '</span><span class="bar-value">' + stat.valueLabel + '</span></div>',
+      '<div class="bar-track"><div class="bar-fill' + (stat.isLow ? ' low' : '') + '" style="width:' + stat.value + '%"></div></div>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+
+function renderInventoryButtons(containerId, buttons) {
+  const container = document.getElementById(containerId);
+  if (!buttons || !buttons.length) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = buttons.map((btn) => {
+    return [
+      '<div class="btn-wrap">',
+      '<button data-itemid="' + btn.id + '" ' + (btn.disabled ? 'disabled' : '') + '>' + btn.label + '</button>',
+      '<div class="btn-note">' + (btn.effectText || btn.disabledReason || '') + '</div>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+
+function renderActionButtons(containerId, buttons) {
+  const container = document.getElementById(containerId);
+  if (!buttons || !buttons.length) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = buttons.map((btn) => {
+    return [
+      '<div class="btn-wrap">',
+      '<button data-action="' + btn.id + '" ' + (btn.disabled ? 'disabled' : '') + '>' + btn.label + '</button>',
+      '<div class="btn-note">' + (btn.effectText || btn.disabledReason || '') + '</div>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+
+function applyUi(ui) {
+  document.getElementById("status").textContent = ui.statusText;
+  document.getElementById("sleep-indicator").textContent = ui.sleepIndicator;
+  renderStats(ui.stats || []);
+  
+  document.getElementById("inventory-title").textContent = ui.buttonGroups?.inventory?.title || "";
+  renderInventoryButtons("inventory-buttons", ui.buttonGroups?.inventory?.buttons || []);
+  
+  document.getElementById("actions-title").textContent = ui.buttonGroups?.actions?.title || "";
+  renderActionButtons("action-buttons", ui.buttonGroups?.actions?.buttons || []);
+  
+  document.getElementById("btn-claim").textContent = ui.claim.label;
+  document.getElementById("btn-claim").disabled = !!ui.claim.disabled;
+  setPageState(ui);
+}
+
+function renderPet(pet, ui) {
+  if (ui && ui.isDead) { showDeathView(ui); return; }
+  showPetView();
+  if (ui) {
+    applyUi(ui);
+  }
+}
+
+function showCreateForm(deadCount) {
+  document.body.classList.remove("sleeping", "danger", "dead");
+  document.getElementById("sleep-indicator").textContent = "";
+  document.getElementById("create-form").style.display = "block";
+  document.getElementById("pet-view").style.display    = "none";
+  document.getElementById("death-view").style.display  = "none";
+  const hint = document.getElementById("create-hint");
+  if (deadCount > 0) hint.textContent = "pets falecidos: " + deadCount;
+  else hint.textContent = "";
+}
+
+function showPetView() {
+  document.getElementById("create-form").style.display = "none";
+  document.getElementById("pet-view").style.display    = "block";
+  document.getElementById("death-view").style.display  = "none";
+}
+
+function showDeathView(ui) {
+  setPageState(ui);
+  document.getElementById("sleep-indicator").textContent = "";
+  document.getElementById("create-form").style.display = "none";
+  document.getElementById("pet-view").style.display    = "none";
+  document.getElementById("death-view").style.display  = "block";
+  document.getElementById("death-cause-text").textContent = ui.deathCauseText || "seu pet morreu";
+  document.getElementById("death-date-text").textContent = ui.deathDateText || "";
+}
+
+function applyApiResponse(data) {
+  if (data.error) showMsg(data.error);
+  if (!data.exists && !data.pet) {
+    showCreateForm(data.deadCount || 0);
+    return;
+  }
+  if (data.pet) {
+    renderPet(data.pet, data.ui || null);
+  }
+}
+
+async function fetchPet() {
+  const res  = await fetch(API_BASE);
+  const data = await res.json();
+  applyApiResponse(data);
+}
+
+async function createPet() {
+  const name = document.getElementById("name-input").value;
+  if (!name.trim()) return;
+  const res  = await fetch(API_BASE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name })
+  });
+  const data = await res.json();
+  applyApiResponse(data);
+}
+
+async function sendItemAction(itemId) {
+  const res  = await fetch(API_BASE + "use-item/" + itemId, { method: "POST" });
+  const data = await res.json();
+  applyApiResponse(data);
+}
+
+async function sendAction(action) {
+  const res  = await fetch(API_BASE + action, { method: "POST" });
+  const data = await res.json();
+  applyApiResponse(data);
+}
+
+async function claimDaily() {
+  const res  = await fetch(API_BASE + "claim", { method: "POST" });
+  const data = await res.json();
+  applyApiResponse(data);
+}
+
+document.getElementById("btn-create").addEventListener("click", createPet);
+document.getElementById("btn-create-after-death").addEventListener("click", () => showCreateForm(0));
+document.getElementById("btn-claim").addEventListener("click",  claimDaily);
+
+// Delegação de evento de cliques em Itens (Inventário)
+document.getElementById("inventory-buttons").addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-itemid]");
+  if (!btn || btn.disabled) return;
+  if (btn.dataset.itemid === "none") return;
+  sendItemAction(btn.dataset.itemid);
+});
+
+// Delegação de evento de cliques em Ações (Dormir, Acordar)
+document.getElementById("action-buttons").addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-action]");
+  if (!btn || btn.disabled) return;
+  sendAction(btn.dataset.action);
+});
+
+fetchPet();
+setInterval(fetchPet, 10000);
+</script>

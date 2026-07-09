@@ -1,6 +1,6 @@
 const express = require("express");
 const BadgesRouter = express.Router();
-const { Badge, User } = require("../models");
+const { Badge, User } = require("../../models");
 
 // GET /badges/:publicid - Pegar badge por publicid
 BadgesRouter.get('/:publicid', async (req, res) => {

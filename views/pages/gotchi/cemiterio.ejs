@@ -1,0 +1,84 @@
+<style>
+  body {
+    background: #000;
+    color: #fff;
+    font-family: monospace;
+    max-width: 460px;
+    margin: 40px auto;
+    padding: 0 16px 36px;
+  }
+  h1 {
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  a {
+    color: #fff;
+    text-decoration: none;
+    border: 1px solid #fff;
+    padding: 8px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  #empty {
+    font-size: 12px;
+    color: #aaa;
+  }
+  .grave {
+    border: 1px solid #444;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .grave-name {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .grave-cause {
+    color: #f66;
+    font-size: 12px;
+  }
+  .grave-date {
+    color: #999;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+</style>
+
+<h1>cemiterio</h1>
+<a href="/pet">voltar</a>
+<div id="empty" style="display:none;">nenhum pet falecido (que bom!)</div>
+<div id="list"></div>
+
+<script>
+const CEMETERY_API = "/api/pet/cemetery";
+
+function renderCemetery(data) {
+  const list = document.getElementById("list");
+  const empty = document.getElementById("empty");
+
+  if (!data.pets || !data.pets.length) {
+    empty.style.display = "block";
+    list.innerHTML = "";
+    return;
+  }
+
+  empty.style.display = "none";
+  list.innerHTML = data.pets.map((pet) => {
+    return [
+      '<div class="grave">',
+      '<div class="grave-name">' + pet.name + '</div>',
+      '<div class="grave-cause">' + pet.deathText + '</div>',
+      '<div class="grave-date">em ' + pet.diedAtLabel + '</div>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+
+async function loadCemetery() {
+  const res = await fetch(CEMETERY_API);
+  const data = await res.json();
+  renderCemetery(data);
+}
+
+loadCemetery();
+</script>

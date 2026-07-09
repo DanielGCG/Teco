@@ -118,4 +118,17 @@ AdminRouter.get('/config', async (req, res) => {
     })
 });
 
+AdminRouter.get('/pet', async (req, res) => {
+    const locals = {
+        title: `Gerenciar BoteGotchi`,
+        description: "Configure itens e resgates",
+        version: process.env.VERSION
+    }
+    res.render('pages/admin/pet', {
+        layout: 'layouts/no-sidebar',
+        locals: locals,
+        HOST: process.env.HOST
+    });
+});
+
 module.exports = AdminRouter;

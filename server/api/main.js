@@ -2,19 +2,20 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
-const UsersRouter = require("./users");
-const ChatsRouter = require("./chat");
-const DMsRouter = require("./dm");
-const CartinhasRouter = require("./cartinhas");
+const UsersRouter = require("./social/users");
+const ChatsRouter = require("./social/chat");
+const DMsRouter = require("./social/dm");
+const GotchiRouter = require("./pet");
+const CartinhasRouter = require("./social/cartinhas");
 const AdminRouter = require("./admin/index");
 const WatchlistRouter = require("./watchlist");
 const NotificationsRouter = require("./notifications");
-const FriendsRouter = require("./friends");
-const FollowsRouter = require("./follows");
-const PostsRouter = require("./posts");
+const FriendsRouter = require("./social/friends");
+const FollowsRouter = require("./social/follows");
+const PostsRouter = require("./social/posts");
 const ImagemDoDiaRouter = require("./imagemdodia");
 const GaleriaRouter = require("./galeria-api");
-const BadgesRouter = require("./badges");
+const BadgesRouter = require("./social/badges");
 
 // Rotas de usuários (tem rotas públicas e protegidas dentro)
 router.use("/users", UsersRouter);
@@ -22,6 +23,7 @@ router.use("/users", UsersRouter);
 // Rotas protegidas (requer autenticação)
 router.use("/chats", authMiddleware(20), ChatsRouter);
 router.use("/dms", authMiddleware(20), DMsRouter);
+router.use("/pet", authMiddleware(20), GotchiRouter);
 router.use("/cartinhas", authMiddleware(20), CartinhasRouter);
 router.use("/watchlist", authMiddleware(20), WatchlistRouter);
 router.use("/friends", authMiddleware(20), FriendsRouter);

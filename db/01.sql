@@ -535,3 +535,59 @@ CREATE TABLE IF NOT EXISTS systemconfig (
 
 INSERT INTO systemconfig (`key`, `value`, `description`) VALUES
 ('marquee', 'Bem-vindo ao Site do Boteco!', 'Texto que aparece no letreiro do topo do site');
+
+-- ==========================
+-- TABELA DE PET
+-- ==========================
+
+CREATE TABLE `pet` (
+  `id`             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `publicid`       VARCHAR(36)   NOT NULL,
+  `userId`         INT UNSIGNED  NOT NULL,
+  `name`           VARCHAR(64)   NOT NULL,
+
+  -- Stats
+  `fome`           FLOAT         NOT NULL DEFAULT 80,
+  `sede`           FLOAT         NOT NULL DEFAULT 80,
+  `limpeza`        FLOAT         NOT NULL DEFAULT 80,
+  `sono`           FLOAT         NOT NULL DEFAULT 80,
+  `diversao`       FLOAT         NOT NULL DEFAULT 80,
+  `sleeping`       TINYINT(1)    NOT NULL DEFAULT 0,
+
+  -- Inventário
+  `lastDailyClaim` DATE          NULL DEFAULT NULL,
+
+  -- Estado de morte
+  `dead`           TINYINT(1)    NOT NULL DEFAULT 0,
+  `diedAt`         DATETIME      NULL DEFAULT NULL,
+  `deathCause`     ENUM('fome','sede','limpeza','loucura') NULL DEFAULT NULL,
+
+  `lastUpdate`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `createdat`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pet_publicid` (`publicid`),
+    KEY `idx_pet_user`           (`userId`),
+  CONSTRAINT `fk_pet_user` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE
+);
+
+-- Cria a tabela de Itens
+CREATE TABLE IF NOT EXISTS item (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE DEFAULT (UUID()),
+    name VARCHAR(64) NOT NULL,
+    type ENUM('food', 'water', 'soap', 'toy') NOT NULL,
+    value INT NOT NULL,
+    emoji VARCHAR(10),
+    imageurl VARCHAR(255) NULL
+);
+
+-- Cria o Inventário
+CREATE TABLE IF NOT EXISTS petinventory (
+    petId INT UNSIGNED NOT NULL,
+    itemId INT UNSIGNED NOT NULL,
+    quantity INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (petId, itemId),
+    FOREIGN KEY (petId) REFERENCES pet(id) ON DELETE CASCADE,
+    FOREIGN KEY (itemId) REFERENCES item(id) ON DELETE CASCADE
+);

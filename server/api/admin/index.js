@@ -12,6 +12,7 @@ const AdminChatsRouter = require("./chats");
 const AdminImagemDoDiaRouter = require("./imagemdodia");
 const AdminBadgesRouter = require("./badges");
 const AdminConfigRouter = require("./config");
+const AdminPetRouter = require("./pet");
 
 // ==================== Rotas Administrativas ====================
 
@@ -32,5 +33,8 @@ AdminRouter.use("/imagemdodia", AdminImagemDoDiaRouter);
 
 // Rotas de configurações globais
 AdminRouter.use("/config", AdminConfigRouter);
+
+// Rotas de gerenciamento de pets e itens
+AdminRouter.use("/pet", AdminPetRouter);
 
 module.exports = AdminRouter;
