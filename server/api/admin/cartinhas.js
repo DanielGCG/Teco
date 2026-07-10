@@ -3,8 +3,6 @@ const AdminCartinhasRouter = express.Router();
 const { Cartinha, User } = require("../../models");
 const { Op, fn, col, literal } = require("sequelize");
 
-// ==================== Endpoints ====================
-
 // GET /admin/cartinhas/estatisticas - Estatísticas gerais
 AdminCartinhasRouter.get('/estatisticas', async (req, res) => {
     try {

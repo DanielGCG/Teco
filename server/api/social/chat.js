@@ -3,8 +3,6 @@ const ChatsRouter = express.Router();
 const { Chat, ChatMessage, User } = require("../../models");
 const { Op } = require("sequelize");
 
-// ==================== Endpoints de Gerenciamento de Chats Públicos ====================
-
 // GET /chats - Lista todos os chats públicos disponíveis
 ChatsRouter.get('/', async (req, res) => {
     try {

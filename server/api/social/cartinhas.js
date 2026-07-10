@@ -10,8 +10,6 @@ const {
     publicidSchema
 } = require("../../validators/cartinhas.validator");
 
-// ==================== Auxiliares ====================
-
 // Verifica se o usuário tem acesso à cartinha (remetente, destinatário ou admin)
 async function verifyCartinhaAccess(cartinhaPublicId, userId, userRole) {
     const cartinha = await Cartinha.findOne({
@@ -20,15 +18,9 @@ async function verifyCartinhaAccess(cartinhaPublicId, userId, userRole) {
     });
 
     if (!cartinha) return false;
-
-    // Admin sempre tem acesso
     if (userRole >= 1) return true;
-
-    // Usuário deve ser remetente ou destinatário
     return cartinha.senderUserId === userId || cartinha.recipientUserId === userId;
 }
-
-// ==================== Rotas ====================
 
 // GET /cartinhas/enviadas - Carregar cartinhas enviadas pelo usuário
 CartinhasRouter.get('/enviadas', async (req, res) => {

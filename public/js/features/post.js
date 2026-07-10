@@ -29,14 +29,8 @@ window.PostUI = {
         const isRetro = document.querySelector('link[href*="retro.css"]');
         if (isRetro) return this.renderRetroPost(post, currentUser, isThread);
 
-        // Lógica de Post Referenciado Excluído:
-        // 1. É um Thread/Comentário e o pai sumiu.
-        // 2. É um Repost com conteúdo (Quote) e o pai sumiu.
         let deletedParentHtml = '';
-        const isQuote = post.type === 'reply';
-        const isComment = post.type === 'comment';
-
-        if ((isQuote || isComment) && !post.parent && !isThread) {
+        if ((post.type === 'reply' || post.type === 'comment') && !post.parent && !isThread) {
             deletedParentHtml = `
                 <div class="post-card deleted-post p-2 px-3 border-bottom bg-light">
                     <div class="post-content text-muted small fst-italic">
@@ -46,8 +40,8 @@ window.PostUI = {
             `;
         }
 
-        const isLiked = post.likes && post.likes.some(l => currentUser && l.user && l.user.publicid === currentUser.publicid);
-        const isBookmarked = post.bookmarks && post.bookmarks.some(b => currentUser && b.user && b.user.publicid === currentUser.publicid);
+        const isLiked = post.likes?.some(l => l.user?.publicid === currentUser?.publicid);
+        const isBookmarked = post.bookmarks?.some(b => b.user?.publicid === currentUser?.publicid);
         
         const mediaCount = post.media ? Math.min(post.media.length, 4) : 0;
         const mediaHtml = mediaCount > 0 
@@ -133,7 +127,7 @@ window.PostUI = {
     },
 
     renderRetroPost: function(post, currentUser, isThread = false) {
-        const isLiked = post.likes && post.likes.some(l => currentUser && l.user && l.user.publicid === currentUser.publicid);
+        const isLiked = post.likes?.some(l => l.user?.publicid === currentUser?.publicid);
         const authorUsername = post.author.username;
         const date = new Date(post.createdat).toLocaleString();
 

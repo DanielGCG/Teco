@@ -72,22 +72,12 @@ const GaleriaManager = {
             
             this.data = json.gallery;
             
-            // Computar grid_w e grid_h para os itens
-            if (this.data.items) {
-                this.data.items.forEach(item => {
-                    // Garantir coordenadas mínimas de 1
-                    item.startpositionx = Math.max(1, parseInt(item.startpositionx) || 1);
-                    item.startpositiony = Math.max(1, parseInt(item.startpositiony) || 1);
-                    
-                    // Cálculo consistente da largura/altura
-                    item.grid_w = item.endpositionx ? (item.endpositionx - item.startpositionx + 1) : 1;
-                    item.grid_h = item.endpositiony ? (item.endpositiony - item.startpositiony + 1) : 1;
-                    
-                    // Sanity check
-                    if (item.grid_w < 1) item.grid_w = 1;
-                    if (item.grid_h < 1) item.grid_h = 1;
-                });
-            }
+            this.data.items?.forEach(item => {
+                item.startpositionx = Math.max(1, parseInt(item.startpositionx) || 1);
+                item.startpositiony = Math.max(1, parseInt(item.startpositiony) || 1);
+                item.grid_w = Math.max(1, item.endpositionx ? (item.endpositionx - item.startpositionx + 1) : 1);
+                item.grid_h = Math.max(1, item.endpositiony ? (item.endpositiony - item.startpositiony + 1) : 1);
+            });
 
             this.collaborators = (this.data.collaborators || []).map(c => ({ publicid: c.publicid, username: c.username }));
             this.render();
@@ -167,7 +157,6 @@ const GaleriaManager = {
         grid.style.setProperty('--gallery-columns', cols);
 
         const itemsHtml = this.data.items.map(item => {
-            // ALTERAR PARA MAIOR SEGURANÇA CUIDADO COM CONCATENAÇÃO DE STRINGS
             const safeName = Utils.escapeHtml(item.title || 'Sem título');
             const safeUrl = (item.contenturl || '').replace(/'/g, "\\'");
             const type = this.getMediaType(item);

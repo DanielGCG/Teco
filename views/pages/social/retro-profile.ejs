@@ -127,7 +127,7 @@
 </style>
 
 <script src="/js/commons/follow-common.js"></script>
-<script src="/js/post.js"></script>
+<script src="/js/features/post.js"></script>
 <script>
     const pathParts = window.location.pathname.split('/');
     const username = pathParts[1];
@@ -172,7 +172,7 @@
 
             if (user.createdat) {
                 const date = new Date(user.createdat).toLocaleDateString();
-                document.getElementById("retro-joined-date").textContent = `Membro desde: ${date}`;
+                document.getElementById("retro-joined-date").textContent = `Desde: ${date}`;
             }
 
             const pronounsEl = document.getElementById("retro-pronouns");

@@ -187,7 +187,7 @@ function renderizarGridCartinhas(usuarios, containerSelector = '#cartas-grid', h
             <thead>
                 <tr style="background: #e0e0e0;">
                     <th width="30" align="center"></th>
-                    <th align="left">Remetente/Destinatário</th>
+                    <th align="left">Remetente</th>
                     <th align="left">Assunto</th>
                     <th width="100" align="center">Data</th>
                     <th width="50" align="center">Ações</th>

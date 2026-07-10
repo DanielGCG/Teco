@@ -142,7 +142,7 @@ async function carregarHistorico() {
                         <small style="color: gray;">Ativada em: ${item.activatedat && !isNaN(new Date(item.activatedat)) ? new Date(item.activatedat).toLocaleDateString('pt-BR') : 'N/A'}</small>
                     </div>
                 </div>
-                <button onclick="removerImagem('${item.publicid}', 'historico')" style="color: red; font-size: 10px; cursor: pointer;">X</button>
+                <button onclick="removerImagem('${item.publicid}', 'historico')" style="color: red; font-size: 10px; cursor: pointer;">[Fechar]</button>
             </div>
         `).join('');
     } catch (err) {
@@ -167,7 +167,7 @@ async function carregarMolduras() {
                     <img src="${b.url}" style="width: 40px; height: 40px; border: 1px inset var(--retro-border-dark); flex-shrink: 0;">
                     <span style="font-size: 12px; font-weight: bold;">${b.name}</span>
                 </div>
-                <button onclick="removerMoldura('${b.publicid}')" style="color: red; font-size: 10px; cursor: pointer;">X</button>
+                <button onclick="removerMoldura('${b.publicid}')" style="color: red; font-size: 10px; cursor: pointer;">[Fechar]</button>
             </div>
         `).join('');
     } catch (err) {

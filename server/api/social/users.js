@@ -23,13 +23,8 @@ const {
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper para proteger rotas
-const protect = (minRole = 20) => {
-    return authMiddleware(minRole);
-};
+const protect = (minRole = 20) => authMiddleware(minRole);
 
-// ==================== Rotas públicas ====================
-
-// Listagem simplificada de usuários para filtros
 UsersRouter.get('/', async (req, res) => {
     try {
         const users = await User.findAll({
@@ -81,19 +76,9 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
     }
 });
 
-// Registro público
 UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
     let { username, password, bio } = req.body;
-
-    // Normaliza o username: garante @, máximo 16 caracteres e minúsculo
-    username = username.trim();
-    if (!username.startsWith('@')) {
-        username = '@' + username;
-    }
-    if (username.length > 16) {
-        username = username.slice(0, 16);
-    }
-    username = username.toLowerCase();
+    username = ('@' + username.trim().replace(/^@/, '')).slice(0, 16).toLowerCase();
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -116,15 +101,9 @@ UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
     }
 });
 
-// Login público
 UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
     let { username, password } = req.body;
-
-    // Normaliza o username: garante @ e minúsculo para busca
-    username = username.trim().toLowerCase();
-    if (!username.startsWith('@')) {
-        username = '@' + username;
-    }
+    username = ('@' + username.trim().replace(/^@/, '')).toLowerCase();
 
     try {
         const user = await User.findOne({ 
@@ -160,8 +139,6 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
         }
 
         res.cookie('session', cookieValue, { httpOnly: true, maxAge: 7*24*60*60*1000 });
-        
-        // Define um cookie não-HttpOnly com informações básicas para o frontend
         setUserCookie(res, user);
 
         res.json({ message: "Login realizado com sucesso", cookie: cookieValue, expiresAt });
@@ -174,19 +151,13 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
 // Logout
 UsersRouter.post('/logout', async (req, res) => {
     const cookieValue = req.cookies?.['session'];
-    // Sempre limpa o cookie e responde sucesso, mesmo se não houver usuário autenticado
     if (!cookieValue || !req.user || !req.user.id) {
         res.clearCookie('session');
         res.clearCookie('teco_user');
         return res.json({ message: "Logout realizado com sucesso" });
     }
     try {
-        await UserSession.destroy({
-            where: {
-                cookie: cookieValue,
-                userId: req.user.id
-            }
-        });
+        await UserSession.destroy({ where: { cookie: cookieValue, userId: req.user.id } });
     } catch (err) {
         console.error(err);
     }
@@ -195,9 +166,6 @@ UsersRouter.post('/logout', async (req, res) => {
     res.json({ message: "Logout realizado com sucesso" });
 });
 
-// ==================== Rotas protegidas ====================
-
-// Perfil próprio
 UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
@@ -213,22 +181,9 @@ UsersRouter.get('/me', protect(20), async (req, res) => {
     }
 });
 
-// Atualizar perfil próprio
 UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
     let { username, backgroundimage, profileimage, bio, pronouns, lastfmusername } = req.body;
-
-    // Força @ no início
-    if (!username.startsWith('@')) {
-        username = '@' + username;
-    }
-
-    // Limita para no máximo 16 caracteres (@ + 15)
-    if (username.length > 16) {
-        username = username.slice(0, 16);
-    }
-
-    // Converte para caixa baixa
-    username = username.toLowerCase();
+    username = ('@' + username.trim().replace(/^@/, '')).slice(0, 16).toLowerCase();
 
     try {
         // Verifica se já existe outro usuário com esse username
@@ -296,7 +251,6 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
             { where: { id: req.user.id } }
         );
 
-        // Busca o usuário atualizado para garantir dados corretos no cookie (opção certeira)
         const updatedUser = await User.findByPk(req.user.id);
         setUserCookie(res, updatedUser);
 
@@ -335,7 +289,6 @@ UsersRouter.put('/me/password', protect(20), validate(updatePasswordSchema), asy
     }
 });
 
-// GET /users/buscar - Buscar usuários por nome
 UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), async (req, res) => {
     let { q = '', page = 1, limit = 10 } = req.query;
     page = parseInt(page);
@@ -356,7 +309,6 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
             attributes: ['publicid', 'username', 'profileimage'],
             order: [
                 [
-                    // Ordena: exato, começa com, depois resto
                     User.sequelize.literal(`
                         CASE 
                             WHEN LOWER(username) = ${User.sequelize.escape(q.toLowerCase())} THEN 0
@@ -372,12 +324,10 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
             offset
         });
 
-        const totalPages = Math.ceil(count / limit);
-
         res.json({
             usuarios,
             currentPage: page,
-            totalPages,
+            totalPages: Math.ceil(count / limit),
             totalItems: count
         });
     } catch (err) {
@@ -386,9 +336,6 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
     }
 });
 
-// ====================
-// = WIDGET LAST.FM  =
-// ====================
 UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
     try {
         const lastfmUser = req.params.lastfmUser;
@@ -402,38 +349,30 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
         const baseUrl = botecoUrl.replace(/\/$/, "");
         const targetUrl = `${baseUrl}/api/widget/${encodeURIComponent(lastfmUser)}?token=${botecoToken}`.replace('localhost', '127.0.0.1');
         
-        // Faz a requisição Back-to-Back enviando o Token de autenticação seguro via Query string
         const response = await fetch(targetUrl, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'TecoApp/1.0' // Alguns firewalls como Cloudflare bloqueiam fetches sem user-agent
+                'User-Agent': 'TecoApp/1.0'
             }
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Falha no BotecoAnalytics: ${response.status} - ${errorText}`);
             return res.status(response.status).json({ error: "Erro na API de músicas" });
         }
 
         const rawText = await response.text();
-        
-        // Verifica se a resposta não começa com '{' ou '[' indicando que recebemos HTML invés de JSON
         if (rawText.trim().startsWith('<')) {
-            console.error(`Erro: A API do BotecoAnalytics retornou HTML invés de JSON na URL ${targetUrl}. Resposta truncada:`, rawText.substring(0, 200));
-            return res.status(502).json({ error: "A API de analytics retornou um formato inválido (HTML). Verifique se a URL/rota está correta no servidor alvo." });
+            return res.status(502).json({ error: "A API retornou HTML em vez de JSON." });
         }
 
-        const data = JSON.parse(rawText);
-        res.json(data);
+        res.json(JSON.parse(rawText));
     } catch (err) {
         console.error("Erro interno no proxy widget:", err);
         res.status(500).json({ error: "Falha na comunicação com o Analytics." });
     }
 });
 
-// GET /users/:username - Obter perfil de usuário por username
 UsersRouter.get('/:username', protect(20), async (req, res) => {
     try {
         let username = req.params.username;

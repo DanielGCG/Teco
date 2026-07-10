@@ -6,8 +6,6 @@ const { Op } = require("sequelize");
 
 const { deleteFromFileServer } = require("../../utils/fileServer");
 
-// ==================== Endpoints Administrativos de Usuários ====================
-
 // GET /admin/users - Listar todos usuários (admin)
 // Suporta ?search= para busca parcial
 AdminUsersRouter.get('/', async (req, res) => {

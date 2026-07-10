@@ -8,8 +8,6 @@ const {
     notificationIdSchema
 } = require("../validators/notifications.validator");
 
-// ==================== Endpoints de Notificações ====================
-
 // GET /notifications - Listar notificações do usuário
 NotificationsRouter.get('/', validate(getNotificationsSchema, 'query'), async (req, res) => {
     const { limit = 20, page = 1, unread } = req.query;

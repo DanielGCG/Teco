@@ -3,8 +3,6 @@ const AdminChatsRouter = express.Router();
 const { Chat, ChatMessage, DM, DMMessage, User, ChatTopic } = require("../../models");
 const { Op, fn, col, literal } = require("sequelize");
 
-// ==================== Endpoints Administrativos de Chats ====================
-
 // GET /admin/chats/topics - Listar todos os tópicos disponíveis
 AdminChatsRouter.get('/topics', async (req, res) => {
     try {

@@ -20,8 +20,6 @@ function getUserStatus(userId) {
     return 'offline';
 }
 
-// ==================== Endpoints de DMs (Mensagens Diretas - 2 pessoas) ====================
-
 // GET /dms - Lista todas as DMs do usuário
 DMsRouter.get('/', async (req, res) => {
     try {

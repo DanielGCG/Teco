@@ -75,7 +75,7 @@
 <dialog id="cartinhasModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 600px; background: var(--retro-window-bg, #c0c0c0);">
     <div class="window-header">
         <span id="modalTitle">Cartinhas do Usuário</span>
-        <button onclick="document.getElementById('cartinhasModal').close()">X</button>
+        <button onclick="document.getElementById('cartinhasModal').close()">[Fechar]</button>
     </div>
     <div style="background: var(--retro-bg); border-bottom: 2px solid var(--retro-border-dark); padding: 5px; display: flex; gap: 5px; align-items: center; justify-content: space-between;">
         <div style="display: flex; gap: 5px; flex: 1;">
@@ -275,7 +275,7 @@ function renderizarCartinhas(cartinhas) {
                         <td width="40" align="right" valign="middle">
                             <button onclick="confirmarRemocaoUnica('${c.publicid}')" 
                                     style="color: #800000; font-size: 10px; padding: 1px 4px; min-width: 20px;" 
-                                    title="Remover Cartinha">X</button>
+                                    title="Remover Cartinha">[Fechar]</button>
                         </td>
                     </tr>
                 </table>

@@ -1,0 +1,144 @@
+<title>Enviar Notificações - Administração</title>
+<div class="window" style="max-width: 600px; margin: 20px auto;">
+    <div class="window-header">
+        <span>Criar Notificação (In-App e Push)</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
+    
+    <div class="window-content" style="padding: 15px;">
+        <form id="formNotificacao">
+            <table width="100%" cellpadding="5" cellspacing="0">
+                <tr>
+                    <td width="30%"><strong>Destinatário:</strong></td>
+                    <td>
+                        <select id="targetUser" style="width: 100%; box-sizing: border-box;" required>
+                            <option value="everyone">TODOS OS USUÁRIOS</option>
+                            <optgroup label="Ou selecione um específico:" id="userList">
+                                <option disabled>Carregando usuários...</option>
+                            </optgroup>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Tipo:</strong></td>
+                    <td>
+                        <select id="notifType" style="width: 100%; box-sizing: border-box;">
+                            <option value="system">Sistema (Geral)</option>
+                            <option value="info">Informação</option>
+                            <option value="everyone">Alerta Global</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Título:</strong></td>
+                    <td>
+                        <input type="text" id="notifTitle" placeholder="Ex: Nova funcionalidade!" maxlength="100" style="width: 100%; box-sizing: border-box;" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top"><strong>Mensagem (Corpo):</strong></td>
+                    <td>
+                        <textarea id="notifBody" rows="4" placeholder="Detalhes da sua notificação..." style="width: 100%; box-sizing: border-box; resize: vertical;" required></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Link (Opcional):</strong></td>
+                    <td>
+                        <input type="text" id="notifLink" placeholder="Ex: /galerias" style="width: 100%; box-sizing: border-box;">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" align="right" style="padding-top: 15px;">
+                        <button type="submit" id="btnEnviar" style="font-weight: bold; padding: 5px 20px;">
+                            <span id="btnText">Disparar Notificação</span>
+                            <span id="loadingText" style="display: none;">Processando...</span>
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+        <div id="feedbackMsg" style="margin-top: 15px; text-align: center; font-weight: bold; font-size: 13px;"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const userList = document.getElementById("userList");
+    
+    // Carregar usuários para o Select
+    try {
+        const res = await fetch('/api/admin/users', { credentials: "include" });
+        if (res.ok) {
+            const users = await res.json();
+            userList.innerHTML = '';
+            users.forEach(u => {
+                const opt = document.createElement("option");
+                opt.value = u.publicid;
+                opt.textContent = `${u.username}`;
+                userList.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        userList.innerHTML = '<option disabled>Erro ao carregar usuários</option>';
+    }
+
+    // Submeter formulário
+    document.getElementById("formNotificacao").addEventListener("submit", async function(e) {
+        e.preventDefault();
+
+        const btn = document.getElementById("btnEnviar");
+        const feedback = document.getElementById("feedbackMsg");
+        const isEveryone = document.getElementById("targetUser").value === "everyone";
+
+        if (isEveryone) {
+            let conf = false;
+            if (typeof window.confirmRetro === 'function') {
+                conf = await window.confirmRetro("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?", "Alerta Global");
+            } else {
+                conf = confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
+            }
+            if (!conf) return;
+        }
+
+        btn.disabled = true;
+        document.getElementById("btnText").style.display = "none";
+        document.getElementById("loadingText").style.display = "inline";
+        feedback.textContent = "";
+
+        const payload = {
+            targetUserPublicId: document.getElementById("targetUser").value,
+            type: document.getElementById("notifType").value,
+            title: document.getElementById("notifTitle").value.trim(),
+            body: document.getElementById("notifBody").value.trim(),
+            link: document.getElementById("notifLink").value.trim()
+        };
+
+        try {
+            const response = await fetch('/api/admin/notifications/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                feedback.textContent = data.message || "Enviado com sucesso!";
+                feedback.style.color = "green";
+                this.reset();
+            } else {
+                feedback.textContent = data.error || "Erro ao disparar notificação.";
+                feedback.style.color = "red";
+            }
+        } catch (error) {
+            feedback.textContent = "Erro de conexão com a API.";
+            feedback.style.color = "red";
+        } finally {
+            btn.disabled = false;
+            document.getElementById("btnText").style.display = "inline";
+            document.getElementById("loadingText").style.display = "none";
+        }
+    });
+});
+</script>

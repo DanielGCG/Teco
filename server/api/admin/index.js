@@ -14,8 +14,6 @@ const AdminBadgesRouter = require("./badges");
 const AdminConfigRouter = require("./config");
 const AdminPetRouter = require("./pet");
 
-// ==================== Rotas Administrativas ====================
-
 // Rotas de usuários administrativos
 AdminRouter.use("/users", AdminUsersRouter);
 

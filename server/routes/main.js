@@ -2,34 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
-// Rota de admin - Requer role 5 (administrador)
-router.use("/admin", authMiddleware(5), require("./admin"));
+// Core
+router.use("/admin", authMiddleware(5), require("./core/admin"));
+router.use("/", require("./core/games"));
+router.use("/", require("./core/naorelacionado"));
+router.use("/", require("./core/inicial"));
 
-// Rota de chats
-router.use("/chat", require("./chat"));
+// Social
+router.use("/amigos", require("./social/friends"));
+router.use("/", require("./social/profile"));
 
-// Rota de DMs (mensagens diretas)
-router.use("/dms", require("./dm"));
+// Features
+router.use("/", require("./features/features"));
+router.use("/", require("./features/watchlist"));
 
-// Rota de cartinhas
-router.use("/cartinhas", require("./cartinhas"));
+// Messaging
+router.use("/cartinhas", require("./messaging/cartinhas"));
 
-// Rota de amigos
-router.use("/amigos", require("./friends"));
-
-// Rota de jogos
-router.use("/", require("./games"));
-
-// Rota de perfil (agora na raiz /@username)
-router.use("/", require("./profile"));
-
-// Rota de features
-router.use("/", require("./features"));
-
-// Rota de nao relacionado
-router.use("/", require("./naorelacionado"));
-
-// Rota inicial
-router.use("/", require("./inicial"));
+// Archived
+// router.use("/chat", require("./archived/chat"));
+// router.use("/dms", require("./archived/dm"));
 
 module.exports = router;

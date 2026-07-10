@@ -14,6 +14,7 @@ const SystemConfig = require('./SystemConfig');
 const Pet = require('./Pet/Pet');
 const Item = require('./Pet/Item');
 const PetInventory = require('./Pet/PetInventory');
+const PushSubscription = require('./PushSubscription'); // Novo
 
 // Associações Imagem do Dia
 ImagemDoDia.belongsTo(User, { foreignKey: 'createdbyUserId', as: 'requester' });
@@ -100,6 +101,10 @@ Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
 User.hasMany(Notification, { foreignKey: 'targetUserId', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'targetUserId' });
 
+// Associações Push Subscriptions (Novo)
+User.hasMany(PushSubscription, { foreignKey: 'userId', as: 'pushSubscriptions', onDelete: 'CASCADE' });
+PushSubscription.belongsTo(User, { foreignKey: 'userId' });
+
 // Associações de Cartinha
 User.hasMany(Cartinha, { foreignKey: 'senderUserId', as: 'cartinhas_enviadas' });
 User.hasMany(Cartinha, { foreignKey: 'recipientUserId', as: 'cartinhas_recebidas' });
@@ -126,5 +131,5 @@ module.exports = {
     sequelize, User, UserSession, ChatTopic, Chat, ChatMessage, DM, DMMessage,
     Cartinha, Follow, Notification, Post, PostMedia, PostLike, PostBookmark, PostMention,
     Rodinha, Filme, ImagemDoDia, ImagemDoDiaBorder, Galeria, GaleriaItem, GaleriaContributor,
-    Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role
+    Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role, PushSubscription
 };

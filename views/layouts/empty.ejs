@@ -50,7 +50,7 @@
     </div>
 
     <!-- Script para sobrescrever alert() e confirm() -->
-    <script src="/js/modal-aviso.js"></script>
+    <script src="/js/commons/modal-aviso.js"></script>
 
     <!-- Modais globais retrô -->
     <%- include('../utils/modal-aviso') %>
@@ -69,44 +69,6 @@
             SocketUI.init(window.appSocket);
         }
         
-        const notificationsDropdownBtn = document.getElementById('notificationsDropdownBtn');
-        const notificationsBadge = document.getElementById('notificationsBadge');
-        const notificationsListContainer = document.getElementById('retro-notifications-list');
-        const notificationsList = document.getElementById('notificationsList');
-        const markAllReadBtn = document.getElementById('markAllReadBtn');
-        const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
-
-        // Toggle dropdown
-        if (notificationsDropdownBtn) {
-            notificationsDropdownBtn.addEventListener('click', async function(e) {
-                const isVisible = notificationsListContainer.style.display === 'block';
-                
-                notificationsListContainer.style.display = isVisible ? 'none' : 'block';
-                
-                if (!isVisible) {
-                    notificationsList.innerHTML = '<div style="text-align: center; padding: 10px;">Carregando...</div>';
-                    await loadNotifications();
-                }
-                e.stopPropagation();
-                e.preventDefault();
-            });
-        }
-
-        if (closeNotificationsBtn) {
-            closeNotificationsBtn.addEventListener('click', (e) => {
-                notificationsListContainer.style.display = 'none';
-                e.stopPropagation();
-            });
-        }
-
-        document.addEventListener('click', function(e) {
-            if (notificationsListContainer && notificationsListContainer.style.display === 'block') {
-                if (!notificationsListContainer.contains(e.target) && !notificationsDropdownBtn.contains(e.target)) {
-                    notificationsListContainer.style.display = 'none';
-                }
-            }
-        });
-
         // Variáveis para controle do título
         let originalTitle = document.title;
         let currentUnreadCount = 0;

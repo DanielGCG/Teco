@@ -119,16 +119,19 @@ dialog::backdrop {
 }
 
 .window-header button {
+    background: transparent;
+    border: none;
+    color: inherit;
     padding: 0;
-    min-width: 16px;
-    height: 14px;
-    line-height: 12px;
-    font-size: 10px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: normal;
+    cursor: pointer;
     margin-left: 5px;
+    text-decoration: none;
+}
+.window-header button:hover {
+    text-decoration: underline;
 }
 
 .window-content {

@@ -273,3 +273,45 @@ if (typeof window.UIUtils !== 'undefined') {
     };
     })();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const notificationsDropdownBtn = document.getElementById('notificationsDropdownBtn');
+    const notificationsListContainer = document.getElementById('retro-notifications-list');
+    const notificationsList = document.getElementById('notificationsList');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+
+    if (notificationsDropdownBtn && notificationsListContainer) {
+        notificationsDropdownBtn.addEventListener('click', async function(e) {
+            const isVisible = notificationsListContainer.style.display === 'block';
+            notificationsListContainer.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible && typeof loadNotifications === 'function') {
+                if (notificationsList) notificationsList.innerHTML = '<div style="text-align: center; padding: 10px;">Carregando...</div>';
+                await loadNotifications();
+            }
+            e.stopPropagation();
+            e.preventDefault();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!notificationsListContainer.contains(e.target) && !notificationsDropdownBtn.contains(e.target)) {
+                notificationsListContainer.style.display = 'none';
+            }
+        });
+    }
+
+    if (closeNotificationsBtn) {
+        closeNotificationsBtn.addEventListener('click', (e) => {
+            if (notificationsListContainer) notificationsListContainer.style.display = 'none';
+            e.stopPropagation();
+        });
+    }
+
+    if (markAllReadBtn && typeof markAllNotificationsAsRead === 'function') {
+        markAllReadBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await markAllNotificationsAsRead();
+        });
+    }
+});

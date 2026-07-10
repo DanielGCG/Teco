@@ -7,7 +7,11 @@ const cookieParser = require("cookie-parser");
 const http = require('http');
 const { Server } = require('socket.io');
 const { authMiddleware } = require('./server/middlewares/authMiddleware');
+const sanitizeMiddleware = require('./server/middlewares/sanitizeMiddleware');
 const { SystemConfig } = require('./server/models');
+
+// Importa o monitor do pet
+const { startPetMonitor } = require('./server/utils/petMonitor'); 
 
 const servidor = express();
 const httpServer = http.createServer(servidor);
@@ -23,6 +27,7 @@ const porta = process.env.PORT || 3000;
 servidor.use(cookieParser());
 servidor.use(express.urlencoded({ extended: true }));
 servidor.use(express.json());
+servidor.use(sanitizeMiddleware);
 
 servidor.use(expressLayout);
 servidor.set('layout', './layouts/main');
@@ -47,6 +52,9 @@ servidor.set('io', io);
 
 servidor.use('/api', require('./server/api/main'));
 
+// Rotas de Push API (precisam de autenticação)
+servidor.use('/api/push', authMiddleware(20), require('./server/api/push'));
+
 // Rotas principais - Nivel de acesso 20 (usuário)
 servidor.use('/', authMiddleware(20), require('./server/routes/main'));
 
@@ -66,6 +74,9 @@ servidor.use((req, res) => {
 
 // ==================== Socket.IO ====================
 require('./server/routes/socket.router')(io);
+
+// Inicia a rotina de verificação do BotecoGotchi
+startPetMonitor();
 
 httpServer.listen(porta, () => {
     console.log(`Servidor rodando em http://localhost:${porta}`);
