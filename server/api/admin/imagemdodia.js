@@ -6,6 +6,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const sharp = require('sharp');
 const { Op } = require('sequelize');
+const { createNotification } = require('../notifications');
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -13,7 +14,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Fila de Imagens (Somente as que estão com posição 0, ou seja, aguardando ativação)
 router.get('/fila', async (req, res) => {
     try {
-        const fila = await ImagemDoDia.findAll({ 
+        const fila = await ImagemDoDia.findAll({
             where: { position: 0 },
             order: [['createdat', 'ASC']],
             include: [
@@ -41,11 +42,11 @@ router.delete('/:publicid', async (req, res) => {
     try {
         const imagem = await ImagemDoDia.findOne({ where: { publicid: req.params.publicid } });
         if (!imagem) return res.status(404).json({ message: 'Imagem não encontrada.' });
-        
+
         if (imagem.url) {
-            try { await deleteFromFileServer({ fileUrl: imagem.url }); } catch (e) {}
+            try { await deleteFromFileServer({ fileUrl: imagem.url }); } catch (e) { }
         }
-        
+
         await imagem.destroy();
         res.json({ message: 'Removida com sucesso.' });
     } catch (error) {
@@ -71,6 +72,26 @@ router.post('/next', async (req, res) => {
         await proxima.save();
 
         res.json({ message: 'Imagem ativada com sucesso!', imagem: proxima });
+
+        // Notificar todos os usuários assincronamente
+        setImmediate(async () => {
+            try {
+                const allUsers = await User.findAll({ attributes: ['id'] });
+                const io = req.app.get('io');
+                for (const u of allUsers) {
+                    await createNotification({
+                        userId: u.id,
+                        type: 'info',
+                        title: 'Nova Imagem do Dia!',
+                        body: 'saiu do forno bb! venha conferir!',
+                        link: '/imagemdodia',
+                        io: io
+                    });
+                }
+            } catch (notifErr) {
+                console.error('Erro ao notificar usuários sobre nova imagem do dia:', notifErr);
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao ativar próxima imagem.', error: error.message });
     }
@@ -120,12 +141,12 @@ router.delete('/borders/:publicid', async (req, res) => {
     try {
         const border = await ImagemDoDiaBorder.findOne({ where: { publicid: req.params.publicid } });
         if (!border) return res.status(404).json({ message: 'Moldura não encontrada.' });
-        
+
         // Deleta do servidor de arquivos antes de remover do BD
         if (border.url) {
             await deleteFromFileServer({ fileUrl: border.url });
         }
-        
+
         await border.destroy();
         res.json({ message: 'Moldura removida com sucesso.' });
     } catch (error) {

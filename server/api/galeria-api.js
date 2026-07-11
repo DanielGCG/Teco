@@ -275,7 +275,7 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
             } else {
                 try {
                     const sanitized = sanitizeFilename(req.file.originalname);
-                    const coverUrl = await uploadToFileServer({ buffer: req.file.buffer, filename: sanitized, folder: `galerias/${req.params.id}/covers`, mimetype: req.file.mimetype });
+                    const coverUrl = await uploadToFileServer({ buffer: req.file.buffer, filename: sanitized, folder: `galerias/${req.gallery.publicid}/covers`, mimetype: req.file.mimetype });
                     
                     if (item.coverurl && item.coverurl !== item.contenturl) {
                         try { await deleteFromFileServer({ fileUrl: item.coverurl }); } catch (e) { }

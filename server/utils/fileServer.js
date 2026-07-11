@@ -14,7 +14,7 @@ async function uploadToFileServer({ buffer, filename, folder, mimetype }) {
     form.append('file', buffer, { filename, contentType: mimetype || 'application/octet-stream' });
     if (folder) form.append('folder', folder);
     const url = `${SERVER_URL}/upload${folder ? `?folder=${encodeURIComponent(folder)}` : ''}`;
-    
+
     try {
         const res = await axios.post(url, form, {
             headers: { ...form.getHeaders(), 'x-api-key': API_KEY },
