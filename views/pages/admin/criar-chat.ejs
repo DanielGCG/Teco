@@ -90,35 +90,40 @@
 <dialog id="editChatModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
     <div class="window-header">
         <span id="editChatModalTitle">Administrar Conversa</span>
-        <button onclick="document.getElementById('editChatModal').close()">[Fechar]</button>
+        <button type="button" class="window-btn" onclick="document.getElementById('editChatModal').close()" style="float: right;">[Fechar]</button>
     </div>
     <div class="window-content" style="padding: 10px;">
-        <table width="100%" cellpadding="5">
-            <tr id="editChatNameGroup">
-                <td>Nome do chat:</td>
-                <td><input type="text" id="editChatName" style="width: 100%; box-sizing: border-box;"></td>
-            </tr>
-            <tr id="editParticipantsContainer" style="display: none;">
-                <td colspan="2">
-                    Participantes:
-                    <table width="100%" style="margin-top: 5px;">
-                        <tr>
-                            <td><select id="editParticipant1" style="width: 100%; box-sizing: border-box;"></select></td>
-                            <td><select id="editParticipant2" style="width: 100%; box-sizing: border-box;"></select></td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div id="editChatNameGroup">
+                <label for="editChatName" style="display: block; margin-bottom: 5px; font-weight: bold;">Nome do chat:</label>
+                <input type="text" id="editChatName" style="width: 100%; box-sizing: border-box;">
+            </div>
+            
+            <div id="editParticipantsContainer" style="display: none;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Participantes:</label>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <select id="editParticipant1" style="width: 100%; box-sizing: border-box;"></select>
+                    </div>
+                    <div style="flex: 1;">
+                        <select id="editParticipant2" style="width: 100%; box-sizing: border-box;"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div style="margin-top: 10px; color: red; font-size: 11px;">
             A exclusão removerá todas as mensagens permanentemente.
         </div>
         
-        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
-            <button id="deleteChatBtn" style="color: red; float: left;">Excluir Definitivamente</button>
-            <button onclick="document.getElementById('editChatModal').close()">Cancelar</button>
-            <button id="saveChatBtn" style="font-weight: bold;">Salvar Alterações</button>
+        <hr style="margin-top: 15px; border-top: 1px solid gray;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <button type="button" class="window-btn" id="deleteChatBtn" style="color: red;">Excluir Definitivamente</button>
+            <div style="display: flex; gap: 5px;">
+                <button type="button" class="window-btn" id="saveChatBtn" style="font-weight: bold;">Salvar Alterações</button>
+                <button type="button" class="window-btn" onclick="document.getElementById('editChatModal').close()">Cancelar</button>
+            </div>
         </div>
     </div>
 </dialog>

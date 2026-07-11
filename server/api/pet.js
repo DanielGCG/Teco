@@ -1,145 +1,18 @@
 const express = require("express");
 const GotchiRouter = express.Router();
 const { Pet, Item, PetInventory, SystemConfig } = require("../models");
-
-// Clamp agora aceita descer até -100
-function clamp(value) {
-  return Math.max(-100, Math.min(100, value));
-}
-
-// Taxas originais de decaimento mantidas (demora o dobro para morrer)
-const DECAY_PER_SECOND = {
-  fome:     100 / (24 * 3600),
-  sede:     100 / (20 * 3600),
-  limpeza:  100 / (36 * 3600),
-  sono:     100 / (16 * 3600),
-  diversao: 100 / (16 * 3600)
-};
-
-const SLEEP_RECOVERY_PER_SECOND = 100 / (8 * 3600);
-const SLEEP_DECAY_FACTOR = 0.5;
-
-const CLAIM_RELEASE_HOUR = 15;
-const LOW_LEVEL_THRESHOLD = 30;
-
-const DEATH_MESSAGES = {
-  fome: "morreu de fome.",
-  sede: "morreu de sede.",
-  limpeza: "morreu por falta de higiene.",
-  loucura: "enlouqueceu por falta de diversao."
-};
-
-const STAT_CONFIG = [
-  { key: "fome", label: "fome" },
-  { key: "sede", label: "sede" },
-  { key: "limpeza", label: "limpeza" },
-  { key: "sono", label: "sono" },
-  { key: "diversao", label: "diversao" }
-];
-
-// Lógica de decaimento
-function applyDecay(pet, now = new Date()) {
-  if (pet.dead) return pet;
-
-  const elapsedSeconds = (now.getTime() - new Date(pet.lastUpdate).getTime()) / 1000;
-  if (elapsedSeconds <= 0) return pet;
-
-  if (pet.sleeping) {
-    pet.sono = clamp(pet.sono + SLEEP_RECOVERY_PER_SECOND * elapsedSeconds);
-    pet.fome = clamp(pet.fome - DECAY_PER_SECOND.fome * SLEEP_DECAY_FACTOR * elapsedSeconds);
-    pet.sede = clamp(pet.sede - DECAY_PER_SECOND.sede * SLEEP_DECAY_FACTOR * elapsedSeconds);
-    if (pet.sono >= 100) pet.sleeping = false;
-  } else {
-    pet.fome     = clamp(pet.fome     - DECAY_PER_SECOND.fome     * elapsedSeconds);
-    pet.sede     = clamp(pet.sede     - DECAY_PER_SECOND.sede     * elapsedSeconds);
-    pet.limpeza  = clamp(pet.limpeza  - DECAY_PER_SECOND.limpeza  * elapsedSeconds);
-    pet.sono     = clamp(pet.sono     - DECAY_PER_SECOND.sono     * elapsedSeconds);
-    pet.diversao = clamp(pet.diversao - DECAY_PER_SECOND.diversao * elapsedSeconds);
-  }
-
-  pet.lastUpdate = now;
-  checkDeath(pet, now);
-  return pet;
-}
-
-// Agora a morte checa se o valor chegou em -100
-function checkDeath(pet, now) {
-  if (pet.dead) return;
-  const checks = [
-    { key: 'fome', cause: 'fome' },
-    { key: 'sede', cause: 'sede' },
-    { key: 'limpeza', cause: 'limpeza' },
-    { key: 'diversao', cause: 'loucura' }
-  ];
-
-  for (const { key, cause } of checks) {
-    if (pet[key] <= -100) {
-      pet.dead = true;
-      pet.diedAt = now;
-      pet.deathCause = cause;
-      pet.sleeping = false;
-      return;
-    }
-  }
-}
-
-// Helpers de tempo
-function toIsoDateUTC(date = new Date()) { return date.toISOString().slice(0, 10); }
-function getBrasiliaDateParts(now = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
-  }).formatToParts(now);
-  const map = {};
-  parts.forEach((part) => { if (part.type !== "literal") map[part.type] = part.value; });
-  return { year: Number(map.year), month: Number(map.month), day: Number(map.day), hour: Number(map.hour), minute: Number(map.minute), second: Number(map.second) };
-}
-function shiftDateKey(dateKey, deltaDays) {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const utc = new Date(Date.UTC(y, m - 1, d));
-  utc.setUTCDate(utc.getUTCDate() + deltaDays);
-  return String(utc.getUTCFullYear()) + "-" + String(utc.getUTCMonth() + 1).padStart(2, "0") + "-" + String(utc.getUTCDate()).padStart(2, "0");
-}
-function dateKeyToBrDateTime(dateKey, hour = CLAIM_RELEASE_HOUR) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day, hour + 3, 0, 0));
-}
-function getClaimCycleKey(now = new Date()) {
-  const br = getBrasiliaDateParts(now);
-  const brKey = String(br.year) + "-" + String(br.month).padStart(2, "0") + "-" + String(br.day).padStart(2, "0");
-  return br.hour < CLAIM_RELEASE_HOUR ? shiftDateKey(brKey, -1) : brKey;
-}
-function getNextClaimAtFromNow(now = new Date()) {
-  const br = getBrasiliaDateParts(now);
-  const brKey = String(br.year) + "-" + String(br.month).padStart(2, "0") + "-" + String(br.day).padStart(2, "0");
-  const targetDateKey = br.hour < CLAIM_RELEASE_HOUR ? brKey : shiftDateKey(brKey, 1);
-  return dateKeyToBrDateTime(targetDateKey, CLAIM_RELEASE_HOUR);
-}
-function formatDateTimePtBr(dateLike) {
-  if (!dateLike) return "";
-  return new Date(dateLike).toLocaleString("pt-BR");
-}
-
-function getClaimInfo(pet, now = new Date()) {
-  const cycleKey = getClaimCycleKey(now);
-  const canClaim = pet.lastDailyClaim !== cycleKey;
-  const nextClaimAt = getNextClaimAtFromNow(now);
-  
-  const br = getBrasiliaDateParts(now);
-  const diaResgate = br.hour < CLAIM_RELEASE_HOUR ? "hoje" : "amanhã";
-
-  return {
-    cycleKey, 
-    canClaim, 
-    nextClaimAt,
-    nextClaimLabel: "",
-    availabilityLabel: canClaim 
-        ? "resgate disponivel" 
-        : `resgate de novo ${diaResgate} às ${CLAIM_RELEASE_HOUR}h`
-  };
-}
+const {
+  getDeathMessage,
+  STAT_CONFIG,
+  LOW_LEVEL_THRESHOLD,
+  applyDecay,
+  getClaimCycleKey,
+  formatDateTimePtBr,
+  getClaimInfo
+} = require("../utils/petLogic");
 
 function getStatusText(pet) {
-  if (pet.dead) return pet.name + " " + (DEATH_MESSAGES[pet.deathCause] || "morreu.");
+  if (pet.dead) return pet.name + " " + getDeathMessage(pet);
   if (pet.sleeping) return pet.name + " esta dormindo...";
   const avg = (pet.fome + pet.sede + pet.limpeza + pet.sono + pet.diversao) / 5;
   const lowest = Math.min(pet.fome, pet.sede, pet.limpeza, pet.sono, pet.diversao);
@@ -193,7 +66,7 @@ function buildPetUI(pet, now = new Date()) {
     isDanger,
     isDead: pet.dead,
     isSleeping,
-    deathCauseText: pet.dead ? (pet.name + " " + (DEATH_MESSAGES[pet.deathCause] || "morreu.")) : "",
+    deathCauseText: pet.dead ? (pet.name + " " + getDeathMessage(pet)) : "",
     deathDateText: pet.dead && pet.diedAt ? ("em " + formatDateTimePtBr(pet.diedAt)) : "",
     stats: STAT_CONFIG.map(({ key, label }) => {
       // Visualmente não mostra negativo na barra
@@ -354,6 +227,7 @@ GotchiRouter.post("/use-item/:publicid", async (req, res) => {
         return sendPet(res, pet, 409, { error: "Item insuficiente no estoque" });
     }
 
+    const { clamp } = require("../utils/petLogic");
     if (item.type === 'food') pet.fome = clamp(pet.fome + item.value);
     if (item.type === 'water') pet.sede = clamp(pet.sede + item.value);
     if (item.type === 'soap') pet.limpeza = clamp(pet.limpeza + item.value);
@@ -390,7 +264,7 @@ GotchiRouter.get("/cemetery", async (req, res) => {
     publicid: pet.publicid,
     name: "  - " + pet.name,
     deathCause: pet.deathCause,
-    deathText: DEATH_MESSAGES[pet.deathCause] || "morreu.",
+    deathText: getDeathMessage(pet),
     diedAt: pet.diedAt,
     diedAtLabel: pet.diedAt ? formatDateTimePtBr(pet.diedAt) : "-",
     createdat: pet.createdat

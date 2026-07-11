@@ -76,13 +76,22 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
         });
 
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
-            const remetentePublicId = carta.remetente.publicid;
+            const isAnonymous = carta.isanonymous;
+            const remetentePublicId = isAnonymous ? 'anonimo' : carta.remetente.publicid;
+
             if (!acc[remetentePublicId]) {
                 acc[remetentePublicId] = {
                     userId: remetentePublicId,
-                    username: carta.remetente.username,
-                    profileimage: carta.remetente.profileimage,
+                    username: isAnonymous ? 'Anônimo' : carta.remetente.username,
+                    profileimage: isAnonymous ? '/images/default-avatar.webp' : carta.remetente.profileimage,
                     cartinhas: []
+                };
+            }
+            if (isAnonymous) {
+                carta.remetente = {
+                    publicid: 'anonimo',
+                    username: 'Anônimo',
+                    profileimage: '/images/default-avatar.webp'
                 };
             }
             acc[remetentePublicId].cartinhas.push(carta);
@@ -113,7 +122,18 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
             order: [['favoritedat', 'DESC']]
         });
 
-        res.json(cartinhas);
+        const cartinhasMascaradas = cartinhas.map(carta => {
+            if (carta.isanonymous) {
+                carta.remetente = {
+                    publicid: 'anonimo',
+                    username: 'Anônimo',
+                    profileimage: '/images/default-avatar.webp'
+                };
+            }
+            return carta;
+        });
+
+        res.json(cartinhasMascaradas);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar cartinhas favoritas" });
@@ -135,13 +155,21 @@ CartinhasRouter.get('/:publicid', validate(publicidSchema, 'params'), async (req
 
         // Acesso ao CONTEÚDO (body e title) só para remetente ou destinatário
         const isParticipant = cartinha.senderUserId === req.user.id || cartinha.recipientUserId === req.user.id;
-        
+
         if (!isParticipant) {
             // Mascarar título e corpo para qualquer um que não seja participante (incluindo Admin/Staff)
             const cartinhaLimitada = cartinha.toJSON();
             cartinhaLimitada.title = "[Conteúdo privado]";
             cartinhaLimitada.body = "Conteúdo privado. Apenas remetente e destinatário podem ler.";
             return res.json(cartinhaLimitada);
+        }
+
+        if (cartinha.isanonymous && cartinha.senderUserId !== req.user.id) {
+            cartinha.remetente = {
+                publicid: 'anonimo',
+                username: 'Anônimo',
+                profileimage: '/images/default-avatar.webp'
+            };
         }
 
         res.json(cartinha);
@@ -174,7 +202,7 @@ CartinhasRouter.put('/:publicid/lida', validate(publicidSchema, 'params'), async
 
 // POST /cartinhas - Enviar uma nova cartinha
 CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
-    const { recipientusername, title, body } = req.body;
+    const { recipientusername, title, body, isanonymous } = req.body;
     try {
         const destinatario = await User.findOne({ where: { username: recipientusername } });
         if (!destinatario) return res.status(404).json({ message: "Destinatário não encontrado" });
@@ -184,22 +212,24 @@ CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
         }
 
         const cartinha = await Cartinha.create({
-            senderUserId: req.user.id,
+            senderUserId: isanonymous ? null : req.user.id,
             recipientUserId: destinatario.id,
             title,
-            body
+            body,
+            isanonymous: isanonymous || false
         });
+
+        const notifBody = isanonymous ? 'Alguém te enviou uma cartinha anonimamente' : `${req.user.username} te enviou uma cartinha`;
 
         await createNotification({
             userId: destinatario.id,
             type: 'info',
             title: 'Nova cartinha',
-            body: `${req.user.username} te enviou uma cartinha`,
-            link: `/cartinhas/recebidas`
+            body: notifBody,
+            link: `/cartinhas/recebidas`,
+            io: req.app.get('io'),
+            socketType: 'cartinha'
         });
-
-        const io = req.app.get('io');
-        if (io) io.to(`user_${destinatario.id}`).emit('newNotification', { type: 'cartinha' });
 
         res.status(201).json({ message: "Cartinha enviada com sucesso", cartinhaPublicId: cartinha.publicid });
     } catch (err) {

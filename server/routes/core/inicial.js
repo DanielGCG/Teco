@@ -3,8 +3,14 @@ const InicialRouter = express.Router();
 const { renderStaticPage } = require("../../utils/render");
 
 InicialRouter.get('/', renderStaticPage('pages/index', {
-    title: 'Página inicial',
-    description: 'Página inicial'
+    title: 'Site do Boteco - Início',
+    description: 'Página inicial do Boteco',
+    botecoAnalyticsUrl: process.env.BOTECOANALYTICS_URL
+}));
+
+InicialRouter.get('/feed', renderStaticPage('pages/feed', {
+    title: 'Feed do Boteco',
+    description: 'Feed de postagens'
 }));
 
 InicialRouter.get('/register', renderStaticPage('pages/auth/register', {

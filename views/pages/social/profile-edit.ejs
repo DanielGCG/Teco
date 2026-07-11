@@ -1,34 +1,40 @@
 <style>
-  .inline-input {
-      background: transparent;
-      border: 1px dashed var(--retro-border-dark);
-      color: inherit;
-      font-family: inherit;
-      width: 100%;
-      box-sizing: border-box;
-      padding: 2px;
-  }
-  .inline-input:focus {
-      border: 1px solid var(--retro-border-light);
-      outline: none;
-      background: var(--retro-bg);
-  }
-  .img-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.2s;
-  }
-  .img-container:hover .img-overlay {
-      opacity: 1;
-  }
+    .inline-input {
+        background: transparent;
+        border: 1px dashed var(--retro-border-dark);
+        color: inherit;
+        font-family: inherit;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 2px;
+    }
+
+    .inline-input:focus {
+        border: 1px solid var(--retro-border-light);
+        outline: none;
+        background: var(--retro-bg);
+    }
+
+    .img-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .img-container:hover .img-overlay {
+        opacity: 1;
+    }
 </style>
 
 <div class="window" style="max-width: 800px; margin: 10px auto;">
@@ -39,61 +45,115 @@
         <form id="edit-profile-form">
             <div style="display: flex; gap: 15px; align-items: flex-start;">
                 <div style="text-align: center; width: 130px; flex-shrink: 0;">
-                    <div class="img-container" style="position: relative; display: inline-block; cursor: pointer;" onclick="document.getElementById('profile_file').click()">
-                        <img id="preview-pf" src="" border="1" style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
+                    <div class="img-container" style="position: relative; display: inline-block; cursor: pointer;"
+                        onclick="document.getElementById('profile_file').click()">
+                        <img id="preview-pf" src="" border="1"
+                            style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
                         <div class="img-overlay">TROCAR AVATAR</div>
                         <input type="file" id="profile_file" accept="image/*" style="display: none;">
                         <input type="hidden" id="profileimage">
-                        <span class="status-dot" style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: #4caf50;"></span>
+                        <span class="status-dot"
+                            style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: #4caf50;"></span>
                     </div>
-                    
+
                     <div style="margin-top: 5px; text-align: left;">
                         <div style="font-size: 10px; color: var(--retro-border-dark);">Usuário:</div>
                         <div style="display: flex; align-items: center;">
                             <span style="font-size: 11px;">@</span>
-                            <input type="text" id="username" class="inline-input" style="font-weight: bold; font-size: 12px; border-bottom: 1px solid var(--retro-border-dark); border-top: none; border-left: none; border-right: none;" required>
+                            <input type="text" id="username" class="inline-input"
+                                style="font-weight: bold; font-size: 12px; border-bottom: 1px solid var(--retro-border-dark); border-top: none; border-left: none; border-right: none;"
+                                required>
                         </div>
                     </div>
-                    
+
                     <div style="margin-top: 5px; text-align: left;">
                         <div style="font-size: 10px; color: var(--retro-border-dark);">Pronomes:</div>
-                        <input type="text" id="pronouns" class="inline-input" style="font-size: 11px; color: var(--retro-border-dark);" placeholder="ele/ela">
+                        <input type="text" id="pronouns" class="inline-input"
+                            style="font-size: 11px; color: var(--retro-border-dark);" placeholder="ele/ela">
                     </div>
-                    
+
                     <div style="margin-top: 5px; text-align: left;">
                         <div style="font-size: 10px; color: var(--retro-border-dark);">Last.fm:</div>
                         <input type="text" id="lastfmusername" class="inline-input" style="font-size: 11px;">
                     </div>
-                    
+
                 </div>
                 <div style="flex-grow: 1; display: flex; flex-direction: row; gap: 10px; align-items: stretch;">
                     <div style="display: flex; flex-direction: column; gap: 10px; width: 180px; flex-shrink: 0;">
                         <div class="window" style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column;">
-                            <div class="window-content" style="flex-grow: 1; padding: 5px; display: flex; flex-direction: column;">
-                                <div style="font-size: 10px; color: var(--retro-border-dark); margin-bottom: 2px;">Sua Bio:</div>
-                                <textarea id="bio" class="inline-input" style="flex-grow: 1; resize: none; font-size: 12px;" maxlength="160" oninput="atualizarContadorBio()"></textarea>
-                                <div style="text-align: right; font-size: 9px; color: gray;" id="bio-contador">0 / 160</div>
+                            <div class="window-content"
+                                style="flex-grow: 1; padding: 5px; display: flex; flex-direction: column;">
+                                <div style="font-size: 10px; color: var(--retro-border-dark); margin-bottom: 2px;">Sua
+                                    Bio:</div>
+                                <textarea id="bio" class="inline-input"
+                                    style="flex-grow: 1; resize: none; font-size: 12px;" maxlength="160"
+                                    oninput="atualizarContadorBio()"></textarea>
+                                <div style="text-align: right; font-size: 9px; color: gray;" id="bio-contador">0 / 160
+                                </div>
                             </div>
                         </div>
                         <div class="window" style="margin-bottom: 0;">
-                            <div class="window-content" style="padding: 5px; font-size: 11px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div class="window-content"
+                                style="padding: 5px; font-size: 11px; display: flex; gap: 10px; flex-wrap: wrap;">
                                 <span>Posts: <b id="preview-post-count">0</b></span>
                                 <span id="preview-joined-date" style="color: var(--retro-border-dark);"></span>
                             </div>
                         </div>
                     </div>
-                    <div class="window img-container" style="margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; cursor: pointer;" onclick="document.getElementById('background_file').click()">
-                        <div class="window-content" style="padding: 0; flex-grow: 1; height: 100%; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden; position: relative;">
-                            <img id="preview-banner-img" src="/images/placeholder.webp" style="width: 100%; height: 100%; height: 160px; object-fit: cover; display: block; image-rendering: pixelated;">
+                    <div class="window img-container"
+                        style="margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; cursor: pointer;"
+                        onclick="document.getElementById('banner_file').click()">
+                        <div class="window-content"
+                            style="padding: 0; flex-grow: 1; height: 100%; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden; position: relative;">
+                            <img id="preview-banner-img" src="/images/placeholder.webp"
+                                style="width: 100%; height: 100%; height: 160px; object-fit: cover; display: block; image-rendering: pixelated;">
                             <div class="img-overlay">TROCAR CAPA</div>
-                            <input type="file" id="background_file" accept="image/*" style="display: none;">
-                            <input type="hidden" id="backgroundimage">
+                            <input type="file" id="banner_file" accept="image/*" style="display: none;">
+                            <input type="hidden" id="bannerimage">
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div style="margin-top: 15px; text-align: right; border-top: 1px solid var(--retro-border-light); padding-top: 10px;">
+
+            <div class="window" style="margin-top: 10px;">
+                <div class="window-header">Fundo da Página</div>
+                <div class="window-content" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="display: flex; flex-direction: column;">
+                        <label style="font-size: 10px; color: var(--retro-border-dark);">Cor de Fundo:</label>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <input type="color" id="backgroundcolor" value="#d9d7bf"
+                                style="cursor: pointer; height: 25px; width: 40px;">
+                            <button type="button" id="btn-reset-color" style="font-size: 9px; padding: 2px 5px;"
+                                title="Remover cor personalizada">X</button>
+                        </div>
+                        <input type="hidden" id="clear_backgroundcolor" value="false">
+                    </div>
+                    <div style="display: flex; flex-direction: column;">
+                        <label style="font-size: 10px; color: var(--retro-border-dark);">Modo da Imagem:</label>
+                        <select id="backgroundfill" class="inline-input" style="font-size: 11px; height: 25px;">
+                            <option value="cover">Cobrir Tela</option>
+                            <option value="repeat">Repetir Padrão</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                        <label style="font-size: 10px; color: var(--retro-border-dark);">Imagem de Fundo:</label>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <button type="button" onclick="document.getElementById('background_file').click()" style="padding: 2px 10px; font-size: 11px;">Selecionar...</button>
+                            <input type="file" id="background_file" accept="image/*" style="display: none;">
+                            <div id="new_bg_indicator" style="display: none; font-size: 10px; color: blue; font-weight: bold;">(Nova)</div>
+                            <div id="current_bg_indicator"
+                                style="display: none; font-size: 10px; color: green; font-weight: bold;">(Salva)</div>
+                            <button type="button" id="btn-reset-bg"
+                                style="font-size: 9px; padding: 2px 5px; display: none;"
+                                title="Remover imagem atual">X</button>
+                        </div>
+                        <input type="hidden" id="backgroundimage">
+                        <input type="hidden" id="clear_backgroundimage" value="false">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; text-align: right; padding-top: 10px;">
                 <button type="submit" style="padding: 5px 20px; font-weight: bold;">SALVAR ALTERAÇÕES</button>
             </div>
         </form>
@@ -109,15 +169,18 @@
             <table border="0" cellpadding="2" cellspacing="0" style="font-size: 11px;">
                 <tr>
                     <td width="120"><b>Senha Atual:</b></td>
-                    <td><input type="password" id="current_password" required class="inline-input" style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    <td><input type="password" id="current_password" required class="inline-input"
+                            style="border: 1px solid var(--retro-border-dark); background: white;"></td>
                 </tr>
                 <tr>
                     <td><b>Nova Senha:</b></td>
-                    <td><input type="password" id="new_password" required class="inline-input" style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    <td><input type="password" id="new_password" required class="inline-input"
+                            style="border: 1px solid var(--retro-border-dark); background: white;"></td>
                 </tr>
                 <tr>
                     <td><b>Confirmar Senha:</b></td>
-                    <td><input type="password" id="confirm_password" required class="inline-input" style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    <td><input type="password" id="confirm_password" required class="inline-input"
+                            style="border: 1px solid var(--retro-border-dark); background: white;"></td>
                 </tr>
             </table>
             <div style="margin-top: 10px;">
@@ -128,143 +191,220 @@
 </div>
 
 <script>
-function atualizarContadorBio() {
-  const bio = document.getElementById('bio');
-  const contador = document.getElementById('bio-contador');
-  contador.textContent = `${bio.value.length} / 160`;
-}
-
-function normalizarUsername(username) {
-  username = username.trim();
-  if (username.startsWith('@')) username = username.substring(1);
-  return username.toLowerCase();
-}
-
-function atualizarPreviews(user) {
-  const previewBannerImg = document.getElementById('preview-banner-img');
-  const previewPf = document.getElementById('preview-pf');
-  const previewPostCount = document.getElementById('preview-post-count');
-  const previewJoinedDate = document.getElementById('preview-joined-date');
-
-  if(user.backgroundimage){
-    previewBannerImg.src = user.backgroundimage;
-    document.getElementById('backgroundimage').value = user.backgroundimage;
-  }
-
-  if(user.profileimage){
-    previewPf.src = user.profileimage;
-    document.getElementById('profileimage').value = user.profileimage;
-  }
-  
-  const cleanUsername = user.username.startsWith('@') ? user.username.substring(1) : user.username;
-  document.getElementById('username').value = cleanUsername;
-  document.getElementById('bio').value = user.bio || '';
-  document.getElementById('pronouns').value = user.pronouns || '';
-  document.getElementById('lastfmusername').value = user.lastfmusername || '';
-  
-  if (previewPostCount) previewPostCount.textContent = user.postcount || 0;
-  if (previewJoinedDate && user.createdat) {
-    const date = new Date(user.createdat).toLocaleDateString();
-    previewJoinedDate.textContent = `Membro desde: ${date}`;
-  }
-  atualizarContadorBio();
-}
-
-async function carregarPerfil() {
-  try {
-    const res = await fetch('/api/users/me', { credentials: 'include' });
-    if(res.ok){
-      const user = await res.json();
-      atualizarPreviews(user);
+    function atualizarContadorBio() {
+        const bio = document.getElementById('bio');
+        const contador = document.getElementById('bio-contador');
+        contador.textContent = `${bio.value.length} / 160`;
     }
-  } catch(err){ console.error(err); }
-}
 
-document.getElementById('profile_file').addEventListener('change', function() {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('preview-pf').src = e.target.result;
+    function normalizarUsername(username) {
+        username = username.trim();
+        if (username.startsWith('@')) username = username.substring(1);
+        return username.toLowerCase();
     }
-    reader.readAsDataURL(file);
-  }
-});
 
-document.getElementById('background_file').addEventListener('change', function() {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = document.getElementById('preview-banner-img');
-      img.src = e.target.result;
-    }
-    reader.readAsDataURL(file);
-  }
-});
+    function atualizarPreviews(user) {
+        const previewBannerImg = document.getElementById('preview-banner-img');
+        const previewPf = document.getElementById('preview-pf');
+        const previewPostCount = document.getElementById('preview-post-count');
+        const previewJoinedDate = document.getElementById('preview-joined-date');
 
-document.getElementById('edit-profile-form').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const formData = new FormData();
-  formData.append('username', '@' + normalizarUsername(document.getElementById('username').value));
-  formData.append('backgroundimage', document.getElementById('backgroundimage').value);
-  formData.append('profileimage', document.getElementById('profileimage').value);
-  formData.append('bio', document.getElementById('bio').value);
-  formData.append('pronouns', document.getElementById('pronouns').value);
-  formData.append('lastfmusername', document.getElementById('lastfmusername').value);
-
-  const bgFile = document.getElementById('background_file').files[0];
-  const pfFile = document.getElementById('profile_file').files[0];
-  if(bgFile) formData.append('background_file', bgFile);
-  if(pfFile) formData.append('profile_file', pfFile);
-
-  try {
-    const res = await fetch('/api/users/me', { method: 'PUT', body: formData });
-    const data = await res.json();
-    if(res.ok) {
-        await alert("Perfil atualizado com sucesso!");
-        window.location.href = '/' + data.user.username;
-    } else { 
-        let msg = data.message;
-        if (data.errors && Array.isArray(data.errors)) {
-            msg = data.errors.map(err => err.message || err.msg).join('\n');
+        if (user.bannerimage) {
+            previewBannerImg.src = user.bannerimage;
+            document.getElementById('bannerimage').value = user.bannerimage;
         }
-        await alert(new Error(msg || "Erro ao atualizar perfil.")); 
+        if (user.backgroundcolor) {
+            document.getElementById('backgroundcolor').value = user.backgroundcolor;
+            document.body.style.backgroundColor = user.backgroundcolor;
+        }
+        if (user.backgroundfill) {
+            document.getElementById('backgroundfill').value = user.backgroundfill;
+        }
+        if (user.backgroundimage) {
+            document.getElementById('backgroundimage').value = user.backgroundimage;
+            document.getElementById('current_bg_indicator').style.display = 'block';
+            document.getElementById('btn-reset-bg').style.display = 'block';
+            document.body.style.backgroundImage = `url(${user.backgroundimage})`;
+        }
+        aplicarModoFundo();
+
+        if (user.profileimage) {
+            previewPf.src = user.profileimage;
+            document.getElementById('profileimage').value = user.profileimage;
+        }
+
+        const cleanUsername = user.username.startsWith('@') ? user.username.substring(1) : user.username;
+        document.getElementById('username').value = cleanUsername;
+        document.getElementById('bio').value = user.bio || '';
+        document.getElementById('pronouns').value = user.pronouns || '';
+        document.getElementById('lastfmusername').value = user.lastfmusername || '';
+
+        if (previewPostCount) previewPostCount.textContent = user.postcount || 0;
+        if (previewJoinedDate && user.createdat) {
+            const date = new Date(user.createdat).toLocaleDateString();
+            previewJoinedDate.textContent = `Membro desde: ${date}`;
+        }
+        atualizarContadorBio();
     }
-  } catch(err){ 
-      await alert(new Error("Erro de conexão ao salvar perfil.")); 
-  }
-});
 
-document.getElementById('change-password-form').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const currentPassword = document.getElementById('current_password').value;
-  const newPassword = document.getElementById('new_password').value;
-  const confirmPassword = document.getElementById('confirm_password').value;
-  if(newPassword !== confirmPassword) return await alert(new Error("A nova senha e a confirmação não coincidem."));
+    function aplicarModoFundo() {
+        const bgFill = document.getElementById('backgroundfill').value;
+        if (bgFill === 'repeat') {
+            document.body.style.backgroundSize = 'auto';
+            document.body.style.backgroundRepeat = 'repeat';
+            document.body.style.backgroundAttachment = 'scroll';
+        } else {
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+        }
+    }
 
-  try {
-    const res = await fetch('/api/users/me/password', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword, newPassword })
+    async function carregarPerfil() {
+        try {
+            const res = await fetch('/api/users/me', { credentials: 'include' });
+            if (res.ok) {
+                const user = await res.json();
+                atualizarPreviews(user);
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    document.getElementById('profile_file').addEventListener('change', function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('preview-pf').src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
     });
-    
-    const data = await res.json();
-    if(res.ok) {
-        await alert("Senha alterada com sucesso!");
-        this.reset();
-    } else { 
-        let msg = data.message;
-        if (data.errors && Array.isArray(data.errors)) {
-            msg = data.errors.map(err => err.msg || err.message).join('\n');
-        }
-        await alert(new Error(msg || "Ocorreu um problema ao mudar a senha.")); 
-    }
-  } catch(err){ 
-      await alert(new Error("Erro de conexão ao mudar a senha. Verifique sua internet.")); 
-  }
-});
 
-carregarPerfil();
+    document.getElementById('banner_file').addEventListener('change', function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.getElementById('preview-banner-img');
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('btn-reset-color').addEventListener('click', function () {
+        document.getElementById('backgroundcolor').value = '#d9d7bf';
+        document.getElementById('clear_backgroundcolor').value = 'true';
+        document.body.style.backgroundColor = 'var(--retro-bg)';
+    });
+    document.getElementById('backgroundcolor').addEventListener('input', function () {
+        document.getElementById('clear_backgroundcolor').value = 'false';
+        document.body.style.backgroundColor = this.value;
+    });
+    document.getElementById('backgroundfill').addEventListener('change', aplicarModoFundo);
+
+    document.getElementById('btn-reset-bg').addEventListener('click', function () {
+        document.getElementById('backgroundimage').value = '';
+        document.getElementById('background_file').value = '';
+        document.getElementById('clear_backgroundimage').value = 'true';
+        this.style.display = 'none';
+        document.getElementById('current_bg_indicator').style.display = 'none';
+        document.getElementById('new_bg_indicator').style.display = 'none';
+        document.body.style.backgroundImage = 'none';
+    });
+    document.getElementById('background_file').addEventListener('change', function () {
+        if (this.files.length > 0) {
+            document.getElementById('clear_backgroundimage').value = 'false';
+            document.getElementById('new_bg_indicator').style.display = 'block';
+            document.getElementById('current_bg_indicator').style.display = 'none';
+            document.getElementById('btn-reset-bg').style.display = 'block';
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.body.style.backgroundImage = `url(${e.target.result})`;
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    document.getElementById('edit-profile-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('username', '@' + normalizarUsername(document.getElementById('username').value));
+        formData.append('bannerimage', document.getElementById('bannerimage').value);
+
+        let finalBgImage = document.getElementById('backgroundimage').value;
+        if (document.getElementById('clear_backgroundimage').value === 'true') {
+            finalBgImage = "";
+        }
+        formData.append('backgroundimage', finalBgImage);
+
+        let finalColor = document.getElementById('backgroundcolor').value;
+        if (document.getElementById('clear_backgroundcolor').value === 'true') {
+            finalColor = "";
+        }
+        formData.append('backgroundcolor', finalColor);
+
+        formData.append('backgroundfill', document.getElementById('backgroundfill').value);
+        formData.append('profileimage', document.getElementById('profileimage').value);
+        formData.append('bio', document.getElementById('bio').value);
+        formData.append('pronouns', document.getElementById('pronouns').value);
+        formData.append('lastfmusername', document.getElementById('lastfmusername').value);
+
+        const bannerFile = document.getElementById('banner_file').files[0];
+        const bgFile = document.getElementById('background_file').files[0];
+        const pfFile = document.getElementById('profile_file').files[0];
+        if (bannerFile) formData.append('banner_file', bannerFile);
+        if (bgFile) formData.append('background_file', bgFile);
+        if (pfFile) formData.append('profile_file', pfFile);
+
+        try {
+            const res = await fetch('/api/users/me', { method: 'PUT', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                await alert("Perfil atualizado com sucesso!");
+                window.location.href = '/' + data.username;
+            } else {
+                let msg = data.message;
+                if (data.errors && Array.isArray(data.errors)) {
+                    msg = data.errors.map(err => err.message || err.msg).join('\n');
+                }
+                await alert(new Error(msg || "Erro ao atualizar perfil."));
+            }
+        } catch (err) {
+            await alert(new Error("Erro de conexão ao salvar perfil."));
+        }
+    });
+
+    document.getElementById('change-password-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const currentPassword = document.getElementById('current_password').value;
+        const newPassword = document.getElementById('new_password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+        if (newPassword !== confirmPassword) return await alert(new Error("A nova senha e a confirmação não coincidem."));
+
+        try {
+            const res = await fetch('/api/users/me/password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                await alert("Senha alterada com sucesso!");
+                this.reset();
+            } else {
+                let msg = data.message;
+                if (data.errors && Array.isArray(data.errors)) {
+                    msg = data.errors.map(err => err.msg || err.message).join('\n');
+                }
+                await alert(new Error(msg || "Ocorreu um problema ao mudar a senha."));
+            }
+        } catch (err) {
+            await alert(new Error("Erro de conexão ao mudar a senha. Verifique sua internet."));
+        }
+    });
+
+    carregarPerfil();
 </script>

@@ -1,7 +1,8 @@
-<div style="display: flex; flex-direction: column; min-height: 80vh; justify-content: center; align-items: center; padding: 20px;">
+<div
+    style="display: flex; flex-direction: column; min-height: 80vh; justify-content: center; align-items: center; padding: 20px;">
     <div class="window" style="width: 100%; max-width: 360px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
         <div class="window-header">
-            <span>Registro - Teco</span>
+            <span>Registro</span>
         </div>
         <div class="window-content" style="padding: 20px;">
             <div style="text-align: center; margin-bottom: 20px;">
@@ -11,124 +12,142 @@
 
             <form id="registerForm">
                 <div style="margin-bottom: 15px;">
-                    <label for="username" style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Nome de Usuário:</label>
-                    <div style="display: flex; border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); background: var(--retro-window-bg);">
-                        <span style="padding: 3px 6px; background: var(--retro-sidebar-bg); border-right: 1px solid var(--retro-border-dark); font-size: 13px; font-weight: bold; color: var(--retro-text);">@</span>
-                        <input type="text" id="username" name="username" required maxlength="15" pattern="[A-Za-z0-9_]{1,15}" autocomplete="off" style="border: none; outline: none; width: 100%; padding: 2px 5px; font-size: 12px; background: transparent; color: var(--retro-text);">
+                    <label for="username"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Nome
+                        de Usuário:</label>
+                    <div
+                        style="display: flex; border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); background: var(--retro-window-bg);">
+                        <span
+                            style="padding: 3px 6px; background: var(--retro-sidebar-bg); border-right: 1px solid var(--retro-border-dark); font-size: 13px; font-weight: bold; color: var(--retro-text);">@</span>
+                        <input type="text" id="username" name="username" required maxlength="15"
+                            pattern="[A-Za-z0-9_]{1,15}" autocomplete="off"
+                            style="border: none; outline: none; width: 100%; padding: 2px 5px; font-size: 12px; background: transparent; color: var(--retro-text);">
                     </div>
-                    <div style="font-size: 9px; color: var(--retro-border-dark); margin-top: 3px;">Máx 15 caracteres. (Letras, números e _)</div>
+                    <div style="font-size: 9px; color: var(--retro-border-dark); margin-top: 3px;">Máx 15 caracteres.
+                        (Letras, números e _)</div>
                 </div>
 
                 <div style="margin-bottom: 15px;">
-                    <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Senha:</label>
+                    <label for="password"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Senha:</label>
                     <div style="display: flex; gap: 5px; margin-bottom: 3px;">
-                        <input type="password" id="password" name="password" required minlength="8" style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
-                        <button type="button" id="togglePassword" style="font-size: 10px; padding: 0 8px; font-weight: bold;">Ver</button>
+                        <input type="password" id="password" name="password" required minlength="8"
+                            style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
+                        <button type="button" id="togglePassword"
+                            style="font-size: 10px; padding: 0 8px; font-weight: bold;">Ver</button>
                     </div>
                     <div style="font-size: 9px; color: var(--retro-border-dark);">Mínimo 8 caracteres.</div>
                 </div>
 
                 <div style="margin-bottom: 20px;">
-                    <label for="passwordConfirm" style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Confirme a senha:</label>
+                    <label for="passwordConfirm"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Confirme
+                        a senha:</label>
                     <div style="display: flex; gap: 5px;">
-                        <input type="password" id="passwordConfirm" name="passwordConfirm" required minlength="8" style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
-                        <button type="button" id="togglePasswordConfirm" style="font-size: 10px; padding: 0 8px; font-weight: bold;">Ver</button>
+                        <input type="password" id="passwordConfirm" name="passwordConfirm" required minlength="8"
+                            style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
+                        <button type="button" id="togglePasswordConfirm"
+                            style="font-size: 10px; padding: 0 8px; font-weight: bold;">Ver</button>
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: center; margin-bottom: 15px;">
-                    <button type="submit" style="width: 120px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 12px;">OK</button>
+                    <button type="submit"
+                        style="width: 120px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 12px;">OK</button>
                 </div>
             </form>
 
-            <div id="message" style="margin-top: 10px; text-align: center; font-size: 11px; min-height: 15px; font-weight: bold;"></div>
-            
-            <div style="margin-top: 15px; text-align: center; border-top: 1px dashed var(--retro-border-dark); padding-top: 10px;">
+            <div id="message"
+                style="margin-top: 10px; text-align: center; font-size: 11px; min-height: 15px; font-weight: bold;">
+            </div>
+
+            <div
+                style="margin-top: 15px; text-align: center; border-top: 1px dashed var(--retro-border-dark); padding-top: 10px;">
                 <a href="/login" style="font-size: 11px;">Voltar ao Login</a>
             </div>
         </div>
     </div>
-    
+
     <div style="margin-top: 20px; text-align: center;">
         <small style="font-size: 10px; color: var(--retro-border-dark);">Versão <%= locals.version %></small>
     </div>
 </div>
 
 <script>
-const registerForm = document.getElementById('registerForm');
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const passwordConfirmInput = document.getElementById('passwordConfirm');
-const messageDiv = document.getElementById('message');
+    const registerForm = document.getElementById('registerForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const passwordConfirmInput = document.getElementById('passwordConfirm');
+    const messageDiv = document.getElementById('message');
 
-registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const usernameRaw = usernameInput.value.trim();
-    const username = '@' + usernameRaw.replace(/^@/, '');
-    const password = passwordInput.value;
-    const passwordConfirm = passwordConfirmInput.value;
+        const usernameRaw = usernameInput.value.trim();
+        const username = '@' + usernameRaw.replace(/^@/, '');
+        const password = passwordInput.value;
+        const passwordConfirm = passwordConfirmInput.value;
 
-    messageDiv.textContent = 'Processando...';
-    messageDiv.style.color = 'var(--retro-link)';
-    
-    try {
-        if (password.length < 8) {
-            messageDiv.style.color = 'var(--retro-link-hover)';
-            messageDiv.textContent = 'A senha deve ter pelo menos 8 caracteres.';
-            return;
-        }
+        messageDiv.textContent = 'Processando...';
+        messageDiv.style.color = 'var(--retro-link)';
 
-        if (password !== passwordConfirm) {
-            messageDiv.style.color = 'var(--retro-link-hover)';
-            messageDiv.textContent = 'As senhas não conferem.';
-            return;
-        }
-
-        const response = await fetch('/api/users/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
-            credentials: 'include'
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            messageDiv.style.color = 'var(--retro-header-bg)'; // Verde retro
-            messageDiv.textContent = data.message || 'Criado com sucesso!';
-            setTimeout(() => window.location.href = '/login', 1500);
-        } else {
-            messageDiv.style.color = 'var(--retro-link-hover)'; // Vermelho retro
-            messageDiv.textContent = data.message || 'Erro ao registrar';
-            if (typeof mostrarAviso === 'function') {
-                mostrarAviso(data.message || 'Erro de validação', 'Erro');
+        try {
+            if (password.length < 8) {
+                messageDiv.style.color = 'var(--retro-link-hover)';
+                messageDiv.textContent = 'A senha deve ter pelo menos 8 caracteres.';
+                return;
             }
+
+            if (password !== passwordConfirm) {
+                messageDiv.style.color = 'var(--retro-link-hover)';
+                messageDiv.textContent = 'As senhas não conferem.';
+                return;
+            }
+
+            const response = await fetch('/api/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                messageDiv.style.color = 'var(--retro-header-bg)'; // Verde retro
+                messageDiv.textContent = data.message || 'Criado com sucesso!';
+                setTimeout(() => window.location.href = '/login', 1500);
+            } else {
+                messageDiv.style.color = 'var(--retro-link-hover)'; // Vermelho retro
+                messageDiv.textContent = data.message || 'Erro ao registrar';
+                if (typeof mostrarAviso === 'function') {
+                    mostrarAviso(data.message || 'Erro de validação', 'Erro');
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            messageDiv.style.color = 'var(--retro-link-hover)';
+            messageDiv.textContent = 'Erro ao registrar. Tente novamente.';
         }
-    } catch (err) {
-        console.error(err);
-        messageDiv.style.color = 'var(--retro-link-hover)';
-        messageDiv.textContent = 'Erro ao registrar. Tente novamente.';
-    }
-});
+    });
 
-usernameInput.addEventListener('input', () => {
-    usernameInput.value = usernameInput.value.replace(/[^a-zA-Z0-9_]/g, '');
-    if (usernameInput.value.length > 15) {
-        usernameInput.value = usernameInput.value.slice(0, 15);
-    }
-});
+    usernameInput.addEventListener('input', () => {
+        usernameInput.value = usernameInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+        if (usernameInput.value.length > 15) {
+            usernameInput.value = usernameInput.value.slice(0, 15);
+        }
+    });
 
-const togglePassword = document.getElementById('togglePassword');
-const togglePasswordConfirm = document.getElementById('togglePasswordConfirm');
-togglePassword.addEventListener('click', () => {
-    const pwd = document.getElementById('password');
-    if (pwd.type === 'password') { pwd.type = 'text'; togglePassword.textContent = 'Oc'; }
-    else { pwd.type = 'password'; togglePassword.textContent = 'Ver'; }
-});
-togglePasswordConfirm.addEventListener('click', () => {
-    const pwd = document.getElementById('passwordConfirm');
-    if (pwd.type === 'password') { pwd.type = 'text'; togglePasswordConfirm.textContent = 'Oc'; }
-    else { pwd.type = 'password'; togglePasswordConfirm.textContent = 'Ver'; }
-});
+    const togglePassword = document.getElementById('togglePassword');
+    const togglePasswordConfirm = document.getElementById('togglePasswordConfirm');
+    togglePassword.addEventListener('click', () => {
+        const pwd = document.getElementById('password');
+        if (pwd.type === 'password') { pwd.type = 'text'; togglePassword.textContent = 'Oc'; }
+        else { pwd.type = 'password'; togglePassword.textContent = 'Ver'; }
+    });
+    togglePasswordConfirm.addEventListener('click', () => {
+        const pwd = document.getElementById('passwordConfirm');
+        if (pwd.type === 'password') { pwd.type = 'text'; togglePasswordConfirm.textContent = 'Oc'; }
+        else { pwd.type = 'password'; togglePasswordConfirm.textContent = 'Ver'; }
+    });
 </script>

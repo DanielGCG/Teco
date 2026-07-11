@@ -190,6 +190,9 @@ AdminUsersRouter.delete('/:publicid', async (req, res) => {
         if (targetUser.profileimage) {
             await deleteFromFileServer({ fileUrl: targetUser.profileimage });
         }
+        if (targetUser.bannerimage) {
+            await deleteFromFileServer({ fileUrl: targetUser.bannerimage });
+        }
         if (targetUser.backgroundimage) {
             await deleteFromFileServer({ fileUrl: targetUser.backgroundimage });
         }

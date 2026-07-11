@@ -9,10 +9,13 @@ const setUserCookie = (res, user) => {
         publicid: userData.publicid,
         username: userData.username,
         profileimage: userData.profileimage,
+        bannerimage: userData.bannerimage,
         backgroundimage: userData.backgroundimage,
+        backgroundcolor: userData.backgroundcolor,
+        backgroundfill: userData.backgroundfill,
         roleId: userData.roleId
     });
-    res.cookie('teco_user', Buffer.from(userInfo).toString('base64'), { 
+    res.cookie('teco_user', Buffer.from(userInfo).toString('base64'), {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         httpOnly: false, // Permitir acesso via JS
         secure: false, // Desativado para facilitar desenvolvimento local
@@ -22,7 +25,7 @@ const setUserCookie = (res, user) => {
 };
 
 // authMiddleware(minRole, refresh = true)
-// 1=dono, 5=admin, 10=moderador, 11=botecor, 20=usuário
+// 1=dono, 5=admin, 10=moderador, 11=boteco, 20=usuário
 const authMiddleware = (minRole = 20, refresh = true) => {
     return async (req, res, next) => {
         let isPublic = false;
@@ -52,14 +55,14 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 },
                 include: [{
                     model: User,
-                    attributes: ['id', 'publicid', 'username', 'roleId', 'profileimage', 'backgroundimage']
+                    attributes: ['id', 'publicid', 'username', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill']
                 }]
             });
 
             // Se sessão for inválida
             if (!session) {
                 if (isPublic) return next(); // Se for pública, ignora erro de sessão
-                
+
                 if (res && res.status) {
                     if (req.accepts('html')) return res.redirect('/login');
                     return res.status(401).json({ message: "Sessão inválida ou expirada" });
@@ -103,7 +106,10 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 username: userData.username,
                 roleId: userData.roleId,
                 profileimage: userData.profileimage,
-                backgroundimage: userData.backgroundimage
+                bannerimage: userData.bannerimage,
+                backgroundimage: userData.backgroundimage,
+                backgroundcolor: userData.backgroundcolor,
+                backgroundfill: userData.backgroundfill
             };
 
             if (res.locals) {

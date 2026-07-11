@@ -3,127 +3,134 @@
 <div class="window" style="max-width: 800px; margin: 0 auto;">
     <div class="window-header">
         <span>Gerenciamento de Usuários</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
+            Painel ]</a>
     </div>
     <div class="window-content" style="padding: 10px;">
         <div style="margin-bottom: 10px;">
             <strong>Lista de Usuários no Sistema:</strong>
         </div>
-        
+
         <!-- Lista de usuários -->
-        <div id="userList" style="background: white; border: 2px inset var(--retro-border-dark); height: 500px; overflow-y: auto; padding: 5px;">
+        <div id="userList"
+            style="background: white; border: 2px inset var(--retro-border-dark); height: 500px; overflow-y: auto; padding: 5px;">
             <div style="padding: 20px; text-align: center; color: gray;">Carregando usuários...</div>
         </div>
     </div>
 </div>
 
 <!-- Modal de edição de usuário -->
-<dialog id="editUserModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 450px; background: var(--retro-window-bg, #c0c0c0);">
+<dialog id="editUserModal" class="window"
+    style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 450px; background: var(--retro-window-bg, #c0c0c0);">
     <div class="window-header">
         <span>Editar Usuário</span>
-        <button onclick="document.getElementById('editUserModal').close()">[Fechar]</button>
+        <button type="button" class="window-btn" onclick="document.getElementById('editUserModal').close()"
+            style="float: right;">[Fechar]</button>
     </div>
     <div class="window-content" style="padding: 10px;">
         <div style="text-align: center; margin-bottom: 15px;">
-            <img id="editUserProfile" src="" alt="Foto de perfil" style="width: 100px; height: 100px; border: 2px inset var(--retro-border-dark);">
+            <img id="editUserProfile" src="" alt="Foto de perfil"
+                style="width: 100px; height: 100px; border: 2px inset var(--retro-border-dark);">
         </div>
 
-        <table width="100%" cellpadding="3" cellspacing="0">
-            <tr>
-                <td><label for="editUsername">Nome de usuário:</label></td>
-            </tr>
-            <tr>
-                <td><input type="text" id="editUsername" style="width: 100%; box-sizing: border-box;"></td>
-            </tr>
-            <tr>
-                <td><label for="editRole">Função:</label></td>
-            </tr>
-            <tr>
-                <td>
-                    <select id="editRole" style="width: 100%; box-sizing: border-box;">
-                        <option value="1">Dono</option>
-                        <option value="5">Administrador</option>
-                        <option value="10">Moderador</option>
-                        <option value="11">Botecor</option>
-                        <option value="20">Usuário</option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td><label for="editBio">Bio:</label></td>
-            </tr>
-            <tr>
-                <td><textarea id="editBio" rows="3" style="width: 100%; box-sizing: border-box;"></textarea></td>
-            </tr>
-        </table>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <h4 style="margin: 0;">Dados do Usuário</h4>
+            <div>
+                <label for="editUsername" style="display: block; margin-bottom: 5px;">Nome de usuário:</label>
+                <input type="text" id="editUsername" style="width: 100%; box-sizing: border-box;">
+            </div>
 
-        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
-            <button id="deleteUserBtn" style="color: red; float: left;">Excluir Usuário</button>
-            <button onclick="document.getElementById('editUserModal').close()">Cancelar</button>
-            <button id="saveUserBtn" style="font-weight: bold;">Salvar Alterações</button>
+            <div>
+                <label for="editRole" style="display: block; margin-bottom: 5px;">Função:</label>
+                <select id="editRole" style="width: 100%; box-sizing: border-box;">
+                    <option value="1">Dono</option>
+                    <option value="5">Administrador</option>
+                    <option value="10">Moderador</option>
+                    <option value="11">Boteco</option>
+                    <option value="20">Usuário</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="editBio" style="display: block; margin-bottom: 5px;">Bio:</label>
+                <textarea id="editBio" rows="3"
+                    style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </div>
+        </div>
+
+        <hr style="margin-top: 15px; border-top: 1px solid gray;">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <button type="button" class="window-btn" id="deleteUserBtn" style="color: red;">Excluir Usuário</button>
+            <div style="display: flex; gap: 5px;">
+                <button type="button" class="window-btn" id="saveUserBtn" style="font-weight: bold;">Salvar
+                    Alterações</button>
+                <button type="button" class="window-btn"
+                    onclick="document.getElementById('editUserModal').close()">Cancelar</button>
+            </div>
         </div>
     </div>
 </dialog>
 
 <script>
-let currentUser = null;
-let usuariosLista = [];
-let currentLoggedUser = null;
+    let currentUser = null;
+    let usuariosLista = [];
+    let currentLoggedUser = null;
 
-// ==================== Buscar usuário logado ====================
-async function buscarUsuarioLogado() {
-    try {
-        const res = await fetch('/api/users/me', { credentials: "include" });
-        if (res.ok) {
-            currentLoggedUser = await res.json();
+    // ==================== Buscar usuário logado ====================
+    async function buscarUsuarioLogado() {
+        try {
+            const res = await fetch('/api/users/me', { credentials: "include" });
+            if (res.ok) {
+                currentLoggedUser = await res.json();
+            }
+        } catch (err) {
+            console.error("Erro ao buscar usuário logado:", err);
         }
-    } catch(err) {
-        console.error("Erro ao buscar usuário logado:", err);
     }
-}
 
-// ==================== Carregar usuários ====================
-async function carregarUsuarios() {
-    try {
-        const res = await fetch('/api/admin/users', { credentials: "include" });
-        if (!res.ok) throw new Error("Erro ao carregar usuários");
-        const users = await res.json();
+    // ==================== Carregar usuários ====================
+    async function carregarUsuarios() {
+        try {
+            const res = await fetch('/api/admin/users', { credentials: "include" });
+            if (!res.ok) throw new Error("Erro ao carregar usuários");
+            const users = await res.json();
 
-        usuariosLista = users; // salva globalmente
+            usuariosLista = users; // salva globalmente
 
-        const userList = document.getElementById("userList");
-        userList.innerHTML = "";
+            const userList = document.getElementById("userList");
+            userList.innerHTML = "";
 
-        if (users.length === 0) {
-            userList.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhum usuário encontrado.</div>';
-            return;
-        }
+            if (users.length === 0) {
+                userList.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhum usuário encontrado.</div>';
+                return;
+            }
 
-        const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Botecor', 20: 'Usuário' };
+            const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Boteco', 20: 'Usuário' };
 
-        users.forEach(user => {
-            const roleText = roleNames[user.roleId] || 'Usuário';
-            const lastAccessText = user.lastaccess && !isNaN(new Date(user.lastaccess)) ? new Date(user.lastaccess).toLocaleString('pt-BR') : 'Nunca acessou';
-            
-            // Definição de cores para roles
-            const roleColors = { 1: '#800000', 5: '#000080', 10: '#008000', 11: '#808000', 20: '#444' };
-            const roleColor = roleColors[user.roleId] || '#444';
+            users.forEach(user => {
+                const roleText = roleNames[user.roleId] || 'Usuário';
+                const lastAccessText = user.lastaccess && !isNaN(new Date(user.lastaccess)) ? new Date(user.lastaccess).toLocaleString('pt-BR') : 'Nunca acessou';
 
-            const item = document.createElement("div");
-            item.style.borderBottom = "1px dashed var(--retro-border-dark)";
-            item.style.padding = "8px";
-            item.style.cursor = "pointer";
-            item.style.transition = "background-color 0.1s";
-            
-            item.onmouseover = () => item.style.backgroundColor = "rgba(0, 0, 128, 0.05)";
-            item.onmouseout = () => item.style.backgroundColor = "transparent";
+                // Definição de cores para roles
+                const roleColors = { 1: '#800000', 5: '#000080', 10: '#008000', 11: '#808000', 20: '#444' };
+                const roleColor = roleColors[user.roleId] || '#444';
 
-            item.innerHTML = `
+                const item = document.createElement("div");
+                item.style.borderBottom = "1px dashed var(--retro-border-dark)";
+                item.style.padding = "8px";
+                item.style.cursor = "pointer";
+                item.style.transition = "background-color 0.1s";
+
+                item.onmouseover = () => item.style.backgroundColor = "rgba(0, 0, 128, 0.05)";
+                item.onmouseout = () => item.style.backgroundColor = "transparent";
+
+                item.innerHTML = `
                 <table width="100%" cellspacing="0" cellpadding="0">
                     <tr>
                         <td width="42" valign="middle">
                             <div style="width: 34px; height: 34px; border: 2px inset var(--retro-border-dark); background: #eee; overflow: hidden;">
-                                <img src="${user.profileimage || '/images/default-avatar.png'}" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img src="${user.profileimage || '/images/default-avatar.webp'}" style="width: 100%; height: 100%; object-fit: cover;">
                             </div>
                         </td>
                         <td valign="middle" style="padding-left: 5px;">
@@ -140,134 +147,134 @@ async function carregarUsuarios() {
                 </table>
             `;
 
-            // Adiciona o evento de clique no item
-            item.addEventListener("click", () => abrirModalEdicao(user.publicid));
+                // Adiciona o evento de clique no item
+                item.addEventListener("click", () => abrirModalEdicao(user.publicid));
 
-            userList.appendChild(item);
+                userList.appendChild(item);
+            });
+        } catch (err) {
+            console.error(err);
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
+            else alert("Erro ao carregar usuários");
+        }
+    }
+
+    // ==================== Abrir modal de edição ====================
+    function abrirModalEdicao(userId) {
+        const user = usuariosLista.find(u => u.publicid === userId);
+        if (!user) {
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário não encontrado!");
+            else alert("Usuário não encontrado!");
+            return;
+        }
+
+        // Impede editar a si mesmo (exceto Dono)
+        if (currentLoggedUser && currentLoggedUser.publicid === user.publicid && currentLoggedUser.roleId > 1) {
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Você não pode editar seu próprio usuário!");
+            else alert("Você não pode editar seu próprio usuário!");
+            return;
+        }
+
+        // Impede editar usuários de nível igual ou superior (exceto se for o próprio Dono editando a si mesmo)
+        if (currentLoggedUser && user.roleId <= currentLoggedUser.roleId && user.publicid !== currentLoggedUser.publicid) {
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Você não pode editar usuários de nível igual ou superior ao seu!");
+            else alert("Você não pode editar usuários de nível igual ou superior ao seu!");
+            return;
+        }
+
+        currentUser = user;
+
+        document.getElementById("editUsername").value = user.username;
+        document.getElementById("editRole").value = user.roleId;
+        document.getElementById("editBio").value = user.bio || '';
+        document.getElementById("editUserProfile").src = user.profileimage || '/images/default-avatar.webp';
+
+        // Desabilita opções de role iguais ou superiores ao usuário logado
+        const roleSelect = document.getElementById("editRole");
+        Array.from(roleSelect.options).forEach(option => {
+            const optionRole = parseInt(option.value);
+            if (currentLoggedUser && optionRole <= currentLoggedUser.roleId && currentLoggedUser.roleId !== 1) {
+                option.disabled = true;
+            } else {
+                option.disabled = false;
+            }
         });
-    } catch(err) {
-        console.error(err);
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
-        else alert("Erro ao carregar usuários");
-    }
-}
 
-// ==================== Abrir modal de edição ====================
-function abrirModalEdicao(userId) {
-    const user = usuariosLista.find(u => u.publicid === userId);
-    if (!user) {
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário não encontrado!");
-        else alert("Usuário não encontrado!");
-        return;
+        document.getElementById('editUserModal').showModal();
     }
 
-    // Impede editar a si mesmo (exceto Dono)
-    if (currentLoggedUser && currentLoggedUser.publicid === user.publicid && currentLoggedUser.roleId > 1) {
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Você não pode editar seu próprio usuário!");
-        else alert("Você não pode editar seu próprio usuário!");
-        return;
-    }
+    // ==================== Salvar alterações ====================
+    document.getElementById("saveUserBtn").addEventListener("click", async () => {
+        if (!currentUser) return;
 
-    // Impede editar usuários de nível igual ou superior (exceto se for o próprio Dono editando a si mesmo)
-    if (currentLoggedUser && user.roleId <= currentLoggedUser.roleId && user.publicid !== currentLoggedUser.publicid) {
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Você não pode editar usuários de nível igual ou superior ao seu!");
-        else alert("Você não pode editar usuários de nível igual ou superior ao seu!");
-        return;
-    }
+        const username = document.getElementById("editUsername").value.trim();
+        const roleId = parseInt(document.getElementById("editRole").value);
+        const bio = document.getElementById("editBio").value.trim();
 
-    currentUser = user;
+        try {
+            const res = await fetch(`/api/admin/users/${currentUser.publicid}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ username, roleId, bio })
+            });
 
-    document.getElementById("editUsername").value = user.username;
-    document.getElementById("editRole").value = user.roleId;
-    document.getElementById("editBio").value = user.bio || '';
-    document.getElementById("editUserProfile").src = user.profileimage || '/images/default-avatar.png';
-
-    // Desabilita opções de role iguais ou superiores ao usuário logado
-    const roleSelect = document.getElementById("editRole");
-    Array.from(roleSelect.options).forEach(option => {
-        const optionRole = parseInt(option.value);
-        if (currentLoggedUser && optionRole <= currentLoggedUser.roleId && currentLoggedUser.roleId !== 1) {
-            option.disabled = true;
-        } else {
-            option.disabled = false;
+            const data = await res.json();
+            if (res.ok) {
+                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário atualizado com sucesso!");
+                else alert("Usuário atualizado com sucesso!");
+                await carregarUsuarios(); // atualiza lista
+                document.getElementById('editUserModal').close();
+            } else {
+                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
+                else alert("Erro: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao atualizar usuário");
+            else alert("Erro ao atualizar usuário");
         }
     });
 
-    document.getElementById('editUserModal').showModal();
-}
+    // ==================== Excluir usuário ====================
+    document.getElementById("deleteUserBtn").addEventListener("click", async () => {
+        if (!currentUser) return;
 
-// ==================== Salvar alterações ====================
-document.getElementById("saveUserBtn").addEventListener("click", async () => {
-    if (!currentUser) return;
-
-    const username = document.getElementById("editUsername").value.trim();
-    const roleId = parseInt(document.getElementById("editRole").value);
-    const bio = document.getElementById("editBio").value.trim();
-
-    try {
-        const res = await fetch(`/api/admin/users/${currentUser.publicid}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ username, roleId, bio })
-        });
-
-        const data = await res.json();
-        if(res.ok) {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário atualizado com sucesso!");
-            else alert("Usuário atualizado com sucesso!");
-            await carregarUsuarios(); // atualiza lista
-            document.getElementById('editUserModal').close();
+        let confirmado = false;
+        if (typeof mostrarConfirmacao !== 'undefined') {
+            confirmado = await mostrarConfirmacao("Tem certeza que deseja excluir este usuário?");
         } else {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
-            else alert("Erro: " + data.message);
+            confirmado = confirm("Tem certeza que deseja excluir este usuário?");
         }
-    } catch(err) {
-        console.error(err);
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao atualizar usuário");
-        else alert("Erro ao atualizar usuário");
-    }
-});
 
-// ==================== Excluir usuário ====================
-document.getElementById("deleteUserBtn").addEventListener("click", async () => {
-    if (!currentUser) return;
-    
-    let confirmado = false;
-    if (typeof mostrarConfirmacao !== 'undefined') {
-        confirmado = await mostrarConfirmacao("Tem certeza que deseja excluir este usuário?");
-    } else {
-        confirmado = confirm("Tem certeza que deseja excluir este usuário?");
-    }
-    
-    if (!confirmado) return;
+        if (!confirmado) return;
 
-    try {
-        const res = await fetch(`/api/admin/users/${currentUser.publicid}`, {
-            method: "DELETE",
-            credentials: "include"
-        });
+        try {
+            const res = await fetch(`/api/admin/users/${currentUser.publicid}`, {
+                method: "DELETE",
+                credentials: "include"
+            });
 
-        if (res.ok) {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário excluído!");
-            else alert("Usuário excluído!");
-            await carregarUsuarios(); // atualiza lista
-            document.getElementById('editUserModal').close();
-        } else {
-            const data = await res.json();
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
-            else alert("Erro: " + data.message);
+            if (res.ok) {
+                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário excluído!");
+                else alert("Usuário excluído!");
+                await carregarUsuarios(); // atualiza lista
+                document.getElementById('editUserModal').close();
+            } else {
+                const data = await res.json();
+                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
+                else alert("Erro: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao excluir usuário");
+            else alert("Erro ao excluir usuário");
         }
-    } catch(err) {
-        console.error(err);
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao excluir usuário");
-        else alert("Erro ao excluir usuário");
-    }
-});
+    });
 
-// ==================== Inicialização ====================
-window.addEventListener("DOMContentLoaded", async () => {
-    await buscarUsuarioLogado();
-    carregarUsuarios();
-});
+    // ==================== Inicialização ====================
+    window.addEventListener("DOMContentLoaded", async () => {
+        await buscarUsuarioLogado();
+        carregarUsuarios();
+    });
 </script>

@@ -116,14 +116,10 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                             type: 'info', // 'MENTION' não está no ENUM do SQL, usando 'info'
                             title: 'Menção em Post',
                             body: `${req.user.username} mencionou você em um post.`,
-                            link: `/${req.user.username}/status/${post.publicid}`
+                            link: `/${req.user.username}/status/${post.publicid}`,
+                            io: req.app.get('io'),
+                            socketType: 'mention'
                         });
-
-                        // Emitir via socket
-                        const io = req.app.get('io');
-                        if (io) {
-                            io.to(`user_${mentionedUser.id}`).emit('newNotification', { type: 'mention' });
-                        }
                     }
                 }
             }
@@ -177,14 +173,10 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                         type: notifType,
                         title: notifTitle,
                         body: notifBody,
-                        link: `/${req.user.username}/status/${post.publicid}`
+                        link: `/${req.user.username}/status/${post.publicid}`,
+                        io: req.app.get('io'),
+                        socketType: type
                     });
-
-                    // Emitir via socket
-                    const io = req.app.get('io');
-                    if (io) {
-                        io.to(`user_${parentPost.authorUserId}`).emit('newNotification', { type: type });
-                    }
                 }
             }
         }
@@ -372,14 +364,10 @@ PostsRouter.post('/:publicid/like', async (req, res) => {
                     type: 'info',
                     title: 'Nova Curtida',
                     body: `${req.user.username} curtiu seu post.`,
-                    link: `/${post.author.username}/status/${post.publicid}`
+                    link: `/${post.author.username}/status/${post.publicid}`,
+                    io: req.app.get('io'),
+                    socketType: 'like'
                 });
-
-                // Emitir via socket
-                const io = req.app.get('io');
-                if (io) {
-                    io.to(`user_${post.authorUserId}`).emit('newNotification', { type: 'like' });
-                }
             }
             
             return res.json({ liked: true, likecount: post.likecount, publicid: post.publicid });

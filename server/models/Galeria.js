@@ -166,6 +166,11 @@ const GaleriaItem = sequelize.define('GaleriaItem', {
         allowNull: false,
         defaultValue: 1
     },
+    roundedcorners: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
     createdat: {
         type: DataTypes.DATE,
         allowNull: false,

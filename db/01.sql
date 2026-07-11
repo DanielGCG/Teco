@@ -14,7 +14,7 @@ INSERT INTO role (id, publicid, name) VALUES
 (1, '83d26732-c7f9-4623-bc75-1a13470402b4', 'dono'),
 (5, '6c9135fc-3e28-4475-be82-f58c4957f950', 'admin'),
 (10, '33a2e796-03f3-4fd6-912a-04987a052e69', 'moderador'),
-(11, 'f268b8b0-880c-4ef7-8f5f-f61b0722cc2c', 'botecor'),
+(11, 'f268b8b0-880c-4ef7-8f5f-f61b0722cc2c', 'boteco'),
 (20, '4078864a-2f47-495f-9e32-3f7cb5f98897', 'usuário');
 
 CREATE TABLE IF NOT EXISTS user (
@@ -26,7 +26,10 @@ CREATE TABLE IF NOT EXISTS user (
     birthday DATE DEFAULT CURRENT_DATE,
     pronouns VARCHAR(16),
     bio VARCHAR(160),
+    bannerimage VARCHAR(255),
     backgroundimage VARCHAR(255),
+    backgroundcolor VARCHAR(7) DEFAULT NULL,
+    backgroundfill VARCHAR(10) DEFAULT 'cover',
     profileimage VARCHAR(255),
     lastfmusername VARCHAR(64),
     postcount INT UNSIGNED NOT NULL DEFAULT 0,
@@ -306,6 +309,7 @@ CREATE TABLE IF NOT EXISTS galleryitem (
     endpositionx INT,
     endpositiony INT,
     positionz INT NOT NULL DEFAULT 1,
+    roundedcorners BOOLEAN NOT NULL DEFAULT TRUE,
     createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     editedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     editedbyUserId INT UNSIGNED,
@@ -556,8 +560,10 @@ CREATE TABLE `pet` (
 
   -- Inventário
   `lastDailyClaim` DATE          NULL DEFAULT NULL,
+  `claimNotifiedFor` VARCHAR(255) NULL DEFAULT NULL,
 
-  -- Estado de morte
+  -- Estado de morte e Alertas
+  `warningsSent`   INT           NOT NULL DEFAULT 0,
   `dead`           TINYINT(1)    NOT NULL DEFAULT 0,
   `diedAt`         DATETIME      NULL DEFAULT NULL,
   `deathCause`     ENUM('fome','sede','limpeza','loucura') NULL DEFAULT NULL,

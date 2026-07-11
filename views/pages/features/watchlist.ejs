@@ -6,7 +6,7 @@
         gap: 10px;
         margin-bottom: 20px;
     }
-    
+
     /* Cartões */
     .watchlist-card {
         width: 140px;
@@ -17,15 +17,18 @@
         display: flex;
         flex-direction: column;
     }
+
     .watchlist-card:active {
         border-style: inset;
     }
+
     .watchlist-capa {
         width: 100%;
         height: 190px;
         object-fit: cover;
         border-bottom: 2px groove var(--retro-border-light);
     }
+
     .watchlist-title {
         font-size: 11px;
         font-weight: bold;
@@ -36,18 +39,19 @@
         background: var(--retro-bg);
         color: var(--retro-text);
     }
-    
+
     /* Utilidades */
     .badge-boteco-container {
         padding-bottom: 4px;
         background: var(--retro-bg);
     }
+
     .section-header {
         margin-top: 0;
         border-bottom: 2px solid var(--retro-border-dark);
         padding-bottom: 5px;
     }
-    
+
     /* Botão Adicionar Especial */
     .btn-adicionar-obra {
         width: 140px;
@@ -62,29 +66,35 @@
         font-weight: bold;
         text-align: center;
     }
+
     .btn-adicionar-obra:hover {
         background: var(--retro-bg);
     }
-    
+
     /* Modais Base */
     .retro-modal-overlay {
         display: none;
         position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5);
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
         z-index: 1000;
     }
+
     .retro-modal {
         display: none;
         position: fixed;
-        top: 50%; left: 50%;
+        top: 50%;
+        left: 50%;
         transform: translate(-50%, -50%);
         z-index: 1001;
         width: 90%;
         max-width: 600px;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
     }
-    
+
     /* Layout Interno do Modal de Detalhes */
     .modal-main-layout {
         display: flex;
@@ -92,25 +102,29 @@
         max-height: 80vh;
         overflow-y: auto;
     }
+
     .modal-sidebar {
         flex-shrink: 0;
         width: 150px;
         text-align: center;
     }
+
     .modal-sidebar img {
         width: 150px;
         border: 2px solid var(--retro-border-dark);
         margin-bottom: 10px;
     }
+
     .modal-content-area {
         flex-grow: 1;
     }
+
     .retro-fieldset {
         margin-bottom: 15px;
         border: 2px groove var(--retro-border-light);
         padding: 10px;
     }
-    
+
     /* Componente de Estrelas Interativas */
     .star-wrapper {
         display: inline-block;
@@ -119,15 +133,24 @@
         color: #ffcc00;
         text-shadow: 1px 1px 0 #000;
     }
+
     .star-half-zone {
         position: absolute;
-        top: 0; bottom: 0;
+        top: 0;
+        bottom: 0;
         width: 50%;
         z-index: 2;
         cursor: pointer;
     }
-    .star-half-zone.left { left: 0; }
-    .star-half-zone.right { right: 0; }
+
+    .star-half-zone.left {
+        left: 0;
+    }
+
+    .star-half-zone.right {
+        right: 0;
+    }
+
     .stars-display-box {
         background: var(--retro-sidebar-bg);
         padding: 5px;
@@ -147,6 +170,7 @@
         border: 2px inset var(--retro-border-light);
         padding: 5px;
     }
+
     .search-result-item {
         cursor: pointer;
         padding: 5px;
@@ -154,10 +178,12 @@
         text-align: center;
         width: 110px;
     }
+
     .search-result-item:hover {
         background: var(--retro-sidebar-bg);
         border: 1px dotted var(--retro-border-dark);
     }
+
     .search-result-item img {
         width: 100px;
         height: 140px;
@@ -168,12 +194,12 @@
 
 <div class="window">
     <div class="window-header">Watchlist - Filmes e Séries</div>
-    <div class="window-content" style="background: var(--retro-window-bg);">
-        
+    <div class="window-content">
+
         <h3 class="section-header">
             Para Assistir (<span id="count-pendentes">0</span>)
         </h3>
-        
+
         <div class="retro-grid" id="tabela-pendentes">
             <div class="btn-adicionar-obra" onclick="abrirModalBusca()">
                 <div style="font-size: 32px; margin-bottom: 10px;">+</div>
@@ -185,11 +211,11 @@
         <h3 class="section-header">
             Já Vistos (<span id="count-vistos">0</span>)
         </h3>
-        
+
         <div class="retro-grid" id="tabela-vistos">
             <!-- Inserido via JS -->
         </div>
-        
+
     </div>
 </div>
 
@@ -211,37 +237,37 @@
         <span id="modal-header-title">Detalhes da Obra</span>
         <button onclick="fecharTodosModais()" style="padding: 0 5px;">[Fechar]</button>
     </div>
-    
+
     <div class="window-content modal-main-layout">
         <!-- Barra Lateral do Pôster -->
         <div class="modal-sidebar">
             <img id="modal-poster" src="" alt="Pôster selecionado">
-            
+
             <div style="font-size: 11px; margin-bottom: 5px;">
                 <strong id="modal-type"></strong> | <span id="modal-date"></span><br>
                 TMDb: <span id="modal-tmdb-vote"></span>/10 <br>
                 Áudio: <span id="modal-lang" style="text-transform: uppercase;"></span>
             </div>
-            
+
             <div style="font-size: 10px; margin-bottom: 15px; color: var(--retro-border-dark);">
                 Por: <span id="modal-requester"></span>
             </div>
-            
+
             <button id="btn-remover-obra" style="width: 100%; color: red;">Remover</button>
         </div>
-        
+
         <!-- Conteúdo Principal do Modal -->
         <div class="modal-content-area">
             <h2 id="modal-title" style="margin-top: 0;"></h2>
-            
+
             <fieldset class="retro-fieldset">
                 <legend>Status</legend>
                 <label>
                     <input type="checkbox" id="sw-watched"> Já assistimos
                 </label>
-                
+
                 <div style="margin-top: 10px;">
-                    <strong>Nossa Nota (Clique na estrela):</strong><br>
+                    <strong>Nota coletiva:</strong><br>
                     <div id="modal-stars-display" class="stars-display-box"></div>
                 </div>
             </fieldset>
@@ -263,7 +289,8 @@
     <div class="window-content">
         <div style="margin-bottom: 10px;">
             <label style="font-weight: bold;">Buscar Filme/Série (TMDb):</label>
-            <input type="text" id="search-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="Digite o nome...">
+            <input type="text" id="search-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;"
+                placeholder="Digite o nome...">
         </div>
         <div id="results" class="search-results-area">
             <!-- Resultados -->
@@ -280,10 +307,13 @@
     <div class="window-content" style="text-align: center;">
         <h3 style="color: red; margin-top: 0;">Remover Título?</h3>
         <p style="font-size: 11px;">Para confirmar a exclusão, digite o nome do título abaixo:</p>
-        
-        <div id="confirmacao-nome-exibicao" class="stars-display-box" style="font-weight: bold; margin-bottom: 10px; width: 100%; box-sizing: border-box;"></div>
-        <input type="text" id="input-confirmacao-nome" style="width: 100%; margin-bottom: 15px; text-align: center; box-sizing: border-box;" placeholder="Digite o nome aqui">
-        
+
+        <div id="confirmacao-nome-exibicao" class="stars-display-box"
+            style="font-weight: bold; margin-bottom: 10px; width: 100%; box-sizing: border-box;"></div>
+        <input type="text" id="input-confirmacao-nome"
+            style="width: 100%; margin-bottom: 15px; text-align: center; box-sizing: border-box;"
+            placeholder="Digite o nome aqui">
+
         <div style="display: flex; gap: 10px; justify-content: center;">
             <button id="btnConfirmarDelecao" style="color: red; font-weight: bold;">Excluir</button>
             <button onclick="fecharModalConfirmacao()">Cancelar</button>
@@ -292,282 +322,282 @@
 </div>
 
 <script>
-let obrasWatchlist = [];
+    let obrasWatchlist = [];
 
-// ==========================================
-// 1. UTILIDADES VISUAIS (Estrelas)
-// ==========================================
-function renderStars(nota, interactive = false, publicid = null) {
-    const rating = (nota !== null && nota !== undefined && nota !== '') ? parseFloat(nota) : 0;
-    let html = `<div style="display: inline-flex; gap: 2px; margin-top: 5px;">`;
-    
-    for (let i = 1; i <= 5; i++) {
-        const fullVal = i * 2;
-        const halfVal = fullVal - 1;
-        
-        const starChar = (rating >= halfVal) ? '★' : '☆';
-        const colorStyle = (rating >= halfVal) ? 'color: #ffcc00; text-shadow: 1px 1px 0 #000;' : 'color: var(--retro-border-dark);';
-        
-        if (interactive) {
-            html += `
+    // ==========================================
+    // 1. UTILIDADES VISUAIS
+    // ==========================================
+    function renderStars(nota, interactive = false, publicid = null) {
+        const rating = (nota !== null && nota !== undefined && nota !== '') ? parseFloat(nota) : 0;
+        let html = `<div style="display: inline-flex; gap: 2px; margin-top: 5px;">`;
+
+        for (let i = 1; i <= 5; i++) {
+            const fullVal = i * 2;
+            const halfVal = fullVal - 1;
+
+            const starChar = (rating >= halfVal) ? '★' : '☆';
+            const colorStyle = (rating >= halfVal) ? 'color: #ffcc00; text-shadow: 1px 1px 0 #000;' : 'color: var(--retro-border-dark);';
+
+            if (interactive) {
+                html += `
                 <span class="star-wrapper">
                     ${starChar}
                     <span class="star-half-zone left" onclick="atualizarStatusObra('${publicid}', null, ${halfVal}); updateModalStars('${publicid}', ${halfVal})"></span>
                     <span class="star-half-zone right" onclick="atualizarStatusObra('${publicid}', null, ${fullVal}); updateModalStars('${publicid}', ${fullVal})"></span>
                 </span>`;
-        } else {
-            html += `<span style="${colorStyle}">${starChar}</span>`;
-        }
-    }
-    
-    return html + '</div>';
-}
-
-function updateModalStars(publicid, nota) {
-    document.getElementById('modal-stars-display').innerHTML = renderStars(nota, true, publicid);
-}
-
-// ==========================================
-// 2. CICLO DE VIDA E RENDERIZAÇÃO
-// ==========================================
-document.addEventListener('DOMContentLoaded', carregarWatchlist);
-
-async function carregarWatchlist() {
-    try {
-        const response = await fetch(`/api/watchlist/watchlistdownload-movies`);
-        const data = await response.json();
-        if (Array.isArray(data)) {
-            obrasWatchlist = data;
-            listarObras();
-        }
-    } catch (error) {
-        console.error('Erro ao buscar obras:', error);
-    }
-}
-
-function listarObras() {
-    const pendentesList = document.getElementById('tabela-pendentes');
-    const vistosList = document.getElementById('tabela-vistos');
-    const template = document.getElementById('template-card');
-
-    // Preserva apenas o botão "+"
-    const adicBtn = pendentesList.firstElementChild;
-    pendentesList.innerHTML = '';
-    pendentesList.appendChild(adicBtn);
-    vistosList.innerHTML = '';
-
-    let pendentesCount = 0;
-    let vistosCount = 0;
-
-    obrasWatchlist.forEach(obra => {
-        const clone = template.content.cloneNode(true);
-        const card = clone.querySelector('.watchlist-card');
-        const img = clone.querySelector('.watchlist-capa');
-        const titleEl = clone.querySelector('.watchlist-title');
-        const badgeContainer = clone.querySelector('.badge-boteco-container');
-
-        const titulo = obra.title || obra.name;
-        img.src = obra.posterurl || obra.poster_path ? `https://image.tmdb.org/t/p/w500${obra.posterurl || obra.poster_path}` : 'https://via.placeholder.com/200x300?text=Sem+Capa';
-        titleEl.textContent = titulo;
-        titleEl.title = titulo;
-        badgeContainer.innerHTML = renderStars(obra.voteboteco);
-
-        card.onclick = () => abrirPopupDetalhes(obra.publicid);
-
-        if (obra.iswatched) {
-            vistosList.appendChild(clone);
-            vistosCount++;
-        } else {
-            pendentesList.appendChild(clone);
-            pendentesCount++;
-        }
-    });
-
-    document.getElementById('count-pendentes').textContent = pendentesCount;
-    document.getElementById('count-vistos').textContent = vistosCount;
-}
-
-// ==========================================
-// 3. GERENCIAMENTO DE MODAIS
-// ==========================================
-function fecharTodosModais() {
-    document.getElementById('modal-overlay').style.display = 'none';
-    document.querySelectorAll('.retro-modal').forEach(m => m.style.display = 'none');
-}
-
-function abrirModalBusca() {
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('modalBusca').style.display = 'block';
-    document.getElementById('search-input').focus();
-}
-
-function fecharModalConfirmacao() {
-    document.getElementById('modalConfirmacao').style.display = 'none';
-    document.getElementById('modalObra').style.display = 'block';
-}
-
-function abrirPopupDetalhes(publicid) {
-    const obra = obrasWatchlist.find(o => o.publicid === publicid);
-    if (!obra) return;
-
-    // Popula campos
-    document.getElementById('modal-poster').src = obra.posterurl || obra.poster_path ? `https://image.tmdb.org/t/p/w500${obra.posterurl || obra.poster_path}` : 'https://via.placeholder.com/200x300?text=Sem+Capa';
-    document.getElementById('modal-title').textContent = obra.title || obra.name;
-    document.getElementById('modal-type').textContent = obra.type === 'tv' ? 'Série' : 'Filme';
-    document.getElementById('modal-date').textContent = obra.releasedate || obra.release_date || 'N/A';
-    document.getElementById('modal-overview').textContent = obra.overview || 'Nenhuma descrição disponível.';
-    document.getElementById('modal-tmdb-vote').textContent = parseFloat(obra.voteaverage || obra.vote_average || 0).toFixed(1);
-    document.getElementById('modal-lang').textContent = obra.originallang || obra.original_language || '??';
-    
-    document.getElementById('modal-requester').innerHTML = obra.requester ? 
-        `<a href="/${obra.requester.username}" target="_blank" style="color: blue; text-decoration: underline;">${obra.requester.username}</a>` : 'Sistema';
-
-    // Status Interativos
-    const swWatched = document.getElementById('sw-watched');
-    swWatched.checked = !!obra.iswatched;
-    swWatched.onchange = (e) => atualizarStatusObra(obra.publicid, e.target.checked, null);
-    
-    updateModalStars(obra.publicid, obra.voteboteco);
-    
-    // Ações
-    document.getElementById('btn-remover-obra').onclick = () => iniciarDelecao(obra.publicid);
-
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('modalObra').style.display = 'block';
-}
-
-// ==========================================
-// 4. AÇÕES DA API (CRUD)
-// ==========================================
-async function atualizarStatusObra(publicid, watched, custom_rating) {
-    const body = { publicid };
-    if (watched !== null) body.watched = watched;
-    if (custom_rating !== null) body.custom_rating = custom_rating === '' ? null : parseFloat(custom_rating);
-
-    try {
-        const response = await fetch('/api/watchlist/watchlistupdate-status', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-            const index = obrasWatchlist.findIndex(o => o.publicid === publicid);
-            if (index !== -1) {
-                if (watched !== null) obrasWatchlist[index].iswatched = watched;
-                if (custom_rating !== null) obrasWatchlist[index].voteboteco = body.custom_rating;
-                listarObras();
+            } else {
+                html += `<span style="${colorStyle}">${starChar}</span>`;
             }
         }
-    } catch (e) { console.error('Erro ao atualizar:', e); }
-}
 
-function iniciarDelecao(publicid) {
-    const obra = obrasWatchlist.find(o => o.publicid === publicid);
-    if (!obra) return;
-
-    const input = document.getElementById('input-confirmacao-nome');
-    document.getElementById('confirmacao-nome-exibicao').textContent = obra.title || obra.name;
-    input.value = '';
-    input.style.border = '';
-    document.getElementById('btnConfirmarDelecao').onclick = () => confirmarDelecao(publicid);
-    
-    document.getElementById('modalObra').style.display = 'none';
-    document.getElementById('modalConfirmacao').style.display = 'block';
-}
-
-async function confirmarDelecao(publicid) {
-    const obra = obrasWatchlist.find(o => o.publicid === publicid);
-    const input = document.getElementById('input-confirmacao-nome');
-    
-    if (!obra || input.value.trim().toLowerCase() !== (obra.title || obra.name).toLowerCase()) {
-        input.style.border = '2px solid red';
-        return;
+        return html + '</div>';
     }
 
-    fecharTodosModais();
-    try {
-        const response = await fetch(`/api/watchlist/watchlistdelete-movie?publicid=${publicid}`, { method: 'DELETE' });
-        const data = await response.json();
-        if (data.success) {
-            obrasWatchlist = obrasWatchlist.filter(o => o.publicid !== publicid);
-            listarObras();
+    function updateModalStars(publicid, nota) {
+        document.getElementById('modal-stars-display').innerHTML = renderStars(nota, true, publicid);
+    }
+
+    // ==========================================
+    // 2. CICLO DE VIDA E RENDERIZAÇÃO
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', carregarWatchlist);
+
+    async function carregarWatchlist() {
+        try {
+            const response = await fetch(`/api/watchlist/watchlistdownload-movies`);
+            const data = await response.json();
+            if (Array.isArray(data)) {
+                obrasWatchlist = data;
+                listarObras();
+            }
+        } catch (error) {
+            console.error('Erro ao buscar obras:', error);
         }
-    } catch (e) { console.error('Erro ao deletar:', e); }
-}
+    }
 
-// ==========================================
-// 5. BUSCA E UPLOAD (TMDb)
-// ==========================================
-let searchTimer;
-document.getElementById('search-input').addEventListener('input', (e) => {
-    clearTimeout(searchTimer);
-    const query = e.target.value;
-    if (query.length >= 3) searchTimer = setTimeout(() => buscarTitulos(query), 500);
-});
+    function listarObras() {
+        const pendentesList = document.getElementById('tabela-pendentes');
+        const vistosList = document.getElementById('tabela-vistos');
+        const template = document.getElementById('template-card');
 
-async function buscarTitulos(query) {
-    try {
-        const res = await fetch(`/api/watchlist/watchlistsearch-movies?query=${encodeURIComponent(query)}`);
-        const items = await res.json();
-        const resultsEl = document.getElementById('results');
-        resultsEl.innerHTML = '';
+        // Preserva apenas o botão "+"
+        const adicBtn = pendentesList.firstElementChild;
+        pendentesList.innerHTML = '';
+        pendentesList.appendChild(adicBtn);
+        vistosList.innerHTML = '';
 
-        items.forEach(item => {
-            const col = document.createElement('div');
-            col.className = 'search-result-item';
-            col.innerHTML = `
+        let pendentesCount = 0;
+        let vistosCount = 0;
+
+        obrasWatchlist.forEach(obra => {
+            const clone = template.content.cloneNode(true);
+            const card = clone.querySelector('.watchlist-card');
+            const img = clone.querySelector('.watchlist-capa');
+            const titleEl = clone.querySelector('.watchlist-title');
+            const badgeContainer = clone.querySelector('.badge-boteco-container');
+
+            const titulo = obra.title || obra.name;
+            img.src = obra.posterurl || obra.poster_path ? `https://image.tmdb.org/t/p/w500${obra.posterurl || obra.poster_path}` : 'https://via.placeholder.com/200x300?text=Sem+Capa';
+            titleEl.textContent = titulo;
+            titleEl.title = titulo;
+            badgeContainer.innerHTML = renderStars(obra.voteboteco);
+
+            card.onclick = () => abrirPopupDetalhes(obra.publicid);
+
+            if (obra.iswatched) {
+                vistosList.appendChild(clone);
+                vistosCount++;
+            } else {
+                pendentesList.appendChild(clone);
+                pendentesCount++;
+            }
+        });
+
+        document.getElementById('count-pendentes').textContent = pendentesCount;
+        document.getElementById('count-vistos').textContent = vistosCount;
+    }
+
+    // ==========================================
+    // 3. GERENCIAMENTO DE MODAIS
+    // ==========================================
+    function fecharTodosModais() {
+        document.getElementById('modal-overlay').style.display = 'none';
+        document.querySelectorAll('.retro-modal').forEach(m => m.style.display = 'none');
+    }
+
+    function abrirModalBusca() {
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('modalBusca').style.display = 'block';
+        document.getElementById('search-input').focus();
+    }
+
+    function fecharModalConfirmacao() {
+        document.getElementById('modalConfirmacao').style.display = 'none';
+        document.getElementById('modalObra').style.display = 'block';
+    }
+
+    function abrirPopupDetalhes(publicid) {
+        const obra = obrasWatchlist.find(o => o.publicid === publicid);
+        if (!obra) return;
+
+        // Popula campos
+        document.getElementById('modal-poster').src = obra.posterurl || obra.poster_path ? `https://image.tmdb.org/t/p/w500${obra.posterurl || obra.poster_path}` : 'https://via.placeholder.com/200x300?text=Sem+Capa';
+        document.getElementById('modal-title').textContent = obra.title || obra.name;
+        document.getElementById('modal-type').textContent = obra.type === 'tv' ? 'Série' : 'Filme';
+        document.getElementById('modal-date').textContent = obra.releasedate || obra.release_date || 'N/A';
+        document.getElementById('modal-overview').textContent = obra.overview || 'Nenhuma descrição disponível.';
+        document.getElementById('modal-tmdb-vote').textContent = parseFloat(obra.voteaverage || obra.vote_average || 0).toFixed(1);
+        document.getElementById('modal-lang').textContent = obra.originallang || obra.original_language || '??';
+
+        document.getElementById('modal-requester').innerHTML = obra.requester ?
+            `<a href="/${obra.requester.username}" target="_blank" style="color: blue; text-decoration: underline;">${obra.requester.username}</a>` : 'Sistema';
+
+        // Status Interativos
+        const swWatched = document.getElementById('sw-watched');
+        swWatched.checked = !!obra.iswatched;
+        swWatched.onchange = (e) => atualizarStatusObra(obra.publicid, e.target.checked, null);
+
+        updateModalStars(obra.publicid, obra.voteboteco);
+
+        // Ações
+        document.getElementById('btn-remover-obra').onclick = () => iniciarDelecao(obra.publicid);
+
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('modalObra').style.display = 'block';
+    }
+
+    // ==========================================
+    // 4. AÇÕES DA API
+    // ==========================================
+    async function atualizarStatusObra(publicid, watched, custom_rating) {
+        const body = { publicid };
+        if (watched !== null) body.watched = watched;
+        if (custom_rating !== null) body.custom_rating = custom_rating === '' ? null : parseFloat(custom_rating);
+
+        try {
+            const response = await fetch('/api/watchlist/watchlistupdate-status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                const index = obrasWatchlist.findIndex(o => o.publicid === publicid);
+                if (index !== -1) {
+                    if (watched !== null) obrasWatchlist[index].iswatched = watched;
+                    if (custom_rating !== null) obrasWatchlist[index].voteboteco = body.custom_rating;
+                    listarObras();
+                }
+            }
+        } catch (e) { console.error('Erro ao atualizar:', e); }
+    }
+
+    function iniciarDelecao(publicid) {
+        const obra = obrasWatchlist.find(o => o.publicid === publicid);
+        if (!obra) return;
+
+        const input = document.getElementById('input-confirmacao-nome');
+        document.getElementById('confirmacao-nome-exibicao').textContent = obra.title || obra.name;
+        input.value = '';
+        input.style.border = '';
+        document.getElementById('btnConfirmarDelecao').onclick = () => confirmarDelecao(publicid);
+
+        document.getElementById('modalObra').style.display = 'none';
+        document.getElementById('modalConfirmacao').style.display = 'block';
+    }
+
+    async function confirmarDelecao(publicid) {
+        const obra = obrasWatchlist.find(o => o.publicid === publicid);
+        const input = document.getElementById('input-confirmacao-nome');
+
+        if (!obra || input.value.trim().toLowerCase() !== (obra.title || obra.name).toLowerCase()) {
+            input.style.border = '2px solid red';
+            return;
+        }
+
+        fecharTodosModais();
+        try {
+            const response = await fetch(`/api/watchlist/watchlistdelete-movie?publicid=${publicid}`, { method: 'DELETE' });
+            const data = await response.json();
+            if (data.success) {
+                obrasWatchlist = obrasWatchlist.filter(o => o.publicid !== publicid);
+                listarObras();
+            }
+        } catch (e) { console.error('Erro ao deletar:', e); }
+    }
+
+    // ==========================================
+    // 5. BUSCA E UPLOAD (TMDb)
+    // ==========================================
+    let searchTimer;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        clearTimeout(searchTimer);
+        const query = e.target.value;
+        if (query.length >= 3) searchTimer = setTimeout(() => buscarTitulos(query), 500);
+    });
+
+    async function buscarTitulos(query) {
+        try {
+            const res = await fetch(`/api/watchlist/watchlistsearch-movies?query=${encodeURIComponent(query)}`);
+            const items = await res.json();
+            const resultsEl = document.getElementById('results');
+            resultsEl.innerHTML = '';
+
+            items.forEach(item => {
+                const col = document.createElement('div');
+                col.className = 'search-result-item';
+                col.innerHTML = `
                 <img src="${item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : 'https://via.placeholder.com/200x300'}" title="${item.title || item.name}">
                 <br>
                 <span style="font-size: 10px; display: block; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     ${item.title || item.name}
                 </span>`;
-            col.onclick = () => adicionarObra(item);
-            resultsEl.appendChild(col);
-        });
-    } catch (e) { console.error('Busca falhou:', e); }
-}
-
-async function adicionarObra(tmdbItem) {
-    const nome = tmdbItem.title || tmdbItem.name;
-    const confirmMsg = `Adicionar "${nome}"?`;
-    
-    if (window.confirmRetro) {
-        const ans = await window.confirmRetro(confirmMsg, 'Confirmação');
-        if (!ans) return;
-    } else {
-        if (!confirm(confirmMsg)) return;
+                col.onclick = () => adicionarObra(item);
+                resultsEl.appendChild(col);
+            });
+        } catch (e) { console.error('Busca falhou:', e); }
     }
-    
-    fecharTodosModais();
-    try {
-        const res = await fetch('/api/watchlist/watchlistupload-movies', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: tmdbItem.id,
-                title: nome,
-                overview: tmdbItem.overview,
-                popularity: tmdbItem.popularity,
-                type: tmdbItem.media_type,
-                originallang: tmdbItem.original_language,
-                posterurl: tmdbItem.poster_path,
-                backdropurl: tmdbItem.backdrop_path,
-                releasedate: tmdbItem.release_date || tmdbItem.first_air_date,
-                voteaverage: tmdbItem.vote_average,
-                votecount: tmdbItem.vote_count
-            })
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-            carregarWatchlist();
-            if (window.alertRetro) window.alertRetro('Obra adicionada com sucesso!');
+
+    async function adicionarObra(tmdbItem) {
+        const nome = tmdbItem.title || tmdbItem.name;
+        const confirmMsg = `Adicionar "${nome}"?`;
+
+        if (window.confirmRetro) {
+            const ans = await window.confirmRetro(confirmMsg, 'Confirmação');
+            if (!ans) return;
         } else {
-            if (window.alertRetro) window.alertRetro(data.message || 'Erro ao adicionar.');
-            else alert(data.message || 'Erro ao adicionar.');
+            if (!confirm(confirmMsg)) return;
         }
-    } catch (e) { console.error('Erro:', e); }
-}
+
+        fecharTodosModais();
+        try {
+            const res = await fetch('/api/watchlist/watchlistupload-movies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: tmdbItem.id,
+                    title: nome,
+                    overview: tmdbItem.overview,
+                    popularity: tmdbItem.popularity,
+                    type: tmdbItem.media_type,
+                    originallang: tmdbItem.original_language,
+                    posterurl: tmdbItem.poster_path,
+                    backdropurl: tmdbItem.backdrop_path,
+                    releasedate: tmdbItem.release_date || tmdbItem.first_air_date,
+                    voteaverage: tmdbItem.vote_average,
+                    votecount: tmdbItem.vote_count
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                carregarWatchlist();
+                if (window.alertRetro) window.alertRetro('Obra adicionada com sucesso!');
+            } else {
+                if (window.alertRetro) window.alertRetro(data.message || 'Erro ao adicionar.');
+                else alert(data.message || 'Erro ao adicionar.');
+            }
+        } catch (e) { console.error('Erro:', e); }
+    }
 </script>

@@ -17,8 +17,10 @@ const Pet = sequelize.define('Pet', {
     
     // Resgate Diário
     lastDailyClaim: { type: DataTypes.DATEONLY, allowNull: true, defaultValue: null },
+    claimNotifiedFor: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
     
-    // Morte
+    // Morte e Alertas
+    warningsSent: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     dead:       { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     diedAt:     { type: DataTypes.DATE,    allowNull: true,  defaultValue: null },
     deathCause: {

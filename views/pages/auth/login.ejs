@@ -1,7 +1,8 @@
-<div style="display: flex; flex-direction: column; min-height: 80vh; justify-content: center; align-items: center; padding: 20px;">
+<div
+    style="display: flex; flex-direction: column; min-height: 80vh; justify-content: center; align-items: center; padding: 20px;">
     <div class="window" style="width: 100%; max-width: 320px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
         <div class="window-header">
-            <span>Login - Teco</span>
+            <span>Login</span>
         </div>
         <div class="window-content" style="padding: 20px;">
             <div style="text-align: center; margin-bottom: 20px;">
@@ -11,82 +12,94 @@
 
             <form id="loginForm">
                 <div style="margin-bottom: 15px;">
-                    <label for="username" style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Nome de Usuário:</label>
-                    <div style="display: flex; border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); background: var(--retro-window-bg);">
-                        <span style="padding: 3px 6px; background: var(--retro-sidebar-bg); border-right: 1px solid var(--retro-border-dark); font-size: 13px; font-weight: bold; color: var(--retro-text);">@</span>
-                        <input type="text" id="username" name="username" required maxlength="15" pattern="[A-Za-z0-9_]{1,15}" style="border: none; outline: none; width: 100%; padding: 2px 5px; font-size: 12px; background: transparent; color: var(--retro-text);">
+                    <label for="username"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Nome
+                        de Usuário:</label>
+                    <div
+                        style="display: flex; border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); background: var(--retro-window-bg);">
+                        <span
+                            style="padding: 3px 6px; background: var(--retro-sidebar-bg); border-right: 1px solid var(--retro-border-dark); font-size: 13px; font-weight: bold; color: var(--retro-text);">@</span>
+                        <input type="text" id="username" name="username" required maxlength="15"
+                            pattern="[A-Za-z0-9_]{1,15}"
+                            style="border: none; outline: none; width: 100%; padding: 2px 5px; font-size: 12px; background: transparent; color: var(--retro-text);">
                     </div>
                 </div>
 
                 <div style="margin-bottom: 20px;">
-                    <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Senha:</label>
-                    <input type="password" id="password" name="password" required style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
+                    <label for="password"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Senha:</label>
+                    <input type="password" id="password" name="password" required
+                        style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
                 </div>
 
                 <div style="display: flex; justify-content: center; margin-bottom: 15px;">
-                    <button type="submit" style="width: 120px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 12px;">OK</button>
+                    <button type="submit"
+                        style="width: 120px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 12px;">OK</button>
                 </div>
             </form>
 
-            <div id="message" style="margin-top: 10px; text-align: center; font-size: 11px; min-height: 15px; font-weight: bold;"></div>
-            
-            <div style="margin-top: 15px; text-align: center; border-top: 1px dashed var(--retro-border-dark); padding-top: 10px;">
+            <div id="message"
+                style="margin-top: 10px; text-align: center; font-size: 11px; min-height: 15px; font-weight: bold;">
+            </div>
+
+            <div
+                style="margin-top: 15px; text-align: center; border-top: 1px dashed var(--retro-border-dark); padding-top: 10px;">
                 <a href="/register" style="font-size: 11px;">Registrar novo usuário</a>
             </div>
         </div>
     </div>
-    
+
     <div style="margin-top: 20px; text-align: center;">
         <small style="font-size: 10px; color: var(--retro-border-dark);">Versão <%= locals.version %></small>
     </div>
 </div>
 
 <script>
-const loginForm = document.getElementById('loginForm');
-const usernameInput = document.getElementById('username');
-const messageDiv = document.getElementById('message');
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const messageDiv = document.getElementById('message');
 
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const username = '@' + usernameInput.value.trim().replace(/^@/, '');
-    const password = document.getElementById('password').value;
-    
-    messageDiv.textContent = 'Autenticando...';
-    messageDiv.style.color = 'var(--retro-link)';
+        const username = '@' + usernameInput.value.trim().replace(/^@/, '');
+        const password = document.getElementById('password').value;
 
-    try {
-        const response = await fetch('/api/users/login', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
+        messageDiv.textContent = 'Autenticando...';
+        messageDiv.style.color = 'var(--retro-link)';
 
-        const data = await response.json();
+        try {
+            const response = await fetch('/api/users/login', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
 
-        if (response.ok) {
-            messageDiv.style.color = 'var(--retro-header-bg)'; // Verde retro
-            messageDiv.textContent = data.message || 'Login aprovado!';
-            setTimeout(() => window.location.href = '/', 500);
-        } else {
-            messageDiv.style.color = 'var(--retro-link-hover)'; // Vermelho retro
-            messageDiv.textContent = data.message || 'Usuário ou senha incorretos';
-            // Usa o modal retro se existir
-            if (typeof mostrarAviso === 'function') {
-                mostrarAviso(data.message || 'Usuário ou senha incorretos', 'Erro de Login');
+            const data = await response.json();
+
+            if (response.ok) {
+                messageDiv.style.color = 'var(--retro-header-bg)'; // Verde retro
+                messageDiv.textContent = data.message || 'Login aprovado!';
+                setTimeout(() => window.location.href = '/', 500);
+            } else {
+                messageDiv.style.color = 'var(--retro-link-hover)'; // Vermelho retro
+                messageDiv.textContent = data.message || 'Usuário ou senha incorretos';
+                // Usa o modal retro se existir
+                if (typeof mostrarAviso === 'function') {
+                    mostrarAviso(data.message || 'Usuário ou senha incorretos', 'Erro de Login');
+                }
             }
+        } catch (err) {
+            console.error(err);
+            messageDiv.style.color = 'var(--retro-link-hover)';
+            messageDiv.textContent = 'Erro ao fazer login. Tente novamente.';
         }
-    } catch (err) {
-        console.error(err);
-        messageDiv.style.color = 'var(--retro-link-hover)';
-        messageDiv.textContent = 'Erro ao fazer login. Tente novamente.';
-    }
-});
+    });
 
-// Apenas para garantir que o usuário não digite outro @ se ele já estiver lá visualmente
-usernameInput.addEventListener('input', () => {
-    usernameInput.value = usernameInput.value.replace(/[^a-zA-Z0-9_]/g, '');
-    if (usernameInput.value.length > 15) usernameInput.value = usernameInput.value.slice(0, 15);
-});
+    // Apenas para garantir que o usuário não digite outro @ se ele já estiver lá visualmente
+    usernameInput.addEventListener('input', () => {
+        usernameInput.value = usernameInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+        if (usernameInput.value.length > 15) usernameInput.value = usernameInput.value.slice(0, 15);
+    });
 </script>

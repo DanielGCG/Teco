@@ -1,12 +1,21 @@
 const express = require("express");
 const NotificationsRouter = express.Router();
-const { Notification } = require("../models");
+const { Notification, User, PushSubscription } = require("../models");
 const validate = require("../middlewares/validate");
 const { Op } = require("sequelize");
+const webpush = require("web-push");
 const {
     getNotificationsSchema,
     notificationIdSchema
 } = require("../validators/notifications.validator");
+
+// Configuração do Web Push
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
+const subject = process.env.VAPID_SUBJECT || 'mailto:suporte@seusite.com';
+if (publicVapidKey && privateVapidKey) {
+    webpush.setVapidDetails(subject, publicVapidKey, privateVapidKey);
+}
 
 // GET /notifications - Listar notificações do usuário
 NotificationsRouter.get('/', validate(getNotificationsSchema, 'query'), async (req, res) => {
@@ -157,7 +166,7 @@ NotificationsRouter.delete('/:publicid', validate(notificationIdSchema, 'params'
 });
 
 // ==================== Função helper para criar notificações ====================
-async function createNotification({ userId, type, title, body, link = null }) {
+async function createNotification({ userId, type, title, body, link = null, io = null, socketType = null }) {
     try {
         const notification = await Notification.create({
             targetUserId: userId,
@@ -166,6 +175,47 @@ async function createNotification({ userId, type, title, body, link = null }) {
             body,
             link
         });
+
+        const finalSocketType = socketType || type;
+        let isOnline = false;
+
+        // 1. Emite via Socket (Tempo real)
+        if (io) {
+            const sockets = await io.in(`user_${userId}`).fetchSockets();
+            if (sockets.length > 0) {
+                isOnline = true;
+                io.to(`user_${userId}`).emit('newNotification', { type: finalSocketType });
+            }
+        }
+
+        // 2. Emite via Web Push sempre (para chegar no celular mesmo com o PC aberto)
+        if (publicVapidKey && privateVapidKey) {
+            const user = await User.findByPk(userId, {
+                include: [{ model: PushSubscription, as: 'pushSubscriptions' }]
+            });
+
+            if (user && user.pushSubscriptions && user.pushSubscriptions.length > 0) {
+                const payload = JSON.stringify({
+                    title: title,
+                    body: body,
+                    icon: '/images/Teco.webp',
+                    url: link || '/'
+                });
+
+                for (const sub of user.pushSubscriptions) {
+                    try {
+                        await webpush.sendNotification({
+                            endpoint: sub.endpoint,
+                            keys: { p256dh: sub.p256dh, auth: sub.auth }
+                        }, payload);
+                    } catch (err) {
+                        if (err.statusCode === 410 || err.statusCode === 404) {
+                            await sub.destroy();
+                        }
+                    }
+                }
+            }
+        }
 
         return notification.id;
     } catch (err) {

@@ -3,15 +3,19 @@
     background: #1f1f1f;
     color: #fff;
     font-family: monospace;
-    max-width: 400px;
-    margin: 40px auto;
-    padding: 0 16px 70px;
     transition: background 0.2s ease;
+    margin: 0;
   }
   body.sleeping { background: #000; }
   body.danger { background: #220000; }
   body.dead { background: #440000; }
-  h1 {
+
+  #gotchi-container {
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 20px 16px 70px;
+  }
+  #gotchi-container h1 {
     font-size: 18px;
     display: flex;
     align-items: center;
@@ -22,6 +26,10 @@
   #sleep-indicator {
     color: #aaa;
     min-width: 24px;
+    display: none;
+  }
+  #sleep-indicator:not(:empty) {
+    display: inline-block;
   }
   .bar-row { margin-bottom: 10px; }
   .bar-label {
@@ -40,12 +48,13 @@
     background: #222; border: 1px solid #555;
   }
   .bar-fill { height: 100%; background: #fff; transition: width 0.3s; }
-  .bar-fill.low { background: #f55; }
-  button, input {
+  #gotchi-container .bar-fill.low { background: #f55; }
+  #gotchi-container button, #gotchi-container input {
     background: #000;
     color: #fff;
     border: 1px solid #fff;
     font-family: monospace;
+
     padding: 8px;
     margin: 4px 4px 0 0;
     cursor: pointer;
@@ -107,6 +116,8 @@
   }
 </style>
 
+<div id="gotchi-container">
+<a href="/" style="display:inline-block; margin-bottom: 14px; color: #aaa; text-decoration: none; font-size: 12px;">← voltar pro boteco</a>
 <h1>BoteGotchi <span id="sleep-indicator"></span></h1>
 
 <div id="create-form">
@@ -145,6 +156,7 @@
 </div>
 
 <a id="btn-cemetery" href="/pet/cemiterio">cemiterio</a>
+</div>
 
 <script>
 const API_BASE = "/api/pet/";

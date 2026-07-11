@@ -188,13 +188,18 @@ module.exports = (io) => {
                             const match = existingNotif.body.match(/\((\d+) mens/);
                             const count = (match ? parseInt(match[1]) : 1) + 1;
                             await existingNotif.update({ body: `${msg.Sender.username} (${count} mensagens)`, createdat: new Date() });
+                            io.to(`user_${otherUserId}`).emit('newNotification', { type: 'message' });
                         } else {
-                            await Notification.create({
-                                targetUserId: otherUserId, type: 'dm', title: `Nova mensagem de ${msg.Sender.username}`,
-                                body: mensagem.substring(0, 100), link: '/dms', data: JSON.stringify({ chatId: publicChatId, senderId: auth.publicid })
+                            await createNotification({
+                                userId: otherUserId, 
+                                type: 'dm', 
+                                title: `Nova mensagem de ${msg.Sender.username}`,
+                                body: mensagem.substring(0, 100), 
+                                link: '/dms',
+                                io: io,
+                                socketType: 'message'
                             });
                         }
-                        io.to(`user_${otherUserId}`).emit('newNotification', { type: 'message' });
                     }
                 } else {
                     const newMessage = await ChatMessage.create({ chatId: realChatId, userId: auth.userId, message: mensagem });

@@ -21,7 +21,10 @@ const loginSchema = z.object({
 const updateProfileSchema = z.object({
     username: z.string().optional(),
     pronouns: z.string().optional().nullable().or(z.literal('')),
+    bannerimage: z.any().optional().nullable().or(z.literal('')),
     backgroundimage: z.any().optional().nullable().or(z.literal('')),
+    backgroundcolor: z.string().optional().nullable().or(z.literal('')),
+    backgroundfill: z.string().optional().nullable().or(z.literal('')),
     profileimage: z.any().optional().nullable().or(z.literal('')),
     bio: z.string().optional().nullable().or(z.literal('')),
     lastfmusername: z.preprocess(val => Array.isArray(val) ? val[0] : val, z.string().optional().nullable().or(z.literal('')))

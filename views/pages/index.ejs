@@ -1,131 +1,79 @@
-<div class="window">
-    <div class="window-content">
-        <textarea id="retro-post-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="No que você está pensando agora?"></textarea>
-        <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
-        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-            <div style="flex-grow: 1;">
-                <label for="retro-post-media" style="cursor: pointer; display: inline-block;">
-                    <button type="button" onclick="document.getElementById('retro-post-media').click()" style="padding: 2px 15px; font-size: 11px;">ADICIONAR MÍDIA</button>
-                </label>
-                <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="display: none;">
-            </div>
-            <button id="btn-retro-postar" style="padding: 2px 20px;">POSTAR</button>
+<style>
+    .desktop-hub {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        padding: 10px 0;
+    }
+
+    .hub-window {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .hub-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .hub-btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+</style>
+
+<div class="desktop-hub">
+
+    <!-- Janela: Social -->
+    <div class="window hub-window">
+        <div class="window-header">Social</div>
+        <div class="window-content hub-content">
+            <button class="hub-btn" onclick="window.location.href='/feed'"><img src="images/inicial/feed.gif"
+                    alt="Feed de Posts" style="vertical-align: middle;"></button>
+            <button class="hub-btn"
+                onclick="window.location.href='/<%= locals.loggedUser ? locals.loggedUser.username : '' %>'"><img
+                    src="images/inicial/perfil.gif" alt="Perfil pessoal" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/amigos'"><img src="images/inicial/amigos.gif"
+                    alt="Amigos" style="vertical-align: middle;"></button>
         </div>
     </div>
-</div>
 
-<div class="window">
-    <div class="window-header">Posts recentes</div>
-    <div class="window-content" id="retro-feed-container">
-        <p style="text-align: center; color: #808080;">Aguardando posts do servidor...</p>
+    <!-- Janela: Entretenimento -->
+    <div class="window hub-window">
+        <div class="window-header">Entretenimento</div>
+        <div class="window-content hub-content">
+            <button class="hub-btn" onclick="window.location.href='/pet'"><img src="images/inicial/botegotchi.gif"
+                    alt="BoteGotchi" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/watchlist'"><img src="images/inicial/watchlist.gif"
+                    alt="Watchlist" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/imagemdodia'"><img
+                    src="images/inicial/imagemdodia.gif" alt="Imagem do Dia" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/galerias'"><img src="images/inicial/galerias.gif"
+                    alt="Galerias" style="vertical-align: middle;"></button>
+        </div>
     </div>
+
+    <!-- Janela: Comunicação & Utilidades -->
+    <div class="window hub-window">
+        <div class="window-header">Comunicação</div>
+        <div class="window-content hub-content">
+            <button class="hub-btn" onclick="window.location.href='/cartinhas'"><img src="images/inicial/cartinhas.gif"
+                    alt="Cartinhas" style="vertical-align: middle;"></button>
+            <% if (locals.botecoAnalyticsUrl) { %>
+                <button class="hub-btn" onclick="window.open('<%= locals.botecoAnalyticsUrl %>', '_blank')">Boteco
+                    Analytics</button>
+                <% } %>
+                    <% if (locals.loggedUser && locals.loggedUser.roleId <=10) { %>
+                        <button class="hub-btn" onclick="window.location.href='/admin'"><img
+                                src="images/inicial/admin.gif" alt="Admin" style="vertical-align: middle;"></button>
+                        <% } %>
+        </div>
+    </div>
+
 </div>
-
-<script src="/js/features/post.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Inicializar Handlers Globais do Posts Retrô
-        RetroPosts.initHandlers(() => loadPosts());
-
-        let homeLazyReset = null;
-
-        // Inicializar Feed Retrô
-        async function loadPosts() {
-            try {
-                const res = await fetch('/api/posts/feed?type=for-you&limit=20&offset=0', { credentials: 'include' });
-                if (res.ok) {
-                    const posts = await res.json();
-                    const container = document.getElementById('retro-feed-container');
-                    container.innerHTML = '';
-                    
-                    if (!posts || posts.length === 0) {
-                        container.innerHTML = '<p style="text-align: center;">Nenhum post encontrado.</p>';
-                        return;
-                    }
-
-                    const currentUsername = "<%= locals.loggedUser ? locals.loggedUser.username : '' %>";
-                    const currentUserRole = parseInt("<%= locals.loggedUser ? locals.loggedUser.roleId : 20 %>");
-                    posts.forEach(post => {
-                        container.insertAdjacentHTML('beforeend', RetroPosts.renderPost(post, currentUsername, currentUserRole));
-                    });
-
-                    // Configurar Lazy Loading
-                    if (!homeLazyReset) {
-                        homeLazyReset = RetroPosts.setupInfiniteScroll(
-                            'retro-feed-container', 
-                            '/api/posts/feed?type=for-you', 
-                            currentUsername
-                        );
-                    } else {
-                        homeLazyReset();
-                    }
-                }
-            } catch (e) {
-                console.error('Erro ao carregar posts:', e);
-            }
-        }
-        
-        loadPosts();
-
-        // Variável para armazenar arquivos do post
-        let selectedRetroFiles = [];
-
-        // Preview de imagens ao selecionar
-        document.getElementById('retro-post-media').addEventListener('change', (e) => {
-            const preview = document.getElementById('retro-media-preview');
-            preview.innerHTML = '';
-            selectedRetroFiles = Array.from(e.target.files);
-            
-            selectedRetroFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = document.createElement('img');
-                    img.src = ev.target.result;
-                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
-                    preview.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
-        });
-
-        // Lógica simplificada de postar
-        document.getElementById('btn-retro-postar').addEventListener('click', async () => {
-            const textarea = document.getElementById('retro-post-textarea');
-            const content = textarea.value.trim();
-            const btn = document.getElementById('btn-retro-postar');
-
-            if (!content && selectedRetroFiles.length === 0) return;
-
-            btn.disabled = true;
-            btn.textContent = 'ENVIANDO...';
-
-            const formData = new FormData();
-            formData.append('content', content);
-            formData.append('type', 'post');
-            selectedRetroFiles.forEach(file => formData.append('media', file));
-
-            try {
-                const res = await fetch('/api/posts', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (res.ok) {
-                    textarea.value = '';
-                    document.getElementById('retro-post-media').value = '';
-                    document.getElementById('retro-media-preview').innerHTML = '';
-                    selectedRetroFiles = [];
-                    await loadPosts();
-                } else {
-                    const err = await res.json();
-                    alert(err.error || 'Erro ao postar!');
-                }
-            } catch (e) {
-                alert('Erro de conexão!');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'POSTAR';
-            }
-        });
-    });
-</script>

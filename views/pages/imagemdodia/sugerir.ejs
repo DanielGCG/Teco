@@ -4,14 +4,16 @@
     <div class="window-header">Nova Sugestão</div>
     <div class="window-content" style="padding: 15px;">
         <div style="margin-bottom: 20px; font-weight: bold; text-align: center;">
-            Envie sua proposta para a próxima Imagem do Dia!
+            Envie sua sugestão de Imagem do Dia!
         </div>
 
         <form id="formSugestao" enctype="multipart/form-data" style="margin: 0;">
-            <table width="100%" cellpadding="5" cellspacing="0" style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px;">
+            <table id="tabela-sugerir" width="100%" cellpadding="5" cellspacing="0"
+                style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px;">
                 <tr>
                     <td colspan="2">
-                        <div id="filaStatus" style="background: #ffffd0; border: 1px solid var(--retro-border-dark); padding: 5px; margin-bottom: 10px; font-size: 11px; text-align: center;">
+                        <div id="filaStatus"
+                            style="background: #ffffd0; border: 1px solid var(--retro-border-dark); padding: 5px; margin-bottom: 10px; font-size: 11px; text-align: center;">
                             Carregando status da fila...
                         </div>
                     </td>
@@ -19,15 +21,18 @@
                 <tr>
                     <td width="30%"><strong>Imagem:</strong></td>
                     <td>
-                        <input type="file" id="imagem" accept="image/png,image/jpeg,image/gif" style="width: 100%; box-sizing: border-box;" required>
+                        <input type="file" id="imagem" accept="image/png,image/jpeg,image/gif"
+                            style="width: 100%; box-sizing: border-box;" required>
                     </td>
                 </tr>
                 <tr id="previewRow" style="display: none;">
-                    <td colspan="2" align="center" style="padding: 10px 0;">
-                        <div style="display: inline-block; position: relative; border: 2px inset var(--retro-border-dark); padding: 2px; background: var(--retro-window-bg);">
+                    <td colspan="2" align="center" style="padding: 10px 0; text-align: center;">
+                        <div
+                            style="display: inline-block; position: relative; border: 2px inset var(--retro-border-dark); padding: 2px; background: var(--retro-window-bg);">
                             <div style="position: relative; width: 150px; height: 150px; background: black;">
                                 <img id="preview-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
-                                <img id="preview-border" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none;">
+                                <img id="preview-border" src=""
+                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none;">
                             </div>
                         </div>
                     </td>
@@ -35,23 +40,23 @@
                 <tr>
                     <td><strong>Moldura:</strong></td>
                     <td>
-                        <select id="defaultBorderSelect" style="width: 100%; box-sizing: border-box; margin-bottom: 5px;">
+                        <select id="defaultBorderSelect"
+                            style="width: 100%; box-sizing: border-box; margin-bottom: 5px;">
                             <option>Carregando molduras...</option>
                         </select>
-                        <div style="text-align: right;">
-                            <img id="preview-border-img" src="" style="width: 60px; height: 60px; border: 1px inset var(--retro-border-dark); display: none;">
-                        </div>
                     </td>
                 </tr>
                 <tr>
                     <td><strong>Texto/Placa:</strong></td>
                     <td>
-                        <input type="text" id="texto" placeholder="Máximo 32 caracteres" maxlength="32" style="width: 100%; box-sizing: border-box;" required>
+                        <input type="text" id="texto" placeholder="Máximo 32 caracteres" maxlength="32"
+                            style="width: 100%; box-sizing: border-box;" required>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2" align="right" style="padding-top: 15px;">
-                        <button type="submit" id="adicionarButton" style="font-weight: bold; width: 100%; padding: 5px;">
+                        <button type="submit" id="adicionarButton"
+                            style="font-weight: bold; width: 100%; padding: 5px;">
                             <span id="btnText">Enviar Sugestão</span>
                             <span id="loadingText" style="display: none;">Enviando...</span>
                         </button>
@@ -67,120 +72,139 @@
     </div>
 </div>
 
+<style>
+    @media (max-width: 600px) {
+
+        #tabela-sugerir,
+        #tabela-sugerir tbody,
+        #tabela-sugerir tr,
+        #tabela-sugerir td {
+            display: block;
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        #tabela-sugerir td {
+            padding: 5px 0;
+        }
+
+        #tabela-sugerir td[align="right"] {
+            text-align: center;
+        }
+    }
+</style>
+
 <script>
-const imagemInput = document.getElementById("imagem");
-const previewImg = document.getElementById("preview-img");
-const previewBorder = document.getElementById("preview-border");
-const previewBorderImg = document.getElementById("preview-border-img");
-const defaultBorderSelect = document.getElementById("defaultBorderSelect");
-const previewRow = document.getElementById("previewRow");
-let currentBorderUrl = "";
+    const imagemInput = document.getElementById("imagem");
+    const previewImg = document.getElementById("preview-img");
+    const previewBorder = document.getElementById("preview-border");
+    const defaultBorderSelect = document.getElementById("defaultBorderSelect");
+    const previewRow = document.getElementById("previewRow");
+    let currentBorderUrl = "";
 
-async function carregarStatusFila() {
-    const filaStatus = document.getElementById("filaStatus");
-    try {
-        const res = await fetch("/api/admin/imagemdodia/fila");
-        if (!res.ok) throw new Error();
-        const fila = await res.json();
-        
-        const count = fila.length;
-        if (count === 0) {
-            filaStatus.innerHTML = "A fila está vazia! Sua sugestão pode ser a próxima.";
-            filaStatus.style.background = "#e0ffe0"; // Verde clarinho
-        } else {
-            filaStatus.innerHTML = `Existem <strong>${count}</strong> sugestões na fila à frente.`;
-            filaStatus.style.background = "#ffffd0"; // Amarelo clarinho
+    async function carregarStatusFila() {
+        const filaStatus = document.getElementById("filaStatus");
+        try {
+            const res = await fetch("/api/admin/imagemdodia/fila");
+            if (!res.ok) throw new Error();
+            const fila = await res.json();
+
+            const count = fila.length;
+            if (count === 0) {
+                filaStatus.innerHTML = "A fila está vazia! Sua sugestão será a próxima.";
+                filaStatus.style.background = "#e0ffe0"; // Verde clarinho
+            } else {
+                filaStatus.innerHTML = `Existem <strong>${count}</strong> sugestões na fila à frente.`;
+                filaStatus.style.background = "#ffffd0"; // Amarelo clarinho
+            }
+        } catch (err) {
+            filaStatus.style.display = "none";
         }
-    } catch (err) {
-        filaStatus.style.display = "none";
     }
-}
 
-async function carregarMoldurasPadrao() {
-    try {
-        const res = await fetch("/api/imagemdodia/borders");
-        const borders = await res.json();
-        
-        window.bordersCache = borders;
-        defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.publicid}">${b.name}</option>`).join('');
-        
-        if (borders.length > 0) {
-            defaultBorderSelect.value = borders[0].publicid;
-            atualizarPreviewMoldura(borders[0].url);
-            previewBorderImg.style.display = "inline-block";
+    async function carregarMoldurasPadrao() {
+        try {
+            const res = await fetch("/api/imagemdodia/borders");
+            const borders = await res.json();
+
+            window.bordersCache = borders;
+            defaultBorderSelect.innerHTML = borders.map(b => `<option value="${b.publicid}">${b.name}</option>`).join('');
+
+            if (borders.length > 0) {
+                defaultBorderSelect.value = borders[0].publicid;
+                atualizarPreviewMoldura(borders[0].url);
+            }
+        } catch (err) {
+            console.error("Erro ao carregar molduras:", err);
         }
-    } catch (err) {
-        console.error("Erro ao carregar molduras:", err);
     }
-}
 
-function atualizarPreviewMoldura(url) {
-    currentBorderUrl = url;
-    previewBorderImg.src = url;
-    if (previewImg.src && previewImg.src.startsWith('data:')) {
-        previewBorder.src = url;
-        previewBorder.style.display = "block";
-    }
-}
-
-defaultBorderSelect.addEventListener("change", (e) => {
-    const border = window.bordersCache.find(b => b.publicid === e.target.value);
-    if (border) atualizarPreviewMoldura(border.url);
-});
-
-imagemInput.addEventListener("change", function() {
-    const file = this.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewImg.src = e.target.result;
-            previewRow.style.display = "table-row";
-            previewBorder.src = currentBorderUrl;
+    function atualizarPreviewMoldura(url) {
+        currentBorderUrl = url;
+        if (previewImg.src && previewImg.src.startsWith('data:')) {
+            previewBorder.src = url;
             previewBorder.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-document.getElementById("formSugestao").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const btn = document.getElementById("adicionarButton");
-    const feedback = document.getElementById("feedback");
-    
-    btn.disabled = true;
-    document.getElementById("btnText").style.display = "none";
-    document.getElementById("loadingText").style.display = "inline";
-
-    const formData = new FormData();
-    formData.append("file", imagemInput.files[0]);
-    formData.append("text", document.getElementById("texto").value.trim());
-    formData.append("borderPublicId", defaultBorderSelect.value);
-
-    try {
-        const res = await fetch("/api/imagemdodia", { method: "POST", body: formData });
-        if (res.ok) {
-            feedback.textContent = "Sugestão enviada com sucesso!";
-            feedback.style.color = "green";
-            this.reset();
-            previewRow.style.display = "none";
-            previewImg.src = "";
-            previewBorder.style.display = "none";
-            carregarStatusFila(); // Atualizar fila após enviar
-        } else {
-            const data = await res.json();
-            feedback.textContent = data.message || "Erro ao enviar.";
-            feedback.style.color = "red";
         }
-    } catch (err) {
-        feedback.textContent = "Erro de conexão.";
-        feedback.style.color = "red";
-    } finally {
-        btn.disabled = false;
-        document.getElementById("btnText").style.display = "inline";
-        document.getElementById("loadingText").style.display = "none";
     }
-});
 
-carregarMoldurasPadrao();
-carregarStatusFila();
+    defaultBorderSelect.addEventListener("change", (e) => {
+        const border = window.bordersCache.find(b => b.publicid === e.target.value);
+        if (border) atualizarPreviewMoldura(border.url);
+    });
+
+    imagemInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewRow.style.display = "table-row";
+                previewBorder.src = currentBorderUrl;
+                previewBorder.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById("formSugestao").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const btn = document.getElementById("adicionarButton");
+        const feedback = document.getElementById("feedback");
+
+        btn.disabled = true;
+        document.getElementById("btnText").style.display = "none";
+        document.getElementById("loadingText").style.display = "inline";
+
+        const formData = new FormData();
+        formData.append("file", imagemInput.files[0]);
+        formData.append("text", document.getElementById("texto").value.trim());
+        formData.append("borderPublicId", defaultBorderSelect.value);
+
+        try {
+            const res = await fetch("/api/imagemdodia", { method: "POST", body: formData });
+            if (res.ok) {
+                feedback.textContent = "Sugestão enviada com sucesso!";
+                feedback.style.color = "green";
+                this.reset();
+                previewRow.style.display = "none";
+                previewImg.src = "";
+                previewBorder.style.display = "none";
+                carregarStatusFila(); // Atualizar fila após enviar
+            } else {
+                const data = await res.json();
+                feedback.textContent = data.message || "Erro ao enviar.";
+                feedback.style.color = "red";
+            }
+        } catch (err) {
+            feedback.textContent = "Erro de conexão.";
+            feedback.style.color = "red";
+        } finally {
+            btn.disabled = false;
+            document.getElementById("btnText").style.display = "inline";
+            document.getElementById("loadingText").style.display = "none";
+        }
+    });
+
+    carregarMoldurasPadrao();
+    carregarStatusFila();
 </script>

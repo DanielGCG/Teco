@@ -1,7 +1,8 @@
 <div class="window" style="margin-bottom: 10px;">
     <div class="window-header">Painel Social - Estatísticas</div>
     <div class="window-content" style="background: var(--retro-window-bg);">
-        <table width="100%" border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; background: var(--retro-window-bg); text-align: center; border-color: var(--retro-border-dark);">
+        <table width="100%" border="1" cellpadding="5" cellspacing="0"
+            style="border-collapse: collapse; background: var(--retro-window-bg); text-align: center; border-color: var(--retro-border-dark);">
             <tr>
                 <td width="33%">
                     <div style="font-size: 10px; color: var(--retro-border-dark);">Amigos</div>
@@ -24,23 +25,31 @@
     <div class="window-header">Buscar Usuários</div>
     <div class="window-content" style="background: var(--retro-bg);">
         <div style="display: flex; gap: 5px;">
-            <input type="text" id="user-search-input" style="flex-grow: 1; background: var(--retro-window-bg); color: var(--retro-text);" placeholder="Digite o nome...">
+            <input type="text" id="user-search-input"
+                style="flex-grow: 1; background: var(--retro-window-bg); color: var(--retro-text);"
+                placeholder="Digite o nome...">
             <button id="btn-search">BUSCAR</button>
             <button id="btn-clear-search" style="display: none;">[Fechar]</button>
         </div>
     </div>
 </div>
 
-<div id="search-header" class="window" style="display: none; margin-bottom: 10px; background: var(--retro-bg); border: 1px dashed var(--retro-border-dark);">
+<div id="search-header" class="window"
+    style="display: none; margin-bottom: 10px; background: var(--retro-bg); border: 1px dashed var(--retro-border-dark);">
     <div class="window-content" style="padding: 5px; font-size: 11px; color: var(--retro-text);">
         <b>Resultados da busca:</b>
     </div>
 </div>
 
 <div class="window">
-    <div id="tabs-container" class="window-header" style="padding: 0 5px; display: flex; height: 30px; line-height: 30px; background: var(--retro-header-bg); border-bottom: 2px solid var(--retro-border-dark); gap: 2px; align-items: flex-end; justify-content: start;">
-        <div class="feed-tab active" data-type="following" onclick="changeSection('following')" style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">Seguindo</div>
-        <div class="feed-tab" data-type="followers" onclick="changeSection('followers')" style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">Seguidores</div>
+    <div id="tabs-container" class="window-header"
+        style="padding: 0 5px; display: flex; height: 30px; line-height: 30px; background: var(--retro-header-bg); border-bottom: 2px solid var(--retro-border-dark); gap: 2px; align-items: flex-end; justify-content: start;">
+        <div class="feed-tab active" data-type="following" onclick="changeSection('following')"
+            style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">
+            Seguindo</div>
+        <div class="feed-tab" data-type="followers" onclick="changeSection('followers')"
+            style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">
+            Seguidores</div>
     </div>
     <div class="window-content" style="padding: 0; background: var(--retro-bg);">
         <div id="social-list-container">
@@ -52,12 +61,38 @@
 </div>
 
 <style>
-    .feed-tab:not(.active) { color: var(--retro-text); opacity: 0.7; filter: grayscale(1); }
-    .feed-tab.active { background: var(--retro-bg) !important; font-weight: bold; color: var(--retro-text); border-top: 1px solid var(--retro-border-light) !important; border-left: 1px solid var(--retro-border-light) !important; opacity: 1; filter: none; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 1px solid var(--retro-text); }
-    
-    .retro-user-row { transition: background 0.1s; color: var(--retro-text); }
-    .retro-user-row:hover { background: var(--retro-sidebar-bg); }
+    .feed-tab:not(.active) {
+        color: var(--retro-text);
+        opacity: 0.7;
+        filter: grayscale(1);
+    }
+
+    .feed-tab.active {
+        background: var(--retro-bg) !important;
+        font-weight: bold;
+        color: var(--retro-text);
+        border-top: 1px solid var(--retro-border-light) !important;
+        border-left: 1px solid var(--retro-border-light) !important;
+        opacity: 1;
+        filter: none;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 1px solid var(--retro-text);
+    }
+
+    .retro-user-row {
+        transition: background 0.1s;
+        color: var(--retro-text);
+    }
+
+    .retro-user-row:hover {
+        background: var(--retro-sidebar-bg);
+    }
 </style>
 
 <script src="/js/commons/follow-common.js"></script>
@@ -71,7 +106,7 @@
         try {
             // No layout retro, UserContext ou window.currentUser devem estar disponíveis
             loggedUser = window.currentUser || (typeof UserContext !== 'undefined' ? await UserContext.refresh() : null);
-            
+
             if (!loggedUser) {
                 // Tentar buscar direto da API se falhar
                 const res = await fetch('/api/users/me');
@@ -79,7 +114,7 @@
             }
 
             await loadAllData();
-            
+
             const searchInput = document.getElementById('user-search-input');
             const searchBtn = document.getElementById('btn-search');
             const clearBtn = document.getElementById('btn-clear-search');
@@ -101,8 +136,8 @@
 
             searchBtn.onclick = performSearch;
             clearBtn.onclick = clearSearch;
-            searchInput.onkeydown = (e) => { if(e.key === 'Enter') performSearch(); };
-            
+            searchInput.onkeydown = (e) => { if (e.key === 'Enter') performSearch(); };
+
             changeSection('following');
         } catch (err) {
             console.error('[Social] Erro:', err);
@@ -124,7 +159,7 @@
                 fetch(`/api/follows/following/${loggedUser.publicid}`).then(r => r.json()).catch(() => ({ following: [] })),
                 fetch(`/api/follows/followers/${loggedUser.publicid}`).then(r => r.json()).catch(() => ({ followers: [] }))
             ]);
-            
+
             dataCache.friends = new Set((friends || []).map(u => u.publicid));
             dataCache.following = followData.following || [];
             dataCache.followers = followerData.followers || [];
@@ -159,7 +194,7 @@
     function renderList() {
         const container = document.getElementById('social-list-container');
         const list = isSearching ? dataCache.search : dataCache[currentSection];
-        
+
         if (!list || list.length === 0) {
             container.innerHTML = `<div style="text-align: center; padding: 30px; font-size: 11px; color: var(--retro-border-dark);">Nenhum usuário nesta lista.</div>`;
             return;
@@ -180,10 +215,10 @@
 
         list.forEach(user => {
             if (loggedUser && user.publicid === loggedUser.publicid) return;
-            
+
             const isFollowing = dataCache.following.some(f => f.publicid === user.publicid);
             const isFriend = dataCache.friends.has(user.publicid);
-            
+
             // Note: O SocketUI cuidará de atualizar as cores e textos assim que carregar
             html += `
                 <tr class="retro-user-row" data-user-id="${user.publicid}" style="border-bottom: 1px solid var(--retro-border-dark);">
@@ -213,10 +248,6 @@
                                     style="width: 100%; height: 24px; cursor: pointer; font-size: 11px; font-weight: ${isFollowing ? 'normal' : 'bold'}; ${isFollowing ? 'color: var(--retro-author);' : ''}">
                                 ${isFollowing ? 'Deixar Seguir' : 'Seguir'}
                             </button>
-                            <button onclick="location.href='/dms?user=${user.username}'" 
-                                    style="width: 100%; height: 24px; cursor: pointer; font-size: 11px;">
-                                Enviar Mensagem
-                            </button>
                         </div>
                     </td>
                 </tr>
@@ -234,16 +265,16 @@
 
     async function handleFollow(id, isFollowing) {
         const action = isFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
-        
-        const res = await action(id, { 
-            showAlert: false, 
-            confirmMessage: isFollowing ? 'Deseja realmente deixar de seguir este usuário?' : null 
+
+        const res = await action(id, {
+            showAlert: false,
+            confirmMessage: isFollowing ? 'Deseja realmente deixar de seguir este usuário?' : null
         });
 
-        if (res.success) { 
-            await loadAllData(); 
+        if (res.success) {
+            await loadAllData();
             if (isSearching) await searchUsers(document.getElementById('user-search-input').value);
-            renderList(); 
+            renderList();
         }
     }
 

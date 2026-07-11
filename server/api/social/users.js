@@ -108,7 +108,7 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
     try {
         const user = await User.findOne({ 
             where: { username },
-            attributes: ['id', 'username', 'passwordhash', 'profileimage', 'backgroundimage', 'roleId']
+            attributes: ['id', 'username', 'passwordhash', 'profileimage', 'bannerimage', 'backgroundimage', 'roleId']
         });
 
         if (!user || !(await bcrypt.compare(password, user.passwordhash))) {
@@ -169,7 +169,7 @@ UsersRouter.post('/logout', async (req, res) => {
 UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['publicid', 'username', 'roleId', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'lastfmusername']
+            attributes: ['publicid', 'username', 'roleId', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'lastfmusername']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
@@ -181,9 +181,11 @@ UsersRouter.get('/me', protect(20), async (req, res) => {
     }
 });
 
-UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
-    let { username, backgroundimage, profileimage, bio, pronouns, lastfmusername } = req.body;
+UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'banner_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
+    let { username, bannerimage, backgroundimage, backgroundcolor, backgroundfill, profileimage, bio, pronouns, lastfmusername } = req.body;
     username = ('@' + username.trim().replace(/^@/, '')).slice(0, 16).toLowerCase();
+    
+    if (!backgroundcolor || backgroundcolor.trim() === "") backgroundcolor = null;
 
     try {
         // Verifica se já existe outro usuário com esse username
@@ -216,10 +218,36 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
             });
         }
 
-        // Upload de imagem de fundo se houver arquivo
+        // Upload de banner se houver arquivo
+        if (req.files && req.files['banner_file']) {
+            const file = req.files['banner_file'][0];
+            const user = await User.findByPk(req.user.id, { attributes: ['bannerimage'] });
+            if (user && user.bannerimage) {
+                await deleteFromFileServer({ fileUrl: user.bannerimage });
+            }
+
+            let buffer = file.buffer;
+            let filename = 'banner.png';
+            let mimetype = 'image/png';
+
+            if (file.mimetype === 'image/gif') {
+                filename = 'banner.gif';
+                mimetype = 'image/gif';
+            } else {
+                buffer = await sharp(file.buffer).png().toBuffer();
+            }
+
+            bannerimage = await uploadToFileServer({
+                buffer,
+                filename,
+                folder: 'backgrounds',
+                mimetype
+            });
+        }
+
+        // Upload de imagem de fundo da pagina se houver arquivo
         if (req.files && req.files['background_file']) {
             const file = req.files['background_file'][0];
-            // Deletar imagem de fundo antiga se existir
             const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });
             if (user && user.backgroundimage) {
                 await deleteFromFileServer({ fileUrl: user.backgroundimage });
@@ -229,32 +257,36 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
             let filename = 'background.png';
             let mimetype = 'image/png';
 
-            // Se for GIF, mantém o formato para suportar animação
             if (file.mimetype === 'image/gif') {
                 filename = 'background.gif';
                 mimetype = 'image/gif';
             } else {
-                // Outros formatos converte para PNG
                 buffer = await sharp(file.buffer).png().toBuffer();
             }
 
             backgroundimage = await uploadToFileServer({
                 buffer,
                 filename,
-                folder: 'backgrounds',
+                folder: 'pagebackgrounds',
                 mimetype
             });
+        } else if (backgroundimage === "") {
+            const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });
+            if (user && user.backgroundimage) {
+                await deleteFromFileServer({ fileUrl: user.backgroundimage });
+            }
+            backgroundimage = null;
         }
 
         await User.update(
-            { username, backgroundimage, profileimage, bio, pronouns, lastfmusername },
+            { username, bannerimage, backgroundimage, backgroundcolor, backgroundfill, profileimage, bio, pronouns, lastfmusername },
             { where: { id: req.user.id } }
         );
 
         const updatedUser = await User.findByPk(req.user.id);
         setUserCookie(res, updatedUser);
 
-        res.json({ message: "Perfil atualizado com sucesso", username, backgroundimage, profileimage, bio, pronouns });
+        res.json({ message: "Perfil atualizado com sucesso", username, bannerimage, backgroundimage, backgroundcolor, backgroundfill, profileimage, bio, pronouns });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao atualizar perfil" });
@@ -340,20 +372,21 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
     try {
         const lastfmUser = req.params.lastfmUser;
         const botecoUrl = process.env.BOTECOANALYTICS_URL;
-        const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN;
+        const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN ? process.env.BOTECOANALYTICS_WIDGET_TOKEN.trim() : null;
 
         if (!botecoUrl || !botecoToken) {
             return res.status(500).json({ error: "Integração musical não configurada no servidor." });
         }
 
         const baseUrl = botecoUrl.replace(/\/$/, "");
-        const targetUrl = `${baseUrl}/api/widget/${encodeURIComponent(lastfmUser)}?token=${botecoToken}`.replace('localhost', '127.0.0.1');
+        const targetUrl = `${baseUrl}/api/widget/${encodeURIComponent(lastfmUser)}`.replace('localhost', '127.0.0.1');
         
         const response = await fetch(targetUrl, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'TecoApp/1.0'
+                'User-Agent': 'TecoApp/1.0',
+                'Authorization': `Bearer ${botecoToken}`
             }
         });
 
@@ -379,7 +412,7 @@ UsersRouter.get('/:username', protect(20), async (req, res) => {
 
         const user = await User.findOne({
             where: { username: username },
-            attributes: ['publicid', 'username', 'backgroundimage', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId', 'lastfmusername'],
+            attributes: ['publicid', 'username', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId', 'lastfmusername'],
             include: [{ model: Role, as: 'role', attributes: ['name'] }]
         });
         if (!user) return res.status(404).json({

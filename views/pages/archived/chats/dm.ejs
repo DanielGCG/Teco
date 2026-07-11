@@ -11,12 +11,14 @@
             </div>
             <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column; padding: 5px;">
                 <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-                    <input type="text" id="search-input" placeholder="Buscar usuários..." class="chat-textarea" style="pointer-events: auto; padding: 2px; height: 30px;">
+                    <input type="text" id="search-input" placeholder="Buscar usuários..." class="chat-textarea"
+                        style="pointer-events: auto; padding: 2px; height: 30px;">
                     <button id="search-btn" style="padding: 2px 10px;">Buscar</button>
                 </div>
                 <div id="search-results"></div>
                 <hr style="margin: 5px 0;">
-                <div id="dm-list" style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+                <div id="dm-list"
+                    style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
                     <p style="text-align: center; color: gray; padding: 10px;">Carregando...</p>
                 </div>
             </div>
@@ -30,10 +32,11 @@
                 <span id="chat-title">Selecione uma conversa</span>
                 <button onclick="voltarLista()" class="btn-voltar-mobile">Voltar</button>
             </div>
-            
-            <div class="window-content" id="chat-messages" style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); margin: 5px; padding: 5px;">
+
+            <div class="window-content" id="chat-messages"
+                style="flex-grow: 1; overflow-y: auto; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); margin: 5px; padding: 5px;">
             </div>
-            
+
             <div class="window-content" style="border-top: none; padding: 0;">
                 <div class="chat-input-area">
                     <textarea id="dm-input-msg" class="chat-textarea" placeholder="Digite sua mensagem..."></textarea>
@@ -47,7 +50,8 @@
             <div class="window-header">
                 <span>Detalhes da Conversa</span>
             </div>
-            <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <div class="window-content"
+                style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
                 <div>
                     <h4>Selecione uma conversa</h4>
                     <p style="color: gray;">Escolha uma das conversas ao lado para iniciar um bate-papo.</p>
@@ -89,7 +93,7 @@
             console.log('[DMs] Carregando conversas...');
             const res = await fetch('/api/dms', { credentials: 'include' });
             if (!res.ok) throw new Error('Falha ao carregar DMs');
-            
+
             todasConversas = await res.json();
             renderizarListaDMs();
         } catch (error) {
@@ -103,7 +107,7 @@
     function renderizarListaDMs() {
         const dmList = document.getElementById('dm-list');
         if (!dmList) return;
-        
+
         dmList.innerHTML = '';
 
         if (!todasConversas.length) {
@@ -112,7 +116,7 @@
         }
 
         // Ordena por data da última mensagem (mais recente primeiro)
-        const sortedConversas = [...todasConversas].sort((a, b) => 
+        const sortedConversas = [...todasConversas].sort((a, b) =>
             new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0)
         );
 
@@ -122,15 +126,15 @@
             card.dataset.chatId = conversa.publicid;
             card.setAttribute('data-user-id', otherUser.publicid);
             card.className = `conversation-card ${selectedChatId === conversa.publicid ? 'active' : ''}`;
-            
-            const badge = conversa.unreadCount > 0 
-                ? `<span class="unread-badge" style="background: red; color: white; border-radius: 5px; padding: 2px 5px; font-size: 10px;">${conversa.unreadCount}</span>` 
+
+            const badge = conversa.unreadCount > 0
+                ? `<span class="unread-badge" style="background: red; color: white; border-radius: 5px; padding: 2px 5px; font-size: 10px;">${conversa.unreadCount}</span>`
                 : '';
-                
+
             card.innerHTML = `
                 <div style="display: flex; gap: 10px; align-items: center; width: 100%; padding: 0 10px;">
                     <div style="width: 25px; height: 25px; overflow: hidden; flex-shrink: 0; border: 1px inset var(--retro-border-dark);">
-                        <img src="${otherUser.profileimage || '/images/default-avatar.png'}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="Avatar">
+                        <img src="${otherUser.profileimage || '/images/default-avatar.webp'}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="Avatar">
                     </div>
                     <div style="flex:1; min-width:0; display: flex; flex-direction: column; justify-content: center;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -143,7 +147,7 @@
                     </div>
                 </div>
             `;
-            
+
             card.addEventListener('click', () => abrirDM(conversa.publicid, otherUser.username, otherUser));
             dmList.appendChild(card);
         });
@@ -154,7 +158,7 @@
     // Atualiza card de conversa específica sem dar fetch em tudo
     function atualizarCardDM(chatId, novaMensagem = null, isReadEvent = false) {
         const conversaIndex = todasConversas.findIndex(c => c.publicid === chatId);
-        
+
         if (conversaIndex !== -1) {
             const conversa = todasConversas[conversaIndex];
             if (novaMensagem) {
@@ -179,7 +183,7 @@
         if (!searchInput) return;
         const query = searchInput.value.trim();
         const resultsContainer = document.getElementById('search-results');
-        
+
         if (!query) return resultsContainer.innerHTML = '';
 
         resultsContainer.innerHTML = '<p class="text-muted small"><span class="spinner-border spinner-border-sm"></span> Buscando...</p>';
@@ -194,7 +198,7 @@
 
             resultsContainer.innerHTML = '';
             data.users.forEach(user => {
-                const btn = UIUtils.createActionButton({ icon: 'bi bi-chat', variant: 'primary', size: 'sm', onClick: () => {} });
+                const btn = UIUtils.createActionButton({ icon: 'bi bi-chat', variant: 'primary', size: 'sm', onClick: () => { } });
                 const card = UIUtils.createUserCard(user, { type: 'search', avatarSize: 40, actions: [btn] });
                 card.setAttribute('data-user-id', user.publicid);
                 card.querySelector('button').addEventListener('click', (e) => {
@@ -219,7 +223,7 @@
                 body: JSON.stringify({ username })
             });
             const data = await res.json();
-            
+
             // Limpa resultados de busca
             const resultsContainer = document.getElementById('search-results');
             if (resultsContainer) resultsContainer.innerHTML = '';
@@ -242,12 +246,12 @@
     function abrirDM(chatId, chatName, otherUserData = null) {
         currentChatOtherUser = otherUserData;
         selectedChatId = chatId;
-        
+
         ChatLayout.showChat(chatName);
 
         if (chatInput) chatInput.disabled = false;
         if (sendBtn) sendBtn.disabled = false;
-        
+
         document.querySelectorAll('.conversation-card').forEach(card => card.classList.remove('active'));
         const activeCard = document.querySelector(`[data-chat-id="${chatId}"]`);
         if (activeCard) {
@@ -255,10 +259,10 @@
             const badge = activeCard.querySelector('.unread-badge');
             if (badge) badge.remove();
         }
-        
+
         if (chatMessages) chatMessages.innerHTML = '';
         allMessages = [];
-        
+
         if (socket) {
             socket.emit('joinChat', chatId);
             socket.emit('getMessages', { chatId, page: 1, type: 'dm' });
@@ -284,13 +288,13 @@
         socket = window.appSocket || (window.SocketConnector ? window.SocketConnector.getSocket() : null);
 
         ChatLayout.init({});
-        ChatLayout.hideChat(); 
-        
+        ChatLayout.hideChat();
+
         // Garante que o input de busca está ativo
         if (searchInput) {
             searchInput.disabled = false;
             searchInput.style.pointerEvents = 'auto';
-            
+
             if (searchBtn) searchBtn.onclick = buscarUsuarios;
             searchInput.onkeydown = (e) => {
                 if (e.key === 'Enter') {
@@ -303,8 +307,8 @@
         if (chatInput && sendBtn) {
             ChatUtils.setupMessageInput(chatInput, sendBtn, (mensagem) => {
                 if (!selectedChatId || !socket) return;
-                socket.emit('sendMessage', { 
-                    chatId: selectedChatId, 
+                socket.emit('sendMessage', {
+                    chatId: selectedChatId,
                     mensagem,
                     type: 'dm'
                 });
@@ -328,14 +332,14 @@
                 const resUser = await fetch('/api/users/me', { credentials: 'include' });
                 if (resUser.ok) currentUser = await resUser.json();
             }
-            
+
             await carregarDMs();
-            
+
             // Suporte para abrir DM via query param ?user=username
             const urlParams = new URLSearchParams(window.location.search);
             const userParaAbrir = urlParams.get('user');
             if (userParaAbrir) iniciarDM(userParaAbrir);
-            
+
         } catch (err) {
             console.error('[DMs] Erro na inicialização:', err);
         }
@@ -350,14 +354,14 @@
 
         socket.on('messagesLoaded', (data) => {
             if (!data || data.chatId !== selectedChatId) return;
-            
+
             const { messages } = data;
             allMessages = messages.map(msg => formatMessage(msg));
 
-            ChatUtils.renderMessages(allMessages, chatMessages, { 
-                clearContainer: true, scrollToBottom: true, showUsername: false 
+            ChatUtils.renderMessages(allMessages, chatMessages, {
+                clearContainer: true, scrollToBottom: true, showUsername: false
             });
-            
+
             socket.emit('markAsRead', { chatId: selectedChatId });
             atualizarCardDM(selectedChatId, null, true);
         });
@@ -365,14 +369,14 @@
         socket.on('newMessage', (data) => {
             if (!data?.chatId || !data.message?.message) return;
             const { chatId, message } = data;
-            
+
             if (chatId === selectedChatId) {
                 const newMsg = formatMessage(message);
                 allMessages.push(newMsg);
-                ChatUtils.renderMessages([newMsg], chatMessages, { 
-                    clearContainer: false, scrollToBottom: true, showUsername: false 
+                ChatUtils.renderMessages([newMsg], chatMessages, {
+                    clearContainer: false, scrollToBottom: true, showUsername: false
                 });
-                
+
                 if (!newMsg.isMine) socket.emit('markAsRead', { chatId });
             }
             atualizarCardDM(chatId, message);
@@ -381,7 +385,7 @@
         socket.on('messageRead', (data) => {
             if (!data) return;
             const { chatId, userId, lastReadMessageId } = data;
-            
+
             const myUser = currentUser || window.currentUser;
             if (myUser && userId !== myUser.publicid && chatId === selectedChatId) {
                 allMessages.forEach(msg => { if (msg.isMine) msg.isread = true; });

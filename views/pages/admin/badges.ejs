@@ -4,7 +4,8 @@
 <div class="window" style="margin-bottom: 20px;">
     <div class="window-header">
         <span>Gerenciar Badges</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
+            Painel ]</a>
     </div>
     <div class="window-content">
         Administração de badges do sistema e atribuições para usuários.
@@ -17,36 +18,45 @@
         <div class="window">
             <div class="window-header">
                 <span>Dicionário de Badges</span>
-                <button onclick="abrirModalBadge()" style="height: 16px; line-height: 12px; font-size: 10px;">+ Nova</button>
+                <button onclick="abrirModalBadge()" style="height: 16px; line-height: 12px; font-size: 10px;">+
+                    Nova</button>
             </div>
-            <div class="window-content" style="padding: 0; background: white; height: 350px; overflow-y: auto; border: 2px inset var(--retro-border-dark);">
+            <div class="window-content"
+                style="padding: 0; background: white; height: 350px; overflow-y: auto; border: 2px inset var(--retro-border-dark);">
                 <div id="badgesLista">
                     <!-- Carregado via JS -->
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Atribuir Badge -->
     <div style="flex: 1.5;">
         <div class="window">
             <div class="window-header">Distribuição de Badges</div>
             <div class="window-content">
                 <div style="position: relative; margin-bottom: 10px;">
-                    <div style="display: flex; gap: 5px; align-items: center; background: var(--retro-bg); padding: 5px; border: 2px outset var(--retro-border-light);">
-                        <input type="text" id="userSearch" placeholder="Buscar @username..." style="flex-grow: 1;" autocomplete="off">
+                    <div
+                        style="display: flex; gap: 5px; align-items: center; background: var(--retro-bg); padding: 5px; border: 2px outset var(--retro-border-light);">
+                        <input type="text" id="userSearch" placeholder="Buscar @username..." style="flex-grow: 1;"
+                            autocomplete="off">
                         <button onclick="carregarAtribuicoes()">Buscar</button>
                     </div>
-                    <div id="searchResults" style="display: none; position: absolute; z-index: 999; background: white; border: 2px outset var(--retro-border-light); width: 100%; max-height: 150px; overflow-y: auto; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);"></div>
+                    <div id="searchResults"
+                        style="display: none; position: absolute; z-index: 999; background: white; border: 2px outset var(--retro-border-light); width: 100%; max-height: 150px; overflow-y: auto; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);">
+                    </div>
                 </div>
 
                 <div id="userNotFound" style="display: none; margin-top: 10px; color: red; text-align: center;">
                     Usuário não encontrado.
                 </div>
 
-                <div id="userResult" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--retro-border-dark);">
+                <div id="userResult"
+                    style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--retro-border-dark);">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <div id="userAvatarPlaceholder" style="width: 50px; height: 50px; flex-shrink: 0; border: 2px inset var(--retro-border-dark);"></div>
+                        <div id="userAvatarPlaceholder"
+                            style="width: 50px; height: 50px; flex-shrink: 0; border: 2px inset var(--retro-border-dark);">
+                        </div>
                         <div style="line-height: 1.2;">
                             <h3 id="userName" style="margin: 0; font-family: 'MS Sans Serif', sans-serif;">-</h3>
                             <small id="userInternalId" style="color: gray;">-</small>
@@ -54,11 +64,13 @@
                     </div>
 
                     <p style="margin-bottom: 5px;"><strong>Badges Atuais:</strong></p>
-                    <div id="userBadges" style="min-height: 50px; border: 2px inset var(--retro-border-dark); background: white; padding: 8px; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start;">
+                    <div id="userBadges"
+                        style="min-height: 50px; border: 2px inset var(--retro-border-dark); background: white; padding: 8px; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start;">
                         <!-- Carregado via JS -->
                     </div>
 
-                    <div style="margin-top: 15px; background: #eee; padding: 10px; border: 2px outset var(--retro-border-light);">
+                    <div
+                        style="margin-top: 15px; background: #eee; padding: 10px; border: 2px outset var(--retro-border-light);">
                         <strong>Atribuir Nova:</strong>
                         <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <select id="badgeSelect" style="flex-grow: 1;">
@@ -74,7 +86,8 @@
 </div>
 
 <!-- Modal nativo -->
-<dialog id="badgeModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
+<dialog id="badgeModal" class="window"
+    style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
     <div class="window-header">
         <span id="badgeModalTitle">Nova Badge</span>
         <button onclick="fecharModalBadge()">[Fechar]</button>
@@ -88,28 +101,38 @@
             </tr>
             <tr>
                 <td>Descrição:</td>
-                <td><textarea id="badgeDescription" style="width: 100%; box-sizing: border-box;" rows="2"></textarea></td>
+                <td><textarea id="badgeDescription" style="width: 100%; box-sizing: border-box;" rows="2"></textarea>
+                </td>
             </tr>
             <tr>
                 <td colspan="2">Ícone da Badge:</td>
             </tr>
             <tr>
                 <td colspan="2">
-                    <div style="margin-bottom: 5px; border-bottom: 1px solid var(--retro-border-dark); padding-bottom: 5px;">
-                        <label><input type="radio" name="iconType" value="file" checked onchange="document.getElementById('badgeFile').style.display='block'; document.getElementById('badgeUrl').style.display='none';"> Arquivo</label>
-                        <label><input type="radio" name="iconType" value="url" style="margin-left: 10px;" onchange="document.getElementById('badgeFile').style.display='none'; document.getElementById('badgeUrl').style.display='block';"> URL</label>
+                    <div
+                        style="margin-bottom: 5px; border-bottom: 1px solid var(--retro-border-dark); padding-bottom: 5px;">
+                        <label><input type="radio" name="iconType" value="file" checked
+                                onchange="document.getElementById('badgeFile').style.display='block'; document.getElementById('badgeUrl').style.display='none';">
+                            Arquivo</label>
+                        <label><input type="radio" name="iconType" value="url" style="margin-left: 10px;"
+                                onchange="document.getElementById('badgeFile').style.display='none'; document.getElementById('badgeUrl').style.display='block';">
+                            URL</label>
                     </div>
                     <input type="file" id="badgeFile" accept="image/*" style="width: 100%;">
-                    <input type="text" id="badgeUrl" placeholder="https://..." style="width: 100%; display: none; box-sizing: border-box;">
+                    <input type="text" id="badgeUrl" placeholder="https://..."
+                        style="width: 100%; display: none; box-sizing: border-box;">
                     <div style="text-align: center; margin-top: 10px;">
-                        <img id="badgePreview" src="" alt="Preview" style="max-width: 64px; max-height: 64px; display: none;">
+                        <img id="badgePreview" src="" alt="Preview"
+                            style="max-width: 64px; max-height: 64px; display: none;">
                     </div>
                 </td>
             </tr>
         </table>
-        
-        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
-            <button id="btnExcluirBadge" onclick="deletarBadge()" style="display: none; float: left; color: red;">Excluir</button>
+
+        <div
+            style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
+            <button id="btnExcluirBadge" onclick="deletarBadge()"
+                style="display: none; float: left; color: red;">Excluir</button>
             <button onclick="fecharModalBadge()">Cancelar</button>
             <button onclick="salvarBadge()" style="font-weight: bold;">Salvar</button>
         </div>
@@ -130,7 +153,7 @@
     const searchResults = document.getElementById('searchResults');
     const userName = document.getElementById('userName');
     const userBadges = document.getElementById('userBadges');
-    
+
     const badgeModal = document.getElementById('badgeModal');
     const badgeFile = document.getElementById('badgeFile');
     const badgeUrl = document.getElementById('badgeUrl');
@@ -163,7 +186,7 @@
             tutteLeBadges = await response.json();
 
             // Renderizar Lista e Select usando map/join para eficiência
-            badgesLista.innerHTML = tutteLeBadges.length 
+            badgesLista.innerHTML = tutteLeBadges.length
                 ? tutteLeBadges.map(badge => `
                 <div style="border-bottom: 1px dashed var(--retro-border-dark); padding: 5px; cursor: pointer; display: flex; align-items: center; background: white; transition: background 0.2s;" onclick="abrirModalBadge('${badge.publicid}')">
                     <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eee; border: 1px inset var(--retro-border-light); margin-right: 10px;">
@@ -177,7 +200,7 @@
                 </div>`).join('')
                 : '<div style="text-align:center; padding:10px;">Nenhuma badge encontrada.</div>';
 
-            badgeSelect.innerHTML = '<option value="">Selecione uma badge...</option>' + 
+            badgeSelect.innerHTML = '<option value="">Selecione uma badge...</option>' +
                 tutteLeBadges.map(b => `<option value="${b.publicid}">${b.name}</option>`).join('');
 
         } catch (error) {
@@ -190,14 +213,14 @@
         document.getElementById('badgeModalTitle').textContent = publicid ? 'Editar Badge' : 'Nova Badge';
         document.querySelector('input[name="iconType"][value="file"]').click();
         badgeFile.value = '';
-        
+
         const badge = publicid ? tutteLeBadges.find(b => b.publicid === publicid) : null;
-        
+
         document.getElementById('badgePublicId').value = badge ? badge.publicid : '';
         document.getElementById('badgeName').value = badge ? badge.name : '';
         document.getElementById('badgeDescription').value = badge?.description || '';
         badgeUrl.value = badge?.url || '';
-        
+
         document.getElementById('btnExcluirBadge').style.display = badge ? 'block' : 'none';
         badgePreview.style.display = badge?.url ? 'inline-block' : 'none';
         if (badge?.url) badgePreview.src = badge.url;
@@ -208,7 +231,7 @@
     async function salvarBadge() {
         const publicid = document.getElementById('badgePublicId').value;
         const name = document.getElementById('badgeName').value;
-        
+
         if (!name) return alert('Nome é obrigatório');
 
         const formData = new FormData();
@@ -242,10 +265,10 @@
         const publicid = document.getElementById('badgePublicId').value;
         if (!publicid) return;
 
-        let conf = typeof mostrarConfirmacao !== 'undefined' 
+        let conf = typeof mostrarConfirmacao !== 'undefined'
             ? await mostrarConfirmacao('Tem certeza que deseja excluir esta badge?', 'Excluir')
             : confirm('Tem certeza que deseja excluir esta badge?');
-            
+
         if (!conf) return;
 
         const response = await fetch(`/api/admin/badges/${publicid}`, { method: 'DELETE' });
@@ -267,13 +290,13 @@
                 const searchParam = query.startsWith('@') ? query.substring(1) : query;
                 const users = await (await fetch(`/api/admin/users?search=${encodeURIComponent(searchParam)}`)).json();
                 const exact = users.find(u => u.username.toLowerCase() === searchParam.toLowerCase());
-                
+
                 if (!exact && users.length > 0) {
                     searchResults.innerHTML = users.map(u => {
-                        const avatarHTML = (typeof UIUtils !== 'undefined' && UIUtils.createAvatarWithStatus) 
-                            ? UIUtils.createAvatarWithStatus(u, 24) 
-                            : `<img src="${u.profileimage || '/images/default-avatar.png'}" width="24" height="24" style="object-fit: cover;">`;
-                        
+                        const avatarHTML = (typeof UIUtils !== 'undefined' && UIUtils.createAvatarWithStatus)
+                            ? UIUtils.createAvatarWithStatus(u, 24)
+                            : `<img src="${u.profileimage || '/images/default-avatar.webp'}" width="24" height="24" style="object-fit: cover;">`;
+
                         return `<div style="padding: 5px; border-bottom: 1px dashed var(--retro-border-dark); cursor: pointer; display: flex; align-items: center; gap: 8px; background: white;" onclick="document.getElementById('userSearch').value='${u.username}'; document.getElementById('searchResults').style.display='none'; carregarAtribuicoes('${u.publicid}')">
                             <div style="width: 24px; height: 24px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--retro-border-dark); background: #eee;">
                                 ${avatarHTML}
@@ -306,14 +329,14 @@
         selectedUserPublicId = user.publicid;
         userName.textContent = user.username;
         document.getElementById('userInternalId').textContent = `ID: ${user.id || '-'}`;
-        
-        userAvatarPlaceholder.innerHTML = typeof UIUtils !== 'undefined' 
-            ? UIUtils.createAvatarWithStatus(user, 48) 
-            : `<img src="${user.profileimage || '/images/default-avatar.png'}" style="width: 48px; border: 1px solid var(--retro-border-dark);">`;
+
+        userAvatarPlaceholder.innerHTML = typeof UIUtils !== 'undefined'
+            ? UIUtils.createAvatarWithStatus(user, 48)
+            : `<img src="${user.profileimage || '/images/default-avatar.webp'}" style="width: 48px; border: 1px solid var(--retro-border-dark);">`;
 
         currentUserBadges = await (await fetch(`/api/admin/badges/user/${user.publicid}`)).json();
 
-        userBadges.innerHTML = currentUserBadges.length ? currentUserBadges.map(b => 
+        userBadges.innerHTML = currentUserBadges.length ? currentUserBadges.map(b =>
             `<div style="display: inline-block; margin: 2px; padding: 2px; border: 1px solid var(--retro-border-dark); background: white;">
                 <img src="${b.url || '/images/default-badge.png'}" width="24" height="24" title="${b.name}" style="vertical-align: middle;">
                 <button onclick="removerAtribuicao('${b.publicid}')" style="margin-left: 5px; font-size: 10px;">[Fechar]</button>
@@ -340,13 +363,13 @@
     async function removerAtribuicao(badgePublicId) {
         if (!selectedUserPublicId || !badgePublicId) return;
 
-        let conf = typeof mostrarConfirmacao !== 'undefined' 
-            ? await mostrarConfirmacao('Remover badge?', 'Remover Atribuição') 
+        let conf = typeof mostrarConfirmacao !== 'undefined'
+            ? await mostrarConfirmacao('Remover badge?', 'Remover Atribuição')
             : confirm('Remover badge?');
-            
+
         if (!conf) return;
 
-        const response = await fetch('/api/admin/badges/unassign', { 
+        const response = await fetch('/api/admin/badges/unassign', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userPublicId: selectedUserPublicId, badgePublicId: badgePublicId })

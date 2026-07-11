@@ -3,17 +3,21 @@
 <div class="window" style="max-width: 500px; margin: 40px auto;">
     <div class="window-header">
         <span>Resetar Senha</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
+            Painel ]</a>
     </div>
     <div class="window-content" style="padding: 15px;">
-        
+
         <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/images/naorelacionado/easter_egg/alert.png" alt="Aviso" style="width: 48px; height: 48px; display: none;" onerror="this.style.display='none'">
+            <img src="/images/naorelacionado/easter_egg/alert.png" alt="Aviso"
+                style="width: 48px; height: 48px; display: none;" onerror="this.style.display='none'">
             <h3 style="margin: 0;">Resetar Senha</h3>
-            <p style="color: gray; font-size: 12px; margin-top: 5px;">Selecione um usuário para redefinir a senha de acesso para o padrão.</p>
+            <p style="color: gray; font-size: 12px; margin-top: 5px;">Selecione um usuário para redefinir a senha de
+                acesso para o padrão.</p>
         </div>
 
-        <div style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <div
+            style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-direction: column; gap: 10px;">
             <div><strong>Selecione o usuário alvo:</strong></div>
             <div>
                 <select id="selectUser" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 14px;">
@@ -21,7 +25,8 @@
                 </select>
             </div>
             <div style="padding-top: 5px; text-align: center;">
-                <button id="resetBtn" style="width: 100%; padding: 8px; font-weight: bold; color: #cc0000; border: 2px outset var(--retro-border-light);">
+                <button id="resetBtn"
+                    style="width: 100%; padding: 8px; font-weight: bold; color: #cc0000; border: 2px outset var(--retro-border-light);">
                     [ ! ] Resetar senha para 12345
                 </button>
             </div>
@@ -30,95 +35,95 @@
 </div>
 
 <script>
-let usuariosLista = [];
-let currentLoggedUser = null;
+    let usuariosLista = [];
+    let currentLoggedUser = null;
 
-// ==================== Buscar usuário logado ====================
-async function buscarUsuarioLogado() {
-    try {
-        const res = await fetch('/api/users/me', { credentials: "include" });
-        if (res.ok) {
-            currentLoggedUser = await res.json();
-        }
-    } catch(err) {
-        console.error("Erro ao buscar usuário logado:", err);
-    }
-}
-
-// ==================== Carregar usuários ====================
-async function carregarUsuarios() {
-    try {
-        const res = await fetch('/api/admin/users', { credentials: "include" });
-        if (!res.ok) throw new Error("Erro ao carregar usuários");
-
-        usuariosLista = await res.json();
-
-        const select = document.getElementById("selectUser");
-        select.innerHTML = "";
-
-        usuariosLista.forEach(u => {
-            // Filtrar usuários: se não for Dono, não mostrar usuários de nível igual ou superior
-            if (currentLoggedUser && currentLoggedUser.roleId > 1 && u.roleId <= currentLoggedUser.roleId) {
-                return; // Pula este usuário
+    // ==================== Buscar usuário logado ====================
+    async function buscarUsuarioLogado() {
+        try {
+            const res = await fetch('/api/users/me', { credentials: "include" });
+            if (res.ok) {
+                currentLoggedUser = await res.json();
             }
-
-            const option = document.createElement("option");
-            option.value = u.publicid;
-            const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Botecor', 20: 'Usuário' };
-            const roleText = roleNames[u.roleId] || 'Usuário';
-            option.textContent = `${u.username} (${roleText})`;
-            select.appendChild(option);
-        });
-    } catch(err) {
-        console.error(err);
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
-        else alert("Erro ao carregar usuários");
-    }
-}
-
-// ==================== Resetar senha ====================
-document.getElementById("resetBtn").addEventListener("click", async () => {
-    const select = document.getElementById("selectUser");
-    const userId = select.value;
-    
-    if(!userId) {
-        if (typeof mostrarAviso !== 'undefined') return mostrarAviso("Selecione um usuário");
-        return alert("Selecione um usuário");
-    }
-
-    let confirmado = false;
-    if (typeof mostrarConfirmacao !== 'undefined') {
-        confirmado = await mostrarConfirmacao("Tem certeza que deseja resetar a senha para 12345?");
-    } else {
-        confirmado = confirm("Tem certeza que deseja resetar a senha para 12345?");
-    }
-
-    if(!confirmado) return;
-
-    try {
-        const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
-            method: "PUT",
-            credentials: "include"
-        });
-
-        const data = await res.json();
-        if(res.ok){
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Senha resetada com sucesso!");
-            else alert("Senha resetada com sucesso!");
-        } else {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
-            else alert("Erro: " + data.message);
+        } catch (err) {
+            console.error("Erro ao buscar usuário logado:", err);
         }
-    } catch(err) {
-        console.error(err);
-        if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao resetar senha");
-        else alert("Erro ao resetar senha");
     }
-});
 
-// ==================== Inicialização ====================
-window.addEventListener("DOMContentLoaded", async () => {
-    await buscarUsuarioLogado();
-    carregarUsuarios();
-});
+    // ==================== Carregar usuários ====================
+    async function carregarUsuarios() {
+        try {
+            const res = await fetch('/api/admin/users', { credentials: "include" });
+            if (!res.ok) throw new Error("Erro ao carregar usuários");
+
+            usuariosLista = await res.json();
+
+            const select = document.getElementById("selectUser");
+            select.innerHTML = "";
+
+            usuariosLista.forEach(u => {
+                // Filtrar usuários: se não for Dono, não mostrar usuários de nível igual ou superior
+                if (currentLoggedUser && currentLoggedUser.roleId > 1 && u.roleId <= currentLoggedUser.roleId) {
+                    return; // Pula este usuário
+                }
+
+                const option = document.createElement("option");
+                option.value = u.publicid;
+                const roleNames = { 1: 'Dono', 5: 'Admin', 10: 'Mod', 11: 'Boteco', 20: 'Usuário' };
+                const roleText = roleNames[u.roleId] || 'Usuário';
+                option.textContent = `${u.username} (${roleText})`;
+                select.appendChild(option);
+            });
+        } catch (err) {
+            console.error(err);
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
+            else alert("Erro ao carregar usuários");
+        }
+    }
+
+    // ==================== Resetar senha ====================
+    document.getElementById("resetBtn").addEventListener("click", async () => {
+        const select = document.getElementById("selectUser");
+        const userId = select.value;
+
+        if (!userId) {
+            if (typeof mostrarAviso !== 'undefined') return mostrarAviso("Selecione um usuário");
+            return alert("Selecione um usuário");
+        }
+
+        let confirmado = false;
+        if (typeof mostrarConfirmacao !== 'undefined') {
+            confirmado = await mostrarConfirmacao("Tem certeza que deseja resetar a senha para 12345?");
+        } else {
+            confirmado = confirm("Tem certeza que deseja resetar a senha para 12345?");
+        }
+
+        if (!confirmado) return;
+
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+                method: "PUT",
+                credentials: "include"
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Senha resetada com sucesso!");
+                else alert("Senha resetada com sucesso!");
+            } else {
+                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
+                else alert("Erro: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao resetar senha");
+            else alert("Erro ao resetar senha");
+        }
+    });
+
+    // ==================== Inicialização ====================
+    window.addEventListener("DOMContentLoaded", async () => {
+        await buscarUsuarioLogado();
+        carregarUsuarios();
+    });
 </script>

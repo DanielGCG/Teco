@@ -3,7 +3,8 @@
 <div class="window" style="margin-bottom: 20px;">
     <div class="window-header">
         <span>Gerenciar Cartinhas</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
+            Painel ]</a>
     </div>
     <div class="window-content" style="padding: 10px;">
         <table width="100%">
@@ -17,67 +18,62 @@
     </div>
 </div>
 
-<table width="100%" cellpadding="10" cellspacing="0" border="0">
-    <tr>
-        <td valign="top" width="30%" style="border-right: 2px outset var(--retro-border-light);">
-            <!-- Filtros -->
-            <div class="window">
-                <div class="window-header">Filtros & Busca</div>
-                <div class="window-content">
-                    <table width="100%" cellpadding="5">
-                        <tr>
-                            <td>Status:</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <select id="statusFilter" style="width: 100%; box-sizing: border-box;">
-                                    <option value="">Todas as mensagens</option>
-                                    <option value="naolida">Não lidas</option>
-                                    <option value="lida">Lidas</option>
-                                    <option value="favorita">Favoritas</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Buscar Usuário:</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <input type="text" id="searchInput" placeholder="Nome do usuário..." style="width: 100%; box-sizing: border-box;">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td align="right">
-                                <button id="refreshBtn">Atualizar</button>
-                            </td>
-                        </tr>
-                    </table>
+<div style="display: flex; gap: 20px;">
+    <!-- Filtros -->
+    <div style="flex: 0 0 300px; display: flex; flex-direction: column; gap: 10px;">
+        <div class="window">
+            <div class="window-header">Filtros & Busca</div>
+            <div class="window-content" style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label for="statusFilter"
+                        style="display: block; margin-bottom: 5px; font-weight: bold;">Status:</label>
+                    <select id="statusFilter" style="width: 100%; box-sizing: border-box;">
+                        <option value="">Todas as mensagens</option>
+                        <option value="naolida">Não lidas</option>
+                        <option value="lida">Lidas</option>
+                        <option value="favorita">Favoritas</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="searchInput" style="display: block; margin-bottom: 5px; font-weight: bold;">Buscar
+                        Usuário:</label>
+                    <input type="text" id="searchInput" placeholder="Nome do usuário..."
+                        style="width: 100%; box-sizing: border-box;">
+                </div>
+                <div style="text-align: right; margin-top: 5px;">
+                    <button id="refreshBtn">Atualizar</button>
                 </div>
             </div>
-        </td>
-        <td valign="top" width="70%">
-            <!-- Lista de Usuários -->
-            <div class="window">
-                <div class="window-header">Usuários e suas Cartinhas</div>
-                <div class="window-content" style="padding: 0; background: white; height: 400px; overflow-y: auto;">
-                    <div id="loading" style="padding: 20px; text-align: center; color: gray; display: none;">Carregando...</div>
-                    <div id="usuariosList"></div>
+        </div>
+    </div>
+
+    <!-- Lista de Usuários -->
+    <div style="flex: 1; min-width: 0;">
+        <div class="window">
+            <div class="window-header">Usuários e suas Cartinhas</div>
+            <div class="window-content" style="padding: 0; background: white; height: 400px; overflow-y: auto;">
+                <div id="loading" style="padding: 20px; text-align: center; color: gray; display: none;">Carregando...
                 </div>
-                <div style="padding: 5px; background: var(--retro-window-bg); border-top: 2px outset var(--retro-border-light); text-align: center;" id="pagination">
-                    <!-- Paginação -->
-                </div>
+                <div id="usuariosList"></div>
             </div>
-        </td>
-    </tr>
-</table>
+            <div style="padding: 5px; background: var(--retro-window-bg); border-top: 2px outset var(--retro-border-light); text-align: center;"
+                id="pagination">
+                <!-- Paginação -->
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal para Cartinhas do Usuário -->
-<dialog id="cartinhasModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 600px; background: var(--retro-window-bg, #c0c0c0);">
+<dialog id="cartinhasModal" class="window"
+    style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 600px; background: var(--retro-window-bg, #c0c0c0);">
     <div class="window-header">
         <span id="modalTitle">Cartinhas do Usuário</span>
-        <button onclick="document.getElementById('cartinhasModal').close()">[Fechar]</button>
+        <button type="button" class="window-btn" onclick="document.getElementById('cartinhasModal').close()"
+            style="float: right;">[Fechar]</button>
     </div>
-    <div style="background: var(--retro-bg); border-bottom: 2px solid var(--retro-border-dark); padding: 5px; display: flex; gap: 5px; align-items: center; justify-content: space-between;">
+    <div
+        style="background: var(--retro-bg); border-bottom: 2px solid var(--retro-border-dark); padding: 5px; display: flex; gap: 5px; align-items: center; justify-content: space-between;">
         <div style="display: flex; gap: 5px; flex: 1;">
             <select id="modalStatusFilter" style="flex: 1;">
                 <option value="">Status: Todos</option>
@@ -89,127 +85,131 @@
         </div>
     </div>
     <div class="window-content" style="padding: 10px;">
-        <div id="cartinhasList" style="height: 350px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
-        
+        <div id="cartinhasList"
+            style="height: 350px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px;">
+        </div>
+
         <div style="margin-top: 5px; text-align: center;" id="modalPagination"></div>
 
-        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <button id="deleteSelectedBtn" style="color: #800000; font-weight: bold;" disabled>Remover Selecionadas</button>
+        <div
+            style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <button id="deleteSelectedBtn" style="color: #800000; font-weight: bold;" disabled>Remover
+                Selecionadas</button>
             <button onclick="document.getElementById('cartinhasModal').close()">Fechar</button>
         </div>
     </div>
 </dialog>
 
 <script>
-// ==================== Variáveis Globais ====================
-let currentPage = 1;
-let currentModalPage = 1;
-let currentUserId = null;
-let currentUsername = null;
-let selectedCartinhas = new Set();
-let searchTimeout = null;
+    // ==================== Variáveis Globais ====================
+    let currentPage = 1;
+    let currentModalPage = 1;
+    let currentUserId = null;
+    let currentUsername = null;
+    let selectedCartinhas = new Set();
+    let searchTimeout = null;
 
-const ITEMS_PER_PAGE = 20;
-const CARTINHAS_PER_PAGE = 15;
+    const ITEMS_PER_PAGE = 20;
+    const CARTINHAS_PER_PAGE = 15;
 
-// ==================== Inicialização ====================
-document.addEventListener('DOMContentLoaded', () => {
-    carregarUsuarios();
-    carregarEstatisticas();
-    
-    document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
-    document.getElementById('searchInput').addEventListener('input', () => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(aplicarFiltros, 500);
-    });
-    document.getElementById('refreshBtn').addEventListener('click', () => {
+    // ==================== Inicialização ====================
+    document.addEventListener('DOMContentLoaded', () => {
         carregarUsuarios();
         carregarEstatisticas();
-    });
-    
-    document.getElementById('modalStatusFilter').addEventListener('change', () => {
-        currentModalPage = 1;
-        carregarCartinhasUsuario();
-    });
-    document.getElementById('modalSearch').addEventListener('input', () => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
+
+        document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(aplicarFiltros, 500);
+        });
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            carregarUsuarios();
+            carregarEstatisticas();
+        });
+
+        document.getElementById('modalStatusFilter').addEventListener('change', () => {
             currentModalPage = 1;
             carregarCartinhasUsuario();
-        }, 500);
+        });
+        document.getElementById('modalSearch').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentModalPage = 1;
+                carregarCartinhasUsuario();
+            }, 500);
+        });
+        document.getElementById('deleteSelectedBtn').addEventListener('click', confirmarRemocaoSelecionadas);
     });
-    document.getElementById('deleteSelectedBtn').addEventListener('click', confirmarRemocaoSelecionadas);
-});
 
-// ==================== Carregamento de Dados ====================
-async function carregarUsuarios() {
-    try {
-        mostrarLoading(true);
-        const status = document.getElementById('statusFilter').value;
-        const search = document.getElementById('searchInput').value.trim();
-        const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
-        if (status) params.append('status', status);
-        if (search) params.append('search', search);
+    // ==================== Carregamento de Dados ====================
+    async function carregarUsuarios() {
+        try {
+            mostrarLoading(true);
+            const status = document.getElementById('statusFilter').value;
+            const search = document.getElementById('searchInput').value.trim();
+            const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
+            if (status) params.append('status', status);
+            if (search) params.append('search', search);
 
-        const response = await fetch(`/api/admin/cartinhas/usuarios?${params.toString()}`, { credentials: 'include' });
-        if (!response.ok) throw new Error('Erro ao carregar usuários');
-        
-        const data = await response.json();
-        renderizarUsuarios(data.usuarios || []);
-        renderizarPaginacao(data.currentPage, data.totalPages, 'pagination');
-    } catch (error) {
-        alert('Erro ao carregar usuários');
-    } finally {
-        mostrarLoading(false);
-    }
-}
+            const response = await fetch(`/api/admin/cartinhas/usuarios?${params.toString()}`, { credentials: 'include' });
+            if (!response.ok) throw new Error('Erro ao carregar usuários');
 
-async function carregarEstatisticas() {
-    try {
-        const response = await fetch('/api/admin/cartinhas/estatisticas', { credentials: 'include' });
-        if (response.ok) {
-            const stats = await response.json();
-            document.getElementById('totalCartinhas').textContent = stats.total || 0;
-            document.getElementById('naoLidas').textContent = stats.naolidas || 0;
-            document.getElementById('lidas').textContent = stats.lidas || 0;
-            document.getElementById('favoritas').textContent = stats.favoritas || 0;
+            const data = await response.json();
+            renderizarUsuarios(data.usuarios || []);
+            renderizarPaginacao(data.currentPage, data.totalPages, 'pagination');
+        } catch (error) {
+            alert('Erro ao carregar usuários');
+        } finally {
+            mostrarLoading(false);
         }
-    } catch (error) {}
-}
-
-async function carregarCartinhasUsuario() {
-    if (!currentUserId) return;
-    try {
-        const status = document.getElementById('modalStatusFilter').value;
-        const search = document.getElementById('modalSearch').value;
-        const params = new URLSearchParams({ page: currentModalPage, limit: CARTINHAS_PER_PAGE });
-        if (status) params.append('status', status);
-        if (search) params.append('search', search);
-
-        const response = await fetch(`/api/admin/cartinhas/usuario/${currentUserId}?${params.toString()}`, { credentials: 'include' });
-        if (!response.ok) throw new Error('Erro ao carregar cartinhas');
-        
-        const data = await response.json();
-        renderizarCartinhas(data.cartinhas);
-        renderizarPaginacao(data.currentPage, data.totalPages, 'modalPagination');
-    } catch (error) {
-        alert('Erro ao carregar cartinhas');
     }
-}
 
-// ==================== Renderização ====================
-function renderizarUsuarios(usuarios) {
-    const container = document.getElementById('usuariosList');
-    if (usuarios.length === 0) {
-        container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhum usuário encontrado</div>';
-        return;
+    async function carregarEstatisticas() {
+        try {
+            const response = await fetch('/api/admin/cartinhas/estatisticas', { credentials: 'include' });
+            if (response.ok) {
+                const stats = await response.json();
+                document.getElementById('totalCartinhas').textContent = stats.total || 0;
+                document.getElementById('naoLidas').textContent = stats.naolidas || 0;
+                document.getElementById('lidas').textContent = stats.lidas || 0;
+                document.getElementById('favoritas').textContent = stats.favoritas || 0;
+            }
+        } catch (error) { }
     }
-    
-    container.innerHTML = usuarios.map(u => `
+
+    async function carregarCartinhasUsuario() {
+        if (!currentUserId) return;
+        try {
+            const status = document.getElementById('modalStatusFilter').value;
+            const search = document.getElementById('modalSearch').value;
+            const params = new URLSearchParams({ page: currentModalPage, limit: CARTINHAS_PER_PAGE });
+            if (status) params.append('status', status);
+            if (search) params.append('search', search);
+
+            const response = await fetch(`/api/admin/cartinhas/usuario/${currentUserId}?${params.toString()}`, { credentials: 'include' });
+            if (!response.ok) throw new Error('Erro ao carregar cartinhas');
+
+            const data = await response.json();
+            renderizarCartinhas(data.cartinhas);
+            renderizarPaginacao(data.currentPage, data.totalPages, 'modalPagination');
+        } catch (error) {
+            alert('Erro ao carregar cartinhas');
+        }
+    }
+
+    // ==================== Renderização ====================
+    function renderizarUsuarios(usuarios) {
+        const container = document.getElementById('usuariosList');
+        if (usuarios.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhum usuário encontrado</div>';
+            return;
+        }
+
+        container.innerHTML = usuarios.map(u => `
         <div style="border-bottom: 1px solid var(--retro-border-dark); padding: 5px; cursor: pointer;" onclick="abrirCartinhasUsuario('${u.publicid}', '${u.username}')">
             <table width="100%">
                 <tr>
-                    <td width="48"><img src="${u.profileimage || '/images/default-avatar.png'}" style="width: 40px; height: 40px; border: 1px solid var(--retro-border-dark);"></td>
+                    <td width="48"><img src="${u.profileimage || '/images/default-avatar.webp'}" style="width: 40px; height: 40px; border: 1px solid var(--retro-border-dark);"></td>
                     <td>
                         <strong>${u.username}</strong><br>
                         <small style="color: gray;">Total: ${u.totalcartinhas}</small>
@@ -223,31 +223,31 @@ function renderizarUsuarios(usuarios) {
             </table>
         </div>
     `).join('');
-}
-
-function renderizarCartinhas(cartinhas) {
-    const container = document.getElementById('cartinhasList');
-    if (!cartinhas || cartinhas.length === 0) {
-        container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhuma cartinha encontrada</div>';
-        return;
     }
-    
-    container.innerHTML = cartinhas.map(c => {
-        const isSelected = selectedCartinhas.has(c.publicid);
-        
-        // Polimento visual dos badges de status
-        let statusBadge = '';
-        if (c.isfavorited) {
-            statusBadge = '<span style="font-size: 10px; border: 1px outset var(--retro-border-light); padding: 0 4px; background: #ffffd0; color: #808000; font-weight: bold; margin-left: 5px;" title="Favoritada">★ FAV</span>';
-        } else if (c.isread) {
-            statusBadge = '<span style="font-size: 10px; border: 1px inset var(--retro-border-light); padding: 0 4px; background: #e0e0e0; color: #666; margin-left: 5px;">LIDA</span>';
-        } else {
-            statusBadge = '<span style="font-size: 10px; border: 2px outset var(--retro-border-light); padding: 0 4px; background: #ffffff; color: #000080; font-weight: bold; margin-left: 5px;">NOVA</span>';
+
+    function renderizarCartinhas(cartinhas) {
+        const container = document.getElementById('cartinhasList');
+        if (!cartinhas || cartinhas.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhuma cartinha encontrada</div>';
+            return;
         }
 
-        const bgColor = isSelected ? 'rgba(0, 0, 128, 0.05)' : 'transparent';
-        
-        return `
+        container.innerHTML = cartinhas.map(c => {
+            const isSelected = selectedCartinhas.has(c.publicid);
+
+            // Polimento visual dos badges de status
+            let statusBadge = '';
+            if (c.isfavorited) {
+                statusBadge = '<span style="font-size: 10px; border: 1px outset var(--retro-border-light); padding: 0 4px; background: #ffffd0; color: #808000; font-weight: bold; margin-left: 5px;" title="Favoritada">★ FAV</span>';
+            } else if (c.isread) {
+                statusBadge = '<span style="font-size: 10px; border: 1px inset var(--retro-border-light); padding: 0 4px; background: #e0e0e0; color: #666; margin-left: 5px;">LIDA</span>';
+            } else {
+                statusBadge = '<span style="font-size: 10px; border: 2px outset var(--retro-border-light); padding: 0 4px; background: #ffffff; color: #000080; font-weight: bold; margin-left: 5px;">NOVA</span>';
+            }
+
+            const bgColor = isSelected ? 'rgba(0, 0, 128, 0.05)' : 'transparent';
+
+            return `
             <div style="border-bottom: 1px dashed var(--retro-border-dark); padding: 6px; background: ${bgColor}; transition: background 0.2s;">
                 <table width="100%" cellspacing="0" cellpadding="0">
                     <tr>
@@ -281,88 +281,88 @@ function renderizarCartinhas(cartinhas) {
                 </table>
             </div>
         `;
-    }).join('');
-}
-
-function renderizarPaginacao(currentPage, totalPages, containerId) {
-    const container = document.getElementById(containerId);
-    if (totalPages <= 1) { container.innerHTML = ''; return; }
-    
-    let html = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="mudarPagina(${currentPage - 1}, '${containerId}')">&laquo;</button> `;
-    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-        html += `<button ${i === currentPage ? 'disabled style="font-weight: bold;"' : ''} onclick="mudarPagina(${i}, '${containerId}')">${i}</button> `;
+        }).join('');
     }
-    html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="mudarPagina(${currentPage + 1}, '${containerId}')">&raquo;</button>`;
-    container.innerHTML = html;
-}
 
-// ==================== Ações ====================
-function abrirCartinhasUsuario(userId, username) {
-    currentUserId = userId;
-    currentUsername = username;
-    currentModalPage = 1;
-    selectedCartinhas.clear();
-    document.getElementById('deleteSelectedBtn').disabled = true;
-    document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
-    document.getElementById('modalTitle').textContent = `Cartinhas de ${username}`;
-    carregarCartinhasUsuario();
-    document.getElementById('cartinhasModal').showModal();
-}
+    function renderizarPaginacao(currentPage, totalPages, containerId) {
+        const container = document.getElementById(containerId);
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
 
-function toggleSelecaoCartinha(checkbox, cartinhaId) {
-    if (checkbox.checked) selectedCartinhas.add(cartinhaId);
-    else selectedCartinhas.delete(cartinhaId);
-    
-    // Atualizar visual (re-renderiza a lista para aplicar bg-color rápido - ou usa DOM traversal)
-    checkbox.closest('div').style.background = checkbox.checked ? 'rgba(0, 0, 128, 0.1)' : 'transparent';
-    
-    const btn = document.getElementById('deleteSelectedBtn');
-    btn.disabled = selectedCartinhas.size === 0;
-    btn.textContent = selectedCartinhas.size > 0 ? `Remover (${selectedCartinhas.size})` : 'Remover Selecionadas';
-}
-
-async function confirmarRemocaoUnica(id) {
-    let conf = typeof mostrarConfirmacao !== 'undefined' 
-        ? await mostrarConfirmacao('Remover cartinha?', 'Excluir')
-        : confirm('Deseja remover esta cartinha?');
-    if (conf) removerCartinhas([id]);
-}
-
-async function confirmarRemocaoSelecionadas() {
-    if (selectedCartinhas.size === 0) return;
-    let conf = typeof mostrarConfirmacao !== 'undefined' 
-        ? await mostrarConfirmacao(`Remover ${selectedCartinhas.size} cartinhas?`, 'Excluir Selecionadas')
-        : confirm(`Remover ${selectedCartinhas.size} cartinhas?`);
-    if (conf) removerCartinhas(Array.from(selectedCartinhas));
-}
-
-async function removerCartinhas(cartinhaIds) {
-    try {
-        const response = await fetch('/api/admin/cartinhas/remover', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ cartinhaIds })
-        });
-        if (response.ok) {
-            selectedCartinhas.clear();
-            document.getElementById('deleteSelectedBtn').disabled = true;
-            document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
-            carregarCartinhasUsuario();
-            carregarUsuarios();
-            carregarEstatisticas();
-        } else {
-            alert('Erro ao remover cartinhas');
+        let html = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="mudarPagina(${currentPage - 1}, '${containerId}')">&laquo;</button> `;
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+            html += `<button ${i === currentPage ? 'disabled style="font-weight: bold;"' : ''} onclick="mudarPagina(${i}, '${containerId}')">${i}</button> `;
         }
-    } catch (error) {
-        alert('Erro de conexão ao remover');
+        html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="mudarPagina(${currentPage + 1}, '${containerId}')">&raquo;</button>`;
+        container.innerHTML = html;
     }
-}
 
-function aplicarFiltros() { currentPage = 1; carregarUsuarios(); }
-function mudarPagina(p, id) { 
-    if (id === 'pagination') { currentPage = p; carregarUsuarios(); }
-    else { currentModalPage = p; carregarCartinhasUsuario(); }
-}
-function mostrarLoading(s) { document.getElementById('loading').style.display = s ? 'block' : 'none'; }
+    // ==================== Ações ====================
+    function abrirCartinhasUsuario(userId, username) {
+        currentUserId = userId;
+        currentUsername = username;
+        currentModalPage = 1;
+        selectedCartinhas.clear();
+        document.getElementById('deleteSelectedBtn').disabled = true;
+        document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
+        document.getElementById('modalTitle').textContent = `Cartinhas de ${username}`;
+        carregarCartinhasUsuario();
+        document.getElementById('cartinhasModal').showModal();
+    }
+
+    function toggleSelecaoCartinha(checkbox, cartinhaId) {
+        if (checkbox.checked) selectedCartinhas.add(cartinhaId);
+        else selectedCartinhas.delete(cartinhaId);
+
+        // Atualizar visual (re-renderiza a lista para aplicar bg-color rápido - ou usa DOM traversal)
+        checkbox.closest('div').style.background = checkbox.checked ? 'rgba(0, 0, 128, 0.1)' : 'transparent';
+
+        const btn = document.getElementById('deleteSelectedBtn');
+        btn.disabled = selectedCartinhas.size === 0;
+        btn.textContent = selectedCartinhas.size > 0 ? `Remover (${selectedCartinhas.size})` : 'Remover Selecionadas';
+    }
+
+    async function confirmarRemocaoUnica(id) {
+        let conf = typeof mostrarConfirmacao !== 'undefined'
+            ? await mostrarConfirmacao('Remover cartinha?', 'Excluir')
+            : confirm('Deseja remover esta cartinha?');
+        if (conf) removerCartinhas([id]);
+    }
+
+    async function confirmarRemocaoSelecionadas() {
+        if (selectedCartinhas.size === 0) return;
+        let conf = typeof mostrarConfirmacao !== 'undefined'
+            ? await mostrarConfirmacao(`Remover ${selectedCartinhas.size} cartinhas?`, 'Excluir Selecionadas')
+            : confirm(`Remover ${selectedCartinhas.size} cartinhas?`);
+        if (conf) removerCartinhas(Array.from(selectedCartinhas));
+    }
+
+    async function removerCartinhas(cartinhaIds) {
+        try {
+            const response = await fetch('/api/admin/cartinhas/remover', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ cartinhaIds })
+            });
+            if (response.ok) {
+                selectedCartinhas.clear();
+                document.getElementById('deleteSelectedBtn').disabled = true;
+                document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
+                carregarCartinhasUsuario();
+                carregarUsuarios();
+                carregarEstatisticas();
+            } else {
+                alert('Erro ao remover cartinhas');
+            }
+        } catch (error) {
+            alert('Erro de conexão ao remover');
+        }
+    }
+
+    function aplicarFiltros() { currentPage = 1; carregarUsuarios(); }
+    function mudarPagina(p, id) {
+        if (id === 'pagination') { currentPage = p; carregarUsuarios(); }
+        else { currentModalPage = p; carregarCartinhasUsuario(); }
+    }
+    function mostrarLoading(s) { document.getElementById('loading').style.display = s ? 'block' : 'none'; }
 </script>

@@ -260,11 +260,13 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
         const objectfit = getVal('objectfit'); 
         const showtitle = getVal('showtitle');
         const positionz = getVal('positionz');
+        const roundedcorners = getVal('roundedcorners');
 
         if (title !== undefined) item.title = title; 
         if (objectfit !== undefined) item.objectfit = objectfit;
         if (showtitle !== undefined) item.showtitle = showtitle;
         if (positionz !== undefined) item.positionz = parseInt(positionz) || 0;
+        if (roundedcorners !== undefined) item.roundedcorners = roundedcorners;
 
         if (req.file) {
             const isImageItem = (item.type || '').toLowerCase().startsWith('image/');

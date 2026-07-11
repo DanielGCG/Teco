@@ -61,11 +61,11 @@ const RetroPosts = {
                 ${repostHtml}
                 ${mediaHtml}
                 <div style="margin-top: 10px; font-size: 11px; border-top: 1px dashed var(--retro-border-dark); padding-top: 5px; display: flex; gap: 15px; align-items: center;">
-                    <a href="/${post.author.username}/status/${post.publicid}" style="font-weight: bold;">[ABRIR POST]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[CURTIR ${post.likecount || 0}]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroReply('${post.publicid}', '${post.author.username}')" style="color: var(--retro-header-bg);">[RESPONDER ${post.replycount || 0}]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: #555;">[REPOSTAR ${post.repostcount || 0}]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroCopyLink('${post.author.username}', '${post.publicid}')" style="color: var(--retro-link);">[COPIAR LINK]</a>
+                    <a href="/${post.author.username}/status/${post.publicid}" style="font-weight: bold;">[ABRIR]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[LIKE ${post.likecount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroReply('${post.publicid}', '${post.author.username}')" style="color: var(--retro-header-bg);">[REPLY ${post.replycount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: #555;">[REPOST ${post.repostcount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroCopyLink('${post.author.username}', '${post.publicid}')" style="color: var(--retro-link);">[LINK]</a>
                     <span style="margin-left: auto; color: #888; display: none;"></b>Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</span>
                 </div>
             </div>

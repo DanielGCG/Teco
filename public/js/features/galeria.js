@@ -22,6 +22,7 @@ const GaleriaManager = {
     lastAppliedFont: null,
     resizeObserver: null,
     draggedItemDims: null,
+    originalDataItems: null,
 
     async init() {
         const mainEl = document.getElementById('conteudo-principal');
@@ -84,18 +85,25 @@ const GaleriaManager = {
         } catch (err) { console.error(err); Utils.alert('Erro ao carregar dados.', 'Erro'); }
     },
 
-    updateGridMetrics() {
+    updateGridMetrics(tempData = null) {
         const grid = document.getElementById('image-list');
-        if (!grid || !this.data || !this.data.gridxsize) return;
+        const data = tempData || this.data;
+        if (!grid || !data || !data.gridxsize) return;
 
-        const cols = parseInt(this.data.gridxsize) || 12;
-        const gap = 15;
+        const cols = parseInt(data.gridxsize) || 12;
         const containerWidth = grid.getBoundingClientRect().width;
 
         if (containerWidth > 0) {
+            const gap = containerWidth * 0.0125;
             const cellWidth = (containerWidth - ((cols - 1) * gap)) / cols;
             grid.style.setProperty('--cell-size', `${cellWidth}px`);
             grid.style.setProperty('--row-height', `${cellWidth}px`);
+            grid.style.setProperty('--gallery-gap', `${gap}px`);
+            
+            const radius = containerWidth * (16 / 1200);
+            const radiusSmall = containerWidth * (8 / 1200);
+            grid.style.setProperty('--gallery-radius', `${radius}px`);
+            grid.style.setProperty('--gallery-radius-small', `${radiusSmall}px`);
         }
     },
 
@@ -168,6 +176,8 @@ const GaleriaManager = {
             
             const showTitle = (item.showtitle !== false);
             const fit = item.objectfit; 
+            const isItemRounded = (item.roundedcorners !== false && item.roundedcorners !== 'false' && item.roundedcorners !== '0' && item.roundedcorners !== 0);
+            const extraStyle = isItemRounded ? '' : '--gallery-radius: 0px;';
             
             // Ignorar coverurl caso seja idêntico ao arquivo de mídia para áudio e vídeo
             let previewSrc = item.coverurl;
@@ -178,24 +188,28 @@ const GaleriaManager = {
             if (type === 'video') {
                 content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<video src="${item.contenturl}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
             } else if (type === 'audio') {
-                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio d-flex align-items-center justify-content-center"><div class="audio-cover"><i class="bi bi-music-note-beamed audio-icon display-1"></i></div></div>`;
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio" style="display:flex; align-items:center; justify-content:center; background:#ccc; font-size:48px;">🎵</div>`;
             } else {
                 content = `<img src="${previewSrc || item.contenturl || ''}" class="media-preview-box fit-${fit}" loading="lazy">`;
             }
 
             const editControls = this.editMode ? `
-                <div class="edit-overlay">
-                    <button class="btn btn-xs btn-light border" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem('${item.publicid}')">
-                        <i class="bi bi-pencil-square"></i>
+                <div class="edit-overlay" style="display: flex; gap: 5px;">
+                    <button type="button" class="window-btn" title="Editar" onclick="event.stopPropagation(); GaleriaManager.openEditItem('${item.publicid}')">
+                        Editar
+                    </button>
+                    <button type="button" class="window-btn" title="Excluir" onclick="event.stopPropagation(); GaleriaManager.deleteItem('${item.publicid}')" style="color: red; font-weight: bold;">
+                        X
                     </button>
                 </div>
-                <button class="btn-delete" onclick="event.stopPropagation(); GaleriaManager.deleteItem('${item.publicid}')" title="Excluir"><i class="bi bi-trash"></i></button>
-                <div class="resize-handle" data-id="${item.publicid}" title="Redimensionar"><i class="bi bi-arrows-angle-expand"></i></div>
+                <div class="resize-handle window-btn" data-id="${item.publicid}" title="Redimensionar" style="display: flex; align-items: center; justify-content: center; padding: 2px 6px; font-weight: bold; background: #c0c0c0; border: 2px outset #fff; border-bottom: 2px solid #555; border-right: 2px solid #555; position: absolute; bottom: 5px; right: 5px; cursor: nwse-resize; width: auto; height: auto; border-radius: 0;">
+                    &#8690;
+                </div>
             ` : '';
 
             return `
             <div class="grid-item" data-id="${item.publicid}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};">
-                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.positionz || 0};" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}')">
+                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.positionz || 0}; ${extraStyle}" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}', '${previewSrc || ''}')">
                     ${content}
                     ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeName}</small></div>` : ''}
                 </div>
@@ -215,6 +229,10 @@ const GaleriaManager = {
         document.getElementById('edit-item-id').value = item.publicid;
         document.getElementById('edit-item-name').value = item.title || "";
         document.getElementById('edit-item-showtitle').checked = item.showtitle !== false;
+        
+        const roundedCheck = document.getElementById('edit-item-rounded');
+        if (roundedCheck) roundedCheck.checked = (item.roundedcorners !== false && item.roundedcorners !== 'false' && item.roundedcorners !== '0' && item.roundedcorners !== 0);
+        
         document.getElementById('edit-item-fit').value = item.objectfit;
         const zinput = document.getElementById('edit-item-zindex');
         if (zinput) zinput.value = item.positionz || 0;
@@ -234,14 +252,17 @@ const GaleriaManager = {
         } else {
             if (coverWrapper) coverWrapper.style.display = '';
             if (current) {
-                if (item.coverurl) {
+                let actualCoverUrl = item.coverurl;
+                if (actualCoverUrl === item.contenturl && type !== 'image') actualCoverUrl = '';
+                
+                if (actualCoverUrl) {
                     current.style.display = '';
                     current.innerHTML = `
                         <div class="d-flex align-items-center gap-2">
-                            <img src="${item.coverurl}" style="max-height:80px; max-width:120px; object-fit:cover; border-radius:8px;"/>
-                            <div>
-                                <div class="small text-muted">Capa Atual</div>
-                                <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-danger" onclick="GaleriaManager.markRemoveCover('${item.id}')">Remover Capa</button></div>
+                            <img src="${actualCoverUrl}" style="max-height:80px; max-width:120px; object-fit:cover; border-radius:8px;"/>
+                            <div style="flex: 1;">
+                                <div style="font-size: 11px; color: gray;">Capa Atual</div>
+                                <div style="margin-top: 5px;"><button type="button" onclick="GaleriaManager.markRemoveCover('${item.publicid}')" style="color: red; border: 1px solid red; background: transparent; border-radius: 4px; padding: 2px 5px; cursor: pointer;">Remover Capa</button></div>
                             </div>
                         </div>`;
                 } else {
@@ -254,22 +275,27 @@ const GaleriaManager = {
             form.addEventListener('submit', (e) => this.handleEditItemSubmit(e));
             form._hasHandler = true;
         }
-        new bootstrap.Modal(document.getElementById('modalEditItem')).show();
+        document.getElementById('modalEditItem').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
     },
 
     async handleEditItemSubmit(e) {
         e.preventDefault();
-        const form = e.target;
         const id = document.getElementById('edit-item-id').value;
         if (!id) return Utils.alert('ID do item faltando.');
 
-        const fd = new FormData(form);
-        // Garante que o checkbox seja enviado como booleano reconhecível pelo backend
-        fd.set('showtitle', document.getElementById('edit-item-showtitle').checked);
-        const zEl = document.getElementById('edit-item-zindex');
-        if (zEl) fd.set('positionz', parseInt(zEl.value) || 0);
-
         try {
+            const fd = new FormData(e.target);
+            fd.set('showtitle', document.getElementById('edit-item-showtitle').checked);
+            
+            const roundedCheck = document.getElementById('edit-item-rounded');
+            if (roundedCheck) fd.set('roundedcorners', roundedCheck.checked);
+            
+            if (document.getElementById('edit-flag-remove-cover').value === 'true') fd.set('remove_cover', 'true');
+            
+            const zEl = document.getElementById('edit-item-zindex');
+            if (zEl) fd.set('positionz', parseInt(zEl.value) || 0);
+
             const res = await fetch(`/api/galeria/${this.galleryId}/item/${id}`, { method: 'PATCH', body: fd });
             const json = await res.json();
             if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
@@ -277,7 +303,8 @@ const GaleriaManager = {
             const idx = this.data.items.findIndex(i => i.publicid === id);
             if (idx > -1) this.data.items[idx] = { ...this.data.items[idx], ...json.item };
 
-            bootstrap.Modal.getInstance(document.getElementById('modalEditItem')).hide();
+            document.getElementById('modalEditItem').style.display = 'none';
+            document.getElementById('modalBackdrop').style.display = 'none';
             this.renderGrid();
             Utils.alert('Item atualizado com sucesso!', 'Sucesso');
         } catch (err) { console.error(err); Utils.alert(err.message, 'Erro'); }
@@ -286,25 +313,38 @@ const GaleriaManager = {
     toggleEditMode() {
         this.editMode = !this.editMode;
         
-        // Manipula os botões estáticos via classe
         const btnEdit = document.getElementById('btn-edit-mode');
-        const spanEdit = btnEdit ? btnEdit.querySelector('span') : null;
         const btnSave = document.getElementById('btn-save-layout');
         
         if (this.editMode) {
+            this.originalDataItems = JSON.stringify(this.data.items);
             if(btnEdit) {
                 btnEdit.classList.remove('btn-outline-secondary');
                 btnEdit.classList.add('btn-warning');
+                btnEdit.textContent = 'Sair da Edição';
             }
-            if(spanEdit) spanEdit.textContent = 'Sair';
-            if(btnSave) btnSave.classList.remove('d-none');
+            if(btnSave) {
+                btnSave.style.display = 'inline-block';
+                btnSave.style.fontWeight = 'normal';
+                btnSave.style.color = '';
+                btnSave.textContent = 'Salvar Layout';
+            }
         } else {
+            if (this.originalDataItems) {
+                this.data.items = JSON.parse(this.originalDataItems);
+                this.originalDataItems = null;
+            }
             if(btnEdit) {
                 btnEdit.classList.remove('btn-warning');
                 btnEdit.classList.add('btn-outline-secondary');
+                btnEdit.textContent = 'Editar Layout';
             }
-            if(spanEdit) spanEdit.textContent = 'Editar';
-            if(btnSave) btnSave.classList.add('d-none');
+            if(btnSave) {
+                btnSave.style.display = 'none';
+                btnSave.style.fontWeight = 'normal';
+                btnSave.style.color = '';
+                btnSave.textContent = 'Salvar Layout';
+            }
         }
         
         this.renderGrid();
@@ -328,10 +368,26 @@ const GaleriaManager = {
             const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: formData });
             const json = await res.json();
             if (json.success) {
+                this.originalDataItems = JSON.stringify(this.data.items);
+                const btnSave = document.getElementById('btn-save-layout');
+                if (btnSave) {
+                    btnSave.style.fontWeight = 'normal';
+                    btnSave.style.color = '';
+                    btnSave.textContent = 'Salvar Layout';
+                }
                 this.toggleEditMode();
                 Utils.alert('Layout salvo com sucesso!', 'Sucesso');
             } else throw new Error(json.message);
         } catch (err) { Utils.alert('Erro ao salvar layout', 'Erro'); }
+    },
+
+    markLayoutChanged() {
+        const btnSave = document.getElementById('btn-save-layout');
+        if (btnSave) {
+            btnSave.style.fontWeight = 'bold';
+            btnSave.style.color = 'red';
+            btnSave.textContent = '* Salvar Layout *';
+        }
     },
 
     applyStyles(s) {
@@ -339,14 +395,12 @@ const GaleriaManager = {
         if (!el) return;
         const bg = s.backgroundurl;
         
-        // Remove as tags do body (revertendo caso tenha testado antes na página toda)
         document.body.style.backgroundColor = '';
         document.body.style.backgroundImage = '';
         document.body.style.backgroundRepeat = '';
         document.body.style.backgroundSize = '';
         document.body.style.backgroundAttachment = '';
         
-        // Alvo preferencial: a TD (#retro-body-td) que abraça o body para não sobrar fundo nas bordas e menus
         const bgTarget = document.getElementById('retro-body-td') || el.closest('td') || el;
         
         Object.assign(bgTarget.style, {
@@ -358,15 +412,14 @@ const GaleriaManager = {
             color: s.fontcolor
         });
         
-        // Aplica a cor da fonte também no container principal
         Object.assign(el.style, {
             color: s.fontcolor
         });
 
         if (s.gridxsize) {
             document.getElementById('image-list')?.style.setProperty('--gallery-columns', s.gridxsize);
-            this.updateGridMetrics();
         }
+        this.updateGridMetrics(s);
         const cardColor = s.cardcolor || s.backgroundcolor;
         el.style.setProperty('--gallery-card-bg', cardColor);
         document.querySelectorAll('.image-card .card-body').forEach(cb => cb.style.backgroundColor = cardColor);
@@ -380,7 +433,7 @@ const GaleriaManager = {
         const clean = fontName.trim();
         let family = `'Inter', sans-serif`;
 
-        if (clean.toLowerCase().includes('comic sans')) family = `'Comic Sans MS', cursive`;
+        if (clean.toLowerCase().includes('comic sans')) family = `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive`;
         else if (clean) {
             let apiParam = clean.replace(/\s+/g, '+');
             if (!apiParam.includes(':')) apiParam += ':ital,wght@0,300;0,400;0,700;1,400';
@@ -402,7 +455,7 @@ const GaleriaManager = {
         if (inp) { inp.focus(); try{inp.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',keyCode:40,which:40,bubbles:true}));}catch(e){}}
     },
 
-    openUploadModal() { new bootstrap.Modal(document.getElementById('modalUpload')).show(); },
+    openUploadModal() { document.getElementById('modalUpload').style.display = 'block'; document.getElementById('modalBackdrop').style.display = 'block'; },
     
     async handleUpload(e) { 
         e.preventDefault();
@@ -418,21 +471,22 @@ const GaleriaManager = {
         const suggestedSize = (cols >= 9 ? 3 : (cols >= 6 ? 2 : 1));
 
         try {
-            // Criar FormData manualmente para incluir sugestão de tamanho
             const fd = new FormData(form);
             fd.delete('fileInput');
             fd.append('media', file);
             fd.append('grid_w', suggestedSize);
             fd.append('grid_h', suggestedSize);
 
-            const res = await this.uploadFileXHR(file, fd); // Passar o FD já pronto
+            const res = await this.uploadFileXHR(file, fd);
             if (res.success) {
                 res.item.grid_w = res.item.grid_h = suggestedSize;
                 this.data.items.push(res.item);
                 this.ensureCoordinates();
                 this.renderGrid();
-                bootstrap.Modal.getInstance(document.getElementById('modalUpload')).hide();
-                form.reset();
+                const form = document.getElementById('formUpload');
+                if (form) form.reset();
+                document.getElementById('modalUpload').style.display = 'none';
+                document.getElementById('modalBackdrop').style.display = 'none';
                 Utils.alert('Upload concluído!');
             }
         } catch (err) { Utils.alert(err.message, 'Erro'); }
@@ -467,20 +521,31 @@ const GaleriaManager = {
         document.getElementById('upload-percent-text').textContent = '0%';
     },
 
-    openMedia(url, type, name) {
+    openMedia(url, type, name, coverUrl = '') {
         const container = document.getElementById('media-container');
         document.getElementById('media-caption').textContent = name || '';
         let content;
         if (type === 'video') content = `<video src="${url}" controls autoplay class="img-fluid rounded shadow" style="max-height:80vh"></video>`;
-        else if (type === 'audio') content = `<div class="p-5 bg-dark rounded border"><i class="bi bi-music-note-beamed display-1 text-info"></i><audio controls autoplay class="d-block mt-3" oncanplay="this.volume=0.4"><source src="${url}"></audio></div>`;
+        else if (type === 'audio') {
+            if (coverUrl) {
+                content = `
+                <div class="p-3 bg-dark rounded shadow border text-center" style="max-width: 400px; margin: 0 auto;">
+                    <img src="${coverUrl}" class="img-fluid rounded mb-3" style="max-height:300px; object-fit:contain;">
+                    <audio controls autoplay class="w-100" oncanplay="this.volume=0.4"><source src="${url}"></audio>
+                </div>`;
+            } else {
+                content = `<div class="p-5 bg-dark rounded border"><i class="bi bi-music-note-beamed display-1 text-info"></i><audio controls autoplay class="d-block mt-3" oncanplay="this.volume=0.4"><source src="${url}"></audio></div>`;
+            }
+        }
         else content = `<img src="${url}" class="img-fluid rounded shadow" style="max-height:80vh">`;
 
-        container.innerHTML = `<div class="position-relative d-inline-block"><button type="button" class="btn-close bg-white position-absolute top-0 end-0 m-2" style="z-index:10" data-bs-dismiss="modal"></button>${content}</div>`;
-        new bootstrap.Modal(document.getElementById('modalMedia')).show();
+        container.innerHTML = `<div style="position:relative; display:inline-block;">${content}</div>`;
+        document.getElementById('modalMedia').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
     },
 
     openConfigModal() {
-        const principal = document.getElementById('conteudo-principal'); // ID corrigido
+        const principal = document.getElementById('conteudo-principal');
         if (principal) this.originalStyles = principal.getAttribute('style');
         
         const f = document.getElementById('formConfig'); 
@@ -533,7 +598,8 @@ const GaleriaManager = {
         
         this.togglePublicSection();
         this.renderCollaborators();
-        new bootstrap.Modal(document.getElementById('modalConfig')).show();
+        document.getElementById('modalConfig').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
     },
 
     toggleRemove(type) {
@@ -583,7 +649,15 @@ const GaleriaManager = {
             const results = document.getElementById('search-results');
             if (results) {
                 const list = json.users || json.usuarios || [];
-                results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator('${u.publicid}', '${u.username}')">${u.username}</button>`).join('');
+                if (list.length > 0) {
+                    results.style.border = '1px solid gray';
+                    results.style.padding = '2px';
+                    results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator('${u.publicid}', '${u.username}')">${u.username}</button>`).join('');
+                } else {
+                    results.style.border = 'none';
+                    results.style.padding = '0';
+                    results.innerHTML = '';
+                }
             }
         } catch (e) { console.error(e); }
     },
@@ -591,7 +665,12 @@ const GaleriaManager = {
     addCollaborator(id, username) {
         if (!this.collaborators.find(c => c.publicid === id)) this.collaborators.push({ publicid: id, username });
         this.renderCollaborators();
-        document.getElementById('search-results').innerHTML = '';
+        const results = document.getElementById('search-results');
+        if (results) {
+            results.innerHTML = '';
+            results.style.border = 'none';
+            results.style.padding = '0';
+        }
     },
     removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.publicid !== id); this.renderCollaborators(); },
     renderCollaborators() {
@@ -619,11 +698,18 @@ const GaleriaManager = {
                     const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: fd });
                     const json = await res.json();
                     if (json.success) {
+                        const temp = { ...this.data };
+                        for(let [k, v] of fd.entries()) {
+                            if (k !== 'cover' && k !== 'background') temp[k] = v;
+                        }
+                        temp.ispublic = fd.has('ispublic');
+                        this.applyStyles(temp);
                         Object.assign(this.data, json.gallery);
                         this.originalStyles = null;
-                        bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
+                        document.getElementById('modalConfig').style.display = 'none';
+                        document.getElementById('modalBackdrop').style.display = 'none';
                         this.render();
-                        Utils.alert('Salvo com sucesso!');
+                        Utils.alert('Configurações salvas com sucesso!', 'Sucesso');
                     }
                 } catch (err) { Utils.alert('Erro ao salvar.'); }
             });
@@ -648,7 +734,7 @@ const GaleriaManager = {
         if (modalConfig) {
             modalConfig.addEventListener('hidden.bs.modal', () => {
                 if (this.originalStyles) {
-                    const el = document.getElementById('conteudo-principal'); // ID corrigido
+                    const el = document.getElementById('conteudo-principal');
                     if (el) el.setAttribute('style', this.originalStyles);
                     
                     const bgTarget = document.getElementById('retro-body-td') || (el ? el.closest('td') : null);
@@ -722,6 +808,11 @@ const GaleriaManager = {
             if (!resizing) return;
             const finalW = parseInt(resizing.itemEl.dataset.w) || resizing.startW;
             const finalH = parseInt(resizing.itemEl.dataset.h) || resizing.startH;
+            
+            if (finalW !== resizing.startW || finalH !== resizing.startH) {
+                this.markLayoutChanged();
+            }
+
             this.data.items[resizing.idx].grid_w = finalW;
             this.data.items[resizing.idx].grid_h = finalH;
             try { e.target.releasePointerCapture && e.target.releasePointerCapture(e.pointerId); } catch (err) {}
@@ -795,6 +886,9 @@ const GaleriaManager = {
 
             const imgIndex = this.data.items.findIndex(i => i.publicid === draggedId);
             if (imgIndex > -1) {
+                if (this.data.items[imgIndex].startpositionx !== targetCol || this.data.items[imgIndex].startpositiony !== targetRow) {
+                    this.markLayoutChanged();
+                }
                 this.data.items[imgIndex].startpositionx = targetCol;
                 this.data.items[imgIndex].startpositiony = targetRow;
                 this.renderGrid();

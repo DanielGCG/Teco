@@ -68,8 +68,21 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING(160),
         defaultValue: ''
     },
+    bannerimage: {
+        type: DataTypes.STRING(255)
+    },
     backgroundimage: {
         type: DataTypes.STRING(255)
+    },
+    backgroundcolor: {
+        type: DataTypes.STRING(7),
+        allowNull: true,
+        defaultValue: null
+    },
+    backgroundfill: {
+        type: DataTypes.STRING(10),
+        allowNull: false,
+        defaultValue: 'cover'
     },
     profileimage: {
         type: DataTypes.STRING(255)

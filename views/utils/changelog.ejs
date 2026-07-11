@@ -1,51 +1,58 @@
 <div class="window" style="max-width: 800px; margin: 20px auto;">
     <div class="window-header">
-        <span>Histórico de Alterações (Changelog)</span>
+        <span>Changelog</span>
     </div>
     <div class="window-content" style="padding: 15px; background: white;">
-        <p style="margin-top: 0;">Versionamento oficial via <a href="https://github.com/DanielGCG/teco" target="_blank">GitHub</a>.</p>
-        
+        <p style="margin-top: 0;">Versionamento oficial via <a href="https://github.com/DanielGCG/teco"
+                target="_blank">GitHub</a>.</p>
+
         <div class="retro-changelog-container">
-            <% if (typeof commits !== 'undefined' && commits.length > 0) { %>
-                <% 
-                let lastDate = '';
-                commits.forEach(commit => { 
+            <% if (typeof commits !=='undefined' && commits.length> 0) { %>
+                <% let lastDate='' ; commits.forEach(commit=> {
                     let type = '';
                     let displayMessage = commit.subject;
                     if (commit.subject && commit.subject.includes(':')) {
-                        const parts = commit.subject.split(':');
-                        type = parts[0].toLowerCase().trim();
-                        displayMessage = parts.slice(1).join(':').trim();
+                    const parts = commit.subject.split(':');
+                    type = parts[0].toLowerCase().trim();
+                    displayMessage = parts.slice(1).join(':').trim();
                     }
-                %>
-                    <% if (commit.date !== lastDate) { %>
+                    %>
+                    <% if (commit.date !==lastDate) { %>
                         <div class="changelog-date-header">
-                            <strong><%= commit.date %></strong>
+                            <strong>
+                                <%= commit.date %>
+                            </strong>
                         </div>
-                        <% lastDate = commit.date; %>
-                    <% } %>
+                        <% lastDate=commit.date; %>
+                            <% } %>
 
-                    <div class="changelog-item" style="margin-left: 20px; margin-bottom: 8px; border-left: 2px solid var(--retro-border-dark); padding-left: 10px; position: relative;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div>
-                                <% if (type === 'feat') { %>
-                                    <span class="tag tag-feat">[NOVIDADE]</span>
-                                <% } else if (type === 'fix') { %>
-                                    <span class="tag tag-fix">[CORREÇÃO]</span>
-                                <% } else if (type === 'docs') { %>
-                                    <span class="tag tag-docs">[DOCS]</span>
-                                <% } else if (type === 'refactor' || type === 'style') { %>
-                                    <span class="tag tag-adjust">[AJUSTE]</span>
-                                <% } %>
-                                <span style="font-size: 13px;"><%= displayMessage %></span>
-                            </div>
-                            <code style="font-size: 10px; color: #888; background: #eee; padding: 0 4px;"><%= commit.hash.substring(0,7) %></code>
-                        </div>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <p style="text-align: center; color: #666; padding: 20px;">Nenhum commit encontrado no histórico.</p>
-            <% } %>
+                                <div class="changelog-item"
+                                    style="margin-left: 20px; margin-bottom: 8px; border-left: 2px solid var(--retro-border-dark); padding-left: 10px; position: relative;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                        <div>
+                                            <% if (type==='feat' ) { %>
+                                                <span class="tag tag-feat">[NOVIDADE]</span>
+                                                <% } else if (type==='fix' ) { %>
+                                                    <span class="tag tag-fix">[CORREÇÃO]</span>
+                                                    <% } else if (type==='docs' ) { %>
+                                                        <span class="tag tag-docs">[DOCS]</span>
+                                                        <% } else if (type==='refactor' || type==='style' ) { %>
+                                                            <span class="tag tag-adjust">[AJUSTE]</span>
+                                                            <% } %>
+                                                                <span style="font-size: 13px;">
+                                                                    <%= displayMessage %>
+                                                                </span>
+                                        </div>
+                                        <code
+                                            style="font-size: 10px; color: #888; background: #eee; padding: 0 4px;"><%= commit.hash.substring(0,7) %></code>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                    <% } else { %>
+                                        <p style="text-align: center; color: #666; padding: 20px;">Nenhum commit
+                                            encontrado no histórico.</p>
+                                        <% } %>
         </div>
     </div>
 </div>
@@ -58,13 +65,26 @@
         margin: 15px 0 10px 0;
         font-size: 12px;
     }
+
     .tag {
         font-weight: bold;
         font-size: 10px;
         margin-right: 5px;
     }
-    .tag-feat { color: #008000; }
-    .tag-fix { color: #cc0000; }
-    .tag-docs { color: #0000cc; }
-    .tag-adjust { color: #666600; }
+
+    .tag-feat {
+        color: #008000;
+    }
+
+    .tag-fix {
+        color: #cc0000;
+    }
+
+    .tag-docs {
+        color: #0000cc;
+    }
+
+    .tag-adjust {
+        color: #666600;
+    }
 </style>

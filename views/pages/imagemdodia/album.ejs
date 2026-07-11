@@ -1,143 +1,207 @@
-<title>Calendário de Imagens - Boteco</title>
-
 <div class="window" style="max-width: 900px; margin: 0 auto 20px auto;">
-    <div class="window-header">Calendário de Imagens</div>
-    <div class="window-content" style="padding: 10px;">
-        <h3 style="margin: 0;">Relembre as imagens que passaram pelo Boteco</h3>
-        <p style="color: gray; font-size: 12px; margin-top: 5px;">Explore os meses anteriores e clique numa imagem para ampliar.</p>
-        
-        <div id="calendario-loading" style="text-align: center; padding: 20px; color: gray;">Carregando histórico...</div>
-        <div id="calendario-imagens"></div>
+  <div class="window-header">Calendário de Imagens do Dia</div>
+  <div class="window-content" style="padding: 10px;">
+    <h3 style="margin: 0;">Recordar é viver!</h3>
+    <p style="color: gray; font-size: 12px; margin-top: 5px;">Clique para ampliar</p>
+
+    <div id="calendario-loading" style="text-align: center; padding: 20px; color: gray;">Carregando histórico...</div>
+    <div style="width: 100%; overflow-x: auto;">
+      <div id="calendario-imagens" style="min-width: 250px;"></div>
     </div>
+  </div>
 </div>
 
 <!-- Modal para ver imagem cheia -->
-<dialog id="modalImagem" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
-    <div class="window-header">
-        <span>Imagem Visualizada</span>
-        <button onclick="document.getElementById('modalImagem').close()" style="float: right; padding: 0 5px; height: 16px; line-height: 12px; font-size: 10px;">[Fechar]</button>
+<dialog id="modalImagem" class="window"
+  style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 95vw; max-width: 400px; background: var(--retro-window-bg, #c0c0c0);">
+  <div class="window-header">
+    <span>Imagem do Dia</span>
+    <button onclick="document.getElementById('modalImagem').close()"
+      style="float: right; padding: 0 5px; height: 16px; line-height: 12px; font-size: 10px;">[Fechar]</button>
+  </div>
+  <div class="window-content" style="padding: 10px; text-align: center;">
+
+    <div style="background: var(--retro-bg, #008080); padding: 5px; border: 2px inset var(--retro-border-dark);">
+      <div
+        style="position: relative; width: 100%; aspect-ratio: 1/1; max-width: 350px; margin: 0 auto; background: black;">
+        <img id="modal-img-base" src="" style="width: 100%; height: 100%; object-fit: cover;">
+        <img id="modal-img-border" src=""
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+      </div>
     </div>
-    <div class="window-content" style="padding: 10px; text-align: center;">
-        
-        <div style="background: var(--retro-bg, #008080); padding: 5px; border: 2px inset var(--retro-border-dark);">
-            <div style="position: relative; width: 100%; aspect-ratio: 1/1; max-width: 350px; margin: 0 auto; background: black;">
-                <img id="modal-img-base" src="" style="width: 100%; height: 100%; object-fit: cover;">
-                <img id="modal-img-border" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
-            </div>
-        </div>
-        
-        <div id="modal-texto" style="margin-top: 15px; background: white; border: 2px inset var(--retro-border-dark); padding: 5px; font-weight: bold;"></div>
-        <div id="modal-autor" style="margin-top: 5px; font-size: 11px; color: gray;"></div>
-        
-        <div style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; text-align: right;">
-            <button onclick="document.getElementById('modalImagem').close()">Fechar</button>
-        </div>
+
+    <div id="modal-texto"
+      style="margin-top: 15px; background: white; border: 2px inset var(--retro-border-dark); padding: 5px; font-weight: bold;">
     </div>
+    <div id="modal-autor" style="margin-top: 5px; font-size: 11px; color: gray;"></div>
+  </div>
 </dialog>
 
 <style>
-.calendario-mes { margin-bottom: 20px; border: 2px outset var(--retro-border-light); padding: 2px; background: var(--retro-window-bg); }
-.calendario-titulo { margin: 0; padding: 5px; background: var(--retro-bg); color: white; font-weight: bold; text-transform: capitalize; border: 2px inset var(--retro-border-dark); margin-bottom: 5px;}
-.calendario-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  background-color: var(--retro-border-dark);
-  border: 2px inset var(--retro-border-dark);
-}
-.calendario-header {
-  background-color: var(--retro-window-bg);
-  padding: 5px 0;
-  font-weight: bold;
-  font-size: 11px;
-  text-transform: uppercase;
-  text-align: center;
-  border-bottom: 1px solid var(--retro-border-dark);
-}
-.calendario-dia, .calendario-dia-vazio {
-  aspect-ratio: 1/1;
-  position: relative;
-  background-color: white;
-  border: 1px solid var(--retro-border-light);
-}
-.calendario-dia-numero {
-  position: absolute;
-  top: 2px;
-  right: 4px;
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--retro-border-dark);
-  z-index: 3;
-  pointer-events: none;
-  background: rgba(255,255,255,0.7);
-  padding: 0 3px;
-  border: 1px solid var(--retro-border-light);
-}
-.calendario-dia.has-image {
-  cursor: pointer;
-}
-.calendario-dia.has-image:hover {
-  z-index: 4;
-  border: 2px solid blue;
-}
-.calendario-img-container {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-.calendario-img-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.calendario-dia-vazio { background-color: var(--retro-window-bg); background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg=='); }
-.dia-atual { border: 2px solid red !important; }
+  .calendario-mes {
+    margin-bottom: 20px;
+    border: 2px outset var(--retro-border-light);
+    padding: 2px;
+    background: var(--retro-window-bg);
+  }
+
+  .calendario-titulo {
+    margin: 0;
+    padding: 5px;
+    background: var(--retro-bg);
+    color: var(--retro-text);
+    font-weight: bold;
+    text-transform: capitalize;
+    border: 2px inset var(--retro-border-dark);
+    margin-bottom: 5px;
+  }
+
+  .calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    background-color: var(--retro-border-dark);
+    border: 2px inset var(--retro-border-dark);
+  }
+
+  .calendario-header {
+    background-color: var(--retro-window-bg);
+    padding: 5px 0;
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+    text-align: center;
+    border-bottom: 1px solid var(--retro-border-dark);
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .calendario-dia,
+  .calendario-dia-vazio {
+    aspect-ratio: 1/1;
+    position: relative;
+    background-color: white;
+    border: 1px solid var(--retro-border-light);
+  }
+
+  .calendario-dia-numero {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--retro-border-dark);
+    z-index: 3;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 0 3px;
+    border: 1px solid var(--retro-border-light);
+  }
+
+  .calendario-dia.has-image {
+    cursor: pointer;
+  }
+
+  .calendario-dia.has-image:hover {
+    z-index: 4;
+    border: 2px solid blue;
+  }
+
+  .calendario-img-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .calendario-img-container img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .calendario-dia-vazio {
+    background-color: var(--retro-window-bg);
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==');
+  }
+
+  .dia-atual {
+    border: 2px solid red !important;
+  }
+
+  @media (max-width: 600px) {
+    .calendario-header {
+      font-size: 8px;
+      padding: 2px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .calendario-dia-numero {
+      font-size: 9px;
+      padding: 0 1px;
+      top: 1px;
+      right: 1px;
+    }
+
+    .calendario-grid {
+      gap: 1px;
+    }
+
+    .calendario-dia.has-image .dia-atual-tag {
+      font-size: 7px !important;
+      padding: 0 !important;
+      letter-spacing: -0.5px;
+    }
+  }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', async function() {
-  const container = document.getElementById('calendario-imagens');
-  const loading = document.getElementById('calendario-loading');
-  const modal = document.getElementById('modalImagem');
-  
-  try {
-    const res = await fetch('/api/imagemdodia/ativas');
-    if (!res.ok) throw new Error();
-    const imagens = await res.json();
-    
-    if (!imagens.length) {
-      loading.innerHTML = 'Nenhuma imagem no histórico ainda.';
-      return;
-    }
-    loading.style.display = 'none';
+  document.addEventListener('DOMContentLoaded', async function () {
+    const container = document.getElementById('calendario-imagens');
+    const loading = document.getElementById('calendario-loading');
+    const modal = document.getElementById('modalImagem');
 
-    // A imagem atual é aquela com a maior posição (o primeiro item da lista ordenada DESC por posição)
-    const currentId = imagens[0].publicid;
+    try {
+      const res = await fetch('/api/imagemdodia/ativas');
+      if (!res.ok) throw new Error();
+      const imagens = await res.json();
 
-    let grupos = {};
-    imagens.forEach(img => {
-      const dateVal = img.activatedat || img.createdat;
-      const d = new Date(dateVal);
-      
-      if (isNaN(d.getTime())) return;
+      if (!imagens.length) {
+        loading.innerHTML = 'Nenhuma imagem no histórico ainda.';
+        return;
+      }
+      loading.style.display = 'none';
 
-      const mes = d.toLocaleString('pt-BR', { month: 'long' });
-      const ano = d.getFullYear();
-      const chave = `${mes} ${ano}`;
-      if (!grupos[chave]) grupos[chave] = { nome: chave, mes: d.getMonth(), ano, itens: [] };
-      grupos[chave].itens.push({
-        ...img,
-        dia: d.getDate()
+      // A imagem atual é aquela com a maior posição (o primeiro item da lista ordenada DESC por posição)
+      const currentId = imagens[0].publicid;
+
+      let grupos = {};
+      imagens.forEach(img => {
+        const dateVal = img.activatedat || img.createdat;
+        const d = new Date(dateVal);
+
+        if (isNaN(d.getTime())) return;
+
+        const mes = d.toLocaleString('pt-BR', { month: 'long' });
+        const ano = d.getFullYear();
+        const chave = `${mes} ${ano}`;
+        if (!grupos[chave]) grupos[chave] = { nome: chave, mes: d.getMonth(), ano, itens: [] };
+        grupos[chave].itens.push({
+          ...img,
+          dia: d.getDate()
+        });
       });
-    });
 
-    container.innerHTML = Object.values(grupos).map(grupo => {
-      const diasNoMes = new Date(grupo.ano, grupo.mes + 1, 0).getDate();
-      const primeiroDiaSemana = new Date(grupo.ano, grupo.mes, 1).getDay();
-      const dias = Array(diasNoMes).fill(null);
-      grupo.itens.forEach(item => dias[item.dia - 1] = item);
+      container.innerHTML = Object.values(grupos).map(grupo => {
+        const diasNoMes = new Date(grupo.ano, grupo.mes + 1, 0).getDate();
+        const primeiroDiaSemana = new Date(grupo.ano, grupo.mes, 1).getDay();
+        const dias = Array(diasNoMes).fill(null);
+        grupo.itens.forEach(item => dias[item.dia - 1] = item);
 
-      let html = `
+        let html = `
         <div class="calendario-mes">
           <div class="calendario-titulo">${grupo.nome}</div>
           <div class="calendario-grid">
@@ -150,54 +214,54 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="calendario-header">Sáb</div>
       `;
 
-      const totalCelulas = Math.ceil((primeiroDiaSemana + diasNoMes) / 7) * 7;
-      let diaAtual = 1;
+        const totalCelulas = Math.ceil((primeiroDiaSemana + diasNoMes) / 7) * 7;
+        let diaAtual = 1;
 
-      for (let i = 0; i < totalCelulas; i++) {
-        if (i < primeiroDiaSemana || diaAtual > diasNoMes) {
-          html += `<div class="calendario-dia-vazio"></div>`;
-        } else {
-          const item = dias[diaAtual - 1];
-          if (item) {
-            const isCurrent = item.publicid === currentId;
-            const classAtual = isCurrent ? 'dia-atual' : '';
-            const dataStr = JSON.stringify(item).replace(/"/g, '&quot;');
-            html += `
+        for (let i = 0; i < totalCelulas; i++) {
+          if (i < primeiroDiaSemana || diaAtual > diasNoMes) {
+            html += `<div class="calendario-dia-vazio"></div>`;
+          } else {
+            const item = dias[diaAtual - 1];
+            if (item) {
+              const isCurrent = item.publicid === currentId;
+              const classAtual = isCurrent ? 'dia-atual' : '';
+              const dataStr = JSON.stringify(item).replace(/"/g, '&quot;');
+              html += `
               <div class="calendario-dia has-image ${classAtual}" onclick='abrirModal([${dataStr}])'>
-                ${isCurrent ? '<div style="position:absolute;top:0;left:0;background:red;color:white;font-size:9px;padding:1px;z-index:5;">ATUAL</div>' : ''}
+                ${isCurrent ? '<div class="dia-atual-tag" style="position:absolute;top:0;left:0;background:red;color:white;font-size:9px;padding:1px;z-index:5;">ATUAL</div>' : ''}
                 <span class="calendario-dia-numero">${diaAtual}</span>
-                <div class="calendario-img-container" style="position: relative;">
+                <div class="calendario-img-container">
                   <img src="${item.url}" loading="lazy">
                   ${item.border ? `<img src="${item.border.url}" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">` : ''}
                 </div>
               </div>`;
-          } else {
-            html += `
+            } else {
+              html += `
               <div class="calendario-dia">
                 <span class="calendario-dia-numero">${diaAtual}</span>
               </div>`;
+            }
+            diaAtual++;
           }
-          diaAtual++;
         }
-      }
 
-      html += `</div></div>`;
-      return html;
-    }).join('');
+        html += `</div></div>`;
+        return html;
+      }).join('');
 
-    // Hack para passar JSON de forma segura sem colidir com aspas nativas
-    window.abrirModal = (arr) => {
-      const item = arr[0];
-      document.getElementById('modal-img-base').src = item.url;
-      document.getElementById('modal-img-border').src = (item.border ? item.border.url : '') || '';
-      document.getElementById('modal-texto').textContent = item.text || '';
-      document.getElementById('modal-autor').textContent = item.requester ? `Sugerido por: ${item.requester.username}` : 'Sugerido pelo Sistema';
-      modal.showModal();
-    };
+      // Hack para passar JSON de forma segura sem colidir com aspas nativas
+      window.abrirModal = (arr) => {
+        const item = arr[0];
+        document.getElementById('modal-img-base').src = item.url;
+        document.getElementById('modal-img-border').src = (item.border ? item.border.url : '') || '';
+        document.getElementById('modal-texto').textContent = item.text || '';
+        document.getElementById('modal-autor').textContent = item.requester ? `Sugerido por: ${item.requester.username}` : 'Sugerido pelo Sistema';
+        modal.showModal();
+      };
 
-  } catch (err) {
-    console.error(err);
-    loading.textContent = 'Erro ao carregar imagens.';
-  }
-});
+    } catch (err) {
+      console.error(err);
+      loading.textContent = 'Erro ao carregar imagens.';
+    }
+  });
 </script>

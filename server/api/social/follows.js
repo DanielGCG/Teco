@@ -74,7 +74,9 @@ FollowsRouter.post('/:publicid', protect(20), validate(publicidSchema, 'params')
                 type: 'followaccept',
                 title: 'Nova Amizade!',
                 body: `Você e ${req.user.username} agora são amigos!`,
-                link: `/${req.user.username}`
+                link: `/${req.user.username}`,
+                io: req.app.get('io'),
+                socketType: 'friend'
             });
         } else {
             await createNotification({
@@ -82,17 +84,13 @@ FollowsRouter.post('/:publicid', protect(20), validate(publicidSchema, 'params')
                 type: 'info',
                 title: 'Novo Seguidor',
                 body: `${req.user.username} começou a te seguir`,
-                link: `/${req.user.username}`
+                link: `/${req.user.username}`,
+                io: req.app.get('io'),
+                socketType: 'follow'
             });
         }
 
-        // Emitir evento de socket
-        const io = req.app.get('io');
-        if (io) {
-            io.to(`user_${targetId}`).emit('newNotification', { type: isMutual ? 'friend' : 'follow' });
-        }
-
-        // (evento emitido acima) socket já tratado
+        // (evento emitido via createNotification) socket já tratado
 
         res.status(201).json({ message: "Seguindo com sucesso", follow });
     } catch (err) {
