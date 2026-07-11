@@ -296,16 +296,16 @@ marquee {
 }
 
 .retro-sidebar {
-    width: 200px;
+    width: 210px;
     flex-shrink: 0;
-    padding: 8px;
+    padding: 0;
     box-sizing: border-box;
 }
 
 .retro-main-content {
     flex-grow: 1;
     min-width: 0;
-    padding: 8px;
+    padding: 0;
     box-sizing: border-box;
 }
 

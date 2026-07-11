@@ -15,6 +15,7 @@ const renderPage = (req, res, viewPath, options = {}) => {
     };
 
     res.render(viewPath, {
+        ...options,
         layout,
         locals,
         HOST: process.env.HOST
