@@ -123,7 +123,7 @@
                         <div style="display: flex; gap: 5px; align-items: center;">
                             <input type="color" id="backgroundcolor" value="#d9d7bf"
                                 style="cursor: pointer; height: 25px; width: 40px;">
-                            <button type="button" id="btn-reset-color" style="font-size: 9px; padding: 2px 5px;"
+                            <button type="button" id="btn-reset-color" class="btn-micro"
                                 title="Remover cor personalizada">X</button>
                         </div>
                         <input type="hidden" id="clear_backgroundcolor" value="false">
@@ -138,13 +138,13 @@
                     <div style="display: flex; flex-direction: column; flex-grow: 1;">
                         <label style="font-size: 10px; color: var(--retro-border-dark);">Imagem de Fundo:</label>
                         <div style="display: flex; gap: 5px; align-items: center;">
-                            <button type="button" onclick="document.getElementById('background_file').click()" style="padding: 2px 10px; font-size: 11px;">Selecionar...</button>
+                            <button type="button" onclick="document.getElementById('background_file').click()" class="btn-sm">Selecionar...</button>
                             <input type="file" id="background_file" accept="image/*" style="display: none;">
                             <div id="new_bg_indicator" style="display: none; font-size: 10px; color: blue; font-weight: bold;">(Nova)</div>
                             <div id="current_bg_indicator"
                                 style="display: none; font-size: 10px; color: green; font-weight: bold;">(Salva)</div>
                             <button type="button" id="btn-reset-bg"
-                                style="font-size: 9px; padding: 2px 5px; display: none;"
+                                class="btn-micro" style="display: none;"
                                 title="Remover imagem atual">X</button>
                         </div>
                         <input type="hidden" id="backgroundimage">
@@ -154,7 +154,7 @@
             </div>
 
             <div style="margin-top: 15px; text-align: right; padding-top: 10px;">
-                <button type="submit" style="padding: 5px 20px; font-weight: bold;">SALVAR ALTERAÇÕES</button>
+                <button type="submit" class="btn-bold" style="padding: 5px 20px;">SALVAR ALTERAÇÕES</button>
             </div>
         </form>
     </div>
@@ -184,7 +184,7 @@
                 </tr>
             </table>
             <div style="margin-top: 10px;">
-                <button type="submit" style="padding: 3px 10px;">ALTERAR SENHA</button>
+                <button type="submit" class="btn-sm">ALTERAR SENHA</button>
             </div>
         </form>
     </div>

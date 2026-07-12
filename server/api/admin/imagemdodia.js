@@ -1,15 +1,13 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../../models");
-const multer = require('multer');
+const { upload } = require('../../utils/upload');
 const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
 const axios = require('axios');
 const FormData = require('form-data');
-const sharp = require('sharp');
 const { Op } = require('sequelize');
-const { createNotification } = require('../notifications');
+const { activateImage } = require('../../utils/iotdLogic');
+const { processImage } = require('../../utils/imageProcessor');
 const router = express.Router();
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Fila de Imagens (Somente as que estão com posição 0, ou seja, aguardando ativação)
 router.get('/fila', async (req, res) => {
@@ -66,32 +64,9 @@ router.post('/next', async (req, res) => {
             return res.status(404).json({ message: 'Nenhuma imagem na fila de espera.' });
         }
 
-        const maxPos = await ImagemDoDia.max('position') || 0;
-        proxima.position = maxPos + 1;
-        proxima.activatedat = new Date();
-        await proxima.save();
+        await activateImage(proxima, req.app.get('io'));
 
         res.json({ message: 'Imagem ativada com sucesso!', imagem: proxima });
-
-        // Notificar todos os usuários assincronamente
-        setImmediate(async () => {
-            try {
-                const allUsers = await User.findAll({ attributes: ['id'] });
-                const io = req.app.get('io');
-                for (const u of allUsers) {
-                    await createNotification({
-                        userId: u.id,
-                        type: 'info',
-                        title: 'Nova Imagem do Dia!',
-                        body: 'saiu do forno bb! venha conferir!',
-                        link: '/imagemdodia',
-                        io: io
-                    });
-                }
-            } catch (notifErr) {
-                console.error('Erro ao notificar usuários sobre nova imagem do dia:', notifErr);
-            }
-        });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao ativar próxima imagem.', error: error.message });
     }
@@ -104,25 +79,13 @@ router.post('/borders', upload.single('file'), async (req, res) => {
     }
 
     try {
-        let processedBuffer;
-        let filename = 'border.png';
-        let mimetype = 'image/png';
-
-        if (req.file.mimetype === 'image/gif') {
-            filename = 'border.gif';
-            mimetype = 'image/gif';
-            // Usa o buffer original para não perder a animação, ou processa com { animated: true }
-            processedBuffer = await sharp(req.file.buffer, { animated: true }).gif().toBuffer();
-        } else {
-            // Converte para PNG usando sharp
-            processedBuffer = await sharp(req.file.buffer).png().toBuffer();
-        }
+        const { buffer, filename, mimetype } = await processImage(req.file, { name: 'border' });
 
         const url = await uploadToFileServer({
-            buffer: processedBuffer,
-            filename: filename,
+            buffer,
+            filename,
             folder: 'imagemdodia/borders',
-            mimetype: mimetype
+            mimetype
         });
         const novaBorder = await ImagemDoDiaBorder.create({
             url,

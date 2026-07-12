@@ -31,7 +31,7 @@ main.container-glass {
         linear-gradient(to right, rgba(0, 0, 0, 0.05) var(--cell-size), transparent var(--cell-size)),
         linear-gradient(to bottom, rgba(0, 0, 0, 0.05) var(--row-height), transparent var(--row-height));
     background-size:
-        calc(var(--cell-size) + 15px) calc(var(--row-height) + 15px);
+        calc(var(--cell-size) + var(--gallery-gap, 15px)) calc(var(--row-height) + var(--gallery-gap, 15px));
     border: 2px dashed rgba(0, 0, 0, 0.1);
     grid-auto-flow: row;
 }

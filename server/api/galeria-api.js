@@ -1,28 +1,12 @@
 const express = require('express');
 const { Galeria, GaleriaItem, GaleriaContributor, User, UserSession } = require("../models");
-const multer = require('multer');
-const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const { uploadImage, uploadVideo } = require('../utils/upload');
+const { uploadToFileServer, deleteFromFileServer, replaceFileOnServer } = require('../utils/fileServer');
+const { sanitizeFilename } = require('../utils/sanitize');
 const axios = require('axios'); 
 const FormData = require('form-data'); 
 const { Op } = require('sequelize');
 const router = express.Router();
-
-function sanitizeFilename(filename) {
-    if (!filename) return `file_${Date.now()}`;
-    const normalized = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); 
-    const sanitized = normalized.replace(/[^a-zA-Z0-9-_ .]/g, '').replace(/\s+/g, '_'); 
-    return sanitized || `file_${Date.now()}`;
-}
-
-const uploadImage = multer({ 
-    storage: multer.memoryStorage(), 
-    limits: { fileSize: 50 * 1024 * 1024 } 
-});
-
-const uploadVideo = multer({ 
-    storage: multer.memoryStorage(), 
-    limits: { fileSize: 100 * 1024 * 1024 } 
-});
 
 const validateFileSize = (req, res, next) => {
     const file = req.file || (req.files && req.files.media && req.files.media[0]);
@@ -77,7 +61,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', uploadImage.single('cover'), async (req, res) => {
-    const { name, description, ispublic, backgroundcolor, gridxsize } = req.body;
+    const { name, description, ispublic, backgroundcolor, cardcolor, gridxsize } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name is required.' });
 
     try {
@@ -103,6 +87,7 @@ router.post('/', uploadImage.single('cover'), async (req, res) => {
             createdbyUserId: req.user.id,
             ispublic: ispublic === 'true' || ispublic === true,
             backgroundcolor: backgroundcolor || undefined,
+            cardcolor: cardcolor || undefined,
             gridxsize: gridxsize ? parseInt(gridxsize) : 12,
             gridysize: 12 // Valor padrão
         });
@@ -145,7 +130,7 @@ router.get('/:publicid', async (req, res) => {
 });
 
 router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
-    uploadVideo.fields([{ name: 'media', maxCount: 1 }, { name: 'cover', maxCount: 1 }])(req, res, (err) => {
+    uploadVideo.fields([{ name: 'media', maxCount: 1 }, { name: 'cover', maxCount: 1 }, { name: 'link_cover', maxCount: 1 }])(req, res, (err) => {
         if (err) {
             if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, message: 'File too large. Limit: 100MB' });
             return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
@@ -153,49 +138,81 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
         next();
     });
 }, validateFileSize, async (req, res) => {
-    const mainFile = req.file || (req.files && req.files.media && req.files.media[0]);
-    if (!mainFile) return res.status(400).json({ success: false, message: 'No media file provided.' });
-
     try {
-        const sanitizedFilename = sanitizeFilename(mainFile.originalname);
-        const fileUrl = await uploadToFileServer({
-            buffer: mainFile.buffer,
-            filename: sanitizedFilename,
-            folder: `galerias/${req.gallery.publicid}`,
-            mimetype: mainFile.mimetype
-        });
-
+        const itemType = req.body.item_type || 'media';
+        let fileUrl = null;
         let coverUrl = req.body.cover_url || null;
-        const coverFile = req.files && req.files.cover && req.files.cover[0];
-        
-        if (coverFile) {
-            try {
-                const sanitizedCover = sanitizeFilename(coverFile.originalname);
-                coverUrl = await uploadToFileServer({
-                    buffer: coverFile.buffer,
-                    filename: sanitizedCover,
-                    folder: `galerias/${req.gallery.publicid}/covers`,
-                    mimetype: coverFile.mimetype
-                });
-            } catch (err) {
-                console.warn('Failed to upload cover, using content fallback', err.message);
+        let mediaType = 'image';
+        let originalName = req.body.title || 'Sem título';
+        let textBody = null;
+
+        if (itemType === 'media') {
+            const mainFile = req.file || (req.files && req.files.media && req.files.media[0]);
+            if (!mainFile) return res.status(400).json({ success: false, message: 'No media file provided.' });
+            
+            const sanitizedFilename = sanitizeFilename(mainFile.originalname);
+            fileUrl = await uploadToFileServer({
+                buffer: mainFile.buffer,
+                filename: sanitizedFilename,
+                folder: `galerias/${req.gallery.publicid}`,
+                mimetype: mainFile.mimetype
+            });
+            originalName = req.body.title || mainFile.originalname;
+            mediaType = mainFile.mimetype.startsWith('video/') ? 'video' : 
+                        mainFile.mimetype.startsWith('audio/') ? 'audio' : 'image/gif';
+
+            const coverFile = req.files && req.files.cover && req.files.cover[0];
+            if (coverFile) {
+                try {
+                    const sanitizedCover = sanitizeFilename(coverFile.originalname);
+                    coverUrl = await uploadToFileServer({
+                        buffer: coverFile.buffer,
+                        filename: sanitizedCover,
+                        folder: `galerias/${req.gallery.publicid}/covers`,
+                        mimetype: coverFile.mimetype
+                    });
+                } catch (err) {
+                    coverUrl = coverUrl || fileUrl;
+                }
+            } else {
                 coverUrl = coverUrl || fileUrl;
             }
-        } else {
-            coverUrl = coverUrl || fileUrl;
+        } else if (itemType === 'text') {
+            textBody = req.body.text_content;
+            if (!textBody) return res.status(400).json({ success: false, message: 'No text provided.' });
+            mediaType = 'text';
+            originalName = req.body.title || 'Texto';
+        } else if (itemType === 'link') {
+            fileUrl = req.body.link_url;
+            if (!fileUrl) return res.status(400).json({ success: false, message: 'No link provided.' });
+            mediaType = 'link';
+            originalName = req.body.title || 'Link';
+
+            const coverFile = req.files && req.files.link_cover && req.files.link_cover[0];
+            if (coverFile) {
+                try {
+                    const sanitizedCover = sanitizeFilename(coverFile.originalname);
+                    coverUrl = await uploadToFileServer({
+                        buffer: coverFile.buffer,
+                        filename: sanitizedCover,
+                        folder: `galerias/${req.gallery.publicid}/covers`,
+                        mimetype: coverFile.mimetype
+                    });
+                } catch (err) { }
+            }
         }
 
         const maxZ = await GaleriaItem.max('positionz', { where: { galleryId: req.gallery.id } });
         
-        const mediaType = mainFile.mimetype.startsWith('video/') ? 'video' : 
-                         mainFile.mimetype.startsWith('audio/') ? 'audio' : 'image/gif';
-
         const item = await GaleriaItem.create({
             galleryId: req.gallery.id,
             coverurl: coverUrl,
             contenturl: fileUrl,
-            title: req.body.title || mainFile.originalname,
+            textbody: textBody,
+            title: originalName,
             type: mediaType,
+            showtitle: false,
+            roundedcorners: false,
             editedbyUserId: req.user.id,
             positionz: (maxZ || 0) + 1,
             startpositionx: req.body.startpositionx ? parseInt(req.body.startpositionx) : 1,
@@ -216,7 +233,7 @@ router.delete('/:publicid/item/:itemPublicId', checkGalleryPermission, async (re
         if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
         
         if (item.contenturl) await deleteFromFileServer({ fileUrl: item.contenturl });
-        if (item.coverurl) await deleteFromFileServer({ fileUrl: item.coverurl });
+        if (item.coverurl && item.coverurl !== item.contenturl) await deleteFromFileServer({ fileUrl: item.coverurl });
         
         await item.destroy();
         res.json({ success: true, message: 'Item removed successfully.' });
@@ -235,7 +252,7 @@ router.delete('/:publicid', checkGalleryPermission, async (req, res) => {
         const items = await GaleriaItem.findAll({ where: { galleryId: req.gallery.id } });
         for (const img of items) {
             if (img.contenturl) await deleteFromFileServer({ fileUrl: img.contenturl });
-            if (img.coverurl) await deleteFromFileServer({ fileUrl: img.coverurl });
+            if (img.coverurl && img.coverurl !== img.contenturl) await deleteFromFileServer({ fileUrl: img.coverurl });
         }
         
         await req.gallery.destroy();
@@ -257,12 +274,14 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
         };
 
         const title = getVal('title');
+        const textbody = getVal('textbody');
         const objectfit = getVal('objectfit'); 
         const showtitle = getVal('showtitle');
         const positionz = getVal('positionz');
         const roundedcorners = getVal('roundedcorners');
 
         if (title !== undefined) item.title = title; 
+        if (textbody !== undefined) item.textbody = textbody;
         if (objectfit !== undefined) item.objectfit = objectfit;
         if (showtitle !== undefined) item.showtitle = showtitle;
         if (positionz !== undefined) item.positionz = parseInt(positionz) || 0;
@@ -319,6 +338,7 @@ router.patch('/:publicid',
     const layout = getBodyValue('layout');
     
     const backgroundcolor = getBodyValue('backgroundcolor');
+    const cardcolor = getBodyValue('cardcolor');
     const fontfamily = getBodyValue('fontfamily');
     const fontcolor = getBodyValue('fontcolor');
     const backgroundfill = getBodyValue('backgroundfill');
@@ -333,6 +353,7 @@ router.patch('/:publicid',
         if (gridxsize !== undefined) req.gallery.gridxsize = parseInt(gridxsize) || req.gallery.gridxsize;
         
         if (backgroundcolor) req.gallery.backgroundcolor = backgroundcolor;
+        if (cardcolor) req.gallery.cardcolor = cardcolor;
         if (fontfamily) req.gallery.fontfamily = fontfamily; 
         
         if (backgroundfill) req.gallery.backgroundfill = backgroundfill;
@@ -352,9 +373,9 @@ router.patch('/:publicid',
         
         if (files.background && files.background[0]) {
             const file = files.background[0];
-            if (req.gallery.backgroundurl) await deleteFromFileServer({ fileUrl: req.gallery.backgroundurl });
             const sanitizedFilename = sanitizeFilename(file.originalname);
-            req.gallery.backgroundurl = await uploadToFileServer({
+            req.gallery.backgroundurl = await replaceFileOnServer({
+                oldFileUrl: req.gallery.backgroundurl,
                 buffer: file.buffer,
                 filename: sanitizedFilename,
                 folder: `galerias/${req.gallery.publicid}/style`,
@@ -364,9 +385,9 @@ router.patch('/:publicid',
 
         if (files.cover && files.cover[0]) {
             const file = files.cover[0];
-            if (req.gallery.coverurl) await deleteFromFileServer({ fileUrl: req.gallery.coverurl });
             const sanitizedFilename = sanitizeFilename(file.originalname);
-            req.gallery.coverurl = await uploadToFileServer({
+            req.gallery.coverurl = await replaceFileOnServer({
+                oldFileUrl: req.gallery.coverurl,
                 buffer: file.buffer,
                 filename: sanitizedFilename,
                 folder: 'galerias/capas',

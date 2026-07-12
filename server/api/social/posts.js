@@ -3,10 +3,9 @@ const PostsRouter = express.Router();
 const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Notification, Follow } = require("../../models");
 const { createNotification } = require("../notifications");
 const { Op } = require("sequelize");
-const multer = require('multer');
+const { upload } = require('../../utils/upload');
 const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
-
-const upload = multer({ storage: multer.memoryStorage() });
+const { sanitizeFilename } = require('../../utils/sanitize');
 
 const POST_INCLUDES = [
     { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
@@ -81,7 +80,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
             for (const file of req.files) {
                 const mediaUrl = await uploadToFileServer({
                     buffer: file.buffer,
-                    filename: file.originalname,
+                    filename: sanitizeFilename(file.originalname),
                     mimetype: file.mimetype,
                     folder: 'posts'
                 });

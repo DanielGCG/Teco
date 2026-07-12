@@ -1,4 +1,4 @@
-﻿<div class="window">
+<div class="window">
     <div class="window-header">
         <span>Visualizar Post</span>
         <div style="float: right;">
@@ -17,10 +17,10 @@
         <div id="comment-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
         <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
             <div style="flex-grow: 1;">
-                <button type="button" onclick="document.getElementById('comment-media-input').click()" style="padding: 2px 15px; font-size: 11px;">ADICIONAR MÍDIA</button>
+                <button type="button" onclick="document.getElementById('comment-media-input').click()" class="btn-sm">ADICIONAR MÍDIA</button>
                 <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="display: none;">
             </div>
-            <button onclick="enviarComentario()" style="padding: 2px 20px;">POSTAR</button>
+            <button onclick="enviarComentario()" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
         </div>
     </div>
 </div>

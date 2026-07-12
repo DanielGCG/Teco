@@ -54,7 +54,19 @@ async function deleteFromFileServer({ fileUrl }) {
     }
 }
 
+async function replaceFileOnServer({ oldFileUrl, buffer, filename, folder, mimetype }) {
+    if (oldFileUrl) {
+        try {
+            await deleteFromFileServer({ fileUrl: oldFileUrl });
+        } catch (e) {
+            console.warn(`[fileServer] Falha não impeditiva ao deletar arquivo antigo: ${e.message}`);
+        }
+    }
+    return await uploadToFileServer({ buffer, filename, folder, mimetype });
+}
+
 module.exports = {
     uploadToFileServer,
-    deleteFromFileServer
+    deleteFromFileServer,
+    replaceFileOnServer
 };

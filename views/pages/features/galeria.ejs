@@ -1,5 +1,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles/galeria.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <div class="window mt-3" id="conteudo-principal"
     data-gallery-id="<%= (typeof galleryId !== 'undefined') ? galleryId : '' %>"
@@ -7,6 +8,8 @@
     <div class="window-header" style="height: auto; min-height: 18px; flex-wrap: wrap; gap: 5px; padding-bottom: 5px; padding-top: 5px;">
         <span class="window-title" id="gallery-title">Carregando...</span>
         <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end;">
+            <button class="window-btn" onclick="GaleriaManager.copiarLink()">Copiar Link</button>
+            <button class="window-btn" onclick="GaleriaManager.exportarImagem()">Exportar Imagem</button>
             <button class="window-btn" onclick="GaleriaManager.openUploadModal()">+ Adicionar Mídia</button>
             <button class="window-btn" id="btn-edit-mode" onclick="GaleriaManager.toggleEditMode()">Editar Layout</button>
             <button class="window-btn" id="btn-save-layout" onclick="GaleriaManager.saveLayout()" style="display: none;">Salvar Layout</button>
@@ -14,8 +17,8 @@
         </div>
     </div>
     <div class="window-content" style="background: transparent; border: none; position: relative; padding: 0">
-        <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(4px); padding: 5px 10px; border-radius: 8px; pointer-events: none;">
-            <p id="gallery-description" style="margin-top: 0; margin-bottom: 5px; opacity: 0.9; font-weight: 500;"></p>
+        <div style="position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(4px); padding: 5px 10px; border-radius: 8px; pointer-events: none;">
+            <p id="gallery-description" style="margin-top: 0; margin-bottom: 5px; opacity: 0.9; font-weight: 500; display: none;"></p>
             <small style="opacity: 0.9; font-weight: 500;">Criado por <strong id="gallery-author">...</strong></small>
         </div>
 
@@ -31,20 +34,43 @@
     style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 400px; max-width: 95vw; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title">Adicionar Mídia</span>
-        <button type="button" class="window-btn"
+        <button type="button" class="btn-micro"
             onclick="document.getElementById('modalUpload').style.display='none'; document.getElementById('modalBackdrop').style.display='none';"
             style="float: right;">[Fechar]</button>
     </div>
     <div class="window-content">
         <form id="formUpload" style="display: flex; flex-direction: column; gap: 10px;">
-            <div>
+            <div style="display: flex; gap: 10px; margin-bottom: 5px; border-bottom: 1px solid var(--retro-border-dark); padding-bottom: 10px;">
+                <label style="cursor: pointer;"><input type="radio" name="item_type" value="media" checked onchange="GaleriaManager.toggleUploadType()"> Mídia</label>
+                <label style="cursor: pointer;"><input type="radio" name="item_type" value="text" onchange="GaleriaManager.toggleUploadType()"> Texto</label>
+                <label style="cursor: pointer;"><input type="radio" name="item_type" value="link" onchange="GaleriaManager.toggleUploadType()"> Link</label>
+            </div>
+
+            <div id="upload-group-media">
                 <label style="display: block; margin-bottom: 5px;">Arquivo</label>
-                <input type="file" name="fileInput" accept="image/*,video/*,audio/*,.mkv,.avi,.webp" required
+                <input type="file" name="fileInput" id="upload-file-input" accept="image/*,video/*,audio/*,.mkv,.avi,.webp" required
                     style="width: 100%; box-sizing: border-box;">
             </div>
+
+            <div id="upload-group-text" style="display: none;">
+                <label style="display: block; margin-bottom: 5px;">Texto</label>
+                <textarea name="text_content" id="upload-text-content" rows="4" style="width: 100%; box-sizing: border-box; resize: vertical;" placeholder="Digite seu texto aqui..."></textarea>
+            </div>
+
+            <div id="upload-group-link" style="display: none; flex-direction: column; gap: 10px;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px;">URL do Link</label>
+                    <input type="url" name="link_url" id="upload-link-url" placeholder="https://..." style="width: 100%; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px;">Capa do Link (Opcional)</label>
+                    <input type="file" name="link_cover" id="upload-link-cover" accept="image/*" style="width: 100%; box-sizing: border-box;">
+                </div>
+            </div>
+
             <div>
-                <label style="display: block; margin-bottom: 5px;">Legenda (Opcional)</label>
-                <input type="text" name="title" placeholder="Ex: Bora soltar a criatividade!"
+                <label style="display: block; margin-bottom: 5px;">Nome / Legenda (Opcional)</label>
+                <input type="text" name="title" id="upload-title" placeholder="Ex: Bora soltar a criatividade!"
                     style="width: 100%; box-sizing: border-box;">
             </div>
             <div id="upload-progress-wrapper"
@@ -60,7 +86,7 @@
                     <span id="upload-size-text">0.0 MB / 0.0 MB</span>
                 </div>
             </div>
-            <button type="submit" id="btn-submit-upload" style="margin-top: 10px; padding: 5px;">Enviar</button>
+            <button type="submit" id="btn-submit-upload" class="btn-block btn-bold" style="margin-top: 10px; padding: 5px;">Enviar</button>
         </form>
     </div>
 </div>
@@ -70,7 +96,7 @@
     style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 600px; max-width: 95vw; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title">Configurações</span>
-        <button type="button" class="window-btn"
+        <button type="button" class="btn-micro"
             onclick="document.getElementById('modalConfig').style.display='none'; document.getElementById('modalBackdrop').style.display='none';"
             style="float: right;">[Fechar]</button>
     </div>
@@ -102,7 +128,7 @@
                         <label style="display: block; font-weight: bold;">Colaboradores</label>
                         <div style="display: flex; gap: 5px;">
                             <input type="text" id="search-user-input" placeholder="Nome de usuário..." style="flex: 1;">
-                            <button type="button" onclick="GaleriaManager.searchUsers()">Buscar</button>
+                            <button type="button" onclick="GaleriaManager.searchUsers()" class="btn-bold">Buscar</button>
                         </div>
                         <div id="search-results"
                             style="max-height: 100px; overflow-y: auto; margin-top: 5px; border: none; padding: 0;">
@@ -120,7 +146,7 @@
                         <div style="display: flex; gap: 5px;">
                             <input type="file" name="cover" id="input-cover" accept="image/*" class="preview-trigger"
                                 style="flex: 1; min-width: 0; box-sizing: border-box; overflow: hidden;">
-                            <button type="button" onclick="GaleriaManager.toggleRemove('cover')">X</button>
+                            <button type="button" onclick="GaleriaManager.toggleRemove('cover')" class="btn-micro">X</button>
                         </div>
                         <small id="status-cover" style="color: red; display: none;">Será removido ao salvar</small>
                     </div>
@@ -129,7 +155,7 @@
                         <div style="display: flex; gap: 5px;">
                             <input type="file" name="background" id="input-bg" accept="image/*" class="preview-trigger"
                                 style="flex: 1; min-width: 0; box-sizing: border-box; overflow: hidden;">
-                            <button type="button" onclick="GaleriaManager.toggleRemove('background')">X</button>
+                            <button type="button" onclick="GaleriaManager.toggleRemove('background')" class="btn-micro">X</button>
                         </div>
                         <small id="status-bg" style="color: red; display: none;">Será removido ao salvar</small>
                     </div>
@@ -144,11 +170,11 @@
                     <div>
                         <label style="display: block; font-size: 11px;">Colunas</label>
                         <select name="gridxsize" id="config-grid-columns" class="preview-trigger" style="width: 100%;">
-                            <option value="8">8</option>
-                            <option value="10">10</option>
-                            <option value="12" selected>12 (Padrão)</option>
-                            <option value="14">14</option>
-                            <option value="16">16</option>
+                            <option value="12">12</option>
+                            <option value="16" selected>16 (Padrão)</option>
+                            <option value="20">20</option>
+                            <option value="24">24</option>
+                            <option value="32">32</option>
                         </select>
                     </div>
                     <div id="group-bg-fill">
@@ -170,11 +196,11 @@
 
             <hr style="width: 100%; margin: 10px 0; border: none; border-top: 1px solid gray;">
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                <button type="button" onclick="GaleriaManager.deleteGallery()" style="color: red;">Excluir Galeria</button>
+                <button type="button" onclick="GaleriaManager.deleteGallery()" style="color: red;" class="btn-sm">Excluir Galeria</button>
                 <div style="display: flex; gap: 5px;">
-                    <button type="button"
+                    <button type="button" class="btn-sm"
                         onclick="document.getElementById('modalConfig').style.display='none'; document.getElementById('modalBackdrop').style.display='none';">Cancelar</button>
-                    <button type="submit" style="font-weight: bold;">Salvar</button>
+                    <button type="submit" class="btn-sm btn-bold">Salvar</button>
                 </div>
             </div>
         </form>
@@ -198,6 +224,10 @@
                 <label style="display: block; margin-bottom: 5px;">Nome / Legenda</label>
                 <input type="text" name="title" id="edit-item-name" style="width: 100%; box-sizing: border-box;">
             </div>
+            <div id="edit-item-text-group" style="display: none;">
+                <label style="display: block; margin-bottom: 5px;">Texto</label>
+                <textarea name="textbody" id="edit-item-textbody" rows="4" style="width: 100%; box-sizing: border-box; resize: vertical;" placeholder="Edite seu texto aqui..."></textarea>
+            </div>
             <div style="display: flex; align-items: center; gap: 5px;">
                 <input type="checkbox" id="edit-item-showtitle" name="showtitle">
                 <label for="edit-item-showtitle">Mostrar título</label>
@@ -210,7 +240,7 @@
                 </select>
             </div>
             <div style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" id="edit-item-rounded" name="roundedcorners" checked>
+                <input type="checkbox" id="edit-item-rounded" name="roundedcorners">
                 <label for="edit-item-rounded">Bordas Curvas</label>
             </div>
             <div>

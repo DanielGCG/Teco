@@ -30,6 +30,7 @@ body {
 
 #main-content {
     flex-grow: 1;
+    min-height: 100vh;
 }
 
 a,
@@ -403,6 +404,28 @@ marquee {
         right: 0 !important;
         max-width: 100% !important;
     }
+}
 
+/* ==========================================================================
+   UI Kit: Botões (Utilitários)
+   ========================================================================== */
+.btn-sm {
+    padding: 2px 15px;
+    font-size: 11px;
+}
 
+.btn-micro {
+    padding: 0 5px;
+    height: 16px;
+    line-height: 12px;
+    font-size: 10px;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.btn-bold {
+    font-weight: bold;
 }

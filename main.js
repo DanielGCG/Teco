@@ -10,8 +10,8 @@ const { authMiddleware } = require('./server/middlewares/authMiddleware');
 const sanitizeMiddleware = require('./server/middlewares/sanitizeMiddleware');
 const { SystemConfig } = require('./server/models');
 
-// Importa o monitor do pet
-const { startPetMonitor } = require('./server/utils/petMonitor'); 
+// Importa as rotinas agendadas (Cron Jobs)
+const { startCronJobs } = require('./server/utils/cronJobs');
 
 const servidor = express();
 const httpServer = http.createServer(servidor);
@@ -75,8 +75,8 @@ servidor.use((req, res) => {
 // ==================== Socket.IO ====================
 require('./server/routes/socket.router')(io);
 
-// Inicia a rotina de verificação do BotecoGotchi
-startPetMonitor();
+// Inicia as rotinas agendadas (Cron Jobs)
+startCronJobs(io);
 
 httpServer.listen(porta, () => {
     console.log(`Servidor rodando em http://localhost:${porta}`);

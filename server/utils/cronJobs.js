@@ -1,9 +1,10 @@
 const cron = require('node-cron');
-const { Pet, User, PushSubscription } = require('../models');
+const { Pet, User, PushSubscription, ImagemDoDia } = require('../models');
 const { Op } = require('sequelize');
 const webpush = require('web-push');
 const { createNotification } = require('../api/notifications');
 const { applyDecay, getDeathMessage, getClaimInfo } = require('./petLogic');
+const { checkAndRotateImage } = require('./iotdLogic');
 
 async function sendPushToUser(user, payloadStr) {
     if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) return;
@@ -19,18 +20,29 @@ async function sendPushToUser(user, payloadStr) {
         } catch (err) {
             if (err.statusCode === 410 || err.statusCode === 404) {
                 await sub.destroy();
-                console.log('[Pet Monitor] Inscrição expirada deletada.');
+                console.log('[Cron Jobs] Inscrição expirada deletada.');
             } else {
-                console.error('[Pet Monitor] Erro ao enviar notificação push:', err);
+                console.error('[Cron Jobs] Erro ao enviar notificação push:', err);
             }
         }
     }
 }
 
-function startPetMonitor() {
-    // Executa a cada 1 minuto
-    cron.schedule('* * * * *', async () => {
+function startCronJobs(io) {
+    console.log('[Cron Jobs] Iniciando rotinas agendadas (Pet & Rotação de Imagens)...');
 
+    // 1. Rotação da Imagem do Dia (Diariamente às 00:00)
+    cron.schedule('0 0 * * *', async () => {
+        try {
+            console.log('[Cron Jobs] Verificando rotação da Imagem do Dia...');
+            await checkAndRotateImage(io);
+        } catch (error) {
+            console.error('[Cron Jobs] Erro no CRON de rotação de imagem:', error);
+        }
+    });
+
+    // 2. Monitor do BotecoGotchi (A cada 1 minuto)
+    cron.schedule('* * * * *', async () => {
         try {
             // Busca apenas pets que estão vivos
             const pets = await Pet.findAll({
@@ -141,9 +153,9 @@ function startPetMonitor() {
                 await pet.save();
             }
         } catch (error) {
-            console.error('[Pet Monitor] Erro na verificação dos pets:', error);
+            console.error('[Cron Jobs] Erro na verificação dos pets:', error);
         }
     });
 }
 
-module.exports = { startPetMonitor };
+module.exports = { startCronJobs };

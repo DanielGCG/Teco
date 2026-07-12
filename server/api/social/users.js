@@ -6,11 +6,11 @@ const validate = require("../../middlewares/validate");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
-const multer = require('multer');
-const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
+const { upload } = require('../../utils/upload');
+const { processImage } = require("../../utils/imageProcessor");
+const { uploadToFileServer, deleteFromFileServer, replaceFileOnServer } = require('../../utils/fileServer');
 const axios = require('axios'); // Mantém para outros usos
 const FormData = require('form-data'); // Mantém para outros usos
-const sharp = require('sharp');
 const {
     registerSchema,
     loginSchema,
@@ -19,8 +19,6 @@ const {
     validateSessionSchema,
     searchUsersSchema
 } = require("../../validators/users.validator");
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper para proteger rotas
 const protect = (minRole = 20) => authMiddleware(minRole);
@@ -203,18 +201,11 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
         // Upload de foto de perfil se houver arquivo
         if (req.files && req.files['profile_file']) {
             const file = req.files['profile_file'][0];
-            // Deletar foto de perfil antiga se existir
             const user = await User.findByPk(req.user.id, { attributes: ['profileimage'] });
-            if (user && user.profileimage) {
-                await deleteFromFileServer({ fileUrl: user.profileimage });
-            }
-            // Converte para PNG usando sharp
-            const pngBuffer = await sharp(file.buffer).png().toBuffer();
-            profileimage = await uploadToFileServer({
-                buffer: pngBuffer,
-                filename: 'profile.png',
-                folder: 'profiles',
-                mimetype: 'image/png'
+            const { buffer, filename, mimetype } = await processImage(file, { name: 'profile' });
+            profileimage = await replaceFileOnServer({
+                oldFileUrl: user ? user.profileimage : null,
+                buffer, filename, mimetype, folder: 'profiles'
             });
         }
 
@@ -222,26 +213,10 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
         if (req.files && req.files['banner_file']) {
             const file = req.files['banner_file'][0];
             const user = await User.findByPk(req.user.id, { attributes: ['bannerimage'] });
-            if (user && user.bannerimage) {
-                await deleteFromFileServer({ fileUrl: user.bannerimage });
-            }
-
-            let buffer = file.buffer;
-            let filename = 'banner.png';
-            let mimetype = 'image/png';
-
-            if (file.mimetype === 'image/gif') {
-                filename = 'banner.gif';
-                mimetype = 'image/gif';
-            } else {
-                buffer = await sharp(file.buffer).png().toBuffer();
-            }
-
-            bannerimage = await uploadToFileServer({
-                buffer,
-                filename,
-                folder: 'backgrounds',
-                mimetype
+            const { buffer, filename, mimetype } = await processImage(file, { name: 'banner' });
+            bannerimage = await replaceFileOnServer({
+                oldFileUrl: user ? user.bannerimage : null,
+                buffer, filename, mimetype, folder: 'backgrounds'
             });
         }
 
@@ -249,26 +224,10 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
         if (req.files && req.files['background_file']) {
             const file = req.files['background_file'][0];
             const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });
-            if (user && user.backgroundimage) {
-                await deleteFromFileServer({ fileUrl: user.backgroundimage });
-            }
-
-            let buffer = file.buffer;
-            let filename = 'background.png';
-            let mimetype = 'image/png';
-
-            if (file.mimetype === 'image/gif') {
-                filename = 'background.gif';
-                mimetype = 'image/gif';
-            } else {
-                buffer = await sharp(file.buffer).png().toBuffer();
-            }
-
-            backgroundimage = await uploadToFileServer({
-                buffer,
-                filename,
-                folder: 'pagebackgrounds',
-                mimetype
+            const { buffer, filename, mimetype } = await processImage(file, { name: 'background' });
+            backgroundimage = await replaceFileOnServer({
+                oldFileUrl: user ? user.backgroundimage : null,
+                buffer, filename, mimetype, folder: 'pagebackgrounds'
             });
         } else if (backgroundimage === "") {
             const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });

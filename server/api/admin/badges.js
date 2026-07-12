@@ -1,11 +1,9 @@
 const express = require("express");
 const AdminBadgesRouter = express.Router();
 const { Badge, BadgeUser, User } = require("../../models");
-const multer = require('multer');
-const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
-const sharp = require('sharp');
-
-const upload = multer({ storage: multer.memoryStorage() });
+const { upload } = require('../../utils/upload');
+const { uploadToFileServer, deleteFromFileServer, replaceFileOnServer } = require('../../utils/fileServer');
+const { processImage } = require('../../utils/imageProcessor');
 
 // GET /admin/badges/ - Listar todas as badges
 AdminBadgesRouter.get('/', async (req, res) => {
@@ -63,32 +61,12 @@ AdminBadgesRouter.post('/', upload.single('file'), async (req, res) => {
     try {
         if (req.file) {
             // Se enviou arquivo, faz o upload para o servidor de arquivos
-            let processedBuffer;
-            let extension = 'webp';
-            let mimetype = 'image/webp';
-
-            const isGif = req.file.mimetype === 'image/gif';
-
-            if (isGif) {
-                // Preservar animação se for GIF
-                processedBuffer = await sharp(req.file.buffer, { animated: true })
-                    .resize(100, 100, { fit: 'inside' })
-                    .toBuffer();
-                extension = 'gif';
-                mimetype = 'image/gif';
-            } else {
-                // Normalizar para WebP (eficiente e suporta transparência)
-                processedBuffer = await sharp(req.file.buffer)
-                    .resize(100, 100, { fit: 'inside' })
-                    .webp({ quality: 90 })
-                    .toBuffer();
-            }
-
+            const processed = await processImage(req.file, { name: 'badge', width: 100, height: 100 });
             url = await uploadToFileServer({
-                buffer: processedBuffer,
-                filename: `badge.${extension}`,
+                buffer: processed.buffer,
+                filename: processed.filename,
                 folder: 'badges',
-                mimetype: mimetype
+                mimetype: processed.mimetype
             });
         }
 
@@ -117,37 +95,14 @@ AdminBadgesRouter.put('/:publicid', upload.single('file'), async (req, res) => {
         }
 
         if (req.file) {
-            // Se enviou novo arquivo, deleta o antigo se ele for do servidor de arquivos
-            if (badge.url) {
-                try { await deleteFromFileServer({ fileUrl: badge.url }); } catch (e) {}
-            }
+            const processed = await processImage(req.file, { name: 'badge', width: 100, height: 100 });
 
-            let processedBuffer;
-            let extension = 'webp';
-            let mimetype = 'image/webp';
-
-            const isGif = req.file.mimetype === 'image/gif';
-
-            if (isGif) {
-                // Preservar animação se for GIF
-                processedBuffer = await sharp(req.file.buffer, { animated: true })
-                    .resize(100, 100, { fit: 'inside' })
-                    .toBuffer();
-                extension = 'gif';
-                mimetype = 'image/gif';
-            } else {
-                // Normalizar para WebP (eficiente e suporta transparência)
-                processedBuffer = await sharp(req.file.buffer)
-                    .resize(100, 100, { fit: 'inside' })
-                    .webp({ quality: 90 })
-                    .toBuffer();
-            }
-
-            url = await uploadToFileServer({
-                buffer: processedBuffer,
-                filename: `badge.${extension}`,
+            url = await replaceFileOnServer({
+                oldFileUrl: badge.url,
+                buffer: processed.buffer,
+                filename: processed.filename,
                 folder: 'badges',
-                mimetype: mimetype
+                mimetype: processed.mimetype
             });
         }
 

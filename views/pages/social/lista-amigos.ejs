@@ -28,8 +28,8 @@
             <input type="text" id="user-search-input"
                 style="flex-grow: 1; background: var(--retro-window-bg); color: var(--retro-text);"
                 placeholder="Digite o nome...">
-            <button id="btn-search">BUSCAR</button>
-            <button id="btn-clear-search" style="display: none;">[Fechar]</button>
+            <button id="btn-search" class="btn-bold">BUSCAR</button>
+            <button id="btn-clear-search" class="btn-micro" style="display: none;">[Fechar]</button>
         </div>
     </div>
 </div>
@@ -229,7 +229,7 @@
                     </td>
                     <td>
                         <div style="margin-bottom: 2px;">
-                            <a href="/${user.username}" style="color: var(--retro-link); font-weight: bold; text-decoration: underline; font-size: 13px;">${user.username}</a>
+                            <a href="/${user.username}" style="color: black; font-weight: bold; text-decoration: none; font-size: 13px;">${user.username}</a>
                         </div>
                         ${isFriend ? '<span style="background: #e0f0e0; color: #006000; border: 1px solid #006000; font-size: 9px; padding: 0 3px; font-weight: bold; border-radius: 2px;">AMIGO</span>' : ''}
                     </td>

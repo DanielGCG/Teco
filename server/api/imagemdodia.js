@@ -1,75 +1,20 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../models");
-const multer = require('multer');
+const { upload } = require('../utils/upload');
 const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
 const axios = require('axios'); // Mantém para outros usos
 const FormData = require('form-data'); // Mantém para outros usos
-const sharp = require('sharp');
 const { Op } = require('sequelize');
-const { createNotification } = require('./notifications');
+const { processImage } = require('../utils/imageProcessor');
+const { checkAndRotateImage, notifyNewImage } = require('../utils/iotdLogic');
 const router = express.Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
-
 // deleteFileFromServer substituído por deleteFromFileServer universal
-
-// Função para rotacionar a imagem se necessário
-async function checkAndRotateImage(req) {
-    try {
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-
-        // Busca a imagem mais recente ativada
-        const atual = await ImagemDoDia.findOne({
-            where: { position: { [Op.gt]: 0 } },
-            order: [['position', 'DESC']]
-        });
-
-        // Se a imagem atual foi ativada antes de hoje, precisamos de uma nova
-        if (atual && (!atual.activatedat || new Date(atual.activatedat) < hoje)) {
-            // Tenta pegar a próxima da fila
-            const proxima = await ImagemDoDia.findOne({
-                where: { position: 0 },
-                order: [['createdat', 'ASC']]
-            });
-
-            if (proxima) {
-                const maxPos = await ImagemDoDia.max('position') || 0;
-                proxima.position = maxPos + 1;
-                proxima.activatedat = new Date(); // Ativa com a data atual
-                await proxima.save();
-                console.log(`[ImagemDoDia] Rotação automática: imagem ${proxima.id} ativada.`);
-
-                // Notificar todos os usuários assincronamente
-                setImmediate(async () => {
-                    try {
-                        const allUsers = await User.findAll({ attributes: ['id'] });
-                        const io = req ? req.app.get('io') : null;
-                        for (const u of allUsers) {
-                            await createNotification({
-                                userId: u.id,
-                                type: 'info',
-                                title: 'Nova Imagem do Dia!',
-                                body: 'saiu do forno bb! venha conferir!',
-                                link: '/imagemdodia',
-                                io: io
-                            });
-                        }
-                    } catch (notifErr) {
-                        console.error('Erro ao notificar usuários sobre nova imagem do dia (rotação automática):', notifErr);
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.error('[ImagemDoDia] Erro na rotação automática:', error);
-    }
-}
 
 // Busca a imagem do dia ativa (A maior posição, ignorando as da fila com posição 0)
 router.get('/', async (req, res) => {
     try {
-        await checkAndRotateImage(req);
+        await checkAndRotateImage(req.app.get('io'));
         const imagem = await ImagemDoDia.findOne({
             where: { position: { [Op.gt]: 0 } },
             order: [['position', 'DESC']],
@@ -118,12 +63,9 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
 
     try {
         const file = req.files['file'][0];
-        const pngBuffer = await sharp(file.buffer).png().toBuffer();
+        const { buffer, filename, mimetype } = await processImage(file, { name: 'imagemdodia' });
         const url = await uploadToFileServer({
-            buffer: pngBuffer,
-            filename: 'imagemdodia.png',
-            folder: 'imagemdodia',
-            mimetype: 'image/png'
+            buffer, filename, mimetype, folder: 'imagemdodia'
         });
 
         let finalBorderId = null;
@@ -141,12 +83,12 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
 
         if (req.files['border'] && req.files['border'][0]) {
             const borderFile = req.files['border'][0];
-            const borderPngBuffer = await sharp(borderFile.buffer).png().toBuffer();
+            const processedBorder = await processImage(borderFile, { name: 'border' });
             const borderUrl = await uploadToFileServer({
-                buffer: borderPngBuffer,
-                filename: 'border.png',
-                folder: 'imagemdodia/borders',
-                mimetype: 'image/png'
+                buffer: processedBorder.buffer,
+                filename: processedBorder.filename,
+                mimetype: processedBorder.mimetype,
+                folder: 'imagemdodia/borders'
             });
             const newBorder = await ImagemDoDiaBorder.create({
                 url: borderUrl,
@@ -188,24 +130,7 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
 
         // Se a imagem foi ativada imediatamente
         if (novaImagem.position > 0) {
-            setImmediate(async () => {
-                try {
-                    const allUsers = await User.findAll({ attributes: ['id'] });
-                    const io = req.app.get('io');
-                    for (const u of allUsers) {
-                        await createNotification({
-                            userId: u.id,
-                            type: 'info',
-                            title: 'Nova Imagem do Dia!',
-                            body: 'saiu do forno bb! venha conferir!',
-                            link: '/imagemdodia',
-                            io: io
-                        });
-                    }
-                } catch (notifErr) {
-                    console.error('Erro ao notificar usuários sobre nova imagem do dia (upload imediato):', notifErr);
-                }
-            });
+            notifyNewImage(req.app.get('io'));
         }
 
         res.status(201).json(novaImagem);

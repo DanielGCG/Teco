@@ -11,9 +11,9 @@
                     <div id="retro-role" style="font-size: 10px; text-transform: uppercase; color: #555;"></div>
                     <div id="retro-pronouns" style="font-size: 11px; color: var(--retro-border-dark);"></div>
                 </div>
-                <div class="buttons-container" style="margin-top: 8px;">
-                    <button id="btn-edit" style="display: none; width: 100%; font-size: 11px;" onclick="window.location.href='/editar'">EDITAR</button>
-                    <button id="btn-follow" style="display: none; width: 100%; font-size: 11px;">SEGUIR</button>
+                <div class="buttons-container" style="margin-top: 8px; text-align: center;">
+                    <button id="btn-edit" class="btn-block btn-sm" style="display: none; margin: 0 auto;" onclick="window.location.href='/editar'">EDITAR</button>
+                    <button id="btn-follow" class="btn-block btn-sm" style="display: none; margin: 0 auto;">SEGUIR</button>
                 </div>
             </div>
             <div class="profile-info-col">
@@ -94,10 +94,10 @@
                 <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
                 <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                     <div style="flex-grow: 1;">
-                        <button type="button" onclick="document.getElementById('retro-post-media').click()" style="padding: 2px 15px; font-size: 11px;">ADICIONAR MÍDIA</button>
+                        <button type="button" onclick="document.getElementById('retro-post-media').click()" class="btn-sm">ADICIONAR MÍDIA</button>
                         <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="display: none;">
                     </div>
-                    <button id="btn-retro-postar" style="padding: 2px 20px;">POSTAR</button>
+                    <button id="btn-retro-postar" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
                 </div>
             </div>
         </div>

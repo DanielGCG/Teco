@@ -35,7 +35,15 @@ function sanitizeObject(obj) {
     return obj;
 }
 
+function sanitizeFilename(filename) {
+    if (!filename) return `file_${Date.now()}`;
+    const normalized = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); 
+    const sanitized = normalized.replace(/[^a-zA-Z0-9-_ .]/g, '').replace(/\s+/g, '_'); 
+    return sanitized || `file_${Date.now()}`;
+}
+
 module.exports = {
     sanitizeString,
-    sanitizeObject
+    sanitizeObject,
+    sanitizeFilename
 };

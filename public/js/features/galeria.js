@@ -55,6 +55,56 @@ const GaleriaManager = {
         this.setupDragAndDrop();
     },
 
+    copiarLink() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            Utils.alert('Link copiado para a área de transferência!', 'Sucesso');
+        }).catch(err => {
+            console.error('Erro ao copiar link', err);
+            Utils.alert('Erro ao copiar link.', 'Erro');
+        });
+    },
+
+    async exportarImagem() {
+        const element = document.getElementById('image-list');
+        if (!element) return;
+        
+        try {
+            Utils.alert('Gerando imagem da galeria, aguarde...', 'Aviso');
+            
+            // Temporarily apply background image to element so html2canvas captures it
+            const originalBgImage = element.style.backgroundImage;
+            const originalBgSize = element.style.backgroundSize;
+            const originalBgRepeat = element.style.backgroundRepeat;
+            
+            if (this.data.backgroundurl) {
+                element.style.backgroundImage = `url('${this.data.backgroundurl}')`;
+                element.style.backgroundRepeat = this.data.backgroundfill === 'repeat' ? 'repeat' : 'no-repeat';
+                element.style.backgroundSize = this.data.backgroundfill === 'repeat' ? 'auto' : 'cover';
+            }
+            
+            const canvas = await html2canvas(element, {
+                useCORS: true,
+                allowTaint: false,
+                backgroundColor: this.data.backgroundcolor || '#d9d7bf',
+                scale: 1.5 // Melhor qualidade
+            });
+            
+            // Restore original styles
+            element.style.backgroundImage = originalBgImage;
+            element.style.backgroundSize = originalBgSize;
+            element.style.backgroundRepeat = originalBgRepeat;
+            
+            const link = document.createElement('a');
+            link.download = `galeria-${this.data.name || 'export'}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) {
+            console.error(err);
+            Utils.alert('Erro ao exportar imagem.', 'Erro');
+        }
+    },
+
     markRemoveCover(id) {
         const flag = document.getElementById('edit-flag-remove-cover');
         if (flag) flag.value = 'true';
@@ -130,7 +180,14 @@ const GaleriaManager = {
         if (title) title.textContent = this.data.name;
         
         const desc = document.getElementById('gallery-description');
-        if (desc) desc.textContent = this.data.description;
+        if (desc) {
+            desc.textContent = this.data.description;
+            if (this.data.description && this.data.description.trim() !== '') {
+                desc.style.display = 'block';
+            } else {
+                desc.style.display = 'none';
+            }
+        }
         
         const author = document.getElementById('gallery-author');
         if (author) {
@@ -154,7 +211,13 @@ const GaleriaManager = {
         else grid.parentElement.classList.remove('edit-mode');
 
         if (!this.data.items?.length) {
-            grid.innerHTML = '<div class="col-12 text-center text-muted py-5 grid-full-width">A galeria está vazia. Adicione conteúdo!</div>';
+            grid.innerHTML = `
+                <div class="col-12 text-center py-5 grid-full-width" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 2px dashed rgba(0, 0, 0, 0.2); margin: 20px;">
+                    <h3 style="margin: 0 0 10px 0; opacity: 0.8;">Sua galeria está vazia</h3>
+                    <p style="opacity: 0.7; margin-bottom: 20px;">Comece a adicionar fotos, vídeos ou áudios para dar vida a sua galeria.</p>
+                    <button class="window-btn" onclick="GaleriaManager.openUploadModal()" style="font-size: 16px; padding: 10px 20px; cursor: pointer;">+ Adicionar Mídia</button>
+                </div>
+            `;
             return;
         }
 
@@ -163,6 +226,16 @@ const GaleriaManager = {
 
         const cols = this.data.gridxsize;
         grid.style.setProperty('--gallery-columns', cols);
+
+        let maxY = 0;
+        this.data.items.forEach(item => {
+            const endY = (item.startpositiony || 1) + (item.grid_h || 1) - 1;
+            if (endY > maxY) maxY = endY;
+        });
+        
+        // Garantir sempre 1 linha adicional abaixo do último item
+        const totalRows = Math.max(maxY + 1, 3);
+        grid.style.gridTemplateRows = `repeat(${totalRows}, var(--row-height))`;
 
         const itemsHtml = this.data.items.map(item => {
             const safeName = Utils.escapeHtml(item.title || 'Sem título');
@@ -179,9 +252,8 @@ const GaleriaManager = {
             const isItemRounded = (item.roundedcorners !== false && item.roundedcorners !== 'false' && item.roundedcorners !== '0' && item.roundedcorners !== 0);
             const extraStyle = isItemRounded ? '' : '--gallery-radius: 0px;';
             
-            // Ignorar coverurl caso seja idêntico ao arquivo de mídia para áudio e vídeo
             let previewSrc = item.coverurl;
-            if (previewSrc === item.contenturl && type !== 'image') previewSrc = '';
+            if (previewSrc === item.contenturl && type !== 'image' && type !== 'link') previewSrc = '';
             if (!previewSrc && type === 'image') previewSrc = item.contenturl;
             
             let content;
@@ -189,9 +261,17 @@ const GaleriaManager = {
                 content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<video src="${item.contenturl}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
             } else if (type === 'audio') {
                 content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio" style="display:flex; align-items:center; justify-content:center; background:#ccc; font-size:48px;">🎵</div>`;
+            } else if (type === 'text') {
+                content = `<div class="media-preview-box" style="display: block; background: var(--gallery-card-bg, #ffffff); color: inherit; border: 2px inset #fff; padding: 10px; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; font-size: 14px; text-align: center; word-break: break-word; white-space: pre-wrap;">${Utils.escapeHtml(item.textbody || '')}</div>`;
+            } else if (type === 'link') {
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box" style="display:flex; align-items:center; justify-content:center; background: #eee; font-size:48px; border: 2px outset #fff;">🔗</div>`;
             } else {
                 content = `<img src="${previewSrc || item.contenturl || ''}" class="media-preview-box fit-${fit}" loading="lazy">`;
             }
+
+            const onclick = (type === 'link' && safeUrl) 
+                ? `window.open('${safeUrl}', '_blank')` 
+                : `GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}', '${previewSrc || ''}', \`${(item.textbody || '').replace(/`/g, '\\`')}\`)`;
 
             const editControls = this.editMode ? `
                 <div class="edit-overlay" style="display: flex; gap: 5px;">
@@ -209,7 +289,7 @@ const GaleriaManager = {
 
             return `
             <div class="grid-item" data-id="${item.publicid}" data-w="${w}" data-h="${h}" ${this.editMode ? 'draggable="true"' : ''} style="grid-column: ${x} / span ${w}; grid-row: ${y} / span ${h};">
-                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.positionz || 0}; ${extraStyle}" onclick="GaleriaManager.openMedia('${safeUrl}', '${type}', '${safeName}', '${previewSrc || ''}')">
+                <div class="image-card ${showTitle ? 'has-title' : 'no-title'}" style="position: relative; z-index: ${item.positionz || 0}; ${extraStyle}" onclick="${onclick}">
                     ${content}
                     ${showTitle ? `<div class="card-body"><small class="text-truncate fw-bold w-100">${safeName}</small></div>` : ''}
                 </div>
@@ -239,6 +319,17 @@ const GaleriaManager = {
 
         const current = document.getElementById('edit-item-current-cover');
         const type = this.getMediaType(item);
+        
+        const textGroup = document.getElementById('edit-item-text-group');
+        const textBodyInput = document.getElementById('edit-item-textbody');
+        if (type === 'text') {
+            if (textGroup) textGroup.style.display = 'block';
+            if (textBodyInput) textBodyInput.value = item.textbody || '';
+        } else {
+            if (textGroup) textGroup.style.display = 'none';
+            if (textBodyInput) textBodyInput.value = '';
+        }
+
         const coverInput = form.querySelector('input[name="cover"]');
         const coverWrapper = coverInput ? coverInput.closest('.mb-3') : null;
 
@@ -455,13 +546,13 @@ const GaleriaManager = {
         if (inp) { inp.focus(); try{inp.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',keyCode:40,which:40,bubbles:true}));}catch(e){}}
     },
 
-    openUploadModal() { document.getElementById('modalUpload').style.display = 'block'; document.getElementById('modalBackdrop').style.display = 'block'; },
+
     
     async handleUpload(e) { 
         e.preventDefault();
         const form = e.target;
-        const file = form.fileInput.files[0];
-        if (!file) return;
+        const typeEl = document.querySelector('input[name="item_type"]:checked');
+        const type = typeEl ? typeEl.value : 'media';
         
         const btn = document.getElementById('btn-submit-upload');
         const prog = document.getElementById('upload-progress-wrapper');
@@ -472,12 +563,28 @@ const GaleriaManager = {
 
         try {
             const fd = new FormData(form);
-            fd.delete('fileInput');
-            fd.append('media', file);
             fd.append('grid_w', suggestedSize);
             fd.append('grid_h', suggestedSize);
 
-            const res = await this.uploadFileXHR(file, fd);
+            let res;
+            if (type === 'media') {
+                const file = form.fileInput.files[0];
+                if (!file) throw new Error('Selecione um arquivo.');
+                fd.delete('fileInput');
+                fd.append('media', file);
+                res = await this.uploadFileXHR(file, fd);
+            } else {
+                if (type === 'text') {
+                    const textContent = document.getElementById('upload-text-content').value.trim();
+                    if (!textContent) throw new Error('O texto não pode estar vazio.');
+                } else if (type === 'link') {
+                    const linkUrl = document.getElementById('upload-link-url').value.trim();
+                    if (!linkUrl) throw new Error('A URL do link não pode estar vazia.');
+                }
+                fd.delete('fileInput');
+                res = await this.uploadFileXHR(null, fd);
+            }
+
             if (res.success) {
                 res.item.grid_w = res.item.grid_h = suggestedSize;
                 this.data.items.push(res.item);
@@ -487,20 +594,50 @@ const GaleriaManager = {
                 if (form) form.reset();
                 document.getElementById('modalUpload').style.display = 'none';
                 document.getElementById('modalBackdrop').style.display = 'none';
-                Utils.alert('Upload concluído!');
+                Utils.alert('Item adicionado com sucesso!');
             }
         } catch (err) { Utils.alert(err.message, 'Erro'); }
         finally { btn.disabled = false; prog.style.display = 'none'; this.resetProgress(); }
+    },
+
+    openUploadModal() {
+        const form = document.getElementById('formUpload');
+        if (form) form.reset();
+        this.toggleUploadType();
+        document.getElementById('upload-progress-wrapper').style.display = 'none';
+        document.getElementById('modalUpload').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    },
+
+    toggleUploadType() {
+        const typeEl = document.querySelector('input[name="item_type"]:checked');
+        if (!typeEl) return;
+        const type = typeEl.value;
+        
+        document.getElementById('upload-group-media').style.display = type === 'media' ? 'block' : 'none';
+        document.getElementById('upload-group-text').style.display = type === 'text' ? 'block' : 'none';
+        document.getElementById('upload-group-link').style.display = type === 'link' ? 'flex' : 'none';
+        
+        const fileInput = document.getElementById('upload-file-input');
+        if (type === 'media') {
+            fileInput.setAttribute('required', 'required');
+        } else {
+            fileInput.removeAttribute('required');
+        }
     },
 
     uploadFileXHR(file, formDataOrForm) {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             const data = (formDataOrForm instanceof FormData) ? formDataOrForm : new FormData(formDataOrForm);
-            if (!(formDataOrForm instanceof FormData)) {
-                data.delete('fileInput'); 
+            // We shouldn't append 'media' twice if it's already in formDataOrForm.
+            // addItem() already does fd.append('media', file)
+            // But just in case formDataOrForm was an HTMLFormElement without 'media':
+            if (file && !data.has('media')) {
                 data.append('media', file);
             }
+            data.delete('fileInput'); // Ensure fileInput is deleted
+            
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const pct = Math.round((e.loaded / e.total) * 100) + '%';
@@ -521,7 +658,7 @@ const GaleriaManager = {
         document.getElementById('upload-percent-text').textContent = '0%';
     },
 
-    openMedia(url, type, name, coverUrl = '') {
+    openMedia(url, type, name, coverUrl = '', textBody = '') {
         const container = document.getElementById('media-container');
         document.getElementById('media-caption').textContent = name || '';
         let content;
@@ -536,6 +673,12 @@ const GaleriaManager = {
             } else {
                 content = `<div class="p-5 bg-dark rounded border"><i class="bi bi-music-note-beamed display-1 text-info"></i><audio controls autoplay class="d-block mt-3" oncanplay="this.volume=0.4"><source src="${url}"></audio></div>`;
             }
+        }
+        else if (type === 'text') {
+            content = `<div class="window-content" style="background: var(--gallery-card-bg, #ffffff); color: inherit; padding: 20px; font-size: 16px; border: 2px inset white; max-width: 600px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; text-align: left; word-break: break-word; white-space: pre-wrap;">${Utils.escapeHtml(textBody)}</div>`;
+        }
+        else if (type === 'link') {
+            content = `<div class="window-content" style="background: var(--retro-window-bg); padding: 20px; font-size: 16px; border: 2px inset white;"><a href="${url}" target="_blank">Acessar Link Externo</a></div>`;
         }
         else content = `<img src="${url}" class="img-fluid rounded shadow" style="max-height:80vh">`;
 
@@ -919,6 +1062,7 @@ const GaleriaManager = {
     getMediaType: (arg) => {
         if (!arg) return 'image';
         if (typeof arg === 'object') {
+            if (arg.type) return arg.type;
             const mt = (arg.mimetype || '').toLowerCase();
             if (mt.startsWith('video/')) return 'video';
             if (mt.startsWith('audio/')) return 'audio';
