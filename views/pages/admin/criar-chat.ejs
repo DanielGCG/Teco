@@ -319,11 +319,11 @@ async function salvarAlteracoes() {
 }
 
 async function deletarChat() {
-    let conf = typeof mostrarConfirmacao !== 'undefined' 
+    const confirmed = typeof mostrarConfirmacao !== 'undefined' 
         ? await mostrarConfirmacao('Excluir permanentemente todas as mensagens deste chat?', 'Excluir Chat')
-        : confirm('Excluir permanentemente todas as mensagens?');
+        : await confirm('Excluir permanentemente todas as mensagens?');
         
-    if (!conf) return;
+    if (!confirmed) return;
 
     try {
         const res = await fetch(`/api/admin/chats/${currentChat.publicid}?type=${currentChat.type}`, {

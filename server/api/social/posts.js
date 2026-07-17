@@ -4,7 +4,7 @@ const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Notification
 const { createNotification } = require("../notifications");
 const { Op } = require("sequelize");
 const { upload } = require('../../utils/upload');
-const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
+const { uploadToFileServer } = require('../../utils/fileServer');
 const { sanitizeFilename } = require('../../utils/sanitize');
 
 const POST_INCLUDES = [
@@ -517,11 +517,7 @@ PostsRouter.delete('/:publicid', async (req, res) => {
             }
         }
 
-        // Buscar mídias para deletar do servidor de arquivos
-        const media = await PostMedia.findAll({ where: { postId: post.id } });
-        for (const m of media) {
-            await deleteFromFileServer({ fileUrl: m.url });
-        }
+
 
         // Buscar autor para emitir via socket e decrementar postcount
         const author = await User.findByPk(post.authorUserId);

@@ -90,7 +90,7 @@
     }
 
     async function deleteItem(publicid) {
-        if (!confirm('Deseja excluir este item?')) return;
+        if (!(await confirm('Deseja excluir este item?'))) return;
         await fetch(`/api/admin/pet/items/${publicid}`, { method: 'DELETE' });
         loadItems();
     }

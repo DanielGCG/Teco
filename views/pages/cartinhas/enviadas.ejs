@@ -28,18 +28,20 @@
     window.tipoCartinhas = 'enviadas';
     let dataCache = [];
 
-    async function carregarCartinhas() {
+    async function carregarCartinhas(page = 1) {
+        window.currentPage = page;
         const l = document.getElementById('loading');
         const container = document.getElementById('cartinhas-container');
         const empty = document.getElementById('sem-cartinhas');
 
         try {
-            const res = await fetch('/api/cartinhas/enviadas', { credentials: 'include' });
+            const res = await fetch(`/api/cartinhas/enviadas?page=${page}`, { credentials: 'include' });
             if (!res.ok) throw new Error();
-            dataCache = await res.json();
+            const dataResponse = await res.json();
+            dataCache = dataResponse.data || [];
             l.style.display = 'none';
 
-            if (dataCache.length === 0) {
+            if (dataCache.length === 0 && page === 1) {
                 empty.style.display = 'block';
                 container.style.display = 'none';
                 return;
@@ -48,7 +50,7 @@
             empty.style.display = 'none';
             container.style.display = 'block';
 
-            renderizarGridCartinhas(dataCache, '#cartas-grid', {
+            renderizarGridCartinhas(dataResponse, '#cartas-grid', {
                 abrirCartinha: (id) => {
                     const c = encontrarCartinha(id, dataCache), u = encontrarUsuarioPorCartinha(id, dataCache);
                     if (!c || !u) return;

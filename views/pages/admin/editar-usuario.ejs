@@ -244,7 +244,7 @@
         if (typeof mostrarConfirmacao !== 'undefined') {
             confirmado = await mostrarConfirmacao("Tem certeza que deseja excluir este usuário?");
         } else {
-            confirmado = confirm("Tem certeza que deseja excluir este usuário?");
+            confirmado = await confirm("Tem certeza que deseja excluir este usuário?");
         }
 
         if (!confirmado) return;

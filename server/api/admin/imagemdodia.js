@@ -1,7 +1,7 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../../models");
 const { upload } = require('../../utils/upload');
-const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
+const { uploadToFileServer } = require('../../utils/fileServer');
 const axios = require('axios');
 const FormData = require('form-data');
 const { Op } = require('sequelize');
@@ -41,9 +41,6 @@ router.delete('/:publicid', async (req, res) => {
         const imagem = await ImagemDoDia.findOne({ where: { publicid: req.params.publicid } });
         if (!imagem) return res.status(404).json({ message: 'Imagem não encontrada.' });
 
-        if (imagem.url) {
-            try { await deleteFromFileServer({ fileUrl: imagem.url }); } catch (e) { }
-        }
 
         await imagem.destroy();
         res.json({ message: 'Removida com sucesso.' });
@@ -105,10 +102,6 @@ router.delete('/borders/:publicid', async (req, res) => {
         const border = await ImagemDoDiaBorder.findOne({ where: { publicid: req.params.publicid } });
         if (!border) return res.status(404).json({ message: 'Moldura não encontrada.' });
 
-        // Deleta do servidor de arquivos antes de remover do BD
-        if (border.url) {
-            await deleteFromFileServer({ fileUrl: border.url });
-        }
 
         await border.destroy();
         res.json({ message: 'Moldura removida com sucesso.' });

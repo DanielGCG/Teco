@@ -95,7 +95,7 @@
         if (typeof mostrarConfirmacao !== 'undefined') {
             confirmado = await mostrarConfirmacao("Tem certeza que deseja resetar a senha para 12345?");
         } else {
-            confirmado = confirm("Tem certeza que deseja resetar a senha para 12345?");
+            confirmado = await confirm("Tem certeza que deseja resetar a senha para 12345?");
         }
 
         if (!confirmado) return;

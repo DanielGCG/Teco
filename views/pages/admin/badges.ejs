@@ -265,11 +265,11 @@
         const publicid = document.getElementById('badgePublicId').value;
         if (!publicid) return;
 
-        let conf = typeof mostrarConfirmacao !== 'undefined'
+        const confirmado = typeof mostrarConfirmacao !== 'undefined'
             ? await mostrarConfirmacao('Tem certeza que deseja excluir esta badge?', 'Excluir')
-            : confirm('Tem certeza que deseja excluir esta badge?');
+            : await confirm('Tem certeza que deseja excluir esta badge?');
 
-        if (!conf) return;
+        if (!confirmado) return;
 
         const response = await fetch(`/api/admin/badges/${publicid}`, { method: 'DELETE' });
         if (response.ok) {
@@ -363,11 +363,11 @@
     async function removerAtribuicao(badgePublicId) {
         if (!selectedUserPublicId || !badgePublicId) return;
 
-        let conf = typeof mostrarConfirmacao !== 'undefined'
-            ? await mostrarConfirmacao('Remover badge?', 'Remover Atribuição')
-            : confirm('Remover badge?');
+        const confirmado = typeof mostrarConfirmacao !== 'undefined'
+            ? await mostrarConfirmacao('Remover badge da lista de exibição?', 'Remover')
+            : await confirm('Remover badge?');
 
-        if (!conf) return;
+        if (!confirmado) return;
 
         const response = await fetch('/api/admin/badges/unassign', {
             method: 'POST',

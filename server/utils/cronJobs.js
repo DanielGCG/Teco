@@ -5,7 +5,7 @@ const webpush = require('web-push');
 const { createNotification } = require('../api/notifications');
 const { applyDecay, getDeathMessage, getClaimInfo } = require('./petLogic');
 const { checkAndRotateImage } = require('./iotdLogic');
-
+const { runGarbageCollector } = require('./garbageCollector');
 async function sendPushToUser(user, payloadStr) {
     if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) return;
 
@@ -154,6 +154,16 @@ function startCronJobs(io) {
             }
         } catch (error) {
             console.error('[Cron Jobs] Erro na verificação dos pets:', error);
+        }
+    });
+
+    // 3. Garbage Collector de Arquivos (Diariamente às 03:00)
+    cron.schedule('0 3 * * *', async () => {
+        try {
+            console.log('[Cron Jobs] Executando Garbage Collector de Arquivos...');
+            await runGarbageCollector();
+        } catch (error) {
+            console.error('[Cron Jobs] Erro no CRON do Garbage Collector:', error);
         }
     });
 }

@@ -21,9 +21,9 @@ class ModalCartinha {
                     <span id="modal-cartinha-title" class="window-title">Cartinha</span>
                     <button type="button" class="window-btn" onclick="window.modalCartinha.fechar()" style="float: right;">[Fechar]</button>
                 </div>
-                <div class="window-content" id="modal-cartinha-content" style="max-height: 400px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="window-content" id="modal-cartinha-content" style="box-sizing: border-box; max-height: 400px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
                 </div>
-                <hr style="margin: 0; border-top: 1px solid gray;">
+                <hr style="margin: 0; border: none; border-top: 1px solid gray;">
                 <div class="window-footer" id="modal-cartinha-footer" style="padding: 10px; display: flex; justify-content: space-between; gap: 5px; background: var(--retro-bg);">
                 </div>
             </div>
@@ -54,7 +54,9 @@ class ModalCartinha {
             fetch(`/api/cartinhas/${cartinha.publicid || cartinha.id}`, { credentials: 'include' })
                 .then(res => res.json())
                 .then(fullData => {
-                    this.renderizarConteudoModal(fullData, usuario, labelNome, assinatura, acoes);
+                    // Atualiza a referência no cache para que a edição funcione
+                    Object.assign(cartinha, fullData);
+                    this.renderizarConteudoModal(cartinha, usuario, labelNome, assinatura, acoes);
                 })
                 .catch(() => {
                     content.innerHTML = `<div style="color: red; padding: 10px; font-size: 11px;">Erro ao carregar o conteúdo da cartinha.</div>`;
@@ -71,32 +73,37 @@ class ModalCartinha {
         const content = document.getElementById('modal-cartinha-content');
         const footer = document.getElementById('modal-cartinha-footer');
 
+        const stampHtml = cartinha.stampUrl ? `
+            <div style="flex: 0 0 80px; display: flex; align-items: flex-start; justify-content: flex-end;">
+                <img src="${cartinha.stampUrl}" style="max-width: 80px; max-height: 80px; width: auto; height: auto; transform: rotate(5deg); filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));">
+            </div>
+        ` : '';
+
         content.innerHTML = `
-            <div style="display: flex; gap: 20px;">
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-                    <h4 style="margin: 0;">Destinatário</h4>
+            <div style="display: flex; gap: 20px; align-items: flex-start; max-width: 100%;">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${usuario.profileimage}" style="width: 40px; height: 40px; border: 2px inset var(--retro-border-dark); object-fit: cover;">
-                        <div style="flex-grow: 1;">
+                        <img src="${usuario.profileimage}" style="width: 40px; height: 40px; border: 2px inset var(--retro-border-dark); object-fit: cover; flex-shrink: 0;">
+                        <div style="flex-grow: 1; min-width: 0;">
                             <div style="color: #666; font-size: 11px;">${labelNome}</div>
-                            <div style="font-weight: bold;"><a href="/${usuario.username}" style="color: blue; text-decoration: underline;">${usuario.username}</a></div>
+                            <div style="font-weight: bold; overflow-wrap: break-word; word-break: break-word;"><a href="/${usuario.username}" style="color: blue; text-decoration: underline;">${usuario.username}</a></div>
                         </div>
                     </div>
                 </div>
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-                    <h4 style="margin: 0;">Detalhes</h4>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
                     <div>
                         <div style="color: #666; font-size: 11px;">Data de Envio:</div>
                         <div style="font-weight: bold; font-size: 12px;">${UIUtils.formatarData(cartinha.createdat)}</div>
                     </div>
                 </div>
+                ${stampHtml}
             </div>
             
-            <hr style="margin-top: 5px; border-top: 1px solid gray; width: 100%;">
+            <hr style="margin: 5px 0; border: none; border-top: 1px solid gray;">
             
-            <div style="display: flex; flex-direction: column; gap: 5px;">
-                <h4 style="margin: 0;">Mensagem: ${cartinha.title}</h4>
-                <div style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; min-height: 120px; font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-y: auto;">${cartinha.body}</div>
+            <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;">
+                <h4 style="margin: 0; overflow-wrap: break-word; word-break: break-word;">Mensagem: ${cartinha.title}</h4>
+                <div style="box-sizing: border-box; background: white; border: 2px inset var(--retro-border-dark); padding: 10px; min-height: 120px; font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; overflow-y: auto;">${cartinha.body}</div>
                 <div style="text-align: right; font-size: 11px; margin-top: 5px;">
                     <span style="color: #666;">Atenciosamente,</span> <br>
                     <strong>${assinatura}</strong>
@@ -203,9 +210,14 @@ window.modalCartinha = new ModalCartinha();
 /**
  * Funções de Grid
  */
-function renderizarGridCartinhas(usuarios, containerSelector = '#cartas-grid', hooks = {}) {
+function renderizarGridCartinhas(dataResponse, containerSelector = '#cartas-grid', hooks = {}) {
     const container = document.querySelector(containerSelector);
     if (!container) return;
+
+    // dataResponse agora é { data: [...], total, page, totalPages } ou apenas o array antigo
+    let usuarios = Array.isArray(dataResponse) ? dataResponse : dataResponse.data;
+    let page = dataResponse.page || 1;
+    let totalPages = dataResponse.totalPages || 1;
 
     let cartinhas = [];
     usuarios.forEach(u => u.cartinhas.forEach(c => cartinhas.push({ ...c, usuario: u })));
@@ -218,11 +230,49 @@ function renderizarGridCartinhas(usuarios, containerSelector = '#cartas-grid', h
     }
 
     const isEnviadas = window.tipoCartinhas === 'enviadas';
+    const isRecebidas = window.tipoCartinhas === 'recebidas';
+
+    // Construir Paginação
+    const btnAnt = `<button class="window-btn" onclick="mudarPaginaCartinhas(${page - 1})" ${page <= 1 ? 'disabled' : ''}>&lt; Ant</button>`;
+    const btnProx = `<button class="window-btn" onclick="mudarPaginaCartinhas(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Prox &gt;</button>`;
+    const spanPag = `<span style="font-size: 11px;">Pág ${page}/${totalPages}</span>`;
+    const paginacaoHtml = `<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 5px 0;">${btnAnt}${spanPag}${btnProx}</div>`;
+
+    // Barra de Ferramentas
+    let toolsHtml = `
+        <div style="background: var(--retro-bg); border: 2px outset var(--retro-border-light); padding: 5px; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="chk-todas-cartinhas" onchange="toggleSelectAllCartinhas(this.checked)">
+            <label for="chk-todas-cartinhas" style="font-size: 11px; cursor:pointer;">Todas</label>
+            <div style="border-left: 1px solid gray; height: 15px; margin: 0 5px;"></div>
+    `;
+    
+    if (isRecebidas) {
+        toolsHtml += `
+            <button class="window-btn" style="font-size: 10px; padding: 2px 5px;" onclick="executarAcaoEmLoteCartinhas('lida')">Lida</button>
+            <button class="window-btn" style="font-size: 10px; padding: 2px 5px;" onclick="executarAcaoEmLoteCartinhas('nao-lida')">Não Lida</button>
+        `;
+    }
+    
+    toolsHtml += `
+            <button class="window-btn" style="font-size: 10px; padding: 2px 5px; color: red; margin-left: auto;" onclick="executarAcaoEmLoteCartinhas('delete')">Excluir</button>
+        </div>
+    `;
+
     container.innerHTML = `
+        ${paginacaoHtml}
+        ${toolsHtml}
         <div style="display: flex; flex-direction: column; gap: 4px;">
             ${cartinhas.map(c => `
                 <div style="display: flex; align-items: center; background: white; border: 2px inset var(--retro-border-dark); padding: 8px 10px; cursor: pointer;" onclick="window.cartinhasHooks?.abrirCartinha('${c.publicid || c.id}')" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
-                    <img src="${c.usuario.profileimage}" style="width: 32px; height: 32px; border: 1px solid #808080; object-fit: cover; margin-right: 12px;">
+                    <div style="margin-right: 10px; display: flex; align-items: center;" onclick="event.stopPropagation()">
+                        <input type="checkbox" class="chk-cartinha" value="${c.publicid || c.id}">
+                    </div>
+                    <img src="${c.usuario.profileimage}" style="width: 32px; height: 32px; border: 1px solid #808080; object-fit: cover; margin-right: 10px;">
+                    ${c.stampUrl ? `
+                    <div style="margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                        <img src="${c.stampUrl}" style="height: 24px; width: auto; max-width: 50px; transform: rotate(5deg); filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.2));" title="Esta cartinha tem um selo!">
+                    </div>
+                    ` : ''}
                     <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
                         <div style="font-size: 11px; color: #666; margin-bottom: 3px;">
                             ${isEnviadas ? 'Para:' : 'De:'} <b>${c.usuario.username}</b>
@@ -239,11 +289,51 @@ function renderizarGridCartinhas(usuarios, containerSelector = '#cartas-grid', h
                 </div>
             `).join('')}
         </div>
+        ${paginacaoHtml}
     `;
 
     window.cartinhasHooks = hooks;
     document.getElementById('cartinhas-container').style.display = 'block';
     document.getElementById('sem-cartinhas').style.display = 'none';
+}
+
+function mudarPaginaCartinhas(newPage) {
+    if (typeof window.carregarCartinhas === 'function') {
+        window.carregarCartinhas(newPage);
+    }
+}
+
+function toggleSelectAllCartinhas(checked) {
+    document.querySelectorAll('.chk-cartinha').forEach(chk => chk.checked = checked);
+}
+
+async function executarAcaoEmLoteCartinhas(acao) {
+    const selecionados = Array.from(document.querySelectorAll('.chk-cartinha:checked')).map(chk => chk.value);
+    if (selecionados.length === 0) {
+        window.alert('Selecione pelo menos uma cartinha.');
+        return;
+    }
+
+    if (acao === 'delete') {
+        const conf = typeof window.confirmRetro === 'function' 
+            ? await window.confirmRetro(`Excluir ${selecionados.length} cartinha(s)?`) 
+            : await confirm(`Excluir ${selecionados.length} cartinha(s)?`);
+        if (!conf) return;
+    }
+
+    try {
+        const res = await fetch(`/api/cartinhas/batch/${acao}`, {
+            method: acao === 'delete' ? 'DELETE' : 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selecionados }),
+            credentials: 'include'
+        });
+        
+        if (!res.ok) throw new Error();
+        if (typeof window.carregarCartinhas === 'function') window.carregarCartinhas(window.currentPage || 1);
+    } catch (e) {
+        window.alert('Erro ao processar', true);
+    }
 }
 
 /**
@@ -270,22 +360,8 @@ async function toggleFavoritoCommon(id, usuarios = []) {
         const data = await res.json();
         const c = encontrarCartinha(id, usuarios);
         if (c) c.isfavorited = data.isfavorited;
-        if (typeof carregarCartinhas === 'function') carregarCartinhas();
-        mostrarFeedback(data.isfavorited ? 'Favoritada!' : 'Removido dos favoritos');
-    } catch (e) { mostrarFeedback('Erro ao favoritar', 'danger'); }
+        if (typeof carregarCartinhas === 'function') carregarCartinhas(window.currentPage || 1);
+    } catch (e) { window.alert('Erro ao favoritar', true); }
 }
 
-function mostrarFeedback(msg, tipo = 'success') {
-    let c = document.querySelector('.feedback-container');
-    if (!c) {
-        c = document.createElement('div');
-        c.className = 'feedback-container';
-        c.style.cssText = 'position: fixed; bottom: 1rem; right: 1rem; z-index: 9999;';
-        document.body.appendChild(c);
-    }
-    const t = document.createElement('div');
-    t.className = `toast align-items-center text-white bg-${tipo} border-0 mb-2 show`;
-    t.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
-    c.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-}
+

@@ -38,6 +38,14 @@
                     style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
             </div>
 
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 11px; font-weight: bold;">Selo (Opcional):</label><br>
+                <div id="stampsSelector" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; padding: 5px; border: 1px inset var(--retro-border-dark); background: white; min-height: 40px; align-items: center;">
+                    <span style="font-size: 10px; color: gray;">Carregando selos...</span>
+                </div>
+                <input type="hidden" id="stampUrl">
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <label style="font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
@@ -93,6 +101,44 @@
             this.bind();
             this.checkURL();
             this.load();
+            this.loadStamps();
+        },
+
+        async loadStamps() {
+            try {
+                const res = await fetch('/api/cartinhas/stamps');
+                const stamps = await res.json();
+                const container = document.getElementById('stampsSelector');
+                if (!stamps || stamps.length === 0) {
+                    container.innerHTML = '<span style="font-size: 10px; color: gray;">Nenhum selo disponível</span>';
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="stamp-option" style="cursor: pointer; padding: 2px; border: 2px solid transparent;" onclick="composer.selectStamp(null, this)">
+                        <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eee; font-size: 10px; color: #666; border: 1px dashed #ccc;">Nenhum</div>
+                    </div>
+                ` + stamps.map(s => `
+                    <div class="stamp-option" style="cursor: pointer; padding: 2px; border: 2px solid transparent; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px;" onclick="composer.selectStamp('${s.image_url}', this)" title="${s.name}">
+                        <img src="${s.image_url}" style="max-width: 46px; max-height: 46px; width: auto; height: auto; display: block;">
+                    </div>
+                `).join('');
+                
+                // Selecionar "Nenhum" por padrão
+                composer.selectStamp(null, container.firstElementChild);
+            } catch (e) {
+                document.getElementById('stampsSelector').innerHTML = '<span style="font-size: 10px; color: red;">Erro ao carregar selos</span>';
+            }
+        },
+
+        selectStamp(url, el) {
+            document.getElementById('stampUrl').value = url || '';
+            document.querySelectorAll('.stamp-option').forEach(node => {
+                node.style.border = '2px solid transparent';
+                node.style.background = 'transparent';
+            });
+            el.style.border = '2px solid #000080';
+            el.style.background = 'rgba(0,0,128,0.1)';
         },
 
         bind() {
@@ -202,10 +248,17 @@
             btn.disabled = true;
             try {
                 const isAnonymous = document.getElementById('anonimo').checked;
+                const stampUrl = document.getElementById('stampUrl').value;
                 const res = await fetch('/api/cartinhas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recipientusername: this.dest.username, title: this.el.tit.value, body: this.el.con.value, isanonymous: isAnonymous })
+                    body: JSON.stringify({ 
+                        recipientusername: this.dest.username, 
+                        title: this.el.tit.value, 
+                        body: this.el.con.value, 
+                        isanonymous: isAnonymous,
+                        stampUrl: stampUrl || null
+                    })
                 });
                 if (res.ok) {
                     alert('Cartinha enviada com sucesso!');

@@ -4,19 +4,14 @@
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 16px;
         padding: 10px 0;
+        margin-left: 10px;
+        margin-right: 10px;
     }
 
     .hub-window {
         margin: 0;
         display: flex;
         flex-direction: column;
-    }
-
-    .hub-content {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
     }
 
     .hub-btn {
@@ -26,7 +21,126 @@
         font-weight: bold;
         cursor: pointer;
     }
+
+    .hub-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background-color: transparent;
+    }
+
+    /* Carousel Styles */
+    .index-carousel {
+        margin: 10px 10px 0 10px;
+        position: relative;
+        aspect-ratio: 5 / 1;
+        border: 2px inset var(--retro-border-dark);
+        background: black;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    .index-carousel img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        -webkit-user-drag: none;
+        user-select: none;
+    }
+    .index-carousel img.active {
+        opacity: 1;
+    }
+
 </style>
+
+<% if (locals.indexCarousel && locals.indexCarousel.length > 0) { %>
+    <div class="index-carousel" id="main-carousel">
+        <% locals.indexCarousel.forEach(function(item, idx) { %>
+            <img draggable="false" src="<%= item.imageUrl %>" data-link="<%= item.linkUrl || '' %>" class="<%= idx === 0 ? 'active' : '' %>" alt="Banner <%= idx+1 %>">
+        <% }); %>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const carousel = document.getElementById('main-carousel');
+            if (!carousel) return;
+            const images = carousel.querySelectorAll('img');
+            if (images.length === 0) return;
+            
+            let currentIndex = 0;
+            let intervalId = null;
+            let startX = 0;
+            let endX = 0;
+
+            function showImage(index) {
+                images[currentIndex].classList.remove('active');
+                currentIndex = (index + images.length) % images.length;
+                images[currentIndex].classList.add('active');
+            }
+
+            function nextImage() { showImage(currentIndex + 1); }
+            function prevImage() { showImage(currentIndex - 1); }
+
+            function startInterval() {
+                if (images.length <= 1) return;
+                clearInterval(intervalId);
+                intervalId = setInterval(nextImage, 10000);
+            }
+            startInterval();
+
+            // Swipes (Touch & Mouse)
+            let isSwiping = false;
+
+            carousel.addEventListener('mousedown', e => { startX = e.clientX; isSwiping = false; });
+            carousel.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; isSwiping = false; }, {passive: true});
+            
+            function handleSwipeEnd(currentX) {
+                endX = currentX;
+                const diff = endX - startX;
+                if (Math.abs(diff) > 30) {
+                    isSwiping = true;
+                    if (diff > 0) prevImage();
+                    else nextImage();
+                    startInterval();
+                }
+            }
+
+            carousel.addEventListener('mouseup', e => { handleSwipeEnd(e.clientX); });
+            carousel.addEventListener('touchend', e => { handleSwipeEnd(e.changedTouches[0].clientX); });
+
+            carousel.addEventListener('click', (e) => {
+                // Se foi um arrasto
+                if (isSwiping) {
+                    e.preventDefault();
+                    return;
+                }
+
+                // Se não foi arrasto, verificar clique nas laterais ou centro
+                const rect = carousel.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                
+                if (clickX < rect.width * 0.25) {
+                    prevImage();
+                    startInterval();
+                } else if (clickX > rect.width * 0.75) {
+                    nextImage();
+                    startInterval();
+                } else {
+                    // Clique no centro -> Abrir link
+                    const currentImg = images[currentIndex];
+                    const link = currentImg.getAttribute('data-link');
+                    if (link && link.trim() !== '') {
+                        window.location.href = link;
+                    }
+                }
+            });
+        });
+    </script>
+<% } %>
 
 <div class="desktop-hub">
 
@@ -34,13 +148,9 @@
     <div class="window hub-window">
         <div class="window-header">Social</div>
         <div class="window-content hub-content">
-            <button class="hub-btn" onclick="window.location.href='/feed'"><img src="images/inicial/feed.gif"
-                    alt="Feed de Posts" style="vertical-align: middle;"></button>
-            <button class="hub-btn"
-                onclick="window.location.href='/<%= locals.loggedUser ? locals.loggedUser.username : '' %>'"><img
-                    src="images/inicial/perfil.gif" alt="Perfil pessoal" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/amigos'"><img src="images/inicial/amigos.gif"
-                    alt="Amigos" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/feed'"><img src="images/inicial/feed.gif" class="hub-icon" alt="Feed de Posts" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/<%= locals.loggedUser ? locals.loggedUser.username : '' %>'"><img src="images/inicial/perfil.gif" class="hub-icon" alt="Perfil pessoal" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/amigos'"><img src="images/inicial/amigos.gif" class="hub-icon" alt="Amigos" style="vertical-align: middle;"></button>
         </div>
     </div>
 
@@ -48,14 +158,10 @@
     <div class="window hub-window">
         <div class="window-header">Entretenimento</div>
         <div class="window-content hub-content">
-            <button class="hub-btn" onclick="window.location.href='/pet'"><img src="images/inicial/botegotchi.gif"
-                    alt="BoteGotchi" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/watchlist'"><img src="images/inicial/watchlist.gif"
-                    alt="Watchlist" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/imagemdodia'"><img
-                    src="images/inicial/imagemdodia.gif" alt="Imagem do Dia" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/galerias'"><img src="images/inicial/galerias.gif"
-                    alt="Galerias" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/pet'"><img src="images/inicial/botegotchi.gif" class="hub-icon" alt="BoteGotchi" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/watchlist'"><img src="images/inicial/watchlist.gif" class="hub-icon" alt="Watchlist" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/imagemdodia'"><img src="images/inicial/imagemdodia.gif" class="hub-icon" alt="Imagem do Dia" style="vertical-align: middle;"></button>
+            <button class="hub-btn" onclick="window.location.href='/galerias'"><img src="images/inicial/galerias.gif" class="hub-icon" alt="Galerias" style="vertical-align: middle;"></button>
         </div>
     </div>
 
@@ -63,15 +169,10 @@
     <div class="window hub-window">
         <div class="window-header">Comunicação</div>
         <div class="window-content hub-content">
-            <button class="hub-btn" onclick="window.location.href='/cartinhas'"><img src="images/inicial/cartinhas.gif"
-                    alt="Cartinhas" style="vertical-align: middle;"></button>
-            <% if (locals.botecoAnalyticsUrl) { %>
-                <button class="hub-btn" onclick="window.open('<%= locals.botecoAnalyticsUrl %>', '_blank')">Boteco
-                    Analytics</button>
-                <% } %>
+            <button class="hub-btn" onclick="window.location.href='/cartinhas'"><img src="images/inicial/cartinhas.gif" class="hub-icon" alt="Cartinhas" style="vertical-align: middle;"></button>
+
                     <% if (locals.loggedUser && locals.loggedUser.roleId <=10) { %>
-                        <button class="hub-btn" onclick="window.location.href='/admin'"><img
-                                src="images/inicial/admin.gif" alt="Admin" style="vertical-align: middle;"></button>
+                        <button class="hub-btn" onclick="window.location.href='/admin'"><img src="images/inicial/admin.gif" class="hub-icon" alt="Admin" style="vertical-align: middle;"></button>
                         <% } %>
         </div>
     </div>

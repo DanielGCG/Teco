@@ -27,15 +27,17 @@
 window.tipoCartinhas = 'favoritas';
 let dataCache = [];
 
-async function carregarCartinhas() {
+async function carregarCartinhas(page = 1) {
+    window.currentPage = page;
     const l = document.getElementById('loading');
     const container = document.getElementById('cartinhas-container');
     const empty = document.getElementById('sem-cartinhas');
 
     try {
-        const res = await fetch('/api/cartinhas/favoritas', { credentials: 'include' });
+        const res = await fetch(`/api/cartinhas/favoritas?page=${page}`, { credentials: 'include' });
         if (!res.ok) throw new Error();
-        const raw = await res.json();
+        const dataResponse = await res.json();
+        const raw = dataResponse.data || [];
         
         const grouped = {};
         raw.forEach(c => {
@@ -47,7 +49,7 @@ async function carregarCartinhas() {
         dataCache = Object.values(grouped);
         l.style.display = 'none';
 
-        if (dataCache.length === 0) {
+        if (dataCache.length === 0 && page === 1) {
             empty.style.display = 'block';
             container.style.display = 'none';
             return;
@@ -56,7 +58,10 @@ async function carregarCartinhas() {
         empty.style.display = 'none';
         container.style.display = 'block';
 
-        renderizarGridCartinhas(dataCache, '#cartas-grid', {
+        // Reconstruindo objeto paginado com data agrupado
+        const paginatedResponse = { ...dataResponse, data: dataCache };
+
+        renderizarGridCartinhas(paginatedResponse, '#cartas-grid', {
             abrirCartinha: (id) => {
                 const c = encontrarCartinha(id, dataCache), u = encontrarUsuarioPorCartinha(id, dataCache);
                 if (!c || !u) return;

@@ -4,7 +4,7 @@ const { User } = require("../../models");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 
-const { deleteFromFileServer } = require("../../utils/fileServer");
+
 
 // GET /admin/users - Listar todos usuários (admin)
 // Suporta ?search= para busca parcial
@@ -186,16 +186,7 @@ AdminUsersRouter.delete('/:publicid', async (req, res) => {
         }
 
 
-        // Deleta do servidor de arquivos antes de remover do BD
-        if (targetUser.profileimage) {
-            await deleteFromFileServer({ fileUrl: targetUser.profileimage });
-        }
-        if (targetUser.bannerimage) {
-            await deleteFromFileServer({ fileUrl: targetUser.bannerimage });
-        }
-        if (targetUser.backgroundimage) {
-            await deleteFromFileServer({ fileUrl: targetUser.backgroundimage });
-        }
+
 
         await targetUser.destroy();
 

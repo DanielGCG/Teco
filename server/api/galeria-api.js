@@ -1,7 +1,7 @@
 const express = require('express');
 const { Galeria, GaleriaItem, GaleriaContributor, User, UserSession } = require("../models");
 const { uploadImage, uploadVideo } = require('../utils/upload');
-const { uploadToFileServer, deleteFromFileServer, replaceFileOnServer } = require('../utils/fileServer');
+const { uploadToFileServer } = require('../utils/fileServer');
 const { sanitizeFilename } = require('../utils/sanitize');
 const axios = require('axios'); 
 const FormData = require('form-data'); 
@@ -232,8 +232,6 @@ router.delete('/:publicid/item/:itemPublicId', checkGalleryPermission, async (re
         const item = await GaleriaItem.findOne({ where: { publicid: req.params.itemPublicId, galleryId: req.gallery.id } });
         if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
         
-        if (item.contenturl) await deleteFromFileServer({ fileUrl: item.contenturl });
-        if (item.coverurl && item.coverurl !== item.contenturl) await deleteFromFileServer({ fileUrl: item.coverurl });
         
         await item.destroy();
         res.json({ success: true, message: 'Item removed successfully.' });
@@ -246,15 +244,7 @@ router.delete('/:publicid', checkGalleryPermission, async (req, res) => {
     try {
         if (req.gallery.createdbyUserId !== req.user.id && req.user.roleId > 11) return res.status(403).json({ success: false, message: 'Only owner can delete.' });
         
-        if (req.gallery.coverurl) await deleteFromFileServer({ fileUrl: req.gallery.coverurl });
-        if (req.gallery.backgroundurl) await deleteFromFileServer({ fileUrl: req.gallery.backgroundurl });
-        
-        const items = await GaleriaItem.findAll({ where: { galleryId: req.gallery.id } });
-        for (const img of items) {
-            if (img.contenturl) await deleteFromFileServer({ fileUrl: img.contenturl });
-            if (img.coverurl && img.coverurl !== img.contenturl) await deleteFromFileServer({ fileUrl: img.coverurl });
-        }
-        
+
         await req.gallery.destroy();
         res.json({ success: true, message: 'Gallery deleted successfully.' });
     } catch (error) {
@@ -295,10 +285,7 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
                 try {
                     const sanitized = sanitizeFilename(req.file.originalname);
                     const coverUrl = await uploadToFileServer({ buffer: req.file.buffer, filename: sanitized, folder: `galerias/${req.gallery.publicid}/covers`, mimetype: req.file.mimetype });
-                    
-                    if (item.coverurl && item.coverurl !== item.contenturl) {
-                        try { await deleteFromFileServer({ fileUrl: item.coverurl }); } catch (e) { }
-                    }
+
                     item.coverurl = coverUrl;
                 } catch (err) { }
             }
@@ -306,9 +293,7 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
 
         const remove_cover = req.body.remove_cover;
         if (!req.file && (remove_cover === 'true' || remove_cover === true)) {
-            if (item.coverurl && item.coverurl !== item.contenturl) {
-                try { await deleteFromFileServer({ fileUrl: item.coverurl }); } catch (e) { }
-            }
+
             item.coverurl = null;
         }
 
@@ -360,12 +345,10 @@ router.patch('/:publicid',
         if (fontcolor) req.gallery.fontcolor = fontcolor;
 
         if (remove_background === 'true' || remove_background === true) {
-            if (req.gallery.backgroundurl) await deleteFromFileServer({ fileUrl: req.gallery.backgroundurl });
             req.gallery.backgroundurl = null;
         }
 
         if (remove_cover === 'true' || remove_cover === true) {
-            if (req.gallery.coverurl) await deleteFromFileServer({ fileUrl: req.gallery.coverurl });
             req.gallery.coverurl = null;
         }
 
@@ -374,8 +357,7 @@ router.patch('/:publicid',
         if (files.background && files.background[0]) {
             const file = files.background[0];
             const sanitizedFilename = sanitizeFilename(file.originalname);
-            req.gallery.backgroundurl = await replaceFileOnServer({
-                oldFileUrl: req.gallery.backgroundurl,
+            req.gallery.backgroundurl = await uploadToFileServer({
                 buffer: file.buffer,
                 filename: sanitizedFilename,
                 folder: `galerias/${req.gallery.publicid}/style`,
@@ -386,8 +368,7 @@ router.patch('/:publicid',
         if (files.cover && files.cover[0]) {
             const file = files.cover[0];
             const sanitizedFilename = sanitizeFilename(file.originalname);
-            req.gallery.coverurl = await replaceFileOnServer({
-                oldFileUrl: req.gallery.coverurl,
+            req.gallery.coverurl = await uploadToFileServer({
                 buffer: file.buffer,
                 filename: sanitizedFilename,
                 folder: 'galerias/capas',

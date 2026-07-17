@@ -34,6 +34,10 @@ const Cartinha = sequelize.define('Cartinha', {
         type: DataTypes.STRING(255),
         allowNull: true
     },
+    stampUrl: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
     isanonymous: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

@@ -166,7 +166,7 @@ NotificationsRouter.delete('/:publicid', validate(notificationIdSchema, 'params'
 });
 
 // ==================== Função helper para criar notificações ====================
-async function createNotification({ userId, type, title, body, link = null, io = null, socketType = null }) {
+async function createNotification({ userId, type, title, body, link = null, io = null, socketType = null, image = null }) {
     try {
         const notification = await Notification.create({
             targetUserId: userId,
@@ -199,6 +199,7 @@ async function createNotification({ userId, type, title, body, link = null, io =
                     title: title,
                     body: body,
                     icon: '/images/Teco.webp',
+                    image: image || null,
                     url: link || '/'
                 });
 

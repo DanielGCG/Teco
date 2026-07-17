@@ -2,7 +2,7 @@ const express = require("express");
 const AdminBadgesRouter = express.Router();
 const { Badge, BadgeUser, User } = require("../../models");
 const { upload } = require('../../utils/upload');
-const { uploadToFileServer, deleteFromFileServer, replaceFileOnServer } = require('../../utils/fileServer');
+const { uploadToFileServer } = require('../../utils/fileServer');
 const { processImage } = require('../../utils/imageProcessor');
 
 // GET /admin/badges/ - Listar todas as badges
@@ -97,8 +97,7 @@ AdminBadgesRouter.put('/:publicid', upload.single('file'), async (req, res) => {
         if (req.file) {
             const processed = await processImage(req.file, { name: 'badge', width: 100, height: 100 });
 
-            url = await replaceFileOnServer({
-                oldFileUrl: badge.url,
+            url = await uploadToFileServer({
                 buffer: processed.buffer,
                 filename: processed.filename,
                 folder: 'badges',
@@ -187,9 +186,7 @@ AdminBadgesRouter.delete('/:publicid', async (req, res) => {
             return res.status(404).json({ error: 'Badge not found' });
         }
 
-        if (badge.url) {
-            try { await deleteFromFileServer({ fileUrl: badge.url }); } catch (e) {}
-        }
+
 
         await badge.destroy();
         res.json({ message: 'Badge deleted successfully' });

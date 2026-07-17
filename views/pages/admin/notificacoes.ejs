@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (typeof window.confirmRetro === 'function') {
                 conf = await window.confirmRetro("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?", "Alerta Global");
             } else {
-                conf = confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
+                conf = await confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
             }
             if (!conf) return;
         }

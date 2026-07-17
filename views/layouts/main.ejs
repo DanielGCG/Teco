@@ -51,6 +51,28 @@
             }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
         });
     </script>
+    
+    <% if (locals.globalConfig) { %>
+    <style>
+        body {
+            <% if (locals.globalConfig.global_bg_color) { %>
+            background-color: <%= locals.globalConfig.global_bg_color %>;
+            <% } %>
+            <% if (locals.globalConfig.global_bg_image) { %>
+            background-image: url('<%= locals.globalConfig.global_bg_image %>');
+            <% } %>
+            <% if (locals.globalConfig.global_bg_repeat === 'repeat') { %>
+            background-size: auto;
+            background-repeat: repeat;
+            <% } else { %>
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            <% } %>
+        }
+    </style>
+    <% } %>
 </head>
 
 <body>

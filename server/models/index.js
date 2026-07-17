@@ -3,6 +3,7 @@ const { User, Role } = require('./Social/User');
 const UserSession = require('./Social/UserSession');
 const { ChatTopic, Chat, ChatMessage, DM, DMMessage } = require('./Social/Chat');
 const Cartinha = require('./Social/Cartinha');
+const Stamp = require('./Social/Stamp');
 const Follow = require('./Social/Follow');
 const Notification = require('./Notification');
 const { Post, PostMedia, PostLike, PostBookmark, PostMention, Rodinha } = require('./Social/Post');
@@ -131,5 +132,5 @@ module.exports = {
     sequelize, User, UserSession, ChatTopic, Chat, ChatMessage, DM, DMMessage,
     Cartinha, Follow, Notification, Post, PostMedia, PostLike, PostBookmark, PostMention,
     Rodinha, Filme, ImagemDoDia, ImagemDoDiaBorder, Galeria, GaleriaItem, GaleriaContributor,
-    Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role, PushSubscription
+    Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role, PushSubscription, Stamp
 };

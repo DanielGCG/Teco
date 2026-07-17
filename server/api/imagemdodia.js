@@ -1,7 +1,7 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../models");
 const { upload } = require('../utils/upload');
-const { uploadToFileServer, deleteFromFileServer } = require('../utils/fileServer');
+const { uploadToFileServer } = require('../utils/fileServer');
 const axios = require('axios'); // Mantém para outros usos
 const FormData = require('form-data'); // Mantém para outros usos
 const { Op } = require('sequelize');

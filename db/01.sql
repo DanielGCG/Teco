@@ -473,6 +473,7 @@ CREATE TABLE IF NOT EXISTS cartinha (
     title VARCHAR(160) NOT NULL,
     body TEXT,
     contenturl VARCHAR(255),
+    stampUrl VARCHAR(255),
     isanonymous BOOLEAN NOT NULL DEFAULT FALSE,
     isread BOOLEAN NOT NULL DEFAULT FALSE,
     isfavorited BOOLEAN NOT NULL DEFAULT FALSE,
@@ -481,6 +482,14 @@ CREATE TABLE IF NOT EXISTS cartinha (
     createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (senderUserId) REFERENCES user(id) ON DELETE SET NULL,
     FOREIGN KEY (recipientUserId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS stamps (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- trigger para deletar cartinhas lidas não favoritadas com mais de 30 dias

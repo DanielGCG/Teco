@@ -8,7 +8,7 @@ const crypto = require("crypto");
 const { Op } = require("sequelize");
 const { upload } = require('../../utils/upload');
 const { processImage } = require("../../utils/imageProcessor");
-const { uploadToFileServer, deleteFromFileServer, replaceFileOnServer } = require('../../utils/fileServer');
+const { uploadToFileServer } = require('../../utils/fileServer');
 const axios = require('axios'); // Mantém para outros usos
 const FormData = require('form-data'); // Mantém para outros usos
 const {
@@ -203,8 +203,7 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
             const file = req.files['profile_file'][0];
             const user = await User.findByPk(req.user.id, { attributes: ['profileimage'] });
             const { buffer, filename, mimetype } = await processImage(file, { name: 'profile' });
-            profileimage = await replaceFileOnServer({
-                oldFileUrl: user ? user.profileimage : null,
+            profileimage = await uploadToFileServer({
                 buffer, filename, mimetype, folder: 'profiles'
             });
         }
@@ -214,8 +213,7 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
             const file = req.files['banner_file'][0];
             const user = await User.findByPk(req.user.id, { attributes: ['bannerimage'] });
             const { buffer, filename, mimetype } = await processImage(file, { name: 'banner' });
-            bannerimage = await replaceFileOnServer({
-                oldFileUrl: user ? user.bannerimage : null,
+            bannerimage = await uploadToFileServer({
                 buffer, filename, mimetype, folder: 'backgrounds'
             });
         }
@@ -225,15 +223,10 @@ UsersRouter.put('/me', protect(20), upload.fields([{ name: 'profile_file', maxCo
             const file = req.files['background_file'][0];
             const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });
             const { buffer, filename, mimetype } = await processImage(file, { name: 'background' });
-            backgroundimage = await replaceFileOnServer({
-                oldFileUrl: user ? user.backgroundimage : null,
+            backgroundimage = await uploadToFileServer({
                 buffer, filename, mimetype, folder: 'pagebackgrounds'
             });
         } else if (backgroundimage === "") {
-            const user = await User.findByPk(req.user.id, { attributes: ['backgroundimage'] });
-            if (user && user.backgroundimage) {
-                await deleteFromFileServer({ fileUrl: user.backgroundimage });
-            }
             backgroundimage = null;
         }
 

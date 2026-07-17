@@ -25,17 +25,23 @@ async function verifyCartinhaAccess(cartinhaPublicId, userId, userRole) {
 // GET /cartinhas/enviadas - Carregar cartinhas enviadas pelo usuário
 CartinhasRouter.get('/enviadas', async (req, res) => {
     try {
-        const cartinhas = await Cartinha.findAll({
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: cartinhas } = await Cartinha.findAndCountAll({
             where: {
                 senderUserId: req.user.id
             },
-            attributes: { exclude: ['body'] }, // Mantém o título, oculta apenas o corpo
+            attributes: { exclude: ['body'] },
             include: [{
                 model: User,
                 as: 'destinatario',
                 attributes: ['publicid', 'username', 'profileimage']
             }],
-            order: [['createdat', 'DESC']]
+            order: [['createdat', 'DESC']],
+            limit,
+            offset
         });
 
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
@@ -52,7 +58,12 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
             return acc;
         }, {});
 
-        res.json(Object.values(cartinhasPorUsuario));
+        res.json({
+            data: Object.values(cartinhasPorUsuario),
+            total: count,
+            page,
+            totalPages: Math.ceil(count / limit)
+        });
     } catch (err) {
         console.error('[API] Erro ao carregar cartinhas enviadas:', err);
         res.status(500).json({ message: "Erro ao carregar cartinhas enviadas" });
@@ -62,17 +73,23 @@ CartinhasRouter.get('/enviadas', async (req, res) => {
 // GET /cartinhas/recebidas - Carregar cartinhas agrupadas por remetente
 CartinhasRouter.get('/recebidas', async (req, res) => {
     try {
-        const cartinhas = await Cartinha.findAll({
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: cartinhas } = await Cartinha.findAndCountAll({
             where: {
                 recipientUserId: req.user.id
             },
-            attributes: { exclude: ['body'] }, // Mantém o título, oculta apenas o corpo
+            attributes: { exclude: ['body'] },
             include: [{
                 model: User,
                 as: 'remetente',
                 attributes: ['publicid', 'username', 'profileimage']
             }],
-            order: [['createdat', 'DESC']]
+            order: [['createdat', 'DESC']],
+            limit,
+            offset
         });
 
         const cartinhasPorUsuario = cartinhas.reduce((acc, carta) => {
@@ -98,7 +115,12 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
             return acc;
         }, {});
 
-        res.json(Object.values(cartinhasPorUsuario));
+        res.json({
+            data: Object.values(cartinhasPorUsuario),
+            total: count,
+            page,
+            totalPages: Math.ceil(count / limit)
+        });
     } catch (err) {
         console.error('[API] Erro ao carregar cartinhas recebidas:', err);
         res.status(500).json({ message: "Erro ao carregar cartinhas recebidas" });
@@ -108,18 +130,24 @@ CartinhasRouter.get('/recebidas', async (req, res) => {
 // GET /cartinhas/favoritas - Carregar cartinhas favoritas
 CartinhasRouter.get('/favoritas', async (req, res) => {
     try {
-        const cartinhas = await Cartinha.findAll({
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: cartinhas } = await Cartinha.findAndCountAll({
             where: {
                 recipientUserId: req.user.id,
                 isfavorited: true
             },
-            attributes: { exclude: ['body'] }, // Mantém o título, oculta apenas o corpo
+            attributes: { exclude: ['body'] },
             include: [{
                 model: User,
                 as: 'remetente',
                 attributes: ['publicid', 'username', 'profileimage']
             }],
-            order: [['favoritedat', 'DESC']]
+            order: [['favoritedat', 'DESC']],
+            limit,
+            offset
         });
 
         const cartinhasMascaradas = cartinhas.map(carta => {
@@ -133,10 +161,89 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
             return carta;
         });
 
-        res.json(cartinhasMascaradas);
+        res.json({
+            data: cartinhasMascaradas,
+            total: count,
+            page,
+            totalPages: Math.ceil(count / limit)
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao carregar cartinhas favoritas" });
+    }
+});
+
+// Ações em Lote
+
+// PUT /cartinhas/batch/lida - Marcar cartinhas como lida em lote
+CartinhasRouter.put('/batch/lida', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: "Nenhum id fornecido" });
+
+        await Cartinha.update({ isread: true }, {
+            where: {
+                publicid: { [Op.in]: ids },
+                recipientUserId: req.user.id // Apenas as recebidas
+            }
+        });
+        res.json({ message: "Cartinhas marcadas como lida" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao marcar como lida" });
+    }
+});
+
+// PUT /cartinhas/batch/nao-lida - Marcar cartinhas como não lida em lote
+CartinhasRouter.put('/batch/nao-lida', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: "Nenhum id fornecido" });
+
+        await Cartinha.update({ isread: false }, {
+            where: {
+                publicid: { [Op.in]: ids },
+                recipientUserId: req.user.id
+            }
+        });
+        res.json({ message: "Cartinhas marcadas como não lida" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao marcar como não lida" });
+    }
+});
+
+// DELETE /cartinhas/batch/delete - Excluir cartinhas em lote
+CartinhasRouter.delete('/batch/delete', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: "Nenhum id fornecido" });
+
+        await Cartinha.destroy({
+            where: {
+                publicid: { [Op.in]: ids },
+                [Op.or]: [
+                    { senderUserId: req.user.id },
+                    { recipientUserId: req.user.id }
+                ]
+            }
+        });
+        res.json({ message: "Cartinhas excluídas com sucesso" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao excluir cartinhas" });
+    }
+});
+
+// GET /cartinhas/stamps - Listar selos disponíveis
+CartinhasRouter.get('/stamps', async (req, res) => {
+    try {
+        const { Stamp } = require("../../models");
+        const stamps = await Stamp.findAll({ order: [['createdat', 'DESC']] });
+        res.json(stamps);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao carregar stamps" });
     }
 });
 
@@ -216,6 +323,7 @@ CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
             recipientUserId: destinatario.id,
             title,
             body,
+            stampUrl: req.body.stampUrl || null,
             isanonymous: isanonymous || false
         });
 
@@ -226,6 +334,7 @@ CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
             type: 'info',
             title: 'Nova cartinha',
             body: notifBody,
+            image: req.body.stampUrl || null,
             link: `/cartinhas/recebidas`,
             io: req.app.get('io'),
             socketType: 'cartinha'
