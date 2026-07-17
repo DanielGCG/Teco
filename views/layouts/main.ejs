@@ -52,19 +52,30 @@
         });
     </script>
     
-    <% if (locals.globalConfig) { %>
+    <% 
+        const useGlobal = locals.globalConfig && !locals.ignoreGlobalBg;
+        const hasCustomBg = locals.pageBgColor || locals.pageBgImage;
+        const hasGlobalBg = useGlobal && (locals.globalConfig.global_bg_color || locals.globalConfig.global_bg_image);
+    %>
+    <% if (hasCustomBg || hasGlobalBg) { %>
     <style>
         body {
-            <% if (locals.globalConfig.global_bg_color) { %>
+            <% if (locals.pageBgColor) { %>
+            background-color: <%= locals.pageBgColor %>;
+            <% } else if (useGlobal && locals.globalConfig.global_bg_color) { %>
             background-color: <%= locals.globalConfig.global_bg_color %>;
             <% } %>
-            <% if (locals.globalConfig.global_bg_image) { %>
+            
+            <% if (locals.pageBgImage) { %>
+            background-image: url('<%= locals.pageBgImage %>');
+            <% } else if (useGlobal && locals.globalConfig.global_bg_image) { %>
             background-image: url('<%= locals.globalConfig.global_bg_image %>');
             <% } %>
-            <% if (locals.globalConfig.global_bg_repeat === 'repeat') { %>
+            
+            <% if (locals.pageBgRepeat === 'repeat' || (useGlobal && locals.globalConfig.global_bg_repeat === 'repeat' && !locals.pageBgImage)) { %>
             background-size: auto;
             background-repeat: repeat;
-            <% } else { %>
+            <% } else if (locals.pageBgImage || (useGlobal && locals.globalConfig.global_bg_image)) { %>
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center center;
@@ -151,8 +162,6 @@
                                         <li>
                                             <hr>
                                         </li>
-                                        <!-- <li><a href="/chat">- Chat</a></li> -->
-                                        <!-- <li><a href="/dms">- DM</a></li> -->
                                         <li><a href="/cartinhas">- Correio</a></li>
                                         <li><a href="/amigos">- Amigos</a></li>
                                         <li><a href="/manutencao">- Cutucar</a></li>

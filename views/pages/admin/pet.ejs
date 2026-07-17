@@ -7,7 +7,7 @@
         
         <div style="flex: 1;">
             <h4>Itens</h4>
-            <form id="form-item" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; border: 2px inset var(--retro-border-dark); padding: 10px; background: white;">
+            <form id="form-item" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; border: 2px inset var(--retro-border-dark); padding: 10px; background: var(--retro-bg);">
                 <input type="hidden" id="item-publicid">
                 
                 <label style="font-size: 11px; font-weight: bold;">Nome do Item:</label> 
@@ -33,7 +33,7 @@
                 </div>
             </form>
 
-            <div id="items-list" style="max-height: 250px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
+            <div id="items-list" style="max-height: 250px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
         </div>
         
         <div style="flex: 1;">
@@ -41,7 +41,7 @@
             <p style="font-size: 11px; color: gray;">
                 Exemplo: <code>[{"name": "Bolo de Chocolate", "quantity": 2}, {"name": "Água", "quantity": 1}]</code>
             </p>
-            <form id="form-claim" style="display: flex; flex-direction: column; gap: 5px; border: 2px inset var(--retro-border-dark); padding: 10px; background: white;">
+            <form id="form-claim" style="display: flex; flex-direction: column; gap: 5px; border: 2px inset var(--retro-border-dark); padding: 10px; background: var(--retro-bg);">
                 <textarea id="claim-config" rows="5" placeholder='[{"name": "Bolo de Chocolate", "quantity": 2}]' required style="font-family: monospace;"></textarea>
                 <button type="submit" style="margin-top: 5px; font-weight: bold;">Salvar Pacote de Resgate</button>
             </form>

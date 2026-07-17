@@ -6,15 +6,25 @@
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
             Painel ]</a>
     </div>
-    <div class="window-content" style="padding: 10px;">
-        <table width="100%">
-            <tr>
-                <td align="center"><strong>Total:</strong> <span id="totalCartinhas">-</span></td>
-                <td align="center"><strong>Não Lidas:</strong> <span id="naoLidas">-</span></td>
-                <td align="center"><strong>Lidas:</strong> <span id="lidas">-</span></td>
-                <td align="center"><strong>Favoritas:</strong> <span id="favoritas">-</span></td>
-            </tr>
-        </table>
+    <div class="window-content" style="padding: 15px; background: var(--retro-bg);">
+        <div style="display: flex; justify-content: space-around; text-align: center; gap: 10px;">
+            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
+                <div style="font-size: 11px; font-weight: bold;">TOTAL</div>
+                <div id="totalCartinhas" style="font-size: 20px; font-weight: bold; margin-top: 5px;">-</div>
+            </div>
+            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
+                <div style="font-size: 11px; font-weight: bold;">NÃO LIDAS</div>
+                <div id="naoLidas" style="font-size: 20px; font-weight: bold; color: #800000; margin-top: 5px;">-</div>
+            </div>
+            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
+                <div style="font-size: 11px; font-weight: bold;">LIDAS</div>
+                <div id="lidas" style="font-size: 20px; font-weight: bold; color: #008000; margin-top: 5px;">-</div>
+            </div>
+            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
+                <div style="font-size: 11px; font-weight: bold;">FAVORITAS</div>
+                <div id="favoritas" style="font-size: 20px; font-weight: bold; color: #000080; margin-top: 5px;">-</div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -58,7 +68,7 @@
     <div style="flex: 1; min-width: 0;">
         <div class="window">
             <div class="window-header">Usuários e suas Cartinhas</div>
-            <div class="window-content" style="padding: 0; background: white; height: 400px; overflow-y: auto;">
+            <div class="window-content" style="padding: 0; background: var(--retro-bg); height: 400px; overflow-y: auto;">
                 <div id="loading" style="padding: 20px; text-align: center; color: gray; display: none;">Carregando...
                 </div>
                 <div id="usuariosList"></div>
@@ -93,7 +103,7 @@
     </div>
     <div class="window-content" style="padding: 10px;">
         <div id="cartinhasList"
-            style="height: 350px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px;">
+            style="height: 350px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;">
         </div>
 
         <div style="margin-top: 5px; text-align: center;" id="modalPagination"></div>
@@ -119,11 +129,11 @@
             <form id="formNovoStamp" style="display: flex; gap: 10px; align-items: flex-end;">
                 <div style="flex: 1;">
                     <label style="font-size: 11px; font-weight: bold;">Nome:</label>
-                    <input type="text" id="stampName" required style="width: 100%; box-sizing: border-box; background: white; border: 2px inset var(--retro-border-dark);">
+                    <input type="text" id="stampName" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
                 </div>
                 <div style="flex: 1;">
                     <label style="font-size: 11px; font-weight: bold;">Imagem:</label>
-                    <input type="file" id="stampFile" accept="image/*" required style="width: 100%; box-sizing: border-box; background: white; border: 2px inset var(--retro-border-dark);">
+                    <input type="file" id="stampFile" accept="image/*" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
                 </div>
                 <div>
                     <button type="submit" class="window-btn" id="btnSalvarStamp" style="font-weight: bold;">Salvar</button>
@@ -314,7 +324,7 @@
                         <td width="40" align="right" valign="middle">
                             <button onclick="confirmarRemocaoUnica('${c.publicid}')" 
                                     style="color: #800000; font-size: 10px; padding: 1px 4px; min-width: 20px;" 
-                                    title="Remover Cartinha">[Fechar]</button>
+                                    title="Remover Cartinha">[Excluir]</button>
                         </td>
                     </tr>
                 </table>

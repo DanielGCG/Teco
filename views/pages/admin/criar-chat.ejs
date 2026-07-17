@@ -76,7 +76,7 @@
         <input type="text" id="chatSearchInput" placeholder="Buscar por título ou participante..." style="flex-grow: 1;">
         <button id="refreshBtn">Atualizar</button>
     </div>
-    <div class="window-content" style="padding: 0; background: white; height: 400px; overflow-y: auto;">
+    <div class="window-content" style="padding: 0; background: var(--retro-bg); height: 400px; overflow-y: auto;">
         <div id="chatList">
             <div style="padding: 20px; text-align: center; color: gray;">Carregando...</div>
         </div>
@@ -213,7 +213,7 @@ function renderizarChats(chats) {
         const tipoText = chat.type.toUpperCase();
 
         const row = document.createElement("div");
-        row.style.cssText = "border-bottom: 2px outset var(--retro-border-light); padding: 8px; background: white; display: flex; align-items: center; gap: 10px;";
+        row.style.cssText = "border-bottom: 2px outset var(--retro-border-light); padding: 8px; background: var(--retro-bg); display: flex; align-items: center; gap: 10px;";
         
         row.innerHTML = `
             <div style="width: 4px; height: 32px; background: ${color}; flex-shrink: 0;"></div>

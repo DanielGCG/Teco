@@ -19,8 +19,4 @@ router.use("/", require("./features/watchlist"));
 // Messaging
 router.use("/cartinhas", require("./messaging/cartinhas"));
 
-// Archived
-// router.use("/chat", require("./archived/chat"));
-// router.use("/dms", require("./archived/dm"));
-
 module.exports = router;

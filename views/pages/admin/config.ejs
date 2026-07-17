@@ -9,28 +9,31 @@
         <div class="window-header">Fundo Global do Site</div>
         <div class="window-content" style="padding: 10px;">
             <p style="font-size: 11px;">Substitui a imagem e cor padrão de fundo do site. (Deixe vazio para usar o padrão)</p>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px;">
-                <div>
-                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">Cor de Fundo:</label>
-                    <input type="color" id="global-bg-color" value="#d9d7bf" style="width: 50px; height: 30px;">
+            <fieldset style="border: 2px groove var(--retro-border-light); padding: 10px; margin-bottom: 15px;">
+                <legend style="font-size: 11px; font-weight: bold;">Configurar Fundo</legend>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                    <div>
+                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">Cor de Fundo:</label>
+                        <input type="color" id="global-bg-color" value="#d9d7bf" style="width: 50px; height: 30px; border: 2px inset var(--retro-border-dark);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">Imagem de Fundo:</label>
+                        <input type="file" id="global-bg-upload" accept="image/*" style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">Modo de Exibição:</label>
+                        <select id="global-bg-repeat" style="padding: 4px; border: 2px inset var(--retro-border-dark);">
+                            <option value="cover">Cobrir</option>
+                            <option value="repeat">Repetir</option>
+                        </select>
+                    </div>
+                    <button id="save-global-bg-btn" class="retro-button" style="font-weight: bold;">Salvar Fundo</button>
+                    <button id="remove-global-bg-btn" class="retro-button" style="color: #800000;">Voltar ao Padrão</button>
                 </div>
-                <div>
-                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">Imagem de Fundo:</label>
-                    <input type="file" id="global-bg-upload" accept="image/*">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">Modo de Exibição:</label>
-                    <select id="global-bg-repeat" style="padding: 4px;">
-                        <option value="cover">Cobrir (Cover)</option>
-                        <option value="repeat">Repetir (Ladrilho)</option>
-                    </select>
-                </div>
-                <button id="save-global-bg-btn" class="retro-button" style="font-weight: bold;">Salvar Fundo</button>
-                <button id="remove-global-bg-btn" class="retro-button" style="color: red;">Voltar ao Padrão</button>
-            </div>
+            </fieldset>
             <div id="global-bg-preview-container" style="display: none; border: 2px inset gray; width: 200px; height: 100px; background-size: cover; background-position: center;"></div>
             
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed gray;">
+            <hr style="margin: 20px 0; border: none; border-top: 2px groove var(--retro-border-light);">
             
             <h4 style="margin-top: 0;">Carrossel da Página Inicial</h4>
             <p style="font-size: 11px;">Imagens exibidas acima da barra de links, trocam a cada 10s.</p>
@@ -149,7 +152,7 @@
 
         if (syncBtn) {
             syncBtn.addEventListener('click', async () => {
-                if (!(await confirm('Deseja iniciar o processo de sincronização de arquivos com o servidor? Isso pode demorar um pouco.'))) return;
+                if (!(await confirmRetro('Deseja iniciar o processo de sincronização de arquivos com o servidor? Isso pode demorar um pouco.'))) return;
                 
                 syncBtn.disabled = true;
                 syncBtn.textContent = 'Sincronizando...';
@@ -269,7 +272,7 @@
         });
 
         removeBgBtn.addEventListener('click', async () => {
-            if (!confirm('Deseja remover a imagem de fundo e voltar para a cor padrão do site?')) return;
+            if (!(await confirmRetro('Deseja remover a imagem de fundo e voltar para a cor padrão do site?'))) return;
             try {
                 await saveConfig('global_bg_image', '', 'Fundo da página inicial');
                 await saveConfig('global_bg_color', '#d9d7bf', 'Cor de fundo global');
@@ -290,7 +293,7 @@
             }
             currentCarousel.forEach((item, index) => {
                 const div = document.createElement('div');
-                div.style.cssText = 'display: flex; align-items: center; gap: 10px; background: white; border: 1px solid gray; padding: 5px;';
+                div.style.cssText = 'display: flex; align-items: center; gap: 10px; background: var(--retro-bg); border: 2px outset var(--retro-border-light); padding: 5px;';
                 div.innerHTML = `
                     <img src="${item.imageUrl}" style="width: 60px; height: 40px; object-fit: cover; border: 1px solid #ccc;">
                     <div style="flex: 1; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
