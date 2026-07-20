@@ -31,12 +31,13 @@
     /* Carousel Styles */
     .index-carousel {
         position: relative;
-        aspect-ratio: 5 / 1;
+        aspect-ratio: 4 / 1;
         border: 2px inset var(--retro-border-dark);
         background: black;
         overflow: hidden;
         cursor: pointer;
     }
+
     .index-carousel img {
         width: 100%;
         height: 100%;
@@ -49,17 +50,18 @@
         -webkit-user-drag: none;
         user-select: none;
     }
+
     .index-carousel img.active {
         opacity: 1;
     }
-
 </style>
 
-<% if (locals.indexCarousel && locals.indexCarousel.length > 0) { %>
+<% if (locals.indexCarousel && locals.indexCarousel.length> 0) { %>
     <div class="index-carousel" id="main-carousel">
         <% locals.indexCarousel.forEach(function(item, idx) { %>
-            <img draggable="false" src="<%= item.imageUrl %>" data-link="<%= item.linkUrl || '' %>" class="<%= idx === 0 ? 'active' : '' %>" alt="Banner <%= idx+1 %>">
-        <% }); %>
+            <img draggable="false" src="<%= item.imageUrl %>" data-link="<%= item.linkUrl || '' %>"
+                class="<%= idx === 0 ? 'active' : '' %>" alt="Banner <%= idx+1 %>">
+            <% }); %>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -67,7 +69,7 @@
             if (!carousel) return;
             const images = carousel.querySelectorAll('img');
             if (images.length === 0) return;
-            
+
             let currentIndex = 0;
             let intervalId = null;
             let startX = 0;
@@ -93,8 +95,8 @@
             let isSwiping = false;
 
             carousel.addEventListener('mousedown', e => { startX = e.clientX; isSwiping = false; });
-            carousel.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; isSwiping = false; }, {passive: true});
-            
+            carousel.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; isSwiping = false; }, { passive: true });
+
             function handleSwipeEnd(currentX) {
                 endX = currentX;
                 const diff = endX - startX;
@@ -119,7 +121,7 @@
                 // Se não foi arrasto, verificar clique nas laterais ou centro
                 const rect = carousel.getBoundingClientRect();
                 const clickX = e.clientX - rect.left;
-                
+
                 if (clickX < rect.width * 0.25) {
                     prevImage();
                     startInterval();
@@ -137,41 +139,62 @@
             });
         });
     </script>
-<% } %>
+    <% } %>
 
-<div class="desktop-hub">
+        <section class="desktop-hub">
 
-    <!-- Janela: Social -->
-    <div class="window hub-window">
-        <div class="window-header">Social</div>
-        <div class="window-content hub-content">
-            <button class="hub-btn" onclick="window.location.href='/feed'"><img src="images/inicial/feed.gif" class="hub-icon" alt="Feed de Posts" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/<%= locals.loggedUser ? locals.loggedUser.username : '' %>'"><img src="images/inicial/perfil.gif" class="hub-icon" alt="Perfil pessoal" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/amigos'"><img src="images/inicial/amigos.gif" class="hub-icon" alt="Amigos" style="vertical-align: middle;"></button>
-        </div>
-    </div>
+            <!-- Janela: Social -->
+            <article class="window hub-window">
+                <header class="window-header">Social</header>
+                <section class="window-content hub-content">
+                    <button class="hub-btn" onclick="window.location.href='/feed'"><img src="images/inicial/feed.gif"
+                            class="hub-icon" alt="Feed de Posts" style="vertical-align: middle;"></button>
+                    <button class="hub-btn"
+                        onclick="window.location.href='/<%= locals.loggedUser ? locals.loggedUser.username : '' %>'"><img
+                            src="images/inicial/perfil.gif" class="hub-icon" alt="Perfil pessoal"
+                            style="vertical-align: middle;"></button>
+                    <button class="hub-btn" onclick="window.location.href='/amigos'"><img
+                            src="images/inicial/amigos.gif" class="hub-icon" alt="Amigos"
+                            style="vertical-align: middle;"></button>
+                </section>
+            </article>
 
-    <!-- Janela: Entretenimento -->
-    <div class="window hub-window">
-        <div class="window-header">Entretenimento</div>
-        <div class="window-content hub-content">
-            <button class="hub-btn" onclick="window.location.href='/pet'"><img src="images/inicial/botegotchi.gif" class="hub-icon" alt="BoteGotchi" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/watchlist'"><img src="images/inicial/watchlist.gif" class="hub-icon" alt="Watchlist" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/imagemdodia'"><img src="images/inicial/imagemdodia.gif" class="hub-icon" alt="Imagem do Dia" style="vertical-align: middle;"></button>
-            <button class="hub-btn" onclick="window.location.href='/galerias'"><img src="images/inicial/galerias.gif" class="hub-icon" alt="Galerias" style="vertical-align: middle;"></button>
-        </div>
-    </div>
+            <!-- Janela: Entretenimento -->
+            <article class="window hub-window">
+                <header class="window-header">Entretenimento</header>
+                <section class="window-content hub-content">
+                    <button class="hub-btn" onclick="window.location.href='/pet'"><img
+                            src="images/inicial/botegotchi.gif" class="hub-icon" alt="BoteGotchi"
+                            style="vertical-align: middle;"></button>
+                    <button class="hub-btn" onclick="window.location.href='/watchlist'"><img
+                            src="images/inicial/watchlist.gif" class="hub-icon" alt="Watchlist"
+                            style="vertical-align: middle;"></button>
+                    <button class="hub-btn" onclick="window.location.href='/imagemdodia'"><img
+                            src="images/inicial/imagemdodia.gif" class="hub-icon" alt="Imagem do Dia"
+                            style="vertical-align: middle;"></button>
+                    <button class="hub-btn" onclick="window.location.href='/galerias'"><img
+                            src="images/inicial/galerias.gif" class="hub-icon" alt="Galerias"
+                            style="vertical-align: middle;"></button>
+                </section>
+            </article>
 
-    <!-- Janela: Comunicação & Utilidades -->
-    <div class="window hub-window">
-        <div class="window-header">Comunicação</div>
-        <div class="window-content hub-content">
-            <button class="hub-btn" onclick="window.location.href='/cartinhas'"><img src="images/inicial/cartinhas.gif" class="hub-icon" alt="Cartinhas" style="vertical-align: middle;"></button>
+            <!-- Janela: Comunicação & Utilidades -->
+            <article class="window hub-window">
+                <header class="window-header">Comunicação</header>
+                <section class="window-content hub-content">
+                    <button class="hub-btn" onclick="window.location.href='/cartinhas'"><img
+                            src="images/inicial/cartinhas.gif" class="hub-icon" alt="Cartinhas"
+                            style="vertical-align: middle;"></button>
+                    <button class="hub-btn" onclick="window.location.href='/cutucar'"><img
+                            src="images/inicial/cutucar.gif" class="hub-icon" alt="Cutucar"
+                            style="vertical-align: middle;"></button>
 
                     <% if (locals.loggedUser && locals.loggedUser.roleId <=10) { %>
-                        <button class="hub-btn" onclick="window.location.href='/admin'"><img src="images/inicial/admin.gif" class="hub-icon" alt="Admin" style="vertical-align: middle;"></button>
+                        <button class="hub-btn" onclick="window.location.href='/admin'"><img
+                                src="images/inicial/admin.gif" class="hub-icon" alt="Admin"
+                                style="vertical-align: middle;"></button>
                         <% } %>
-        </div>
-    </div>
+                </section>
+            </article>
 
-</div>
+        </section>

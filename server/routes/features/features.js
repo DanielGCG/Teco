@@ -2,6 +2,8 @@ const express = require("express");
 const FeaturesRouter = express.Router();
 const { execSync } = require("child_process");
 const { renderStaticPage, renderPage } = require("../../utils/render");
+const { Op } = require('sequelize');
+const { Cutucada } = require('../../models');
 
 FeaturesRouter.get('/watchlist', renderStaticPage('pages/features/watchlist', {
     title: 'Watchlist',
@@ -18,6 +20,45 @@ FeaturesRouter.get('/galeria/:id', async (req, res) => {
         title: 'Galeria',
         description: 'Visualizando galeria',
         galleryId: req.params.id
+    });
+});
+
+FeaturesRouter.get('/cutucar', async (req, res) => {
+    let remainingNormalPokes = 20;
+    let remainingGlobalPokes = 1;
+
+    try {
+        if (req.user && req.user.id) {
+            const senderId = req.user.id;
+            
+            const currentUser = await require('../../models/Social/User').User.findByPk(senderId);
+            if (currentUser) {
+                const now = new Date();
+                
+                // Cutucadas Normais
+                if (!currentUser.lastCutucadaReset || (now - new Date(currentUser.lastCutucadaReset)) >= 60 * 60 * 1000) {
+                    remainingNormalPokes = 20;
+                } else {
+                    remainingNormalPokes = currentUser.cutucadasRestantes;
+                }
+
+                // Cutucada Geral
+                if (!currentUser.lastCutucadaGeral || (now - new Date(currentUser.lastCutucadaGeral)) >= 24 * 60 * 60 * 1000) {
+                    remainingGlobalPokes = 1;
+                } else {
+                    remainingGlobalPokes = 0;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[Cutucar Route]', err);
+    }
+
+    renderPage(req, res, 'pages/features/cutucar', {
+        title: 'Cutucar',
+        description: 'Cutucar',
+        remainingNormalPokes,
+        remainingGlobalPokes
     });
 });
 

@@ -96,6 +96,19 @@ const User = sequelize.define('User', {
         allowNull: false,
         defaultValue: 0
     },
+    cutucadasRestantes: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 20
+    },
+    lastCutucadaReset: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    lastCutucadaGeral: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
     createdat: {
         type: DataTypes.DATE,
         allowNull: false,

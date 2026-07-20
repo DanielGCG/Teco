@@ -41,7 +41,7 @@ function buildPetUI(pet, now = new Date()) {
         if (item.type === 'toy') effectText += 'diversao';
 
         inventoryButtons.push({
-            id: item.publicid, // <---- AQUI: Enviamos o publicid para o front identificar o botão
+            id: item.publicid,
             label: (item.emoji ? item.emoji + " " : "") + item.name + " (x" + inv.quantity + ")",
             stock: inv.quantity,
             effectText: effectText,
@@ -178,7 +178,6 @@ GotchiRouter.post("/claim", async (req, res) => {
   const claimItems = config ? JSON.parse(config.value || '[]') : [];
 
   for (const reward of claimItems) {
-     // AQUI: Agora ele busca pelo nome humanizado configurado pelo Admin
      const itemRecord = await Item.findOne({ where: { name: reward.name } });
      
      if (itemRecord) {

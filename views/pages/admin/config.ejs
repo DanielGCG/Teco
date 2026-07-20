@@ -3,14 +3,14 @@
     <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
 </div>
 
-<div class="window-content" style="padding: 10px;">
+<div class="window-content">
     <!-- Index Page Configurations -->
-    <div class="window" style="margin-bottom: 20px;">
+    <div class="window">
         <div class="window-header">Fundo Global do Site</div>
-        <div class="window-content" style="padding: 10px;">
+        <div class="window-content">
             <p style="font-size: 11px;">Substitui a imagem e cor padrão de fundo do site. (Deixe vazio para usar o padrão)</p>
-            <fieldset style="border: 2px groove var(--retro-border-light); padding: 10px; margin-bottom: 15px;">
-                <legend style="font-size: 11px; font-weight: bold;">Configurar Fundo</legend>
+            <fieldset>
+                <legend>Configurar Fundo</legend>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
                     <div>
                         <label style="display: block; font-size: 11px; margin-bottom: 3px;">Cor de Fundo:</label>
@@ -32,39 +32,12 @@
                 </div>
             </fieldset>
             <div id="global-bg-preview-container" style="display: none; border: 2px inset gray; width: 200px; height: 100px; background-size: cover; background-position: center;"></div>
-            
-            <hr style="margin: 20px 0; border: none; border-top: 2px groove var(--retro-border-light);">
-            
-            <h4 style="margin-top: 0;">Carrossel da Página Inicial</h4>
-            <p style="font-size: 11px;">Imagens exibidas acima da barra de links, trocam a cada 10s.</p>
-            
-            <div style="background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; margin-bottom: 10px;">
-                <label style="display: block; font-weight: bold; font-size: 11px;">Adicionar ao Carrossel:</label>
-                <div style="display: flex; gap: 10px; align-items: flex-end; margin-top: 5px;">
-                    <div style="flex: 1;">
-                        <span style="font-size: 10px;">Imagem:</span>
-                        <input type="file" id="carousel-upload" accept="image/*" style="width: 100%;">
-                    </div>
-                    <div style="flex: 2;">
-                        <span style="font-size: 10px;">Link ao clicar (opcional):</span>
-                        <input type="text" id="carousel-link" placeholder="Ex: /feed ou https://google.com" style="width: 100%; box-sizing: border-box; padding: 3px;">
-                    </div>
-                    <button id="add-carousel-btn" class="retro-button">Adicionar</button>
-                </div>
-            </div>
-
-            <div id="carousel-list" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
-                <!-- Itens carregados aqui -->
-            </div>
-            <div style="text-align: right;">
-                <button id="save-carousel-btn" class="retro-button" style="font-weight: bold;">Salvar Carrossel</button>
-            </div>
         </div>
     </div>
 
-    <div class="window" style="margin-bottom: 20px;">
+    <div class="window">
         <div class="window-header">Editar Marquee</div>
-        <div class="window-content" style="padding: 10px;">
+        <div class="window-content">
             <p>Este texto aparecerá no topo de todas as páginas com o layout principal.</p>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <input type="text" id="marquee-input" style="flex-grow: 1; padding: 5px;" placeholder="Digite o texto do marquee...">
@@ -74,9 +47,9 @@
         </div>
     </div>
 
-    <div class="window" style="margin-bottom: 20px;">
+    <div class="window">
         <div class="window-header">Garbage Collection</div>
-        <div class="window-content" style="padding: 10px;">
+        <div class="window-content">
             <p>Sincroniza os arquivos locais com o servidor de arquivos, removendo arquivos órfãos (arquivos que não existem mais no banco de dados).</p>
             <p style="color: var(--retro-red, #ff4444); margin-top: 5px;"><strong>Atenção:</strong> Esta operação pode ser custosa caso haja muitos arquivos no sistema.</p>
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
@@ -182,11 +155,6 @@
         const removeBgBtn = document.getElementById('remove-global-bg-btn');
         const bgPreview = document.getElementById('global-bg-preview-container');
 
-        let currentCarousel = [];
-        const carouselList = document.getElementById('carousel-list');
-        const addCarouselBtn = document.getElementById('add-carousel-btn');
-        const saveCarouselBtn = document.getElementById('save-carousel-btn');
-
         async function loadIndexConfigs() {
             try {
                 // Carrega Fundo Global
@@ -207,15 +175,6 @@
                 if (resBgRepeat.ok) {
                     const rep = await resBgRepeat.json();
                     if (rep.value) bgRepeat.value = rep.value;
-                }
-
-                const resCar = await fetch('/api/admin/config/index_carousel');
-                if (resCar.ok) {
-                    const car = await resCar.json();
-                    if (car.value) {
-                        currentCarousel = JSON.parse(car.value) || [];
-                        renderCarousel();
-                    }
                 }
             } catch (e) { console.error('Erro ao carregar index configs', e); }
         }
@@ -282,78 +241,6 @@
                 bgColor.value = '#d9d7bf';
                 alert('Fundo restaurado ao padrão!');
             } catch (e) {}
-        });
-
-        // Carrossel
-        function renderCarousel() {
-            carouselList.innerHTML = '';
-            if (currentCarousel.length === 0) {
-                carouselList.innerHTML = '<div style="font-size:11px; color:gray;">Nenhuma imagem no carrossel.</div>';
-                return;
-            }
-            currentCarousel.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.style.cssText = 'display: flex; align-items: center; gap: 10px; background: var(--retro-bg); border: 2px outset var(--retro-border-light); padding: 5px;';
-                div.innerHTML = `
-                    <img src="${item.imageUrl}" style="width: 60px; height: 40px; object-fit: cover; border: 1px solid #ccc;">
-                    <div style="flex: 1; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        Link: ${item.linkUrl || '(Nenhum)'}
-                    </div>
-                    <div style="display: flex; gap: 2px;">
-                        <button class="retro-button" style="padding: 2px 5px;" ${index === 0 ? 'disabled' : ''} onclick="window.moveCarousel(${index}, -1)">▲</button>
-                        <button class="retro-button" style="padding: 2px 5px;" ${index === currentCarousel.length - 1 ? 'disabled' : ''} onclick="window.moveCarousel(${index}, 1)">▼</button>
-                        <button class="retro-button" style="padding: 2px 5px; color: red;" onclick="window.removeCarousel(${index})">X</button>
-                    </div>
-                `;
-                carouselList.appendChild(div);
-            });
-        }
-
-        window.moveCarousel = (index, dir) => {
-            const item = currentCarousel.splice(index, 1)[0];
-            currentCarousel.splice(index + dir, 0, item);
-            renderCarousel();
-        };
-
-        window.removeCarousel = (index) => {
-            currentCarousel.splice(index, 1);
-            renderCarousel();
-        };
-
-        addCarouselBtn.addEventListener('click', async () => {
-            const fileInput = document.getElementById('carousel-upload');
-            const linkInput = document.getElementById('carousel-link');
-            if (!fileInput.files[0]) return alert('Selecione uma imagem para o carrossel!');
-
-            addCarouselBtn.disabled = true;
-            addCarouselBtn.textContent = 'Enviando...';
-            try {
-                const url = await uploadFile(fileInput.files[0]);
-                currentCarousel.push({
-                    imageUrl: url,
-                    linkUrl: linkInput.value.trim()
-                });
-                renderCarousel();
-                fileInput.value = '';
-                linkInput.value = '';
-            } catch(e) {
-                alert('Erro ao enviar imagem pro carrossel');
-            } finally {
-                addCarouselBtn.disabled = false;
-                addCarouselBtn.textContent = 'Adicionar';
-            }
-        });
-
-        saveCarouselBtn.addEventListener('click', async () => {
-            saveCarouselBtn.disabled = true;
-            try {
-                await saveConfig('index_carousel', JSON.stringify(currentCarousel), 'Lista de imagens do carrossel');
-                alert('Carrossel salvo com sucesso!');
-            } catch(e) {
-                alert('Erro ao salvar carrossel');
-            } finally {
-                saveCarouselBtn.disabled = false;
-            }
         });
 
         loadIndexConfigs();

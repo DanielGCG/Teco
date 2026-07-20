@@ -1,6 +1,6 @@
-<div class="window" style="margin-bottom: 10px;">
-    <div class="window-header">Painel Social - Estatísticas</div>
-    <div class="window-content" style="background: var(--retro-window-bg);">
+<article class="window" style="margin-bottom: 10px;">
+    <header class="window-header">Painel Social</header>
+    <section class="window-content" style="background: var(--retro-window-bg);">
         <table width="100%" border="1" cellpadding="5" cellspacing="0"
             style="border-collapse: collapse; background: var(--retro-window-bg); text-align: center; border-color: var(--retro-border-dark);">
             <tr>
@@ -18,12 +18,12 @@
                 </td>
             </tr>
         </table>
-    </div>
-</div>
+    </section>
+</article>
 
-<div class="window" style="margin-bottom: 10px;">
-    <div class="window-header">Buscar Usuários</div>
-    <div class="window-content" style="background: var(--retro-bg);">
+<article class="window" style="margin-bottom: 10px;">
+    <header class="window-header">Buscar Usuários</header>
+    <section class="window-content" style="background: var(--retro-bg);">
         <div style="display: flex; gap: 5px;">
             <input type="text" id="user-search-input"
                 style="flex-grow: 1; background: var(--retro-window-bg); color: var(--retro-text);"
@@ -31,18 +31,18 @@
             <button id="btn-search" class="btn-bold">BUSCAR</button>
             <button id="btn-clear-search" class="btn-micro" style="display: none;">[Fechar]</button>
         </div>
-    </div>
-</div>
+    </section>
+</article>
 
-<div id="search-header" class="window"
+<aside id="search-header" class="window"
     style="display: none; margin-bottom: 10px; background: var(--retro-bg); border: 1px dashed var(--retro-border-dark);">
     <div class="window-content" style="padding: 5px; font-size: 11px; color: var(--retro-text);">
         <b>Resultados da busca:</b>
     </div>
-</div>
+</aside>
 
-<div class="window">
-    <div id="tabs-container" class="window-header"
+<article class="window">
+    <nav id="tabs-container" class="window-header"
         style="padding: 0 5px; display: flex; height: 30px; line-height: 30px; background: var(--retro-header-bg); border-bottom: 2px solid var(--retro-border-dark); gap: 2px; align-items: flex-end; justify-content: start;">
         <div class="feed-tab active" data-type="following" onclick="changeSection('following')"
             style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">
@@ -50,15 +50,15 @@
         <div class="feed-tab" data-type="followers" onclick="changeSection('followers')"
             style="padding: 0 15px; cursor: pointer; height: 24px; line-height: 24px; box-sizing: border-box; font-size: 11px; border: 1px solid var(--retro-border-dark); border-bottom: none; background: var(--retro-sidebar-bg); margin-bottom: -2px;">
             Seguidores</div>
-    </div>
-    <div class="window-content" style="padding: 0; background: var(--retro-bg);">
+    </nav>
+    <section class="window-content" style="padding: 0; background: var(--retro-bg);">
         <div id="social-list-container">
             <div style="text-align: center; padding: 20px;">
                 <p style="font-size: 11px; color: var(--retro-border-dark);">Carregando dados sociais...</p>
             </div>
         </div>
-    </div>
-</div>
+    </section>
+</article>
 
 <style>
     .feed-tab:not(.active) {

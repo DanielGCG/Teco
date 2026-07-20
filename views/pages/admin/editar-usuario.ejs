@@ -154,8 +154,7 @@
             });
         } catch (err) {
             console.error(err);
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
-            else alert("Erro ao carregar usuários");
+            alert("Erro ao carregar usuários");
         }
     }
 
@@ -163,22 +162,19 @@
     function abrirModalEdicao(userId) {
         const user = usuariosLista.find(u => u.publicid === userId);
         if (!user) {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário não encontrado!");
-            else alert("Usuário não encontrado!");
+            alert("Usuário não encontrado!");
             return;
         }
 
         // Impede editar a si mesmo (exceto Dono)
         if (currentLoggedUser && currentLoggedUser.publicid === user.publicid && currentLoggedUser.roleId > 1) {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Você não pode editar seu próprio usuário!");
-            else alert("Você não pode editar seu próprio usuário!");
+            alert("Você não pode editar seu próprio usuário!");
             return;
         }
 
         // Impede editar usuários de nível igual ou superior (exceto se for o próprio Dono editando a si mesmo)
         if (currentLoggedUser && user.roleId <= currentLoggedUser.roleId && user.publicid !== currentLoggedUser.publicid) {
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Você não pode editar usuários de nível igual ou superior ao seu!");
-            else alert("Você não pode editar usuários de nível igual ou superior ao seu!");
+            alert("Você não pode editar usuários de nível igual ou superior ao seu!");
             return;
         }
 
@@ -221,18 +217,15 @@
 
             const data = await res.json();
             if (res.ok) {
-                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário atualizado com sucesso!");
-                else alert("Usuário atualizado com sucesso!");
+                alert("Usuário atualizado com sucesso!");
                 await carregarUsuarios(); // atualiza lista
                 document.getElementById('editUserModal').close();
             } else {
-                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
-                else alert("Erro: " + data.message);
+                alert("Erro: " + data.message);
             }
         } catch (err) {
             console.error(err);
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao atualizar usuário");
-            else alert("Erro ao atualizar usuário");
+            alert("Erro ao atualizar usuário");
         }
     });
 
@@ -240,12 +233,7 @@
     document.getElementById("deleteUserBtn").addEventListener("click", async () => {
         if (!currentUser) return;
 
-        let confirmado = false;
-        if (typeof mostrarConfirmacao !== 'undefined') {
-            confirmado = await mostrarConfirmacao("Tem certeza que deseja excluir este usuário?");
-        } else {
-            confirmado = await confirm("Tem certeza que deseja excluir este usuário?");
-        }
+        const confirmado = await confirm("Tem certeza que deseja excluir este usuário?");
 
         if (!confirmado) return;
 
@@ -256,19 +244,16 @@
             });
 
             if (res.ok) {
-                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Usuário excluído!");
-                else alert("Usuário excluído!");
+                alert("Usuário excluído!");
                 await carregarUsuarios(); // atualiza lista
                 document.getElementById('editUserModal').close();
             } else {
                 const data = await res.json();
-                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
-                else alert("Erro: " + data.message);
+                alert("Erro: " + data.message);
             }
         } catch (err) {
             console.error(err);
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao excluir usuário");
-            else alert("Erro ao excluir usuário");
+            alert("Erro ao excluir usuário");
         }
     });
 

@@ -1,12 +1,14 @@
-<div class="window" style="margin-bottom: 20px;">
-    <div class="window-header">
-        <span>Gerenciar BoteGotchi</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
-    </div>
-    <div class="window-content" style="padding: 10px; display: flex; gap: 20px;">
-        
-        <div style="flex: 1;">
-            <h4>Itens</h4>
+<div class="window-header">
+    <span>Gerenciar BoteGotchi</span>
+    <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+</div>
+
+<div class="window-content">
+    
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <!-- Lado Esquerdo: Itens -->
+        <fieldset style="flex: 1;">
+            <legend>Catálogo de Itens</legend>
             <form id="form-item" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; border: 2px inset var(--retro-border-dark); padding: 10px; background: var(--retro-bg);">
                 <input type="hidden" id="item-publicid">
                 
@@ -24,63 +26,184 @@
                 <label style="font-size: 11px; font-weight: bold;">Poder de Recuperação:</label> 
                 <input type="number" id="item-value" required placeholder="Ex: 30">
                 
-                <label style="font-size: 11px; font-weight: bold;">Emoji (Estética do Jogo):</label> 
+                <label style="font-size: 11px; font-weight: bold;">Emoji (a ser mudado):</label> 
                 <input type="text" id="item-emoji" placeholder="Ex: 🍰">
                 
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" style="font-weight: bold;">Salvar Item</button>
-                    <button type="button" onclick="document.getElementById('form-item').reset(); document.getElementById('item-publicid').value=''">Limpar / Cancelar</button>
+                    <button type="submit" class="retro-button" style="font-weight: bold;">Salvar Item</button>
+                    <button type="button" class="retro-button" onclick="document.getElementById('form-item').reset(); document.getElementById('item-publicid').value=''">Cancelar</button>
                 </div>
             </form>
 
             <div id="items-list" style="max-height: 250px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
-        </div>
+        </fieldset>
         
-        <div style="flex: 1;">
-            <h4>Configuração do Resgate Diário (JSON)</h4>
-            <p style="font-size: 11px; color: gray;">
-                Exemplo: <code>[{"name": "Bolo de Chocolate", "quantity": 2}, {"name": "Água", "quantity": 1}]</code>
-            </p>
-            <form id="form-claim" style="display: flex; flex-direction: column; gap: 5px; border: 2px inset var(--retro-border-dark); padding: 10px; background: var(--retro-bg);">
-                <textarea id="claim-config" rows="5" placeholder='[{"name": "Bolo de Chocolate", "quantity": 2}]' required style="font-family: monospace;"></textarea>
-                <button type="submit" style="margin-top: 5px; font-weight: bold;">Salvar Pacote de Resgate</button>
-            </form>
-        </div>
+        <!-- Lado Direito: Builder de Resgate -->
+        <fieldset style="flex: 1;">
+            <legend>Pacote de Resgate Diário</legend>
+            <p style="font-size: 11px;">Configure quais itens os usuários ganham no pacote diário.</p>
+            
+            <!-- Builder UI -->
+            <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; padding: 10px; border: 2px inset var(--retro-border-dark); background: var(--retro-bg);">
+                <div style="flex: 2;">
+                    <label style="display: block; font-size: 11px; font-weight: bold;">Item:</label>
+                    <select id="builder-item-select" style="width: 100%;"></select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 11px; font-weight: bold;">Qtd:</label>
+                    <input type="number" id="builder-item-qty" value="1" min="1" style="width: 100%;">
+                </div>
+                <div>
+                    <button type="button" id="add-to-package-btn" class="retro-button" style="font-weight: bold; padding: 4px 8px;">Adicionar</button>
+                </div>
+            </div>
+
+            <!-- Lista Visual do Pacote -->
+            <div id="package-list" style="min-height: 150px; max-height: 200px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px; margin-bottom: 10px;">
+                <!-- items rendered here via JS -->
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                <button type="button" id="save-package-btn" class="retro-button" style="font-weight: bold;">Salvar Pacote</button>
+                <button type="button" id="view-json-btn" class="retro-button">Ver JSON Interno</button>
+            </div>
+            
+            <!-- JSON escondido para debug/backup -->
+            <textarea id="claim-config" style="display: none; width: 100%; margin-top: 10px; font-family: monospace; height: 60px;" readonly></textarea>
+        </fieldset>
 
     </div>
 </div>
 
 <script>
-    async function loadItems() {
-        const res = await fetch('/api/admin/pet/items');
-        const items = await res.json();
-        const container = document.getElementById('items-list');
-        
-        if (!items.length) {
-            container.innerHTML = '<div style="color: gray; text-align: center; padding: 10px;">Nenhum item criado.</div>';
-            return;
-        }
+    let globalItems = []; // Itens do banco
+    let packageItems = []; // Array representando o pacote atual [{name, quantity}]
 
-        container.innerHTML = items.map(item => `
-            <div style="border-bottom: 1px dashed gray; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <strong>${item.emoji || ''} ${item.name}</strong> <br>
-                    <small>Tipo: ${item.type} | Recupera: ${item.value}</small>
-                </div>
-                <div>
-                    <button onclick='editItem(${JSON.stringify(item).replace(/'/g, "\\'")})'>Editar</button>
-                    <button style="color: red;" onclick="deleteItem('${item.publicid}')">Excluir</button>
-                </div>
-            </div>
-        `).join('');
+    async function carregarTudo() {
+        await loadItems();
+        await loadClaimConfig();
+        renderPackageList();
+    }
+
+    async function loadItems() {
+        try {
+            const res = await fetch('/api/admin/pet/items');
+            globalItems = await res.json();
+            
+            // Renderiza lista de itens esquerda
+            const container = document.getElementById('items-list');
+            if (!globalItems.length) {
+                container.innerHTML = '<div style="color: gray; text-align: center; padding: 10px;">Nenhum item criado.</div>';
+            } else {
+                container.innerHTML = globalItems.map(item => `
+                    <div style="border-bottom: 1px dashed gray; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${item.emoji || ''} ${item.name}</strong> <br>
+                            <small>Tipo: ${item.type} | Recupera: ${item.value}</small>
+                        </div>
+                        <div>
+                            <button class="retro-button" onclick='editItem(${JSON.stringify(item).replace(/'/g, "\\'")})'>Editar</button>
+                            <button class="retro-button" style="color: #800000;" onclick="deleteItem('${item.publicid}')">Excluir</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Popula select do Builder
+            const select = document.getElementById('builder-item-select');
+            select.innerHTML = '<option value="">-- Selecione um item --</option>' + 
+                globalItems.map(item => `<option value="${item.name}">${item.emoji || ''} ${item.name}</option>`).join('');
+                
+        } catch (err) {
+            console.error('Erro ao carregar itens', err);
+        }
     }
 
     async function loadClaimConfig() {
-        const res = await fetch('/api/admin/pet/claim-config');
-        const data = await res.json();
-        document.getElementById('claim-config').value = data.configJson || '[]';
+        try {
+            const res = await fetch('/api/admin/pet/claim-config');
+            const data = await res.json();
+            const configText = data.configJson || '[]';
+            document.getElementById('claim-config').value = configText;
+            packageItems = JSON.parse(configText);
+        } catch (err) {
+            console.error('Erro ao carregar claim config', err);
+            packageItems = [];
+        }
     }
 
+    // Builder Logic
+    function renderPackageList() {
+        const listDiv = document.getElementById('package-list');
+        document.getElementById('claim-config').value = JSON.stringify(packageItems);
+
+        if (packageItems.length === 0) {
+            listDiv.innerHTML = '<div style="color: gray; text-align: center; padding: 10px;">Pacote vazio.</div>';
+            return;
+        }
+
+        listDiv.innerHTML = packageItems.map((pkgItem, index) => {
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--retro-bg); border: 1px solid var(--retro-border-dark); margin-bottom: 5px; padding: 5px;">
+                    <div><strong>${pkgItem.name}</strong> <span style="font-size:11px;">(x${pkgItem.quantity})</span></div>
+                    <button type="button" class="retro-button" style="color: #800000; padding: 2px 5px;" onclick="removePackageItem(${index})">Remover</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('add-to-package-btn').addEventListener('click', () => {
+        const select = document.getElementById('builder-item-select');
+        const qty = parseInt(document.getElementById('builder-item-qty').value, 10);
+        const name = select.value;
+
+        if (!name) return alert('Selecione um item primeiro.', true);
+        if (qty < 1) return alert('A quantidade deve ser no mínimo 1.', true);
+
+        // Check if already exists in package to sum qty
+        const existing = packageItems.find(p => p.name === name);
+        if (existing) {
+            existing.quantity += qty;
+        } else {
+            packageItems.push({ name, quantity: qty });
+        }
+
+        renderPackageList();
+    });
+
+    window.removePackageItem = (index) => {
+        packageItems.splice(index, 1);
+        renderPackageList();
+    };
+
+    document.getElementById('save-package-btn').addEventListener('click', async () => {
+        try {
+            const configJson = JSON.stringify(packageItems);
+            const res = await fetch('/api/admin/pet/claim-config', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ configJson }) 
+            });
+            if (res.ok) {
+                alert('Pacote de resgate salvo com sucesso!');
+            } else {
+                alert('Erro ao salvar o pacote.', true);
+            }
+        } catch (e) {
+            alert('Erro de conexão ao salvar pacote.', true);
+        }
+    });
+
+    document.getElementById('view-json-btn').addEventListener('click', () => {
+        const textarea = document.getElementById('claim-config');
+        if (textarea.style.display === 'none') {
+            textarea.style.display = 'block';
+        } else {
+            textarea.style.display = 'none';
+        }
+    });
+
+    // Item CRUD
     function editItem(item) {
         document.getElementById('item-publicid').value = item.publicid;
         document.getElementById('item-name').value = item.name;
@@ -90,9 +213,9 @@
     }
 
     async function deleteItem(publicid) {
-        if (!(await confirm('Deseja excluir este item?'))) return;
+        if (!(await window.confirmRetro('Tem certeza que deseja excluir este item? Ele sumirá do banco.', 'Atenção'))) return;
         await fetch(`/api/admin/pet/items/${publicid}`, { method: 'DELETE' });
-        loadItems();
+        carregarTudo();
     }
 
     document.getElementById('form-item').addEventListener('submit', async (e) => {
@@ -107,21 +230,11 @@
         await fetch('/api/admin/pet/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         document.getElementById('form-item').reset();
         document.getElementById('item-publicid').value = '';
-        loadItems();
+        alert('Item salvo com sucesso!');
+        carregarTudo();
     });
 
-    document.getElementById('form-claim').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const configJson = document.getElementById('claim-config').value;
-            const res = await fetch('/api/admin/pet/claim-config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configJson }) });
-            if (res.ok) alert('Resgate salvo!');
-            else alert('JSON Inválido!');
-        } catch (err) {
-            alert('Erro ao salvar');
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarTudo();
     });
-
-    loadItems();
-    loadClaimConfig();
 </script>

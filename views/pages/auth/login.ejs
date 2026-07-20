@@ -85,10 +85,7 @@
             } else {
                 messageDiv.style.color = 'var(--retro-link-hover)'; // Vermelho retro
                 messageDiv.textContent = data.message || 'Usuário ou senha incorretos';
-                // Usa o modal retro se existir
-                if (typeof mostrarAviso === 'function') {
-                    mostrarAviso(data.message || 'Usuário ou senha incorretos', 'Erro de Login');
-                }
+                alert(data.message || 'Usuário ou senha incorretos');
             }
         } catch (err) {
             console.error(err);

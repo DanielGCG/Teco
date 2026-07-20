@@ -1,6 +1,6 @@
 <title>Gerenciar Chats & DMs - Administração</title>
 
-<div class="window" style="margin-bottom: 20px;">
+<div class="window">
     <div class="window-header">
         <span>Estatísticas de Chats & DMs</span>
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
@@ -87,12 +87,12 @@
 </div>
 
 <!-- Modal de edição nativo -->
-<dialog id="editChatModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 400px; background: var(--retro-window-bg, #c0c0c0);">
+<dialog id="editChatModal" class="window" style="width: 400px;">
     <div class="window-header">
         <span id="editChatModalTitle">Administrar Conversa</span>
         <button type="button" class="window-btn" onclick="document.getElementById('editChatModal').close()" style="float: right;">[Fechar]</button>
     </div>
-    <div class="window-content" style="padding: 10px;">
+    <div class="window-content">
         <div style="display: flex; flex-direction: column; gap: 10px;">
             <div id="editChatNameGroup">
                 <label for="editChatName" style="display: block; margin-bottom: 5px; font-weight: bold;">Nome do chat:</label>

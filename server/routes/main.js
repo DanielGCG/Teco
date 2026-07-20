@@ -3,7 +3,7 @@ const router = express.Router();
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 // Core
-router.use("/admin", authMiddleware(5), require("./core/admin"));
+router.use("/admin", authMiddleware(10), require("./core/admin"));
 router.use("/", require("./core/games"));
 router.use("/", require("./core/naorelacionado"));
 router.use("/", require("./core/inicial"));

@@ -1,52 +1,56 @@
 <link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
 <script src="/js/commons/cartinhas-common.js"></script>
 
-<div class="window" style="max-width: 600px; margin: 0 auto;">
-    <div class="window-header">
+<article class="window" style="max-width: 600px; margin: 0 auto; background-image: url('/images/cartinhas/papel.png'); background-repeat: repeat;">
+    <header class="window-header">
         <span>Escrever Cartinha</span>
-        <div style="float: right;">
+        <nav style="float: right;">
             <a href="/cartinhas" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
-        </div>
-    </div>
-    <div class="window-content" style="background: var(--retro-bg);">
-        <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+        </nav>
+    </header>
+    <section class="window-content" style="background: transparent;">
+        <header style="margin-bottom: 10px; display: flex; justify-content: space-between;">
             <span style="font-size: 11px;">De: <b id="nomeRemetente">...</b></span>
             <button type="button" id="btnGerenciarRascunhos" style="font-size: 10px;">Meus Rascunhos</button>
-        </div>
+        </header>
 
         <form id="formCartinha">
-            <div style="margin-bottom: 10px; position: relative;">
-                <label style="font-size: 11px; font-weight: bold;">Para:</label><br>
+            <fieldset style="position: relative;">
+                <legend>Para:</legend>
                 <input type="text" id="destinatario" placeholder="Digite o nome do usuário..." autocomplete="off"
                     style="width: 100%; box-sizing: border-box;">
                 <input type="hidden" id="destinatarioId">
                 <div id="sugestoesUsuarios" class="window"
-                    style="display: none; position: absolute; width: 100%; z-index: 100; max-height: 150px; overflow-y: auto; background: white;">
+                    style="display: none; position: absolute; width: calc(100% - 20px); z-index: 100; max-height: 150px; overflow-y: auto; background: white;">
                 </div>
-            </div>
+            </fieldset>
 
-            <div style="margin-bottom: 10px;">
-                <label style="font-size: 11px; font-weight: bold;">Assunto:</label>
-                <span id="cnt-t" style="float: right; font-size: 10px; color: #666;">0/160</span><br>
+            <fieldset>
+                <legend style="display: flex; justify-content: space-between; width: 100%;">
+                    <span>Assunto:</span>
+                    <span id="cnt-t" style="font-size: 10px; color: #666; font-weight: normal;">0/160</span>
+                </legend>
                 <input type="text" id="titulo" maxlength="160" style="width: 100%; box-sizing: border-box;">
-            </div>
+            </fieldset>
 
-            <div style="margin-bottom: 15px;">
-                <label style="font-size: 11px; font-weight: bold;">Mensagem:</label>
-                <span id="cnt-c" style="float: right; font-size: 10px; color: #666;">0/2000</span><br>
+            <fieldset>
+                <legend style="display: flex; justify-content: space-between; width: 100%;">
+                    <span>Mensagem:</span>
+                    <span id="cnt-c" style="font-size: 10px; color: #666; font-weight: normal;">0/2000</span>
+                </legend>
                 <textarea id="conteudo" rows="8" maxlength="2000"
                     style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
-            </div>
+            </fieldset>
 
-            <div style="margin-bottom: 15px;">
-                <label style="font-size: 11px; font-weight: bold;">Selo (Opcional):</label><br>
+            <fieldset>
+                <legend>Selo (Opcional):</legend>
                 <div id="stampsSelector" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; padding: 5px; border: 1px inset var(--retro-border-dark); background: white; min-height: 40px; align-items: center;">
                     <span style="font-size: 10px; color: gray;">Carregando selos...</span>
                 </div>
                 <input type="hidden" id="stampUrl">
-            </div>
+            </fieldset>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <footer style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <label style="font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
                         <input type="checkbox" id="anonimo"> Enviar anonimamente
@@ -57,226 +61,263 @@
                     <button type="button" id="btnSalvarRascunho">Salvar Rascunho</button>
                     <button type="button" id="btnEnviar" style="font-weight: bold;">ENVIAR</button>
                 </div>
-            </div>
+            </footer>
         </form>
-    </div>
-</div>
+    </section>
+</article>
 
 <!-- Modal Rascunhos -->
-<div id="modalRascunhosRetro" class="window"
-    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; min-width: 300px; box-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
-    <div class="window-header">
+<dialog id="modalRascunhosRetro" class="window"
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; min-width: 300px; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); padding: 0; border: none; background: transparent;">
+    <header class="window-header">
         <span>Rascunhos</span>
         <button type="button" class="window-btn"
             onclick="document.getElementById('modalRascunhosRetro').style.display='none'; document.getElementById('overlayRetroMsg').style.display='none';"
             style="float: right;">[Fechar]</button>
-    </div>
-    <div class="window-content" style="max-height: 300px; overflow-y: auto; padding: 10px;">
+    </header>
+    <section class="window-content" style="max-height: 300px; overflow-y: auto; padding: 10px; margin: 0;">
         <div id="gradeRascunhos"></div>
-    </div>
-</div>
+    </section>
+</dialog>
 <div id="overlayRetroMsg"
     onclick="document.getElementById('modalRascunhosRetro').style.display='none'; this.style.display='none';"
     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 10000;">
 </div>
 
 <script>
-    const composer = {
-        dest: null,
-        me: null,
-        el: {
-            bus: document.getElementById('destinatario'),
-            id: document.getElementById('destinatarioId'),
-            tit: document.getElementById('titulo'),
-            con: document.getElementById('conteudo'),
-            sug: document.getElementById('sugestoesUsuarios')
-        },
+    let destinatarioSelecionado = null;
 
-        async init() {
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Carregar o remetente
+        try {
             const res = await fetch('/api/users/me');
             if (res.ok) {
-                this.me = await res.json();
-                document.getElementById('nomeRemetente').textContent = this.me.username;
+                const me = await res.json();
+                document.getElementById('nomeRemetente').textContent = me.username;
             }
-            this.bind();
-            this.checkURL();
-            this.load();
-            this.loadStamps();
-        },
+        } catch(e) {}
 
-        async loadStamps() {
-            try {
-                const res = await fetch('/api/cartinhas/stamps');
-                const stamps = await res.json();
-                const container = document.getElementById('stampsSelector');
-                if (!stamps || stamps.length === 0) {
-                    container.innerHTML = '<span style="font-size: 10px; color: gray;">Nenhum selo disponível</span>';
-                    return;
-                }
-                
-                container.innerHTML = `
-                    <div class="stamp-option" style="cursor: pointer; padding: 2px; border: 2px solid transparent;" onclick="composer.selectStamp(null, this)">
-                        <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eee; font-size: 10px; color: #666; border: 1px dashed #ccc;">Nenhum</div>
-                    </div>
-                ` + stamps.map(s => `
-                    <div class="stamp-option" style="cursor: pointer; padding: 2px; border: 2px solid transparent; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px;" onclick="composer.selectStamp('${s.image_url}', this)" title="${s.name}">
-                        <img src="${s.image_url}" style="max-width: 46px; max-height: 46px; width: auto; height: auto; display: block;">
-                    </div>
-                `).join('');
-                
-                // Selecionar "Nenhum" por padrão
-                composer.selectStamp(null, container.firstElementChild);
-            } catch (e) {
-                document.getElementById('stampsSelector').innerHTML = '<span style="font-size: 10px; color: red;">Erro ao carregar selos</span>';
+        carregarSelos();
+        verificarURL();
+        carregarRascunhoTmp();
+        
+        // Eventos
+        const inputDest = document.getElementById('destinatario');
+        inputDest.oninput = UIUtils.debounce(() => buscarUsuarios(inputDest.value), 300);
+        
+        document.getElementById('titulo').oninput = salvarTmp;
+        document.getElementById('conteudo').oninput = salvarTmp;
+        
+        document.getElementById('btnGerenciarRascunhos').onclick = abrirRascunhos;
+        document.getElementById('btnSalvarRascunho').onclick = salvarRascunhoList;
+        document.getElementById('btnLimpar').onclick = limparCampos;
+        document.getElementById('btnEnviar').onclick = enviarCartinha;
+        
+        // Fechar dropdown de sugestões ao clicar fora
+        document.onclick = (e) => {
+            if (!e.target.closest('.position-relative')) {
+                const sug = document.getElementById('sugestoesUsuarios');
+                if(sug) sug.style.display = 'none';
             }
-        },
+        };
 
-        selectStamp(url, el) {
-            document.getElementById('stampUrl').value = url || '';
-            document.querySelectorAll('.stamp-option').forEach(node => {
-                node.style.border = '2px solid transparent';
-                node.style.background = 'transparent';
-            });
-            el.style.border = '2px solid #000080';
-            el.style.background = 'rgba(0,0,128,0.1)';
-        },
+        // Fechar modal de rascunhos
+        document.getElementById('overlayRetroMsg').onclick = () => {
+            document.getElementById('modalRascunhosRetro').style.display = 'none';
+            document.getElementById('overlayRetroMsg').style.display = 'none';
+        };
+    });
 
-        bind() {
-            this.el.bus.oninput = UIUtils.debounce(() => this.search(this.el.bus.value), 300);
-            this.el.tit.oninput = this.el.con.oninput = () => this.update();
-            document.getElementById('btnGerenciarRascunhos').onclick = () => this.list();
-            document.getElementById('btnSalvarRascunho').onclick = () => this.save();
-            document.getElementById('btnLimpar').onclick = () => this.clear();
-            document.getElementById('btnEnviar').onclick = () => this.send();
-            document.onclick = e => !e.target.closest('.position-relative') && (this.el.sug.style.display = 'none');
-        },
+    async function carregarSelos() {
+        try {
+            const res = await fetch('/api/cartinhas/stamps');
+            const stamps = await res.json();
+            const container = document.getElementById('stampsSelector');
+            if (!stamps || stamps.length === 0) {
+                container.innerHTML = '<span style="font-size: 10px; color: gray;">Nenhum selo disponível</span>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="stamp-option" style="cursor: pointer; padding: 2px; border: 2px solid transparent;" onclick="selecionarSelo(null, this)">
+                    <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eee; font-size: 10px; color: #666; border: 1px dashed #ccc;">Nenhum</div>
+                </div>
+            ` + stamps.map(s => `
+                <div class="stamp-option" style="cursor: pointer; padding: 2px; border: 2px solid transparent; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px;" onclick="selecionarSelo('${s.image_url}', this)" title="${s.name}">
+                    <img src="${s.image_url}" style="max-width: 46px; max-height: 46px; width: auto; height: auto; display: block;">
+                </div>
+            `).join('');
+            
+            // Selecionar "Nenhum" por padrão
+            selecionarSelo(null, container.firstElementChild);
+        } catch (e) {
+            document.getElementById('stampsSelector').innerHTML = '<span style="font-size: 10px; color: red;">Erro ao carregar selos</span>';
+        }
+    }
 
-        checkURL() {
-            const p = new URLSearchParams(location.search);
-            if (p.get('para')) this.select({ publicid: p.get('para'), username: decodeURIComponent(p.get('nome')) });
-        },
+    window.selecionarSelo = function(url, el) {
+        document.getElementById('stampUrl').value = url || '';
+        document.querySelectorAll('.stamp-option').forEach(node => {
+            node.style.border = '2px solid transparent';
+            node.style.background = 'transparent';
+        });
+        el.style.border = '2px solid #000080';
+        el.style.background = 'rgba(0,0,128,0.1)';
+    }
 
-        async search(q) {
-            if (!q) return this.el.sug.style.display = 'none';
+    function verificarURL() {
+        const p = new URLSearchParams(location.search);
+        if (p.get('para')) {
+            selecionarUsuario({ publicid: p.get('para'), username: decodeURIComponent(p.get('nome')) });
+        }
+    }
+
+    async function buscarUsuarios(q) {
+        const divSug = document.getElementById('sugestoesUsuarios');
+        if (!q) {
+            divSug.style.display = 'none';
+            return;
+        }
+        
+        try {
             const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
             const data = await res.json();
-            const users = (data.usuarios || []).filter(u => u.username !== this.me?.username);
-
-            this.el.sug.innerHTML = users.map(u => `
-                <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" onclick="composer.select({publicid:'${u.publicid}',username:'${u.username}'})">
+            const users = data.usuarios || [];
+            
+            divSug.innerHTML = users.map(u => `
+                <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" onclick="selecionarUsuario({publicid:'${u.publicid}',username:'${u.username}'})">
                     <img src="${u.profileimage}" style="vertical-align: middle; width: 20px; height: 20px; margin-right: 5px; border: 1px solid #ccc;">
                     <b>${u.username}</b>
                 </div>
             `).join('') || '<div style="padding: 10px; font-size: 11px; color: #666;">Nenhum usuário...</div>';
-            this.el.sug.style.display = 'block';
-        },
-
-        select(u) {
-            this.dest = u;
-            this.el.id.value = u.publicid;
-            this.el.bus.value = u.username;
-            this.el.sug.style.display = 'none';
-        },
-
-        update() {
-            const t = this.el.tit.value.length, c = this.el.con.value.length;
-            document.getElementById('cnt-t').textContent = t + '/160';
-            document.getElementById('cnt-c').textContent = c + '/2000';
-            localStorage.setItem('cartinha_tmp', JSON.stringify({ t: this.el.tit.value, c: this.el.con.value, d: this.dest }));
-        },
-
-        load() {
-            const r = JSON.parse(localStorage.getItem('cartinha_tmp') || '{}');
-            if (r.t) this.el.tit.value = r.t;
-            if (r.c) this.el.con.value = r.c;
-            if (r.d) this.select(r.d);
-            this.update();
-        },
-
-        save() {
-            if (!this.el.tit.value && !this.el.con.value) return;
-            const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
-            rList.push({ id: Date.now(), t: this.el.tit.value, c: this.el.con.value, d: this.dest, ts: Date.now() });
-            localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList));
-            alert('Rascunho salvo!');
-        },
-
-        list() {
-            const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
-            const container = document.getElementById('gradeRascunhos');
-            container.style.display = 'flex';
-            container.style.flexDirection = 'column';
-            container.style.gap = '5px';
-            container.innerHTML = rList.map(x => `
-                <div style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="cursor:pointer; flex-grow: 1;" onclick="composer.apply(${x.id})">
-                        <div style="font-size: 12px; font-weight: bold; color: #000080;">${x.t || '(Sem assunto)'}</div>
-                        <div style="font-size: 11px; color: #666; margin-top: 2px;">Para: <span style="font-weight: bold;">${x.d ? x.d.username : '??'}</span></div>
-                    </div>
-                    <button type="button" class="window-btn" style="padding: 0 4px; color: red; font-size: 10px;" onclick="composer.delR(${x.id})">Excluir</button>
-                </div>
-            `).join('') || '<p style="text-align: center; padding: 10px; font-size: 11px;">Nenhum rascunho</p>';
-
-            document.getElementById('modalRascunhosRetro').style.display = 'block';
-            document.getElementById('overlayRetroMsg').style.display = 'block';
-        },
-
-        apply(id) {
-            const r = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]').find(x => x.id === id);
-            if (r) { this.el.tit.value = r.t; this.el.con.value = r.c; if (r.d) this.select(r.d); this.update(); }
-            document.getElementById('modalRascunhosRetro').style.display = 'none';
-            document.getElementById('overlayRetroMsg').style.display = 'none';
-        },
-
-        delR(id) {
-            let rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
-            localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList.filter(x => x.id !== id)));
-            this.list();
-        },
-
-        async clear() {
-            if (!await window.confirmRetro('Limpar campos?', 'Aviso')) return;
-            this.el.tit.value = this.el.con.value = this.el.bus.value = this.el.id.value = '';
-            this.dest = null;
-            localStorage.removeItem('cartinha_tmp');
-            this.update();
-        },
-
-        async send() {
-            if (!this.dest || !this.el.tit.value || !this.el.con.value) return alert('Preencha todos os campos!');
-            const btn = document.getElementById('btnEnviar');
-            btn.disabled = true;
-            try {
-                const isAnonymous = document.getElementById('anonimo').checked;
-                const stampUrl = document.getElementById('stampUrl').value;
-                const res = await fetch('/api/cartinhas', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        recipientusername: this.dest.username, 
-                        title: this.el.tit.value, 
-                        body: this.el.con.value, 
-                        isanonymous: isAnonymous,
-                        stampUrl: stampUrl || null
-                    })
-                });
-                if (res.ok) {
-                    alert('Cartinha enviada com sucesso!');
-                    localStorage.removeItem('cartinha_tmp');
-                    location.href = '/cartinhas';
-                } else {
-                    const err = await res.json();
-                    alert(err.message || 'Erro ao enviar');
-                }
-            } catch (e) { alert('Erro técnico de conexão'); }
-            finally { btn.disabled = false; }
+            divSug.style.display = 'block';
+        } catch(e) {
+            console.error("Erro na busca de usuários", e);
         }
-    };
-    composer.init();
+    }
 
-    // Fechar overlays ao clicar neles
-    document.getElementById('overlayRetroMsg').onclick = () => {
+    window.selecionarUsuario = function(u) {
+        destinatarioSelecionado = u;
+        document.getElementById('destinatarioId').value = u.publicid;
+        document.getElementById('destinatario').value = u.username;
+        document.getElementById('sugestoesUsuarios').style.display = 'none';
+        salvarTmp();
+    }
+
+    function salvarTmp() {
+        const tit = document.getElementById('titulo').value;
+        const con = document.getElementById('conteudo').value;
+        
+        document.getElementById('cnt-t').textContent = tit.length + '/160';
+        document.getElementById('cnt-c').textContent = con.length + '/2000';
+        
+        localStorage.setItem('cartinha_tmp', JSON.stringify({ t: tit, c: con, d: destinatarioSelecionado }));
+    }
+
+    function carregarRascunhoTmp() {
+        const r = JSON.parse(localStorage.getItem('cartinha_tmp') || '{}');
+        if (r.t) document.getElementById('titulo').value = r.t;
+        if (r.c) document.getElementById('conteudo').value = r.c;
+        if (r.d) window.selecionarUsuario(r.d);
+        salvarTmp();
+    }
+
+    function salvarRascunhoList() {
+        const tit = document.getElementById('titulo').value;
+        const con = document.getElementById('conteudo').value;
+        if (!tit && !con) return;
+        
+        const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
+        rList.push({ id: Date.now(), t: tit, c: con, d: destinatarioSelecionado, ts: Date.now() });
+        localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList));
+        alert('Rascunho salvo!');
+    }
+
+    function abrirRascunhos() {
+        const rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
+        const container = document.getElementById('gradeRascunhos');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '5px';
+        container.innerHTML = rList.map(x => `
+            <div style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="cursor:pointer; flex-grow: 1;" onclick="aplicarRascunho(${x.id})">
+                    <div style="font-size: 12px; font-weight: bold; color: #000080;">${x.t || '(Sem assunto)'}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 2px;">Para: <span style="font-weight: bold;">${x.d ? x.d.username : '??'}</span></div>
+                </div>
+                <button type="button" class="window-btn" style="padding: 0 4px; color: red; font-size: 10px;" onclick="excluirRascunho(${x.id})">Excluir</button>
+            </div>
+        `).join('') || '<p style="text-align: center; padding: 10px; font-size: 11px;">Nenhum rascunho</p>';
+
+        document.getElementById('modalRascunhosRetro').style.display = 'block';
+        document.getElementById('overlayRetroMsg').style.display = 'block';
+    }
+
+    window.aplicarRascunho = function(id) {
+        const r = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]').find(x => x.id === id);
+        if (r) { 
+            document.getElementById('titulo').value = r.t || ''; 
+            document.getElementById('conteudo').value = r.c || ''; 
+            if (r.d) { window.selecionarUsuario(r.d); }
+            salvarTmp(); 
+        }
         document.getElementById('modalRascunhosRetro').style.display = 'none';
         document.getElementById('overlayRetroMsg').style.display = 'none';
-    };
+    }
+
+    window.excluirRascunho = function(id) {
+        let rList = JSON.parse(localStorage.getItem('cartinha_rascunhos') || '[]');
+        localStorage.setItem('cartinha_rascunhos', JSON.stringify(rList.filter(x => x.id !== id)));
+        abrirRascunhos();
+    }
+
+    async function limparCampos() {
+        if (!await window.confirmRetro('Limpar campos?', 'Aviso')) return;
+        document.getElementById('titulo').value = '';
+        document.getElementById('conteudo').value = '';
+        document.getElementById('destinatario').value = '';
+        document.getElementById('destinatarioId').value = '';
+        destinatarioSelecionado = null;
+        localStorage.removeItem('cartinha_tmp');
+        salvarTmp();
+    }
+
+    async function enviarCartinha() {
+        const tit = document.getElementById('titulo').value;
+        const con = document.getElementById('conteudo').value;
+        
+        if (!destinatarioSelecionado || !tit || !con) {
+            return alert('Preencha todos os campos!');
+        }
+        
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = true;
+        try {
+            const isAnonymous = document.getElementById('anonimo').checked;
+            const stampUrl = document.getElementById('stampUrl').value;
+            const res = await fetch('/api/cartinhas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    recipientusername: destinatarioSelecionado.username, 
+                    title: tit, 
+                    body: con, 
+                    isanonymous: isAnonymous,
+                    stampUrl: stampUrl || null
+                })
+            });
+            if (res.ok) {
+                localStorage.removeItem('cartinha_tmp');
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; display: flex; align-items: center; justify-content: center; flex-direction: column;';
+                overlay.innerHTML = '<img src="/images/cartinhas/cartinha-enviada.gif" style="width: 200px; border-radius: 10px;">';
+                document.body.appendChild(overlay);
+                setTimeout(() => location.href = '/cartinhas', 4000);
+            } else {
+                const err = await res.json();
+                alert(err.message || 'Erro ao enviar');
+            }
+        } catch (e) { alert('Erro técnico de conexão'); }
+        finally { btn.disabled = false; }
+    }
 </script>

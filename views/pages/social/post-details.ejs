@@ -1,36 +1,38 @@
-<div class="window">
-    <div class="window-header">
+<article class="window">
+    <header class="window-header">
         <span>Visualizar Post</span>
-        <div style="float: right;">
+        <nav style="float: right;">
             <a href="/" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
-        </div>
-    </div>
-    <div class="window-content" id="retro-post-details">
+        </nav>
+    </header>
+    <section class="window-content" id="retro-post-details">
         <p style="text-align: center;">Carregando post...</p>
-    </div>
-</div>
+    </section>
+</article>
 
-<div class="window" id="retro-comment-box" style="display: none;">
-    <div class="window-header">Responder a este post</div>
-    <div class="window-content">
-        <textarea id="comment-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="Escreva sua resposta..."></textarea>
-        <div id="comment-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
-        <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-            <div style="flex-grow: 1;">
-                <button type="button" onclick="document.getElementById('comment-media-input').click()" class="btn-sm">ADICIONAR MÍDIA</button>
-                <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="display: none;">
-            </div>
-            <button onclick="enviarComentario()" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
-        </div>
-    </div>
-</div>
+<article class="window" id="retro-comment-box" style="display: none;">
+    <section class="window-content">
+        <fieldset>
+            <legend>Responder a este post</legend>
+            <textarea id="comment-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="Escreva sua resposta..."></textarea>
+            <div id="comment-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
+            <footer style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div style="flex-grow: 1;">
+                    <button type="button" onclick="document.getElementById('comment-media-input').click()" class="btn-sm">ADICIONAR MÍDIA</button>
+                    <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="display: none;">
+                </div>
+                <button onclick="enviarComentario()" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
+            </footer>
+        </fieldset>
+    </section>
+</article>
 
-<div class="window">
-    <div class="window-header">Comentários e Respostas</div>
-    <div class="window-content" id="retro-comments-list">
+<article class="window">
+    <header class="window-header">Comentários e Respostas</header>
+    <section class="window-content" id="retro-comments-list">
         <!-- Comentários aqui -->
-    </div>
-</div>
+    </section>
+</article>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

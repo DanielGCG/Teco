@@ -167,7 +167,7 @@ UsersRouter.post('/logout', async (req, res) => {
 UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['publicid', 'username', 'roleId', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'lastfmusername']
+            attributes: ['publicid', 'username', 'roleId', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'lastfmusername', 'postcount', 'createdat']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });

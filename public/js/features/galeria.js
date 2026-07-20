@@ -1,6 +1,6 @@
 const Utils = {
-    alert: (msg, title) => window.mostrarAviso ? window.mostrarAviso(msg, title) : alert(`${title || 'Aviso'}: ${msg}`),
-    confirm: async (msg, title) => window.mostrarConfirmacao ? await window.mostrarConfirmacao(msg, title) : confirm(msg),
+    alert: (msg, title) => alert(msg),
+    confirm: async (msg, title) => confirm(msg),
     escapeHtml: (str) => (!str ? '' : str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")),
     formatSize: (bytes) => (bytes / (1024 * 1024)).toFixed(2) + ' MB',
     debounce: (func, wait) => {
@@ -23,6 +23,10 @@ const GaleriaManager = {
     resizeObserver: null,
     draggedItemDims: null,
     originalDataItems: null,
+
+    debouncedSearchUsers: Utils.debounce(function() {
+        GaleriaManager.searchUsers();
+    }, 300),
 
     async init() {
         const mainEl = document.getElementById('conteudo-principal');
@@ -53,6 +57,13 @@ const GaleriaManager = {
         await this.loadData();
         this.setupEventListeners();
         this.setupDragAndDrop();
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#search-user-input') && !e.target.closest('#search-results')) {
+                const results = document.getElementById('search-results');
+                if (results) results.style.display = 'none';
+            }
+        });
     },
 
     copiarLink() {
@@ -785,36 +796,49 @@ const GaleriaManager = {
 
     async searchUsers() {
         const q = document.getElementById('search-user-input')?.value;
-        if (q?.length < 2) return;
+        const results = document.getElementById('search-results');
+        if (!results) return;
+
+        if (!q || q.trim().length < 2) {
+            results.style.display = 'none';
+            results.innerHTML = '';
+            return;
+        }
+
         try {
-            const res = await fetch(`/api/users/buscar?q=${encodeURIComponent(q)}`);
+            const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
             const json = await res.json();
-            const results = document.getElementById('search-results');
-            if (results) {
-                const list = json.users || json.usuarios || [];
-                if (list.length > 0) {
-                    results.style.border = '1px solid gray';
-                    results.style.padding = '2px';
-                    results.innerHTML = list.map(u => `<button type="button" class="list-group-item list-group-item-action" onclick="GaleriaManager.addCollaborator('${u.publicid}', '${u.username}')">${u.username}</button>`).join('');
-                } else {
-                    results.style.border = 'none';
-                    results.style.padding = '0';
-                    results.innerHTML = '';
-                }
+            const list = json.users || json.usuarios || [];
+            if (list.length > 0) {
+                results.innerHTML = list.map(u => `
+                    <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" 
+                         onclick="GaleriaManager.addCollaborator('${u.publicid}', '${u.username}')">
+                        <img src="${u.profileimage}" style="vertical-align: middle; width: 20px; height: 20px; margin-right: 5px; border: 1px solid #ccc; object-fit: cover;">
+                        <b style="color: black;">${u.username}</b>
+                    </div>
+                `).join('');
+            } else {
+                results.innerHTML = '<div style="padding: 10px; font-size: 11px; color: #666;">Nenhum usuário...</div>';
             }
-        } catch (e) { console.error(e); }
+            results.style.display = 'block';
+        } catch (err) { console.error(err); }
     },
 
-    addCollaborator(id, username) {
-        if (!this.collaborators.find(c => c.publicid === id)) this.collaborators.push({ publicid: id, username });
-        this.renderCollaborators();
-        const results = document.getElementById('search-results');
-        if (results) {
-            results.innerHTML = '';
-            results.style.border = 'none';
-            results.style.padding = '0';
+    debouncedSearchUsers: Utils.debounce(function() {
+        this.searchUsers();
+    }, 300),
+
+    addCollaborator(id, name) {
+        if (!this.collaborators.find(c => c.publicid === id)) {
+            this.collaborators.push({ publicid: id, username: name });
+            this.renderCollaborators();
         }
+        const input = document.getElementById('search-user-input');
+        if (input) input.value = '';
+        const results = document.getElementById('search-results');
+        if (results) results.style.display = 'none';
     },
+
     removeCollaborator(id) { this.collaborators = this.collaborators.filter(c => c.publicid !== id); this.renderCollaborators(); },
     renderCollaborators() {
         const container = document.getElementById('collaborators-list');

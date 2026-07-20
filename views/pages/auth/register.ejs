@@ -120,9 +120,7 @@
             } else {
                 messageDiv.style.color = 'var(--retro-link-hover)'; // Vermelho retro
                 messageDiv.textContent = data.message || 'Erro ao registrar';
-                if (typeof mostrarAviso === 'function') {
-                    mostrarAviso(data.message || 'Erro de validação', 'Erro');
-                }
+                alert(data.message || 'Erro de validação');
             }
         } catch (err) {
             console.error(err);

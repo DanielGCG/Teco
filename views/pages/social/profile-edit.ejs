@@ -37,87 +37,90 @@
     }
 </style>
 
-<div class="window" style="max-width: 800px; margin: 10px auto;">
-    <div class="window-header">
+<article class="window" style="max-width: 800px; margin: 10px auto;">
+    <header class="window-header">
         <span>Editar Perfil</span>
-    </div>
-    <div class="window-content">
+    </header>
+    <section class="window-content">
         <form id="edit-profile-form">
-            <div style="display: flex; gap: 15px; align-items: flex-start;">
-                <div style="text-align: center; width: 130px; flex-shrink: 0;">
-                    <div class="img-container" style="position: relative; display: inline-block; cursor: pointer;"
-                        onclick="document.getElementById('profile_file').click()">
-                        <img id="preview-pf" src="" border="1"
-                            style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
-                        <div class="img-overlay">TROCAR AVATAR</div>
-                        <input type="file" id="profile_file" accept="image/*" style="display: none;">
-                        <input type="hidden" id="profileimage">
-                        <span class="status-dot"
-                            style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: #4caf50;"></span>
-                    </div>
-
-                    <div style="margin-top: 5px; text-align: left;">
-                        <div style="font-size: 10px; color: var(--retro-border-dark);">Usuário:</div>
-                        <div style="display: flex; align-items: center;">
-                            <span style="font-size: 11px;">@</span>
-                            <input type="text" id="username" class="inline-input"
-                                style="font-weight: bold; font-size: 12px; border-bottom: 1px solid var(--retro-border-dark); border-top: none; border-left: none; border-right: none;"
-                                required>
+            <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap;">
+                
+                <div style="width: 160px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+                    <fieldset style="text-align: center;">
+                        <legend>Avatar</legend>
+                        <div class="img-container" style="position: relative; display: inline-block; cursor: pointer;"
+                            onclick="document.getElementById('profile_file').click()">
+                            <img id="preview-pf" src="" border="1"
+                                style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
+                            <div class="img-overlay">TROCAR AVATAR</div>
+                            <input type="file" id="profile_file" accept="image/*" style="display: none;">
+                            <input type="hidden" id="profileimage">
+                            <span class="status-dot"
+                                style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: #4caf50;"></span>
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div style="margin-top: 5px; text-align: left;">
-                        <div style="font-size: 10px; color: var(--retro-border-dark);">Pronomes:</div>
-                        <input type="text" id="pronouns" class="inline-input"
-                            style="font-size: 11px; color: var(--retro-border-dark);" placeholder="ele/ela">
-                    </div>
-
-                    <div style="margin-top: 5px; text-align: left;">
-                        <div style="font-size: 10px; color: var(--retro-border-dark);">Last.fm:</div>
-                        <input type="text" id="lastfmusername" class="inline-input" style="font-size: 11px;">
-                    </div>
-
-                </div>
-                <div style="flex-grow: 1; display: flex; flex-direction: row; gap: 10px; align-items: stretch;">
-                    <div style="display: flex; flex-direction: column; gap: 10px; width: 180px; flex-shrink: 0;">
-                        <div class="window" style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column;">
-                            <div class="window-content"
-                                style="flex-grow: 1; padding: 5px; display: flex; flex-direction: column;">
-                                <div style="font-size: 10px; color: var(--retro-border-dark); margin-bottom: 2px;">Sua
-                                    Bio:</div>
-                                <textarea id="bio" class="inline-input"
-                                    style="flex-grow: 1; resize: none; font-size: 12px;" maxlength="160"
-                                    oninput="atualizarContadorBio()"></textarea>
-                                <div style="text-align: right; font-size: 9px; color: gray;" id="bio-contador">0 / 160
-                                </div>
+                    <fieldset style="text-align: left;">
+                        <legend>Dados Básicos</legend>
+                        <div style="margin-bottom: 5px;">
+                            <label style="font-size: 10px; color: var(--retro-border-dark);">Usuário:</label>
+                            <div style="display: flex; align-items: center;">
+                                <span style="font-size: 11px;">@</span>
+                                <input type="text" id="username" class="inline-input"
+                                    style="font-weight: bold; font-size: 12px; border-bottom: 1px solid var(--retro-border-dark); border-top: none; border-left: none; border-right: none;"
+                                    required>
                             </div>
                         </div>
-                        <div class="window" style="margin-bottom: 0;">
-                            <div class="window-content"
-                                style="padding: 5px; font-size: 11px; display: flex; gap: 10px; flex-wrap: wrap;">
+
+                        <div style="margin-bottom: 5px;">
+                            <label style="font-size: 10px; color: var(--retro-border-dark);">Pronomes:</label>
+                            <input type="text" id="pronouns" class="inline-input"
+                                style="font-size: 11px; color: var(--retro-border-dark);" placeholder="ele/ela">
+                        </div>
+
+                        <div>
+                            <label style="font-size: 10px; color: var(--retro-border-dark);">Last.fm:</label>
+                            <input type="text" id="lastfmusername" class="inline-input" style="font-size: 11px;">
+                        </div>
+                    </fieldset>
+                </div>
+
+                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px; min-width: 300px;">
+                    <div style="display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap;">
+                        <fieldset style="flex-grow: 1; display: flex; flex-direction: column; min-width: 150px;">
+                            <legend>Sua Bio</legend>
+                            <textarea id="bio" class="inline-input"
+                                style="flex-grow: 1; resize: none; font-size: 12px; min-height: 80px;" maxlength="160"
+                                oninput="atualizarContadorBio()"></textarea>
+                            <div style="text-align: right; font-size: 9px; color: gray;" id="bio-contador">0 / 160</div>
+                        </fieldset>
+                        <fieldset style="min-width: 120px;">
+                            <legend>Estatísticas</legend>
+                            <div style="font-size: 11px; display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
                                 <span>Posts: <b id="preview-post-count">0</b></span>
                                 <span id="preview-joined-date" style="color: var(--retro-border-dark);"></span>
                             </div>
-                        </div>
+                        </fieldset>
                     </div>
-                    <div class="window img-container"
-                        style="margin-bottom: 0; flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; cursor: pointer;"
+
+                    <fieldset style="padding: 0; position: relative; cursor: pointer; overflow: hidden;"
                         onclick="document.getElementById('banner_file').click()">
-                        <div class="window-content"
-                            style="padding: 0; flex-grow: 1; height: 100%; min-height: 125px; background: #000; display: flex; align-items: stretch; justify-content: center; overflow: hidden; position: relative;">
+                        <legend style="margin-left: 10px;">Capa do Perfil</legend>
+                        <div class="img-container" style="height: 125px; background: #000; position: relative;">
                             <img id="preview-banner-img" src="/images/placeholder.webp"
-                                style="width: 100%; height: 100%; height: 160px; object-fit: cover; display: block; image-rendering: pixelated;">
+                                style="width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: pixelated;">
                             <div class="img-overlay">TROCAR CAPA</div>
                             <input type="file" id="banner_file" accept="image/*" style="display: none;">
                             <input type="hidden" id="bannerimage">
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
+
             </div>
 
-            <div class="window" style="margin-top: 10px;">
-                <div class="window-header">Fundo da Página</div>
-                <div class="window-content" style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <fieldset style="margin-top: 15px;">
+                <legend>Fundo da Página</legend>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                     <div style="display: flex; flex-direction: column;">
                         <label style="font-size: 10px; color: var(--retro-border-dark);">Cor de Fundo:</label>
                         <div style="display: flex; gap: 5px; align-items: center;">
@@ -151,44 +154,47 @@
                         <input type="hidden" id="clear_backgroundimage" value="false">
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
-            <div style="margin-top: 15px; text-align: right; padding-top: 10px;">
+            <footer style="margin-top: 15px; text-align: right;">
                 <button type="submit" class="btn-bold" style="padding: 5px 20px;">SALVAR ALTERAÇÕES</button>
-            </div>
+            </footer>
         </form>
-    </div>
-</div>
+    </section>
+</article>
 
-<div class="window" style="max-width: 800px; margin: 10px auto;">
-    <div class="window-header">
+<article class="window" style="max-width: 800px; margin: 10px auto;">
+    <header class="window-header">
         <span>Segurança</span>
-    </div>
-    <div class="window-content">
+    </header>
+    <section class="window-content">
         <form id="change-password-form">
-            <table border="0" cellpadding="2" cellspacing="0" style="font-size: 11px;">
-                <tr>
-                    <td width="120"><b>Senha Atual:</b></td>
-                    <td><input type="password" id="current_password" required class="inline-input"
-                            style="border: 1px solid var(--retro-border-dark); background: white;"></td>
-                </tr>
-                <tr>
-                    <td><b>Nova Senha:</b></td>
-                    <td><input type="password" id="new_password" required class="inline-input"
-                            style="border: 1px solid var(--retro-border-dark); background: white;"></td>
-                </tr>
-                <tr>
-                    <td><b>Confirmar Senha:</b></td>
-                    <td><input type="password" id="confirm_password" required class="inline-input"
-                            style="border: 1px solid var(--retro-border-dark); background: white;"></td>
-                </tr>
-            </table>
-            <div style="margin-top: 10px;">
-                <button type="submit" class="btn-sm">ALTERAR SENHA</button>
-            </div>
+            <fieldset>
+                <legend>Alterar Senha</legend>
+                <table border="0" cellpadding="2" cellspacing="0" style="font-size: 11px;">
+                    <tr>
+                        <td width="120"><b>Senha Atual:</b></td>
+                        <td><input type="password" id="current_password" required class="inline-input"
+                                style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    </tr>
+                    <tr>
+                        <td><b>Nova Senha:</b></td>
+                        <td><input type="password" id="new_password" required class="inline-input"
+                                style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    </tr>
+                    <tr>
+                        <td><b>Confirmar Senha:</b></td>
+                        <td><input type="password" id="confirm_password" required class="inline-input"
+                                style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    </tr>
+                </table>
+                <footer style="margin-top: 10px;">
+                    <button type="submit" class="btn-sm">ALTERAR SENHA</button>
+                </footer>
+            </fieldset>
         </form>
-    </div>
-</div>
+    </section>
+</article>
 
 <script>
     function atualizarContadorBio() {

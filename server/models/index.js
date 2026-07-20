@@ -11,6 +11,7 @@ const { Filme } = require('./Watchlist');
 const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
 const { Galeria, GaleriaItem, GaleriaContributor } = require('./Galeria');
 const { Badge, BadgeUser } = require('./Social/Badges');
+const Cutucada = require('./Social/Cutucada');
 const SystemConfig = require('./SystemConfig');
 const Pet = require('./Pet/Pet');
 const Item = require('./Pet/Item');
@@ -128,9 +129,15 @@ Badge.belongsToMany(User, { through: BadgeUser, foreignKey: 'badgeId', otherKey:
 BadgeUser.belongsTo(Badge, { foreignKey: 'badgeId' });
 BadgeUser.belongsTo(User, { foreignKey: 'userId' });
 
+// Associações de Cutucada
+Cutucada.belongsTo(User, { foreignKey: 'senderUserId', as: 'sender' });
+Cutucada.belongsTo(User, { foreignKey: 'targetUserId', as: 'target' });
+User.hasMany(Cutucada, { foreignKey: 'senderUserId', as: 'cutucadasEnviadas' });
+User.hasMany(Cutucada, { foreignKey: 'targetUserId', as: 'cutucadasRecebidas' });
+
 module.exports = {
     sequelize, User, UserSession, ChatTopic, Chat, ChatMessage, DM, DMMessage,
     Cartinha, Follow, Notification, Post, PostMedia, PostLike, PostBookmark, PostMention,
     Rodinha, Filme, ImagemDoDia, ImagemDoDiaBorder, Galeria, GaleriaItem, GaleriaContributor,
-    Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role, PushSubscription, Stamp
+    Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role, PushSubscription, Stamp, Cutucada
 };

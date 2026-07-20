@@ -1,30 +1,13 @@
 <title>Gerenciar Cartinhas - Administração</title>
 
-<div class="window" style="margin-bottom: 20px;">
+<div class="window">
     <div class="window-header">
         <span>Gerenciar Cartinhas</span>
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
             Painel ]</a>
     </div>
-    <div class="window-content" style="padding: 15px; background: var(--retro-bg);">
-        <div style="display: flex; justify-content: space-around; text-align: center; gap: 10px;">
-            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
-                <div style="font-size: 11px; font-weight: bold;">TOTAL</div>
-                <div id="totalCartinhas" style="font-size: 20px; font-weight: bold; margin-top: 5px;">-</div>
-            </div>
-            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
-                <div style="font-size: 11px; font-weight: bold;">NÃO LIDAS</div>
-                <div id="naoLidas" style="font-size: 20px; font-weight: bold; color: #800000; margin-top: 5px;">-</div>
-            </div>
-            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
-                <div style="font-size: 11px; font-weight: bold;">LIDAS</div>
-                <div id="lidas" style="font-size: 20px; font-weight: bold; color: #008000; margin-top: 5px;">-</div>
-            </div>
-            <div style="background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark); padding: 10px; flex: 1;">
-                <div style="font-size: 11px; font-weight: bold;">FAVORITAS</div>
-                <div id="favoritas" style="font-size: 20px; font-weight: bold; color: #000080; margin-top: 5px;">-</div>
-            </div>
-        </div>
+    <div class="window-content" style="padding: 10px; background: var(--retro-bg);">
+        <p style="margin: 0; font-size: 11px; text-align: center;">Selecione um usuário para visualizar e moderar suas cartinhas recebidas.</p>
     </div>
 </div>
 
@@ -54,14 +37,6 @@
                     <button id="refreshBtn">Atualizar</button>
                 </div>
         </div>
-        
-        <div class="window" style="margin-top: 15px;">
-            <div class="window-header">Stamps / Selos</div>
-            <div class="window-content" style="padding: 10px; text-align: center;">
-                <p style="font-size: 11px; margin-bottom: 10px;">Adicione ou remova selos de cartinhas.</p>
-                <button onclick="abrirStampsModal()">Gerenciar Stamps</button>
-            </div>
-        </div>
     </div>
 
     <!-- Lista de Usuários -->
@@ -82,8 +57,7 @@
 </div>
 
 <!-- Modal para Cartinhas do Usuário -->
-<dialog id="cartinhasModal" class="window"
-    style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 600px; background: var(--retro-window-bg, #c0c0c0);">
+<dialog id="cartinhasModal" class="window" style="width: 600px;">
     <div class="window-header">
         <span id="modalTitle">Cartinhas do Usuário</span>
         <button type="button" class="window-btn" onclick="document.getElementById('cartinhasModal').close()"
@@ -101,7 +75,7 @@
             <input type="text" id="modalSearch" placeholder="Buscar por remetente..." style="flex: 2;">
         </div>
     </div>
-    <div class="window-content" style="padding: 10px;">
+    <div class="window-content">
         <div id="cartinhasList"
             style="height: 350px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;">
         </div>
@@ -110,42 +84,14 @@
 
         <div
             style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <button id="deleteSelectedBtn" style="color: #800000; font-weight: bold;" disabled>Remover
+            <button id="deleteSelectedBtn" style="color: #800000; font-weight: bold;" disabled>Excluir
                 Selecionadas</button>
             <button onclick="document.getElementById('cartinhasModal').close()">Fechar</button>
         </div>
     </div>
 </dialog>
 
-<!-- Modal de Stamps -->
-<dialog id="stampsModal" class="window" style="padding: 0; border: 2px outset var(--retro-border-light, #ddd); width: 500px; background: var(--retro-window-bg, #c0c0c0);">
-    <div class="window-header">
-        <span>Gerenciar Stamps</span>
-        <button type="button" class="window-btn" onclick="document.getElementById('stampsModal').close()" style="float: right;">[Fechar]</button>
-    </div>
-    <div class="window-content" style="padding: 10px; background: var(--retro-window-bg);">
-        <div style="background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; margin-bottom: 15px;">
-            <h4 style="margin: 0 0 10px 0; color: var(--retro-text);">Novo Stamp</h4>
-            <form id="formNovoStamp" style="display: flex; gap: 10px; align-items: flex-end;">
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; font-weight: bold;">Nome:</label>
-                    <input type="text" id="stampName" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; font-weight: bold;">Imagem:</label>
-                    <input type="file" id="stampFile" accept="image/*" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
-                </div>
-                <div>
-                    <button type="submit" class="window-btn" id="btnSalvarStamp" style="font-weight: bold;">Salvar</button>
-                </div>
-            </form>
-        </div>
 
-        <div id="stampsList" style="height: 250px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start;">
-            <!-- Stamps carregados via JS -->
-        </div>
-    </div>
-</dialog>
 
 <script>
     // ==================== Variáveis Globais ====================
@@ -162,7 +108,6 @@
     // ==================== Inicialização ====================
     document.addEventListener('DOMContentLoaded', () => {
         carregarUsuarios();
-        carregarEstatisticas();
 
         document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
         document.getElementById('searchInput').addEventListener('input', () => {
@@ -171,7 +116,6 @@
         });
         document.getElementById('refreshBtn').addEventListener('click', () => {
             carregarUsuarios();
-            carregarEstatisticas();
         });
 
         document.getElementById('modalStatusFilter').addEventListener('change', () => {
@@ -186,8 +130,6 @@
             }, 500);
         });
         document.getElementById('deleteSelectedBtn').addEventListener('click', confirmarRemocaoSelecionadas);
-
-        document.getElementById('formNovoStamp').addEventListener('submit', salvarNovoStamp);
     });
 
     // ==================== Carregamento de Dados ====================
@@ -213,18 +155,7 @@
         }
     }
 
-    async function carregarEstatisticas() {
-        try {
-            const response = await fetch('/api/admin/cartinhas/estatisticas', { credentials: 'include' });
-            if (response.ok) {
-                const stats = await response.json();
-                document.getElementById('totalCartinhas').textContent = stats.total || 0;
-                document.getElementById('naoLidas').textContent = stats.naolidas || 0;
-                document.getElementById('lidas').textContent = stats.lidas || 0;
-                document.getElementById('favoritas').textContent = stats.favoritas || 0;
-            }
-        } catch (error) { }
-    }
+
 
     async function carregarCartinhasUsuario() {
         if (!currentUserId) return;
@@ -352,7 +283,7 @@
         currentModalPage = 1;
         selectedCartinhas.clear();
         document.getElementById('deleteSelectedBtn').disabled = true;
-        document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
+        document.getElementById('deleteSelectedBtn').textContent = 'Excluir Selecionadas';
         document.getElementById('modalTitle').textContent = `Cartinhas de ${username}`;
         carregarCartinhasUsuario();
         document.getElementById('cartinhasModal').showModal();
@@ -367,7 +298,7 @@
 
         const btn = document.getElementById('deleteSelectedBtn');
         btn.disabled = selectedCartinhas.size === 0;
-        btn.textContent = selectedCartinhas.size > 0 ? `Remover (${selectedCartinhas.size})` : 'Remover Selecionadas';
+        btn.textContent = selectedCartinhas.size > 0 ? `Excluir (${selectedCartinhas.size})` : 'Excluir Selecionadas';
     }
 
     async function confirmarRemocaoUnica(id) {
@@ -396,10 +327,9 @@
             if (response.ok) {
                 selectedCartinhas.clear();
                 document.getElementById('deleteSelectedBtn').disabled = true;
-                document.getElementById('deleteSelectedBtn').textContent = 'Remover Selecionadas';
+                document.getElementById('deleteSelectedBtn').textContent = 'Excluir Selecionadas';
                 carregarCartinhasUsuario();
                 carregarUsuarios();
-                carregarEstatisticas();
             } else {
                 alert('Erro ao remover cartinhas');
             }
@@ -415,83 +345,5 @@
     }
     function mostrarLoading(s) { document.getElementById('loading').style.display = s ? 'block' : 'none'; }
 
-    // ==================== Stamps ====================
-    async function abrirStampsModal() {
-        carregarStamps();
-        document.getElementById('stampsModal').showModal();
-    }
 
-    async function carregarStamps() {
-        const container = document.getElementById('stampsList');
-        container.innerHTML = '<div style="width: 100%; text-align: center; color: gray;">Carregando...</div>';
-        try {
-            const res = await fetch('/api/admin/cartinhas/stamps');
-            if (!res.ok) throw new Error('Erro ao carregar');
-            const stamps = await res.json();
-            
-            if (stamps.length === 0) {
-                container.innerHTML = '<div style="width: 100%; text-align: center; color: gray;">Nenhum stamp cadastrado</div>';
-                return;
-            }
-
-            container.innerHTML = stamps.map(s => `
-                <div style="border: 1px solid #ccc; background: #eee; padding: 5px; width: 80px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                    <img src="${s.image_url}" style="max-width: 60px; max-height: 60px; width: auto; height: auto; margin-bottom: 5px;">
-                    <div style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name}</div>
-                    <button type="button" onclick="deletarStamp('${s.publicid}')" style="font-size: 9px; padding: 1px 4px; color: #800000; width: 100%; margin-top: 5px;">Deletar</button>
-                </div>
-            `).join('');
-        } catch (e) {
-            container.innerHTML = '<div style="width: 100%; text-align: center; color: red;">Erro ao carregar</div>';
-        }
-    }
-
-    async function salvarNovoStamp(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnSalvarStamp');
-        const name = document.getElementById('stampName').value;
-        const file = document.getElementById('stampFile').files[0];
-
-        if (!name || !file) return alert('Preencha nome e imagem!');
-
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('file', file);
-
-        try {
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-            const res = await fetch('/api/admin/cartinhas/stamps', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (res.ok) {
-                document.getElementById('formNovoStamp').reset();
-                carregarStamps();
-            } else {
-                const err = await res.json();
-                alert(err.message || 'Erro ao criar stamp');
-            }
-        } catch (err) {
-            alert('Erro de conexão');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Salvar';
-        }
-    }
-
-    async function deletarStamp(publicid) {
-        if (!await window.confirmRetro('Deletar este selo permanentemente?', 'Aviso')) return;
-        try {
-            const res = await fetch('/api/admin/cartinhas/stamps/' + publicid, { method: 'DELETE' });
-            if (res.ok) {
-                carregarStamps();
-            } else {
-                alert('Erro ao deletar');
-            }
-        } catch (err) {
-            alert('Erro de conexão');
-        }
-    }
 </script>

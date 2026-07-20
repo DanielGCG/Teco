@@ -198,63 +198,6 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
     }
 });
 
-// ==========================
-// STAMPS (SELOS DE CARTINHAS)
-// ==========================
-
-// GET /admin/cartinhas/stamps - Listar selos
-AdminCartinhasRouter.get('/stamps', async (req, res) => {
-    try {
-        const stamps = await Stamp.findAll({ order: [['createdat', 'DESC']] });
-        res.json(stamps);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao carregar stamps" });
-    }
-});
-
-// POST /admin/cartinhas/stamps - Criar selo
-AdminCartinhasRouter.post('/stamps', upload.single('file'), async (req, res) => {
-    const { name } = req.body;
-    let { image_url } = req.body;
-
-    try {
-        if (!name) return res.status(400).json({ message: "Nome do selo é obrigatório" });
-
-        if (req.file) {
-            const processed = await processImage(req.file, { name: 'stamp', width: 200, height: 200, maintainAspectRatio: true });
-            image_url = await uploadToFileServer({
-                buffer: processed.buffer,
-                filename: processed.filename,
-                folder: 'stamps',
-                mimetype: processed.mimetype
-            });
-        }
-
-        if (!image_url) return res.status(400).json({ message: "Imagem é obrigatória" });
-
-        const stamp = await Stamp.create({ name, image_url });
-        res.status(201).json(stamp);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao criar stamp" });
-    }
-});
-
-// DELETE /admin/cartinhas/stamps/:publicid - Deletar selo
-AdminCartinhasRouter.delete('/stamps/:publicid', async (req, res) => {
-    try {
-        const stamp = await Stamp.findOne({ where: { publicid: req.params.publicid } });
-        if (!stamp) return res.status(404).json({ message: "Stamp não encontrado" });
-
-        await stamp.destroy();
-        res.json({ message: "Stamp deletado com sucesso" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao deletar stamp" });
-    }
-});
-
 // GET /admin/cartinhas/:publicid - Detalhes de uma cartinha
 AdminCartinhasRouter.get('/:publicid', async (req, res) => {
     try {

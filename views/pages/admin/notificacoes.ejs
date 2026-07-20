@@ -5,7 +5,7 @@
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
     </div>
     
-    <div class="window-content" style="padding: 15px;">
+    <div class="window-content">
         <form id="formNotificacao">
             <table width="100%" cellpadding="5" cellspacing="0">
                 <tr>
@@ -58,7 +58,6 @@
             </table>
         </form>
 
-        <div id="feedbackMsg" style="margin-top: 15px; text-align: center; font-weight: bold; font-size: 13px;"></div>
     </div>
 </div>
 
@@ -92,19 +91,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const isEveryone = document.getElementById("targetUser").value === "everyone";
 
         if (isEveryone) {
-            let conf = false;
-            if (typeof window.confirmRetro === 'function') {
-                conf = await window.confirmRetro("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?", "Alerta Global");
-            } else {
-                conf = await confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
-            }
+            let conf = confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
             if (!conf) return;
         }
 
         btn.disabled = true;
         document.getElementById("btnText").style.display = "none";
         document.getElementById("loadingText").style.display = "inline";
-        feedback.textContent = "";
 
         const payload = {
             targetUserPublicId: document.getElementById("targetUser").value,
@@ -124,16 +117,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             const data = await response.json();
 
             if (response.ok) {
-                feedback.textContent = data.message || "Enviado com sucesso!";
-                feedback.style.color = "green";
+                alert(data.message || "Enviado com sucesso!");
                 this.reset();
             } else {
-                feedback.textContent = data.error || "Erro ao disparar notificação.";
-                feedback.style.color = "red";
+                alert(data.error || "Erro ao disparar notificação.");
             }
         } catch (error) {
-            feedback.textContent = "Erro de conexão com a API.";
-            feedback.style.color = "red";
+            alert("Erro de conexão com a API.");
         } finally {
             btn.disabled = false;
             document.getElementById("btnText").style.display = "inline";

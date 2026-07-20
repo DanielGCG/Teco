@@ -3,10 +3,10 @@ const AdminNotificationsRouter = express.Router();
 const { User, Notification, PushSubscription } = require("../../models");
 const webpush = require("web-push");
 
-// Configuração do Web Push (As mesmas do seu arquivo push.js)
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY || 'SUA_VAPID_PUBLIC_KEY_AQUI';
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY || 'SUA_VAPID_PRIVATE_KEY_AQUI';
-const subject = process.env.VAPID_SUBJECT || 'mailto:suporte@seusite.com';
+// Configuração do Web Push
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
+const subject = process.env.VAPID_SUBJECT;
 webpush.setVapidDetails(subject, publicVapidKey, privateVapidKey);
 
 // POST /api/admin/notifications/send - Enviar notificação manual

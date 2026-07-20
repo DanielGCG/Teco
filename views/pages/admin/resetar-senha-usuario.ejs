@@ -6,7 +6,7 @@
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
             Painel ]</a>
     </div>
-    <div class="window-content" style="padding: 15px;">
+    <div class="window-content">
 
         <div style="text-align: center; margin-bottom: 20px;">
             <img src="/images/naorelacionado/easter_egg/alert.png" alt="Aviso"
@@ -76,8 +76,7 @@
             });
         } catch (err) {
             console.error(err);
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao carregar usuários");
-            else alert("Erro ao carregar usuários");
+            alert("Erro ao carregar usuários");
         }
     }
 
@@ -87,16 +86,10 @@
         const userId = select.value;
 
         if (!userId) {
-            if (typeof mostrarAviso !== 'undefined') return mostrarAviso("Selecione um usuário");
             return alert("Selecione um usuário");
         }
 
-        let confirmado = false;
-        if (typeof mostrarConfirmacao !== 'undefined') {
-            confirmado = await mostrarConfirmacao("Tem certeza que deseja resetar a senha para 12345?");
-        } else {
-            confirmado = await confirm("Tem certeza que deseja resetar a senha para 12345?");
-        }
+        let confirmado = await confirm("Tem certeza que deseja resetar a senha para 12345?");
 
         if (!confirmado) return;
 
@@ -108,16 +101,14 @@
 
             const data = await res.json();
             if (res.ok) {
-                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Senha resetada com sucesso!");
-                else alert("Senha resetada com sucesso!");
+                alert("Senha resetada com sucesso!");
+                select.value = "";
             } else {
-                if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro: " + data.message);
-                else alert("Erro: " + data.message);
+                alert("Erro: " + data.message);
             }
         } catch (err) {
             console.error(err);
-            if (typeof mostrarAviso !== 'undefined') mostrarAviso("Erro ao resetar senha");
-            else alert("Erro ao resetar senha");
+            alert("Erro ao resetar senha");
         }
     });
 

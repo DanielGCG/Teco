@@ -107,8 +107,8 @@
 
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                 <!-- Esquerda -->
-                <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 10px;">
-                    <h4 style="margin: 0;">Informações</h4>
+                <fieldset style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 10px;">
+                    <legend>Informações</legend>
                     <div>
                         <label style="display: block;">Nome</label>
                         <input type="text" name="name" id="config-name" required
@@ -124,23 +124,20 @@
                         <label for="config-is-public">Público</label>
                     </div>
 
-                    <div id="collaborators-section" style="margin-top: 10px;">
+                    <div id="collaborators-section" style="margin-top: 10px; position: relative;">
                         <label style="display: block; font-weight: bold;">Colaboradores</label>
-                        <div style="display: flex; gap: 5px;">
-                            <input type="text" id="search-user-input" placeholder="Nome de usuário..." style="flex: 1;">
-                            <button type="button" onclick="GaleriaManager.searchUsers()" class="btn-bold">Buscar</button>
-                        </div>
-                        <div id="search-results"
-                            style="max-height: 100px; overflow-y: auto; margin-top: 5px; border: none; padding: 0;">
+                        <input type="text" id="search-user-input" placeholder="Buscar usuário..." style="width: 100%; box-sizing: border-box;" autocomplete="off" oninput="GaleriaManager.debouncedSearchUsers()">
+                        <div id="search-results" class="window"
+                            style="display: none; position: absolute; width: 100%; z-index: 100; max-height: 150px; overflow-y: auto; background: white; margin-top: 2px;">
                         </div>
                         <div id="collaborators-list"
                             style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
                     </div>
-                </div>
+                </fieldset>
 
                 <!-- Direita -->
-                <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 10px;">
-                    <h4 style="margin: 0;">Visual</h4>
+                <fieldset style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 10px;">
+                    <legend>Visual</legend>
                     <div>
                         <label style="display: block; font-size: 11px;">Capa</label>
                         <div style="display: flex; gap: 5px;">
@@ -191,18 +188,19 @@
                                 placeholder="Ex: Roboto" style="flex: 1;">
                         </div>
                     </div>
-                </div>
+                    </div>
+                </fieldset>
             </div>
 
             <hr style="width: 100%; margin: 10px 0; border: none; border-top: 1px solid gray;">
-            <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <footer style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-bottom: 5px; padding-inline: 5px;">
                 <button type="button" onclick="GaleriaManager.deleteGallery()" style="color: red;" class="btn-sm">Excluir Galeria</button>
                 <div style="display: flex; gap: 5px;">
                     <button type="button" class="btn-sm"
                         onclick="document.getElementById('modalConfig').style.display='none'; document.getElementById('modalBackdrop').style.display='none';">Cancelar</button>
                     <button type="submit" class="btn-sm btn-bold">Salvar</button>
                 </div>
-            </div>
+            </footer>
         </form>
     </div>
 </div>
@@ -275,7 +273,7 @@
 
 <!-- Modal Media Fullscreen -->
 <div id="modalMedia" class="window"
-    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 95vw; max-width: 1200px; max-height: 90vh; box-sizing: border-box;">
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: fit-content; min-width: 300px; max-width: min(95vw, 1200px); max-height: 90vh; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title" id="modalMediaTitle">Visualizador</span>
         <button type="button" class="window-btn"

@@ -1,0 +1,114 @@
+<title>Gerenciar Stamps - Administração</title>
+
+<div class="window">
+    <div class="window-header">
+        <span>Gerenciar Stamps</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
+    <div class="window-content">
+        <div style="background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; margin-bottom: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: var(--retro-text);">Novo Stamp</h4>
+            <form id="formNovoStamp" style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; font-weight: bold;">Nome:</label>
+                    <input type="text" id="stampName" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; font-weight: bold;">Imagem:</label>
+                    <input type="file" id="stampFile" accept="image/*" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+                </div>
+                <div>
+                    <button type="submit" class="window-btn" id="btnSalvarStamp" style="font-weight: bold;">Salvar</button>
+                </div>
+            </form>
+        </div>
+
+        <fieldset style="border: 2px groove var(--retro-border-light); margin: 0; padding: 10px; background: var(--retro-window-bg);">
+            <legend style="color: var(--retro-text); font-weight: bold;">Stamps Atuais</legend>
+            <div id="stampsList" style="height: 350px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start;">
+                <!-- Stamps carregados via JS -->
+            </div>
+        </fieldset>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarStamps();
+        document.getElementById('formNovoStamp').addEventListener('submit', salvarNovoStamp);
+    });
+
+    async function carregarStamps() {
+        const container = document.getElementById('stampsList');
+        container.innerHTML = '<div style="width: 100%; text-align: center; color: gray;">Carregando...</div>';
+        try {
+            const res = await fetch('/api/admin/stamps');
+            if (!res.ok) throw new Error('Erro ao carregar');
+            const stamps = await res.json();
+            
+            if (stamps.length === 0) {
+                container.innerHTML = '<div style="width: 100%; text-align: center; color: gray;">Nenhum stamp cadastrado</div>';
+                return;
+            }
+
+            container.innerHTML = stamps.map(s => `
+                <div style="border: 1px solid #ccc; background: #eee; padding: 5px; width: 80px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <img src="${s.image_url}" style="max-width: 60px; max-height: 60px; width: auto; height: auto; margin-bottom: 5px;">
+                    <div style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name}</div>
+                    <button type="button" onclick="deletarStamp('${s.publicid}')" style="font-size: 9px; padding: 1px 4px; color: #800000; width: 100%; margin-top: 5px;">Deletar</button>
+                </div>
+            `).join('');
+        } catch (e) {
+            container.innerHTML = '<div style="width: 100%; text-align: center; color: red;">Erro ao carregar</div>';
+        }
+    }
+
+    async function salvarNovoStamp(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSalvarStamp');
+        const name = document.getElementById('stampName').value;
+        const file = document.getElementById('stampFile').files[0];
+
+        if (!name || !file) return alert('Preencha nome e imagem!');
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('file', file);
+
+        try {
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            const res = await fetch('/api/admin/stamps', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                document.getElementById('formNovoStamp').reset();
+                carregarStamps();
+            } else {
+                const err = await res.json();
+                alert(err.message || 'Erro ao criar stamp');
+            }
+        } catch (err) {
+            alert('Erro de conexão');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Salvar';
+        }
+    }
+
+    async function deletarStamp(publicid) {
+        if (!await window.confirmRetro('Deletar este selo permanentemente?', 'Aviso')) return;
+        try {
+            const res = await fetch('/api/admin/stamps/' + publicid, { method: 'DELETE' });
+            if (res.ok) {
+                carregarStamps();
+            } else {
+                alert('Erro ao deletar');
+            }
+        } catch (err) {
+            alert('Erro de conexão');
+        }
+    }
+</script>

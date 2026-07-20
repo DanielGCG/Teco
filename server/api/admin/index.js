@@ -2,12 +2,10 @@ const express = require("express");
 const AdminRouter = express.Router();
 const { authMiddleware } = require("../../middlewares/authMiddleware");
 
-// Protege todas as rotas administrativas da API para Administradores (Cargo 5) ou superior (Dono)
-AdminRouter.use(authMiddleware(5));
-
 // Importar todos os roteadores administrativos
 const AdminUsersRouter = require("./users");
 const AdminCartinhasRouter = require("./cartinhas");
+const AdminStampsRouter = require("./stamps");
 const AdminChatsRouter = require("./chats");
 const AdminImagemDoDiaRouter = require("./imagemdodia");
 const AdminBadgesRouter = require("./badges");
@@ -15,28 +13,20 @@ const AdminConfigRouter = require("./config");
 const AdminPetRouter = require("./pet");
 const AdminNotificationsRouter = require("./notifications");
 
-// Rotas de usuários administrativos
-AdminRouter.use("/users", AdminUsersRouter);
+const requireAdmin = authMiddleware(5);
+const requireMod = authMiddleware(10);
 
-// Rotas de cartinhas administrativas  
-AdminRouter.use("/cartinhas", AdminCartinhasRouter);
+// Rotas exclusivas para Administradores (5) ou superior
+AdminRouter.use("/users", requireAdmin, AdminUsersRouter);
+AdminRouter.use("/stamps", requireAdmin, AdminStampsRouter);
+AdminRouter.use("/chats", requireAdmin, AdminChatsRouter);
+AdminRouter.use("/config", requireAdmin, AdminConfigRouter);
+AdminRouter.use("/pet", requireAdmin, AdminPetRouter);
 
-// Rotas de chats administrativos
-AdminRouter.use("/chats", AdminChatsRouter);
-
-// Rotas de badges administrativas
-AdminRouter.use("/badges", AdminBadgesRouter);
-
-// Rotas de imagem do dia administrativas
-AdminRouter.use("/imagemdodia", AdminImagemDoDiaRouter);
-
-// Rotas de configurações globais
-AdminRouter.use("/config", AdminConfigRouter);
-
-// Rotas de gerenciamento de pets e itens
-AdminRouter.use("/pet", AdminPetRouter);
-
-// Rotas de notificações
-AdminRouter.use("/notifications", AdminNotificationsRouter);
+// Rotas permitidas para Moderadores (10)
+AdminRouter.use("/badges", requireMod, AdminBadgesRouter);
+AdminRouter.use("/cartinhas", requireMod, AdminCartinhasRouter);
+AdminRouter.use("/imagemdodia", requireMod, AdminImagemDoDiaRouter);
+AdminRouter.use("/notifications", requireMod, AdminNotificationsRouter);
 
 module.exports = AdminRouter;

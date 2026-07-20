@@ -1,0 +1,186 @@
+<article class="window">
+    <header class="window-header">
+        <span>Cutucar</span>
+        <nav style="float: right;">
+            <a href="/" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
+        </nav>
+    </header>
+    <section class="window-content" style="background: var(--retro-bg);">
+    
+        <aside style="margin-top: 10px; padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
+            <b>Dica:</b> Você tem direito a 20 cutucadas individuais por hora e 1 cutucada geral por dia!
+        </aside>
+
+        <form id="cutucarForm" style="margin-top: 10px;">
+            <fieldset style="position: relative; margin-bottom: 15px;">
+                <legend>Cutucada Individual (<span id="individualCounter"><%= remainingNormalPokes %></span> restantes nesta hora)</legend>
+                
+                <div style="margin-bottom: 10px; position: relative;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">Para quem?</label>
+                    <input type="text" id="destinatario" placeholder="Digite o nome do usuário..." autocomplete="off"
+                        style="width: 100%; box-sizing: border-box;">
+                    <input type="hidden" id="destinatarioId">
+                    
+                    <div id="sugestoesUsuarios" class="window"
+                        style="display: none; position: absolute; width: 100%; z-index: 100; max-height: 150px; overflow-y: auto; background: white; top: 100%; left: 0;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">Mensagem</label>
+                    <textarea id="mensagem" name="mensagem" style="width: 100%; box-sizing: border-box; resize: vertical;" rows="2" placeholder="Deixe uma mensagem (opcional)..."></textarea>
+                </div>
+                
+                <footer style="margin-top: 10px; text-align: right;">
+                    <button type="submit" style="font-weight: bold;" <%= remainingNormalPokes <= 0 ? 'disabled' : '' %>>Cutucar</button>
+                </footer>
+            </fieldset>
+        </form>
+
+        <form id="cutucarGeralForm">
+            <fieldset>
+                <legend>Cutucada Geral (<%= remainingGlobalPokes %> restante(s) hoje)</legend>
+                
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">Mensagem para todos do servidor</label>
+                    <textarea id="mensagemGeral" name="mensagemGeral" style="width: 100%; box-sizing: border-box; resize: vertical;" rows="2" placeholder="Deixe uma mensagem (opcional)..."></textarea>
+                </div>
+                
+                <footer style="margin-top: 10px; text-align: right;">
+                    <button type="submit" style="font-weight: bold;" <%= remainingGlobalPokes <= 0 ? 'disabled' : '' %>>Cutucar Geral</button>
+                </footer>
+            </fieldset>
+        </form>
+
+    </section>
+</article>
+
+<script>
+    // == LÓGICA DE BUSCA DE USUÁRIO ==
+    let timeoutBusca = null;
+    const inputDestinatario = document.getElementById('destinatario');
+    const inputHidden = document.getElementById('destinatarioId');
+    const divSugestoes = document.getElementById('sugestoesUsuarios');
+
+    inputDestinatario.addEventListener('input', () => {
+        clearTimeout(timeoutBusca);
+        timeoutBusca = setTimeout(() => buscarUsuarios(inputDestinatario.value), 300);
+    });
+
+    async function buscarUsuarios(q) {
+        if (!q.trim()) {
+            divSugestoes.style.display = 'none';
+            return;
+        }
+        
+        try {
+            const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            const users = data.usuarios || [];
+            
+            if (users.length === 0) {
+                divSugestoes.innerHTML = '<div style="padding: 10px; font-size: 11px; color: #666;">Nenhum usuário...</div>';
+            } else {
+                divSugestoes.innerHTML = users.map(u => `
+                    <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" 
+                         onclick="selecionarUsuario('${u.publicid}', '${u.username}')">
+                        <img src="${u.profileimage}" style="vertical-align: middle; width: 20px; height: 20px; margin-right: 5px; border: 1px solid #ccc; object-fit: cover;">
+                        <b style="color: black;">${u.username}</b>
+                    </div>
+                `).join('');
+            }
+            divSugestoes.style.display = 'block';
+        } catch(e) {
+            console.error("Erro na busca de usuários", e);
+        }
+    }
+
+    window.selecionarUsuario = function(id, username) {
+        inputHidden.value = id;
+        inputDestinatario.value = username;
+        divSugestoes.style.display = 'none';
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#destinatario') && !e.target.closest('#sugestoesUsuarios')) {
+            divSugestoes.style.display = 'none';
+        }
+    });
+
+    // == LÓGICA DE SUBMISSÃO (INDIVIDUAL) ==
+    document.getElementById('cutucarForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const destId = inputHidden.value;
+        const msg = document.getElementById('mensagem').value;
+        
+        if (!destId) {
+            return alert('Selecione um usuário primeiro!', true);
+        }
+
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+        
+        try {
+            const res = await fetch('/api/cutucadas/poke', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId: destId, message: msg })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert('Cutucada enviada com sucesso!');
+                if (data.remaining !== undefined) {
+                    document.getElementById('individualCounter').innerText = data.remaining;
+                }
+                btn.disabled = false;
+                btn.textContent = 'Cutucar';
+            } else {
+                alert(data.error || 'Erro ao cutucar.', true);
+                btn.disabled = false;
+                btn.textContent = 'Cutucar';
+            }
+        } catch(err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.textContent = 'Cutucar';
+        }
+    });
+
+    // == LÓGICA DE SUBMISSÃO (GERAL) ==
+    document.getElementById('cutucarGeralForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const msg = document.getElementById('mensagemGeral').value;
+        
+        const confirmar = await window.confirmRetro('Você está prestes a notificar TODOS os usuários da plataforma. Tem certeza disso? (Lembre-se, isso conta no seu limite de 1 por dia)', 'Confirmação');
+        if (!confirmar) return;
+
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Enviando Geral...';
+        
+        try {
+            const res = await fetch('/api/cutucadas/poke-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert('Cutucada Geral enviada com sucesso!');
+                btn.disabled = false;
+                btn.textContent = 'Cutucar Geral';
+            } else {
+                alert(data.error || 'Erro ao cutucar geral.', true);
+                btn.disabled = false;
+                btn.textContent = 'Cutucar Geral';
+            }
+        } catch(err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.textContent = 'Cutucar Geral';
+        }
+    });
+</script>

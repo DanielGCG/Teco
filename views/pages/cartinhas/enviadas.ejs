@@ -1,14 +1,14 @@
 <link rel="stylesheet" href="/styles/commons/cartinhas-modals.css">
 <script src="/js/commons/cartinhas-common.js"></script>
 
-<div class="window">
-    <div class="window-header">
+<article class="window">
+    <header class="window-header">
         <span>Cartinhas Enviadas</span>
-        <div style="float: right;">
+        <nav style="float: right;">
             <a href="/cartinhas" style="color: white; text-decoration: none; font-size: 10px;">[Voltar]</a>
-        </div>
-    </div>
-    <div class="window-content">
+        </nav>
+    </header>
+    <section class="window-content">
         <div id="loading" style="text-align: center; padding: 20px;">
             <p>Carregando histórico...</p>
         </div>
@@ -21,8 +21,8 @@
             <p>Você ainda não enviou nada...</p>
             <a href="/cartinhas/escrever">Escrever agora</a>
         </div>
-    </div>
-</div>
+    </section>
+</article>
 
 <script>
     window.tipoCartinhas = 'enviadas';

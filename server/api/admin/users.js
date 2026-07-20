@@ -4,8 +4,6 @@ const { User } = require("../../models");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 
-
-
 // GET /admin/users - Listar todos usuários (admin)
 // Suporta ?search= para busca parcial
 AdminUsersRouter.get('/', async (req, res) => {
