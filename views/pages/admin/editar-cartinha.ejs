@@ -57,7 +57,7 @@
 </div>
 
 <!-- Modal para Cartinhas do Usuário -->
-<dialog id="cartinhasModal" class="window" style="width: 600px;">
+<dialog id="cartinhasModal" class="window" style="padding: 0; width: 600px; max-width: 95vw; box-sizing: border-box;">
     <div class="window-header">
         <span id="modalTitle">Cartinhas do Usuário</span>
         <button type="button" class="window-btn" onclick="document.getElementById('cartinhasModal').close()"
@@ -237,19 +237,18 @@
                         <td valign="top" style="padding-left: 5px;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                                    <strong style="font-size: 13px;">${c.title || '(Sem título)'}</strong>
+                                    <strong style="color: #444; font-size: 13px;">
+                                        <span style="color: #800000;">${c.remetente?.username || 'Ex-membro'}</span> 
+                                        <span style="color: #888;">&rarr;</span> 
+                                        <span style="color: #000080;">${c.destinatario?.username || 'Ex-membro'}</span>
+                                    </strong>
                                 </div>
                                 <div style="display: flex; gap: 5px; align-items: center;">
-                                    ${c.createdAt ? `<span style="font-size: 10px; color: #666; font-family: monospace; border: 1px inset var(--retro-border-light); padding: 0 3px;">${new Date(c.createdAt).toLocaleDateString('pt-BR')}</span>` : ''}
                                     ${statusBadge}
                                 </div>
                             </div>
-                            <div style="margin-top: 2px;">
-                                <small style="color: #444;">
-                                    <span style="color: #800000;">${c.remetente?.username || 'Ex-membro'}</span> 
-                                    <span style="color: #888;">&rarr;</span> 
-                                    <span style="color: #000080;">${c.destinatario?.username || 'Ex-membro'}</span>
-                                </small>
+                            <div style="margin-top: 4px;">
+                                ${ (c.createdat) ? `<span style="font-size: 11px; color: #666; font-family: monospace;">Enviada em: ${new Date(c.createdAt || c.createdat).toLocaleString('pt-BR')}</span>` : ''}
                             </div>
                         </td>
                         <td width="40" align="right" valign="middle">

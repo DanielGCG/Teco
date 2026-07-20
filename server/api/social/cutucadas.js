@@ -60,7 +60,7 @@ router.post('/poke', async (req, res) => {
 
         const title = `Alguém te cutucou!`;
         const body = message || 'Você recebeu uma cutucada.';
-        const link = `/features/cutucar`;
+        const link = `/cutucar`;
 
         // Cria a notificação
         await Notification.create({
@@ -136,7 +136,7 @@ router.post('/poke-all', async (req, res) => {
 
         const title = `Alguém cutucou geral!`;
         const body = message || 'Geral foi cutucado!';
-        const link = `/features/cutucar`;
+        const link = `/cutucar`;
 
         const notificationsData = users.map(u => ({
             targetUserId: u.id,
