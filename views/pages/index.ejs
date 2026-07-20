@@ -129,11 +129,13 @@
                     nextImage();
                     startInterval();
                 } else {
-                    // Clique no centro -> Abrir link
+                    // Clique no centro -> Abrir link ou a própria imagem
                     const currentImg = images[currentIndex];
                     const link = currentImg.getAttribute('data-link');
                     if (link && link.trim() !== '') {
                         window.location.href = link;
+                    } else {
+                        window.open(currentImg.src, '_blank');
                     }
                 }
             });
