@@ -75,7 +75,7 @@ function startCronJobs(io) {
                         type: 'info',
                         title: 'Seu BotecoGotchi faleceu 🪦',
                         body: `O(a) ${pet.name} ${causeStr}`,
-                        link: '/gotchi/cemiterio'
+                        link: '/pet/cemiterio'
                     });
 
                     // Notifica via Push
@@ -83,7 +83,7 @@ function startCronJobs(io) {
                         title: 'Descanse em paz...',
                         body: `O(a) ${pet.name} ${causeStr} Ele agora descansa no cemitério.`,
                         icon: '/images/Teco.webp',
-                        url: '/gotchi/cemiterio'
+                        url: '/pet/cemiterio'
                     });
                     await sendPushToUser(pet.owner, payload);
 
@@ -99,7 +99,7 @@ function startCronJobs(io) {
                         title: 'Presente para o seu BotecoGotchi!',
                         body: `O resgate diário de suprimentos do ${pet.name} já está disponível!`,
                         icon: '/images/Teco.webp',
-                        url: '/gotchi'
+                        url: '/pet'
                     });
                     await sendPushToUser(pet.owner, payload);
                 }
@@ -142,7 +142,7 @@ function startCronJobs(io) {
                         title: `Seu BotecoGotchi precisa de você!`,
                         body: `${urgencia}O(a) ${pet.name} está precisando muito de: ${necessidades.join(', ')}.`,
                         icon: '/images/Teco.webp',
-                        url: '/gotchi'
+                        url: '/pet'
                     });
                     await sendPushToUser(pet.owner, payload);
                 }

@@ -17,6 +17,7 @@ const ImagemDoDiaRouter = require("./imagemdodia");
 const GaleriaRouter = require("./galeria-api");
 const BadgesRouter = require("./social/badges");
 const CutucadasRouter = require("./social/cutucadas");
+const BlogRouter = require("./blog");
 
 // Rotas de usuários (tem rotas públicas e protegidas dentro)
 router.use("/users", UsersRouter);
@@ -35,6 +36,7 @@ router.use("/imagemdodia", authMiddleware(20), ImagemDoDiaRouter);
 router.use("/galeria", authMiddleware(20), GaleriaRouter);
 router.use("/badges", authMiddleware(20), BadgesRouter);
 router.use("/cutucadas", authMiddleware(20), CutucadasRouter);
+router.use("/blog", authMiddleware(20), BlogRouter);
 router.use("/admin", authMiddleware(5), AdminRouter);
 
 module.exports = router;

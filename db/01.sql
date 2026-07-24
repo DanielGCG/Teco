@@ -636,3 +636,50 @@ CREATE TABLE IF NOT EXISTS cutucadas (
     FOREIGN KEY (senderUserId) REFERENCES user(id) ON DELETE CASCADE,
     FOREIGN KEY (targetUserId) REFERENCES user(id) ON DELETE CASCADE
 );
+
+-- ==========================
+-- TABELAS DE BLOG
+-- ==========================
+CREATE TABLE IF NOT EXISTS blog (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    publicid VARCHAR(36) NOT NULL UNIQUE,
+    title VARCHAR(255) NOT NULL,
+    content LONGTEXT NOT NULL,
+    authorUserId INT UNSIGNED NOT NULL,
+    applausecount INT UNSIGNED NOT NULL DEFAULT 0,
+    backgroundurl VARCHAR(255),
+    backgroundfill VARCHAR(10) NOT NULL DEFAULT 'cover',
+    backgroundcolor VARCHAR(7) NOT NULL DEFAULT '#f4f4f4',
+    fontcolor VARCHAR(7) NOT NULL DEFAULT '#000000',
+    fontfamily VARCHAR(50) NOT NULL DEFAULT 'Inter',
+    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (authorUserId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS blogapplause(
+    blogId INT UNSIGNED NOT NULL,
+    userId INT UNSIGNED NOT NULL,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (blogId, userId),
+    FOREIGN KEY (blogId) REFERENCES blog(id) ON DELETE CASCADE,
+    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+DELIMITER //
+
+CREATE TRIGGER trg_blogapplause_insert
+AFTER INSERT ON blogapplause
+FOR EACH ROW
+BEGIN
+    UPDATE blog SET applausecount = applausecount + 1 WHERE id = NEW.blogId;
+END//
+
+CREATE TRIGGER trg_blogapplause_delete
+AFTER DELETE ON blogapplause
+FOR EACH ROW
+BEGIN
+    UPDATE blog SET applausecount = applausecount - 1 WHERE id = OLD.blogId;
+END//
+
+DELIMITER ;

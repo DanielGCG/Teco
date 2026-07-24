@@ -1,0 +1,408 @@
+<!-- EasyMDE -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+
+<div class="window mt-3">
+    <div class="window-header">
+        <span class="window-title" id="editor-window-title"><%= blogId ? 'Editar Artigo' : 'Novo Artigo' %></span>
+        <nav style="float: right;">
+            <% if (blogId) { %>
+                <a href="javascript:void(0)" onclick="deletarBlog()" style="color: red; text-decoration: none; font-size: 11px; margin-right: 10px;">[Deletar]</a>
+            <% } %>
+            <a href="javascript:salvarRascunhoList()" style="color: white; text-decoration: none; font-size: 11px; margin-right: 10px;">[Salvar Rascunho]</a>
+            <a href="javascript:abrirRascunhos()" style="color: white; text-decoration: none; font-size: 11px; margin-right: 10px;">[Meus Rascunhos]</a>
+            <a href="javascript:document.getElementById('blogForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))" style="color: white; text-decoration: none; font-size: 11px; font-weight: bold;">[<%= blogId ? 'Atualizar' : 'Publicar' %>]</a>
+            <a href="javascript:history.back()" style="color: white; text-decoration: none; font-size: 11px; margin-left: 10px;">[Cancelar]</a>
+        </nav>
+    </div>
+    <div class="window-content" style="padding: 10px;">
+        <form id="blogForm">
+            <fieldset style="margin-bottom: 15px; border: 1px solid var(--retro-border-dark); padding: 10px;">
+                <legend style="font-weight: bold; padding: 0 5px;">Visual</legend>
+                <input type="hidden" name="remove_background" id="flag-remove-bg" value="false">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 2px;">Fundo (Imagem)</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="file" id="input-bg" accept="image/*" style="flex: 1; width: 100%;">
+                            <button type="button" onclick="removeBackground()" class="btn-micro" style="font-size: 10px;">X</button>
+                        </div>
+                        <small id="status-bg" style="color: red; display: none;">Será removida ao salvar</small>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 2px;">Preenchimento (Fundo)</label>
+                        <select id="config-bg-fill" style="width: 100%;">
+                            <option value="cover">Cobrir</option>
+                            <option value="repeat">Repetir</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; margin-bottom: 2px;">Cor do Fundo</label>
+                        <input type="color" id="config-bg-color" value="#f4f4f4">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; margin-bottom: 2px;">Cor do Texto</label>
+                        <input type="color" id="config-font-color" value="#000000">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 2px;">Fonte (Google)</label>
+                        <input type="text" id="config-font-family" placeholder="Ex: Roboto">
+                    </div>
+                </div>
+            </fieldset>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Conteúdo</label>
+                <textarea id="content"></textarea>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Rascunhos -->
+<dialog id="modalRascunhosRetro" class="window"
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; min-width: 300px; max-width: 90%; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); padding: 0; border: none; background: transparent;">
+    <header class="window-header">
+        <span>Rascunhos Locais</span>
+        <button type="button" class="window-btn"
+            onclick="document.getElementById('modalRascunhosRetro').style.display='none'; document.getElementById('overlayRetroMsg').style.display='none';"
+            style="float: right;">[Fechar]</button>
+    </header>
+    <section class="window-content" style="max-height: 300px; overflow-y: auto; padding: 10px; margin: 0;">
+        <div id="gradeRascunhos"></div>
+    </section>
+</dialog>
+<div id="overlayRetroMsg"
+    onclick="document.getElementById('modalRascunhosRetro').style.display='none'; this.style.display='none';"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 10000;">
+</div>
+
+<script>
+    const blogId = '<%= blogId %>';
+    let easyMDE;
+
+    function processCustomTags(text) {
+        return text.replace(/\[color=([a-zA-Z0-9#]+)\](.*?)\[\/color\]/gs, '<span style="color: $1;">$2</span>');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Inicializar EasyMDE
+        easyMDE = new EasyMDE({
+            element: document.getElementById('content'),
+            spellChecker: false,
+            previewRender: function(plainText) {
+                return this.parent.markdown(processCustomTags(plainText));
+            },
+            autosave: {
+                enabled: !blogId,
+                uniqueId: "blog_new_draft",
+                delay: 1000,
+            },
+            toolbar: [
+                "bold", "italic", "heading", "|", 
+                "quote", "unordered-list", "ordered-list", "|", 
+                "link", "image", "|",
+                {
+                    name: "color",
+                    action: function customFunction(editor){
+                        const cm = editor.codemirror;
+                        const selection = cm.getSelection();
+                        
+                        let colorPicker = document.getElementById('easy-mde-color-picker');
+                        if (!colorPicker) {
+                            colorPicker = document.createElement('input');
+                            colorPicker.type = 'color';
+                            colorPicker.id = 'easy-mde-color-picker';
+                            colorPicker.style.display = 'none';
+                            document.body.appendChild(colorPicker);
+                        }
+                        
+                        colorPicker.onchange = function(e) {
+                            const color = e.target.value;
+                            cm.replaceSelection(`[color=${color}]${selection || 'texto'}[/color]`);
+                        };
+                        colorPicker.click();
+                    },
+                    className: "fa fa-paint-brush",
+                    title: "Cor do Texto",
+                },
+                "|", "preview", "side-by-side", "fullscreen", "guide"
+            ],
+            uploadImage: true,
+            imageAccept: "image/png, image/jpeg, image/gif, image/webp",
+            imageMaxSize: 1024 * 1024 * 10, // 10MB
+            imageUploadFunction: async function(file, onSuccess, onError) {
+                const formData = new FormData();
+                formData.append("image", file);
+
+                try {
+                    const res = await fetch('/api/blog/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        onSuccess(data.url);
+                    } else {
+                        onError(data.message || 'Erro no upload');
+                    }
+                } catch (e) {
+                    onError('Erro na conexão do upload');
+                }
+            }
+        });
+
+        // Se for edição, carregar os dados
+        if (blogId) {
+            try {
+                const res = await fetch(`/api/blog/${blogId}`);
+                const data = await res.json();
+                if (data.success) {
+                    easyMDE.value(data.blog.content);
+                    if (data.blog.backgroundcolor) document.getElementById('config-bg-color').value = data.blog.backgroundcolor;
+                    if (data.blog.fontcolor) document.getElementById('config-font-color').value = data.blog.fontcolor;
+                    if (data.blog.backgroundfill) document.getElementById('config-bg-fill').value = data.blog.backgroundfill;
+                    if (data.blog.fontfamily) document.getElementById('config-font-family').value = data.blog.fontfamily;
+                    if (data.blog.backgroundurl) window.currentBlogBgUrl = data.blog.backgroundurl;
+                } else {
+                    alert('Erro ao carregar artigo para edição: ' + data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao carregar artigo.');
+            }
+        } else {
+            // Se for criação, pré-preenche com título se vazio
+            if (!easyMDE.value()) {
+                easyMDE.value("# Título do Artigo\n\n");
+            }
+        }
+        
+        // Listeners para atualizar estilos do preview em tempo real
+        document.getElementById('config-bg-color').addEventListener('input', updatePreviewStyles);
+        document.getElementById('config-font-color').addEventListener('input', updatePreviewStyles);
+        document.getElementById('config-font-family').addEventListener('input', updatePreviewStyles);
+        document.getElementById('config-bg-fill').addEventListener('change', updatePreviewStyles);
+        
+        document.getElementById('input-bg').addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                window.currentBlogBgUrl = URL.createObjectURL(this.files[0]);
+                document.getElementById('flag-remove-bg').value = 'false';
+                document.getElementById('status-bg').style.display = 'none';
+                updatePreviewStyles();
+            }
+        });
+
+        updatePreviewStyles();
+    });
+
+    function updatePreviewStyles() {
+        const color = document.getElementById('config-font-color').value;
+        const bg = document.getElementById('config-bg-color').value;
+        const font = document.getElementById('config-font-family').value;
+        const fill = document.getElementById('config-bg-fill').value;
+        let fontVal = 'var(--retro-font-family)';
+        let loadGoogleFont = false;
+
+        if (font) {
+            if (font.toLowerCase().includes('comic sans')) {
+                fontVal = `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive`;
+            } else {
+                fontVal = `'${font}', sans-serif`;
+                if (font !== 'Inter') loadGoogleFont = true;
+            }
+        }
+
+        const bgSize = fill === 'repeat' ? 'auto' : 'cover';
+        const bgRepeat = fill === 'repeat' ? 'repeat' : 'no-repeat';
+        const bgImgRule = window.currentBlogBgUrl ? `background-image: url('${window.currentBlogBgUrl}') !important; background-size: ${bgSize} !important; background-repeat: ${bgRepeat} !important;` : '';
+        
+        let styleEl = document.getElementById('dynamic-preview-styles');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'dynamic-preview-styles';
+            document.head.appendChild(styleEl);
+        }
+        
+        styleEl.innerHTML = `
+            .editor-preview, .editor-preview-side {
+                background-color: ${bg} !important;
+                color: ${color} !important;
+                font-family: ${fontVal} !important;
+                ${bgImgRule}
+            }
+        `;
+        
+        if (loadGoogleFont) {
+            const fontId = 'font-' + font.replace(/\s+/g, '-');
+            if (!document.getElementById(fontId)) {
+                const link = document.createElement('link');
+                link.id = fontId;
+                link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+                link.rel = 'stylesheet';
+                document.head.appendChild(link);
+            }
+        }
+    }
+
+    function salvarRascunhoList() {
+        const content = easyMDE.value();
+        if (!content) return alert('O artigo está vazio!');
+        
+        let titleMatch = content.match(/^#\s+(.+)$/m);
+        let tit = titleMatch ? titleMatch[1].trim() : '(Sem título)';
+        tit = tit.replace(/\[color=[^\]]+\](.*?)\[\/color\]/g, '$1');
+        
+        const rList = JSON.parse(localStorage.getItem('blog_rascunhos') || '[]');
+        rList.push({ 
+            id: Date.now(), 
+            t: tit, 
+            c: content, 
+            bg: document.getElementById('config-bg-color').value,
+            fc: document.getElementById('config-font-color').value,
+            ff: document.getElementById('config-font-family').value,
+            ts: Date.now() 
+        });
+        localStorage.setItem('blog_rascunhos', JSON.stringify(rList));
+        alert('Rascunho salvo localmente!');
+    }
+
+    function abrirRascunhos() {
+        const rList = JSON.parse(localStorage.getItem('blog_rascunhos') || '[]');
+        const container = document.getElementById('gradeRascunhos');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '5px';
+        container.innerHTML = rList.map(x => `
+            <div style="background: white; border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="cursor:pointer; flex-grow: 1;" onclick="aplicarRascunho(${x.id})">
+                    <div style="font-size: 12px; font-weight: bold; color: #000080;">${x.t}</div>
+                    <div style="font-size: 10px; color: #666; margin-top: 2px;">Salvo em: ${new Date(x.ts).toLocaleString()}</div>
+                </div>
+                <button type="button" class="window-btn" style="padding: 0 4px; color: red; font-size: 10px;" onclick="excluirRascunho(${x.id})">Excluir</button>
+            </div>
+        `).join('') || '<p style="text-align: center; padding: 10px; font-size: 11px;">Nenhum rascunho salvo.</p>';
+
+        document.getElementById('modalRascunhosRetro').style.display = 'block';
+        document.getElementById('overlayRetroMsg').style.display = 'block';
+    }
+
+    window.aplicarRascunho = async function(id) {
+        if (!await confirm('Carregar este rascunho substituirá o conteúdo atual. Continuar?')) return;
+        const r = JSON.parse(localStorage.getItem('blog_rascunhos') || '[]').find(x => x.id === id);
+        if (r) { 
+            easyMDE.value(r.c || ''); 
+            if (r.bg) document.getElementById('config-bg-color').value = r.bg;
+            if (r.fc) document.getElementById('config-font-color').value = r.fc;
+            if (r.ff) document.getElementById('config-font-family').value = r.ff;
+            updatePreviewStyles();
+        }
+        document.getElementById('modalRascunhosRetro').style.display = 'none';
+        document.getElementById('overlayRetroMsg').style.display = 'none';
+    }
+
+    window.excluirRascunho = function(id) {
+        let rList = JSON.parse(localStorage.getItem('blog_rascunhos') || '[]');
+        localStorage.setItem('blog_rascunhos', JSON.stringify(rList.filter(x => x.id !== id)));
+        abrirRascunhos();
+    }
+
+    async function deletarBlog() {
+        if (!await confirm('Tem certeza que deseja deletar este artigo? Esta ação não pode ser desfeita.')) return;
+        
+        try {
+            const res = await fetch(`/api/blog/${blogId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                window.location.href = '/blogs';
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        } catch (err) {
+            alert('Erro ao deletar artigo.');
+        }
+    }
+
+    function removeBackground() {
+        document.getElementById('input-bg').value = '';
+        document.getElementById('flag-remove-bg').value = 'true';
+        document.getElementById('status-bg').style.display = 'block';
+        window.currentBlogBgUrl = '';
+        updatePreviewStyles();
+    }
+
+    document.getElementById('blogForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const content = easyMDE.value();
+
+        if (!content) {
+            alert('Preencha o conteúdo!');
+            return;
+        }
+
+        if (!content.match(/^#\s+(.+)$/m)) {
+            alert('Erro: Seu artigo deve começar com um cabeçalho de título (ex: "# Título"). Por favor, adicione o "#" no topo do seu texto.');
+            return;
+        }
+
+        const url = blogId ? `/api/blog/${blogId}` : '/api/blog';
+        const method = blogId ? 'PUT' : 'POST';
+
+        const formData = new FormData();
+        formData.append('content', content);
+        
+        const bgFile = document.getElementById('input-bg').files[0];
+        if (bgFile) formData.append('background', bgFile);
+        
+        formData.append('remove_background', document.getElementById('flag-remove-bg').value);
+        formData.append('backgroundcolor', document.getElementById('config-bg-color').value);
+        formData.append('fontcolor', document.getElementById('config-font-color').value);
+        formData.append('backgroundfill', document.getElementById('config-bg-fill').value);
+        formData.append('fontfamily', document.getElementById('config-font-family').value);
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Limpar rascunho se foi criação
+                if (!blogId) {
+                    easyMDE.clearAutosavedValue();
+                }
+                window.location.href = `/blog/${data.blog.publicid}`;
+            } else {
+                alert('Erro ao salvar: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro na conexão ao salvar artigo.');
+        }
+    });
+</script>
+
+<style>
+    /* Ajustes para o EasyMDE combinar com o tema retro se necessário */
+    .editor-toolbar {
+        border: 2px solid var(--retro-border, #000) !important;
+        background: #f0f0f0 !important;
+    }
+    .CodeMirror {
+        border: 2px solid var(--retro-border, #000) !important;
+        border-top: none !important;
+    }
+    .editor-toolbar button.active, .editor-toolbar button:hover {
+        background: #ccc !important;
+        border-color: #999 !important;
+    }
+    .editor-toolbar i.fa {
+        color: #000;
+    }
+</style>

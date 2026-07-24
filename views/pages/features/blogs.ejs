@@ -1,0 +1,210 @@
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+<div class="window mt-3">
+    <div class="window-header">
+        <span class="window-title">Blogs</span>
+        <nav style="float: right;">
+            <select id="blogFilter" class="dropdown" onchange="changeFilter()" style="margin-right: 10px;">
+                <option value="all">Todos</option>
+                <option value="following">Seguindo</option>
+            </select>
+            <a href="/blog/new" style="color: white; text-decoration: none; font-size: 11px;">[Novo Artigo]</a>
+        </nav>
+    </div>
+    <div class="window-content" style="padding: 10px;">
+        <div id="pagination-top" style="margin-bottom: 10px; display: none;"></div>
+        <div id="lista-blogs" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; color: gray;">Carregando...</div>
+        </div>
+        <div id="pagination-bottom" style="margin-top: 10px; display: none;"></div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let currentFilter = 'all';
+
+    document.addEventListener('DOMContentLoaded', carregarBlogs);
+
+    function changeFilter() {
+        currentFilter = document.getElementById('blogFilter').value;
+        currentPage = 1;
+        carregarBlogs();
+    }
+
+    function irParaPagina(page) {
+        currentPage = page;
+        carregarBlogs();
+    }
+
+    function processCustomTags(text) {
+        return text.replace(/\[color=([a-zA-Z0-9#]+)\](.*?)\[\/color\]/gs, '<span style="color: $1;">$2</span>');
+    }
+
+    async function carregarBlogs() {
+        try {
+            const res = await fetch(`/api/blog?page=${currentPage}&limit=20&filter=${currentFilter}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                const container = document.getElementById('lista-blogs');
+                const pagTop = document.getElementById('pagination-top');
+                const pagBottom = document.getElementById('pagination-bottom');
+                
+                if (data.blogs.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: gray; padding: 20px;">Nenhum artigo encontrado.</div>';
+                    pagTop.style.display = 'none';
+                    pagBottom.style.display = 'none';
+                    return;
+                }
+
+                container.innerHTML = data.blogs.map(b => {
+                    const rawContent = processCustomTags(b.content);
+                    const htmlContent = DOMPurify.sanitize(marked.parse(rawContent));
+                    
+                    if (b.fontfamily && b.fontfamily !== 'Inter') {
+                        if (!b.fontfamily.toLowerCase().includes('comic sans')) {
+                            const fontId = 'font-' + b.fontfamily.replace(/\s+/g, '-');
+                            if (!document.getElementById(fontId)) {
+                                const link = document.createElement('link');
+                                link.id = fontId;
+                                link.href = `https://fonts.googleapis.com/css2?family=${b.fontfamily.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+                                link.rel = 'stylesheet';
+                                document.head.appendChild(link);
+                            }
+                        }
+                    }
+
+                    return `
+                    <div class="window blog-list-card" style="
+                        ${b.backgroundurl ? `background-image: url('${b.backgroundurl}'); background-size: ${b.backgroundfill === 'repeat' ? 'auto' : 'cover'}; background-repeat: ${b.backgroundfill === 'repeat' ? 'repeat' : 'no-repeat'};` : ''}
+                        background-color: ${b.backgroundcolor || '#f4f4f4'};
+                        color: ${b.fontcolor || '#000000'};
+                        font-family: ${b.fontfamily ? (b.fontfamily.toLowerCase().includes('comic sans') ? `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive` : `'${b.fontfamily}', sans-serif`) : 'var(--retro-font-family)'};
+                    ">
+                        <!-- Coluna do Autor -->
+                        <div class="blog-list-author">
+                            <strong onclick="window.location.href='/${b.author.username}'">${b.author.username}</strong>
+                            <img src="${b.author.profileimage || '/images/default_avatar.png'}" alt="${b.author.username}" onclick="window.location.href='/${b.author.username}'">
+                            <div class="blog-list-date">
+                                <div>${new Date(b.createdat).toLocaleDateString()}</div>
+                                <div>${new Date(b.createdat).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Coluna do Conteúdo -->
+                        <div class="blog-list-content" onclick="window.location.href='/blog/${b.publicid}'">
+                            <div class="markdown-preview markdown-body blog-list-preview">
+                                ${htmlContent}
+                            </div>
+                            <div class="blog-list-readmore">
+                                <a href="/blog/${b.publicid}">[Ler mais...]</a>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+                // Render pagination matching cartinhas design
+                let pagHTML = '';
+                if (data.totalPages > 1) {
+                    const btnAnt = `<button class="window-btn" onclick="irParaPagina(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&lt; Ant</button>`;
+                    const btnProx = `<button class="window-btn" onclick="irParaPagina(${currentPage + 1})" ${currentPage >= data.totalPages ? 'disabled' : ''}>Prox &gt;</button>`;
+                    const spanPag = `<span style="font-size: 11px;">Pág ${currentPage}/${data.totalPages}</span>`;
+                    pagHTML = `<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 5px 0;">${btnAnt}${spanPag}${btnProx}</div>`;
+                    
+                    pagTop.innerHTML = pagHTML;
+                    pagBottom.innerHTML = pagHTML;
+                    pagTop.style.display = 'block';
+                    pagBottom.style.display = 'block';
+                } else {
+                    pagTop.style.display = 'none';
+                    pagBottom.style.display = 'none';
+                }
+            }
+        } catch (err) {
+            console.error('Erro ao carregar blogs:', err);
+            document.getElementById('lista-blogs').innerHTML = '<div style="color: red; text-align: center;">Erro ao carregar artigos.</div>';
+        }
+    }
+</script>
+
+<style>
+    .markdown-preview {
+        -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+        mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    }
+
+    .blog-list-card {
+        margin-bottom: 0;
+        display: flex;
+        flex-direction: row;
+        padding: 0;
+    }
+    
+    .blog-list-author {
+        width: 100px;
+        min-width: 100px;
+        border-right: 1px solid var(--retro-border-light);
+        background: rgba(244, 244, 244, 1);
+        backdrop-filter: blur(2px);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        color: #000;
+    }
+    
+    .blog-list-author img {
+        width: 48px;
+        height: 48px;
+        border: 1px solid var(--retro-border-dark);
+        margin: 5px 0;
+        object-fit: cover;
+        cursor: pointer;
+    }
+    
+    .blog-list-date {
+        font-size: 10px;
+        color: var(--retro-border-dark);
+        line-height: 1.2;
+    }
+    
+    .blog-list-content {
+        padding: 10px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    
+    .blog-list-preview {
+        margin: 0;
+        font-size: 0.85em;
+        flex: 1;
+        line-height: 1.4;
+        overflow: hidden;
+        max-height: 10em;
+        background: transparent;
+        color: inherit;
+        font-family: inherit;
+        position: relative;
+    }
+    
+    .blog-list-readmore {
+        margin-top: 10px;
+        text-align: right;
+        font-size: 11px;
+    }
+    
+    .blog-list-readmore a {
+        color: inherit;
+        text-decoration: underline;
+    }
+    .markdown-preview img { display: none; } /* Ocultar imagens no preview */
+    .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { font-size: 14px; margin: 0 0 5px 0; font-weight: bold; border-bottom: none; }
+    .markdown-preview p { margin: 0 0 5px 0; }
+</style>

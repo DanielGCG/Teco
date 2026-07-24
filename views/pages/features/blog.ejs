@@ -1,0 +1,252 @@
+<!-- marked.js for markdown parsing and DOMPurify for XSS protection -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+<div class="window mt-3">
+    <div class="window-header">
+        <span class="window-title" id="blog-window-title">Carregando...</span>
+        <nav style="float: right;">
+            <span id="blog-actions" style="display: none;">
+                <a href="/blog/<%= blogId %>/edit" style="color: white; text-decoration: none; font-size: 11px;">[Editar]</a>
+            </span>
+            <a href="javascript:void(0)" onclick="navigator.clipboard.writeText(window.location.href); alert('Link copiado para a área de transferência!');" style="color: white; text-decoration: none; font-size: 11px; margin-left: 10px;">[Compartilhar]</a>
+            <a href="/blogs" style="color: white; text-decoration: none; font-size: 11px; margin-left: 10px;">[Voltar]</a>
+        </nav>
+    </div>
+    <div class="window-content" style="padding: 10px;">
+        <div id="blog-container">
+            <div style="text-align: center; color: gray;">Carregando artigo...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const blogId = '<%= blogId %>';
+    let currentUserId = null;
+
+    document.addEventListener('DOMContentLoaded', carregarBlog);
+
+    // Função para tratar tags customizadas como [color=red]texto[/color]
+    function processCustomTags(text) {
+        return text.replace(/\[color=([a-zA-Z0-9#]+)\](.*?)\[\/color\]/gs, '<span style="color: $1;">$2</span>');
+    }
+
+    async function carregarBlog() {
+        try {
+            const res = await fetch(`/api/blog/${blogId}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                const b = data.blog;
+                document.getElementById('blog-window-title').textContent = b.title.replace(/\[color=[^\]]+\](.*?)\[\/color\]/g, '$1');
+                
+                const currentUserId = <%= locals.loggedUser ? locals.loggedUser.id : 'null' %>;
+                const currentUserRole = parseInt('<%= locals.loggedUser ? locals.loggedUser.roleId : 20 %>');
+
+                if (currentUserId && (currentUserId === b.authorUserId || currentUserRole <= 10)) {
+                    document.getElementById('blog-actions').style.display = 'inline';
+                }
+
+                const rawContent = processCustomTags(b.content);
+                const htmlContent = DOMPurify.sanitize(marked.parse(rawContent));
+
+                if (b.fontfamily && b.fontfamily !== 'Inter') {
+                    if (!b.fontfamily.toLowerCase().includes('comic sans')) {
+                        const fontId = 'font-' + b.fontfamily.replace(/\s+/g, '-');
+                        if (!document.getElementById(fontId)) {
+                            const link = document.createElement('link');
+                            link.id = fontId;
+                            link.href = `https://fonts.googleapis.com/css2?family=${b.fontfamily.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+                            link.rel = 'stylesheet';
+                            document.head.appendChild(link);
+                        }
+                    }
+                }
+
+                const container = document.getElementById('blog-container');
+                container.classList.add('blog-layout');
+                container.innerHTML = `
+                        <!-- Coluna do Autor -->
+                        <div class="blog-author">
+                            <div class="blog-author-profile">
+                                <img src="${b.author.profileimage}" alt="Avatar" style="width: 48px; height: 48px; border: 1px solid var(--retro-border-dark); margin: 5px 0; object-fit: cover; cursor: pointer;" onclick="window.location.href='/${b.author.username}'">
+                                <div class="blog-author-name-date">
+                                    <strong style="cursor: pointer;" onclick="window.location.href='/${b.author.username}'">${b.author.username}</strong>
+                                    <div class="blog-author-date">
+                                        <div>${new Date(b.createdat).toLocaleDateString()}</div>
+                                        <div>${new Date(b.createdat).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="blog-author-meta-box">
+                                <div><span id="applauseCount">${b.applausecount}</span> aplausos</div>
+                                <a href="javascript:void(0)" id="btn-applause" onclick="toggleApplause()" style="color: ${data.hasApplauded ? 'var(--retro-primary, #000080)' : 'var(--retro-link)'}; text-decoration: none; font-size: 11px; display: inline-block; margin-top: 5px;">${data.hasApplauded ? '[Remover Aplauso]' : '[Aplaudir]'}</a>
+                            </div>
+                        </div>
+                        <!-- Coluna do Conteúdo -->
+                        <div class="blog-content" style="
+                            ${b.backgroundurl ? `background-image: url('${b.backgroundurl}'); background-size: ${b.backgroundfill === 'repeat' ? 'auto' : 'cover'}; background-repeat: ${b.backgroundfill === 'repeat' ? 'repeat' : 'no-repeat'};` : ''}
+                            background-color: ${b.backgroundcolor};
+                            color: ${b.fontcolor};
+                            font-family: ${b.fontfamily ? (b.fontfamily.toLowerCase().includes('comic sans') ? `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive` : `'${b.fontfamily}', sans-serif`) : 'var(--retro-font-family)'};
+                        ">
+                            <div class="markdown-body" style="line-height: 1.6; font-size: 1rem; flex: 1;">
+                                ${htmlContent}
+                            </div>
+                        </div>
+                `;
+            } else {
+                document.getElementById('blog-container').innerHTML = `<div style="color: red;">${data.message || 'Artigo não encontrado.'}</div>`;
+                document.getElementById('blog-window-title').textContent = 'Erro';
+            }
+        } catch (err) {
+            console.error('Erro ao carregar blog:', err);
+            document.getElementById('blog-container').innerHTML = '<div style="color: red;">Erro ao carregar artigo.</div>';
+        }
+    }
+
+
+
+    async function toggleApplause() {
+        try {
+            const res = await fetch(`/api/blog/${blogId}/applause`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                const btn = document.getElementById('btn-applause');
+                const counter = document.getElementById('applauseCount');
+                let count = parseInt(counter.textContent);
+
+                if (data.applauded) {
+                    btn.textContent = '[Remover Aplauso]';
+                    btn.style.color = 'var(--retro-primary, #000080)';
+                    counter.textContent = count + 1;
+                } else {
+                    btn.textContent = '[Aplaudir]';
+                    btn.style.color = 'var(--retro-link)';
+                    counter.textContent = count - 1;
+                }
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+</script>
+
+<style>
+    .markdown-body img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid var(--retro-border-dark);
+    }
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+        border-bottom: 1px solid var(--retro-border-light);
+        padding-bottom: 2px;
+    }
+    .markdown-body blockquote {
+        border-left: 2px solid var(--retro-border-dark);
+        margin-left: 15px;
+        padding-left: 10px;
+        font-style: italic;
+    }
+    .markdown-body code {
+        background: var(--retro-sidebar-bg, #f4f4f4);
+        padding: 2px 4px;
+    }
+    .markdown-body pre {
+        background: var(--retro-sidebar-bg, #f4f4f4);
+        padding: 10px;
+        border: 1px solid var(--retro-border-dark);
+        overflow-x: auto;
+    }
+
+    .blog-layout {
+        display: flex;
+        flex-direction: row;
+        gap: 0;
+    }
+    .blog-author {
+        width: 120px;
+        min-width: 120px;
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        border-right: 1px solid var(--retro-border-light);
+        background: var(--retro-sidebar-bg, #f4f4f4);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .blog-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 20px;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+    .blog-author-profile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .blog-author-name-date {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .blog-author-date {
+        font-size: 10px;
+        color: var(--retro-border-dark);
+        line-height: 1.2;
+    }
+    .blog-author-meta-box {
+        margin-top: 15px; 
+        font-size: 10px; 
+        color: var(--retro-border-dark); 
+        border-top: 1px dashed var(--retro-border-dark); 
+        padding-top: 10px; 
+        width: 100%;
+    }
+
+    @media (max-width: 600px) {
+        .blog-layout {
+            flex-direction: column;
+        }
+        .blog-author {
+            width: 100%;
+            min-width: auto;
+            border-right: none;
+            border-bottom: 1px solid var(--retro-border-light);
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        .blog-author-profile {
+            flex-direction: row;
+            text-align: left;
+            align-items: center;
+            gap: 10px;
+        }
+        .blog-author-name-date {
+            align-items: flex-start;
+        }
+        .blog-author-meta-box {
+            margin-top: 0;
+            border-top: none;
+            border-left: 1px dashed var(--retro-border-dark);
+            padding-top: 0;
+            padding-left: 10px;
+            width: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: right;
+        }
+    }
+</style>

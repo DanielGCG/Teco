@@ -62,6 +62,35 @@ FeaturesRouter.get('/cutucar', async (req, res) => {
     });
 });
 
+FeaturesRouter.get('/blogs', renderStaticPage('pages/features/blogs', {
+    title: 'Blogs',
+    description: 'Leia artigos incríveis'
+}));
+
+FeaturesRouter.get('/blog/new', async (req, res) => {
+    renderPage(req, res, 'pages/features/blog_edit', {
+        title: 'Novo Artigo',
+        description: 'Escreva um novo artigo',
+        blogId: null
+    });
+});
+
+FeaturesRouter.get('/blog/:id/edit', async (req, res) => {
+    renderPage(req, res, 'pages/features/blog_edit', {
+        title: 'Editar Artigo',
+        description: 'Editando artigo',
+        blogId: req.params.id
+    });
+});
+
+FeaturesRouter.get('/blog/:id', async (req, res) => {
+    renderPage(req, res, 'pages/features/blog', {
+        title: 'Blog',
+        description: 'Lendo artigo',
+        blogId: req.params.id
+    });
+});
+
 FeaturesRouter.get('/imagemdodia', renderStaticPage('pages/imagemdodia/album', {
     title: 'Imagem do Dia',
     description: 'Conheça o álbum de Imagens do Dia!'

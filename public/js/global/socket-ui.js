@@ -7,9 +7,6 @@
 const SocketUI = (() => {
     let socket = null;
 
-    /**
-     * Inicializa os listeners globais do socket
-     */
     function init(appSocket) {
         socket = appSocket;
         if (!socket) return;
@@ -26,18 +23,17 @@ const SocketUI = (() => {
             }
         });
 
-        // Listener para notificações (se houver elementos na página)
-        socket.on('newNotification', (data) => {
-            // Se existir uma função global de refresh de notificações, chama ela
-            if (typeof window.refreshNotifications === 'function') {
-                window.refreshNotifications(data);
-            }
-        });
+
 
         console.log('[SocketUI] Sistema unificado inicializado');
         
         // Se houver elementos de status na página ao carregar, solicita os status
-        requestInitialStatus();
+        // Adiciona handler para solicitar os status sempre que conectar/reconectar
+        if (typeof SocketConnector !== 'undefined') {
+            SocketConnector.onReconnect(requestInitialStatus);
+        } else {
+            requestInitialStatus();
+        }
     }
 
     /**

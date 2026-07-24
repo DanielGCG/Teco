@@ -436,26 +436,7 @@ router.get('/user/:publicid', async (req, res) => {
         const targetUser = await User.findOne({ where: { publicid: publicid } });
         if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
 
-        let showPrivate = false;
-
-        // Tenta identificar o usuário logado para permitir ver galerias privadas se for o dono
-        const cookieValue = req.cookies?.session;
-        if (cookieValue) {
-            const session = await UserSession.findOne({
-                where: {
-                    cookie: cookieValue,
-                    expiresat: { [Op.gt]: new Date() }
-                }
-            });
-            if (session && session.userId === targetUser.id) {
-                showPrivate = true;
-            }
-        }
-
         const whereClause = { createdbyUserId: targetUser.id };
-        if (!showPrivate) {
-            whereClause.ispublic = true;
-        }
 
         const galleries = await Galeria.findAll({
             where: whereClause,

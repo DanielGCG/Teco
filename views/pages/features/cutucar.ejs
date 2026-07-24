@@ -8,7 +8,7 @@
     <section class="window-content" style="background: var(--retro-bg);">
     
         <aside style="margin-top: 10px; padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
-            <b>Dica:</b> Você tem direito a 20 cutucadas individuais por hora e 1 cutucada geral por dia!
+            <b>Dica:</b> Você tem direito a 20 cutucadas individuais por hora e 1 cutucar geral por dia!
         </aside>
 
         <form id="cutucarForm" style="margin-top: 10px;">
@@ -39,7 +39,7 @@
 
         <form id="cutucarGeralForm">
             <fieldset>
-                <legend>Cutucada Geral (<%= remainingGlobalPokes %> restante(s) hoje)</legend>
+                <legend>Cutucar Geral (<%= remainingGlobalPokes %> restante(s) hoje)</legend>
                 
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-size: 11px; margin-bottom: 3px;">Mensagem para todos do servidor</label>
@@ -169,7 +169,7 @@
             const data = await res.json();
             
             if (data.success) {
-                alert('Cutucada Geral enviada com sucesso!');
+                alert('Cutucar Geral enviada com sucesso!');
                 btn.disabled = false;
                 btn.textContent = 'Cutucar Geral';
             } else {

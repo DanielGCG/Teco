@@ -98,63 +98,7 @@ module.exports = (io) => {
             socket.emit('joinedChat', { chatId: publicChatId, success: true });
         });
 
-        socket.on('joinPost', (postId) => socket.join(`post_${postId}`));
 
-        socket.on('joinProfile', async (username) => {
-            const rooms = Array.from(socket.rooms);
-            rooms.forEach(r => { if (r.startsWith('profile_')) socket.leave(r); });
-            socket.join(`profile_${username}`);
-            const user = await User.findOne({ where: { username }, attributes: ['id', 'publicid'] });
-            if (user) socket.emit('userStatusChanged', { userId: user.publicid, status: getUserStatus(user.id) });
-        });
-
-        socket.on('joinFollowed', async () => {
-            const auth = await authenticateSocket();
-            if (!auth) return;
-            const { Follow, User: UserModel } = require('../models');
-            const following = await Follow.findAll({
-                where: { followerUserId: auth.userId },
-                include: [{ model: UserModel, as: 'followed', attributes: ['username'] }]
-            });
-            following.forEach(f => { if (f.followed?.username) socket.join(`profile_${f.followed.username}`); });
-            const me = await UserModel.findByPk(auth.userId, { attributes: ['username'] });
-            if (me) socket.join(`profile_${me.username}`);
-        });
-
-        socket.on('loadPosts', async ({ username, tab = 'posts' }) => {
-            try {
-                const { Post, User: UserModel, PostMedia, PostLike, PostBookmark, PostMention } = require('../models');
-                const { Op } = require('sequelize');
-                const user = await UserModel.findOne({ where: { username } });
-                if (!user) return socket.emit('error', { message: 'Usuário não encontrado' });
-
-                const POST_INCLUDES = [
-                    { model: UserModel, as: 'author', attributes: ['username', 'profileimage', 'pronouns'] },
-                    { model: PostMedia, as: 'media' },
-                    { model: PostLike, as: 'likes', include: [{ model: UserModel, as: 'user', attributes: ['username'] }] },
-                    { model: PostBookmark, as: 'bookmarks', attributes: ['userId'] },
-                    { model: PostMention, as: 'mentions', include: [{ model: UserModel, as: 'user', attributes: ['username'] }] },
-                    { 
-                        model: Post, as: 'parent', 
-                        include: [
-                            { model: UserModel, as: 'author', attributes: ['username', 'profileimage', 'pronouns'] },
-                            { model: PostMedia, as: 'media' },
-                            { model: PostMention, as: 'mentions', include: [{ model: UserModel, as: 'user', attributes: ['username'] }] },
-                            { model: Post, as: 'parent', include: [{ model: UserModel, as: 'author', attributes: ['username', 'profileimage', 'pronouns'] }] }
-                        ] 
-                    }
-                ];
-
-                let posts = [];
-                if (tab === 'posts') {
-                    posts = await Post.findAll({ where: { authorUserId: user.id, type: { [Op.ne]: 'comment' } }, include: POST_INCLUDES, order: [['createdat', 'DESC']] });
-                } else if (tab === 'bookmarks') {
-                    const bookmarks = await PostBookmark.findAll({ where: { userId: user.id }, include: [{ model: Post, required: true, include: POST_INCLUDES }], order: [['createdat', 'DESC']] });
-                    posts = bookmarks.map(b => b.Post);
-                }
-                socket.emit('postsLoaded', { posts, tab });
-            } catch (err) { socket.emit('error', { message: 'Erro ao carregar posts' }); }
-        });
 
         socket.on('sendMessage', async ({ chatId: publicChatId, mensagem, type = 'chat' }) => {
             try {
@@ -249,13 +193,7 @@ module.exports = (io) => {
             } catch (err) {}
         });
 
-        socket.on('userActivity', () => {
-            if (socket.userId && socket.publicid) {
-                const prev = getUserStatus(socket.userId);
-                updateUserActivity(socket.userId);
-                if (prev === 'ausente') emitStatusChange(io, socket.userId, socket.publicid, 'online');
-            }
-        });
+
 
         socket.on('requestUserStatus', async ({ userIds }) => {
             if (!Array.isArray(userIds)) return;
@@ -267,17 +205,7 @@ module.exports = (io) => {
             socket.emit('userStatusResponse', statusMap); // Mudado de userStatusBatch para coincidir com socket-ui.js
         });
 
-        socket.on('getUnreadDMsCount', async () => {
-            try {
-                const auth = await authenticateSocket();
-                if (!auth) return;
-                const { DM, DMMessage } = require('../models');
-                const { Op } = require('sequelize');
-                const userDMs = await DM.findAll({ where: { [Op.or]: [{ userId1: auth.userId }, { userId2: auth.userId }] }, attributes: ['id'] });
-                const counts = await DMMessage.count({ where: { dmId: { [Op.in]: userDMs.map(d => d.id) }, userId: { [Op.ne]: auth.userId }, isread: false }, group: ['dmId'] });
-                socket.emit('unreadDMsCount', { count: counts.length });
-            } catch (err) {}
-        });
+
 
         socket.on('getNotificationsCount', async () => {
             try {

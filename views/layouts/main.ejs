@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +13,10 @@
     <link rel="apple-touch-icon" href="/images/icon.png">
     <meta name="theme-color" content="#000000">
     <link rel="stylesheet" href="/styles/retro.css">
+    <style>
+        .invisible-scrollbar::-webkit-scrollbar { display: none; }
+        .invisible-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
     <script>
         // Fallback global para imagens quebradas
         document.addEventListener('error', function (e) {
@@ -143,7 +146,7 @@
     <div id="main-content">
         <div class="retro-layout">
             <div class="retro-sidebar" id="sidebarMenu">
-                <div style="position: sticky; top: 10px;">
+                <div class="invisible-scrollbar" style="position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow-y: auto;">
                     <div class="window">
                         <div class="window-header">Menu</div>
                         <div class="window-content">
@@ -169,6 +172,7 @@
                                         <li>
                                             <hr>
                                         </li>
+                                        <li><a href="/blogs">- Blogs</a></li>
                                         <li><a href="/galerias">- Galerias</a></li>
                                         <li><a href="/watchlist">- Watchlist</a></li>
                                         <li><a href="/pet">- BoteGotchi</a></li>
@@ -178,7 +182,7 @@
                                         <% if (locals.loggedUser && locals.loggedUser.roleId <=10) { %>
                                             <li><a href="/admin">- Admin</a></li>
                                             <% } %>
-                                                <li><a href="javascript:void(0)" onclick="handleLogout()">-
+                                                <li><a href="javascript:void(0)" onclick="handleLogout()" style="color: red">-
                                                         Sair</a></li>
                                     </ul>
                         </div>
@@ -216,6 +220,15 @@
                             </div>
                         </div>
                     </div>
+
+                    <% if (locals.loggedUser) { %>
+                    <div class="window" id="sidebar-amigos-window" style="display: none;">
+                        <div class="window-header">Meus Amigos</div>
+                        <div class="window-content">
+                            <div id="sidebar-amigos" style="display: flex; flex-direction: column; gap: 5px;"></div>
+                        </div>
+                    </div>
+                    <% } %>
 
                     <div class="window">
                         <div id="botecoanalytics" class="window-content" style="text-align: center;">
@@ -284,6 +297,33 @@
     </script>
 
     <script src="/js/commons/modal-aviso.js"></script>
+    <script src="/js/commons/follow-common.js"></script>
+
+    <script>
+        (async function loadSidebarAmigos() {
+            const amigosWindow = document.getElementById('sidebar-amigos-window');
+            const amigosContainer = document.getElementById('sidebar-amigos');
+            if (!amigosWindow || !amigosContainer || typeof FollowAPI === 'undefined') return;
+
+            try {
+                const friends = await FollowAPI.carregarAmigos();
+                if (friends && friends.length) {
+                    amigosContainer.innerHTML = friends.map(f => `
+                        <a href="/${f.username}" class="retro-friend-item" data-user-id="${f.publicid}" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; padding: 2px;">
+                            <img src="${f.profileimage}" border="1" style="width: 24px; height: 24px; object-fit: cover;">
+                            <span style="font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${f.username}</span>
+                            <span class="status-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: auto; flex-shrink: 0; background-color: #808080;"></span>
+                        </a>
+                    `).join('');
+                    amigosWindow.style.display = 'block';
+                    
+                    if (typeof SocketUI !== 'undefined') SocketUI.requestInitialStatus();
+                }
+            } catch (e) {
+                console.error('Erro ao carregar amigos na barra lateral:', e);
+            }
+        })();
+    </script>
 
     <%- include('../utils/modal-aviso') %>
         <%- include('../utils/modal-confirmacao-retro') %>

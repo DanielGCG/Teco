@@ -22,6 +22,7 @@ async function runGarbageCollector() {
                 COLUMN_NAME LIKE '%url%' 
                 OR COLUMN_NAME LIKE '%image%' 
                 OR TABLE_NAME = 'systemconfig'
+                OR (TABLE_NAME = 'blog' AND COLUMN_NAME = 'content')
             )
         `);
 
@@ -36,7 +37,7 @@ async function runGarbageCollector() {
 
         // Expressão regular para encontrar URLs do servidor de arquivos.
         const escapedServerUrl = SERVER_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const urlRegex = new RegExp(escapedServerUrl + '/files/([^"\'<>\\n?]+)', 'g');
+        const urlRegex = new RegExp(escapedServerUrl + '/files/([^"\'<>\\n? )]+)', 'g');
 
         // 2. Procurar nas tabelas e colunas filtradas
         for (const [tableName, cols] of Object.entries(tables)) {
