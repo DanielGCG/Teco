@@ -10,9 +10,9 @@ if (typeof window.UIUtils !== 'undefined') {
     // Retorna a cor do status do usuário ('online', 'ausente', 'offline')
     function getStatusColor(status) {
         switch(status) {
-            case 'online': return '#28a745';    // Verde
+            case 'online': return '#4caf50';    // Verde
             case 'ausente': return '#ffc107';   // Amarelo
-            default: return '#6c757d';          // Cinza (offline)
+            default: return '#808080';          // Cinza (offline)
         }
     }
 
