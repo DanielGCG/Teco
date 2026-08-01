@@ -1,15 +1,18 @@
 /**
  * Sistema Unificado de UI Socket
  * Gerencia a atualização visual de elementos baseados em eventos de socket
- * (Status de usuários, notificações, contadores, etc.)
+ * (Status de usuários, notificações etc)
  */
 
 const SocketUI = (() => {
     let socket = null;
+    let isInitialized = false;
 
     function init(appSocket) {
+        if (isInitialized) return;
         socket = appSocket;
         if (!socket) return;
+        isInitialized = true;
 
         // Listener para mudança de status de usuários
         socket.on('userStatusChanged', (data) => {

@@ -84,7 +84,7 @@
     }
 
     async function confirmDel(id) {
-        if (!await window.confirmRetro('Excluir esta enviada permanentemente?')) return;
+        if (!await confirm('Excluir esta enviada permanentemente?')) return;
         try {
             const res = await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
             if (res.ok) { 

@@ -1,6 +1,15 @@
-<main class="container py-5">
-    <div class="row justify-content-center text-center">
-        <h2>Página em construção!</h2>
-        <img src="/images/gabi-manutencao.webp" alt="503 - Página em construção" class="img-fluid my-3 h-50 w-50">
-    </div> 
-</main>
+<div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+    <div class="window" style="width: 400px; max-width: 100%; text-align: center; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
+        <div class="window-header">
+            <span>Erro 503</span>
+        </div>
+        <div class="window-content" style="padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 350px; background: var(--retro-window-bg);">
+            <img src="/images/gabi-manutencao.webp" alt="503 - Página em construção" style="width: 200px; height: 200px; object-fit: contain; border: 2px solid var(--retro-border-dark); background: #fff;">
+            <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px;">
+                <h2 style="margin: 0; font-size: 22px;">Em construção!</h2>
+                <p style="margin: 0; color: var(--retro-text); font-size: 14px;">Esta página está em manutenção ou ainda não foi concluída.</p>
+            </div>
+            <button class="btn-bold" onclick="window.history.back()" style="padding: 5px 15px; width: 100px; margin-top: auto;">&lt; Voltar</button>
+        </div>
+    </div>
+</div>

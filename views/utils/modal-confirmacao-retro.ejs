@@ -27,7 +27,7 @@
         document.body.style.overflow = '';
     }
 
-    window.confirmRetro = function(message, title = 'Confirmação') {
+    window.mostrarConfirmacao = function(message, title = 'Confirmação') {
         return new Promise((resolve) => {
             // Fechar qualquer outro overlay que possa estar aberto e causando bug
             document.getElementById('retro-modal-overlay').style.display = 'block';

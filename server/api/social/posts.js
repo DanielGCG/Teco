@@ -77,7 +77,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
 
         // Processar mídia
         if (req.files && req.files.length > 0) {
-            for (const file of req.files) {
+            await Promise.all(req.files.map(async file => {
                 const mediaUrl = await uploadToFileServer({
                     buffer: file.buffer,
                     filename: sanitizeFilename(file.originalname),
@@ -90,7 +90,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                     url: mediaUrl,
                     type: mediaType
                 });
-            }
+            }));
         }
 
         // Processar menções
@@ -102,7 +102,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                     where: { username: uniqueUsernames }
                 });
 
-                for (const mentionedUser of mentionedUsers) {
+                await Promise.all(mentionedUsers.map(async mentionedUser => {
                     await PostMention.create({
                         postId: post.id,
                         userId: mentionedUser.id
@@ -120,7 +120,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                             socketType: 'mention'
                         });
                     }
-                }
+                }));
             }
         }
 

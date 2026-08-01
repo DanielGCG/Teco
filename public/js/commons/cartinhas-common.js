@@ -315,8 +315,8 @@ async function executarAcaoEmLoteCartinhas(acao) {
     }
 
     if (acao === 'delete') {
-        const conf = typeof window.confirmRetro === 'function' 
-            ? await window.confirmRetro(`Excluir ${selecionados.length} cartinha(s)?`) 
+        const conf = typeof confirm === 'function' 
+            ? await confirm(`Excluir ${selecionados.length} cartinha(s)?`) 
             : await confirm(`Excluir ${selecionados.length} cartinha(s)?`);
         if (!conf) return;
     }

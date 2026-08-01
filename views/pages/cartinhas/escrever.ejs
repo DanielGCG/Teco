@@ -272,7 +272,7 @@
     }
 
     async function limparCampos() {
-        if (!await window.confirmRetro('Limpar campos?', 'Aviso')) return;
+        if (!await confirm('Limpar campos?', 'Aviso')) return;
         document.getElementById('titulo').value = '';
         document.getElementById('conteudo').value = '';
         document.getElementById('destinatario').value = '';

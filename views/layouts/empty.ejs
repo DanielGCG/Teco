@@ -14,7 +14,7 @@
     <meta name="theme-color" content="#000000">
     <link rel="stylesheet" href="/styles/retro.css">
     <script>
-        // Fallback global para imagens quebradas (404, corrompidas)
+        // Fallback global para imagens quebradas
         document.addEventListener('error', function(e) {
             if (e.target && e.target.tagName === 'IMG') {
                 const fallback = '/images/placeholder.webp';
@@ -77,135 +77,15 @@
             SocketUI.init(window.appSocket);
         }
         
-        // Variáveis para controle do título
-        let originalTitle = document.title;
-        let currentUnreadCount = 0;
-
-        // Função de reconexão - executada ao conectar/reconectar
+        // Função de reconexão - executada ao conectar/reconectar (mantém estado online)
         function onSocketConnect() {
             notificationsSocket.emit('joinUserRoom');
-            notificationsSocket.emit('getNotificationsCount');
         }
 
         // Registra handler de reconexão
         SocketConnector.onReconnect(onSocketConnect);
 
-        // Update badge count
-        function updateNotificationsBadge(count) {
-            currentUnreadCount = count;
-            if (notificationsBadge) {
-                if (count > 0) {
-                    notificationsBadge.textContent = count > 99 ? '99+' : count;
-                    notificationsBadge.style.display = 'inline-block';
-                } else {
-                    notificationsBadge.style.display = 'none';
-                }
-            }
-            updateTabTitle(count);
-        }
-
-        // Atualiza o título da aba
-        function updateTabTitle(count) {
-            if (count > 0) {
-                document.title = `(${count}) ${originalTitle}`;
-            } else {
-                document.title = originalTitle;
-            }
-        }
-
-        // Listen for count updates
-        notificationsSocket.on('notificationsCount', (data) => {
-            updateNotificationsBadge(data.count);
-        });
-
-        // Load notifications from API
-        async function loadNotifications() {
-            try {
-                const response = await fetch('/api/notifications?limit=20');
-                const data = await response.json();
-
-                if (data.success && data.notifications.length > 0) {
-                    notificationsList.innerHTML = '';
-                    
-                    data.notifications.forEach(notification => {
-                        const isUnread = !notification.readat;
-                        const timeAgo = getTimeAgo(notification.createdat);
-
-                        const itemDiv = document.createElement('div');
-                        itemDiv.style.borderBottom = '1px solid #ccc';
-                        itemDiv.style.padding = '8px';
-                        itemDiv.style.cursor = 'pointer';
-                        itemDiv.style.fontSize = '12px';
-                        itemDiv.style.background = isUnread ? '#eef' : 'white';
-                        
-                        itemDiv.innerHTML = `
-                            <div style="font-weight: bold; color: #000080;">${notification.title}</div>
-                            <div style="color: #333; margin: 2px 0;">${notification.body}</div>
-                            <div style="font-size: 10px; color: #666;">${timeAgo}</div>
-                        `;
-                        
-                        itemDiv.addEventListener('click', async () => {
-                            if (isUnread) {
-                                await fetch(`/api/notifications/${notification.publicid}/read`, { method: 'PUT' });
-                                notificationsSocket.emit('getNotificationsCount');
-                            }
-                            if (notification.link && notification.link !== '#') {
-                                window.location.href = notification.link;
-                            }
-                        });
-                        
-                        notificationsList.appendChild(itemDiv);
-                    });
-                } else {
-                    notificationsList.innerHTML = '<div style="text-align: center; padding: 10px; color: #666;">Nenhuma notificação</div>';
-                }
-            } catch (err) {
-                console.error('Erro ao carregar notificações:', err);
-                notificationsList.innerHTML = '<div style="text-align: center; padding: 10px; color: red;">Erro ao carregar</div>';
-            }
-        }
-
-        // Mark all as read
-        if (markAllReadBtn) {
-            markAllReadBtn.addEventListener('click', async () => {
-                try {
-                    await fetch('/api/notifications/read-all', { method: 'PUT' });
-                    await loadNotifications();
-                    notificationsSocket.emit('getNotificationsCount');
-                } catch (err) {
-                    console.error('Erro ao marcar todas como lidas:', err);
-                }
-            });
-        }
-
-        // Listen for new notifications
-        notificationsSocket.on('newNotification', async (data) => {
-            notificationsSocket.emit('getNotificationsCount');
-            tryPlaySound(data?.type);
-            if (notificationsListContainer.style.display === 'block') {
-                await loadNotifications();
-            }
-        });
-
-        function tryPlaySound(type) {
-            try {
-                const audio = new Audio('/sounds/notify.mp3');
-                audio.volume = 0.3;
-                audio.play().catch(() => {});
-            } catch (e) {}
-        }
-
-        function getTimeAgo(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const seconds = Math.floor((now - date) / 1000);
-            if (seconds < 60) return 'Agora';
-            if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-            return date.toLocaleDateString('pt-BR');
-        }
-
-        // Emit Initial Count
+        // Conexão inicial
         onSocketConnect();
     </script>
     <script src="/js/global/user-context.js"></script>

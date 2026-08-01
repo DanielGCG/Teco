@@ -32,9 +32,7 @@ window.alert = function(mensagem, isErrorParam = false) {
 
 // Sobrescreve a função confirm global para só confirmar no SIM
 window.confirm = function(mensagem) {
-    if (typeof confirmRetro === 'function') {
-        return confirmRetro(mensagem);
-    } else if (typeof mostrarConfirmacao === 'function') {
+    if (typeof mostrarConfirmacao === 'function') {
         return mostrarConfirmacao(mensagem);
     } else {
         return window.confirmOriginal(mensagem);

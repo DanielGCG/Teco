@@ -1,7 +1,7 @@
-const { User, UserSession } = require("../models");
+const { User, UserSession, LegalDocument } = require("../models");
 const { Op } = require("sequelize");
 
-const PUBLIC_ROUTES = ['/register', '/login', '/logout', '/validate-session']; // rotas públicas
+const PUBLIC_ROUTES = ['/register', '/login', '/logout', '/validate-session', '/termos', '/privacidade']; // rotas públicas
 
 const setUserCookie = (res, user) => {
     const userData = user.get ? user.get({ plain: true }) : user;
@@ -31,6 +31,26 @@ const authMiddleware = (minRole = 20, refresh = true) => {
         let isPublic = false;
         try {
             isPublic = PUBLIC_ROUTES.includes(req.path);
+
+            // Se a requisição já passou por um authMiddleware anterior
+            if (req.user) {
+                if (!isPublic && req.user.roleId > minRole) {
+                    if (res && res.status) {
+                        const message = "Acesso negado: nível de privilégio insuficiente.";
+                        if (req.accepts('html')) {
+                            return res.status(403).send(`
+                                <h1>Acesso Negado</h1>
+                                    <p>${message}</p>
+                                    <button onclick="window.history.back()" style="padding: 10px 20px; cursor: pointer; background: #ddd; border: 1px solid #aaa; border-radius: 4px;">Voltar</button>
+                            `);
+                        }
+                        return res.status(403).json({ message });
+                    }
+                    return next(new Error("Acesso negado"));
+                }
+                return next();
+            }
+
             const cookieValue = req.cookies?.session;
 
             // Se não houver cookie e for rota pública, segue sem usuário
@@ -55,7 +75,7 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 },
                 include: [{
                     model: User,
-                    attributes: ['id', 'publicid', 'username', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill']
+                    attributes: ['id', 'publicid', 'username', 'email', 'emailVerified', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'consentVersion']
                 }]
             });
 
@@ -72,24 +92,60 @@ const authMiddleware = (minRole = 20, refresh = true) => {
 
             const user = session.User;
 
-            // Dono (1) sempre tem acesso a tudo
-            const isDono = user.roleId === 1;
-
             // Verifica role mínima
-            if (!isPublic && !isDono && user.roleId > minRole) {
+            // Cargos com valor mais baixo têm mais poderes (ex: 1=dono, 5=admin, 20=usuário)
+            if (!isPublic && user.roleId > minRole) {
                 if (res && res.status) {
                     const message = "Acesso negado: nível de privilégio insuficiente.";
                     if (req.accepts('html')) {
                         // Poderíamos redirecionar para um erro 403 amigável
-                        return res.status(403).render('utils/modal-aviso', {
-                            layout: 'layouts/empty',
-                            locals: { title: '403', description: 'Acesso Negado', version: process.env.VERSION },
-                            aviso: { titulo: "Acesso Negado", mensagem: message, botao: "Voltar", link: "javascript:history.back()" }
-                        });
+                        return res.status(403).send(`
+                            <!DOCTYPE html>
+                            <html>
+                            <head><title>Acesso Negado</title></head>
+                            <body style="font-family: sans-serif; text-align: center; margin-top: 50px; background: #f4f4f4; color: #333;">
+                                <h1>Acesso Negado</h1>
+                                <p>${message}</p>
+                                <button onclick="window.history.back()" style="padding: 10px 20px; cursor: pointer; background: #ddd; border: 1px solid #aaa; border-radius: 4px;">Voltar</button>
+                            </body>
+                            </html>
+                        `);
                     }
                     return res.status(403).json({ message });
                 }
                 return next(new Error("Acesso negado"));
+            }
+
+            // Verifica consentimento e e-mail para usuários em rotas restritas
+            // Isenta staff (Dono = 1, Admin = 5) dessas exigências
+            if (!isPublic && user.roleId > 5) {
+                const isApi = req.originalUrl.startsWith('/api/');
+
+                // 1. Consentimento
+                const latestDoc = await LegalDocument.findOne({ order: [['version', 'DESC']], attributes: ['version'] });
+                const currentConsentVersion = latestDoc?.version || 0;
+
+                if (currentConsentVersion > 0 && user.consentVersion < currentConsentVersion) {
+                    const consentRoutes = ['/consentimento', '/api/users/consent', '/api/users/delete-account', '/logout', '/api/users/logout'];
+                    if (!consentRoutes.includes(req.originalUrl.split('?')[0])) {
+                        if (res?.status) {
+                            if (req.accepts('html') && !isApi) return res.redirect('/consentimento');
+                            return res.status(403).json({ message: "Consentimento obrigatório pendente.", requireConsent: true });
+                        }
+                        return next(new Error("Consentimento obrigatório pendente."));
+                    }
+                } 
+                // 2. E-mail (só verifica se já consentiu)
+                else if (!user.emailVerified) {
+                    const emailRoutes = ['/verificar-email', '/api/users/update-email', '/api/users/resend-verification', '/logout', '/api/users/logout'];
+                    if (!emailRoutes.includes(req.originalUrl.split('?')[0])) {
+                        if (res?.status) {
+                            if (req.accepts('html') && !isApi) return res.redirect('/verificar-email');
+                            return res.status(403).json({ message: "Verificação de e-mail pendente.", requireEmailVerification: true });
+                        }
+                        return next(new Error("Verificação de e-mail pendente."));
+                    }
+                }
             }
 
             // Atualiza expiresat se refresh ativado
@@ -104,12 +160,15 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 id: userData.id, // Mantém id interno para operações no banco
                 publicid: userData.publicid,
                 username: userData.username,
+                email: userData.email,
+                emailVerified: userData.emailVerified,
                 roleId: userData.roleId,
                 profileimage: userData.profileimage,
                 bannerimage: userData.bannerimage,
                 backgroundimage: userData.backgroundimage,
                 backgroundcolor: userData.backgroundcolor,
-                backgroundfill: userData.backgroundfill
+                backgroundfill: userData.backgroundfill,
+                consentVersion: userData.consentVersion
             };
 
             if (res.locals) {

@@ -196,6 +196,17 @@
     </section>
 </article>
 
+<article class="window" style="max-width: 800px; margin: 10px auto;">
+    <header class="window-header" style="background-color: #aa0000; color: white;">
+        <span>Zona de Perigo</span>
+    </header>
+    <section class="window-content" style="text-align: center; padding: 20px;">
+        <h3 style="color: #aa0000; margin-top: 0;">Deletar Conta</h3>
+        <p style="font-size: 12px; margin-bottom: 15px;">Atenção! Esta ação é irreversível. Todos os seus dados pessoais serão removidos e seus posts serão anonimizados de forma permanente.</p>
+        <button type="button" id="btn-delete-account" class="btn-bold" style="background-color: #aa0000; color: white;">DELETAR MINHA CONTA</button>
+    </section>
+</article>
+
 <script>
     function atualizarContadorBio() {
         const bio = document.getElementById('bio');
@@ -409,6 +420,33 @@
             }
         } catch (err) {
             await alert(new Error("Erro de conexão ao mudar a senha. Verifique sua internet."));
+        }
+    });
+
+    document.getElementById('btn-delete-account')?.addEventListener('click', async function() {
+        const conf = typeof window.confirmRetro === 'function' 
+            ? await window.confirmRetro('Tem CERTEZA ABSOLUTA que deseja deletar sua conta permanentemente? Esta ação NÃO PODE ser desfeita!', 'Aviso de Segurança')
+            : confirm('Tem CERTEZA ABSOLUTA que deseja deletar sua conta permanentemente? Esta ação NÃO PODE ser desfeita!');
+            
+        if (!conf) return;
+
+        try {
+            const response = await fetch('/api/users/delete-account', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Conta excluída com sucesso. Adeus!');
+                window.location.href = '/login';
+            } else {
+                throw new Error(data.message || 'Erro ao deletar conta');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert(error.message);
         }
     });
 

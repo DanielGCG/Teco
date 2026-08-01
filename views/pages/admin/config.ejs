@@ -65,7 +65,7 @@
 
         if (syncBtn) {
             syncBtn.addEventListener('click', async () => {
-                if (!(await confirmRetro('Deseja iniciar o processo de sincronização de arquivos com o servidor? Isso pode demorar um pouco.'))) return;
+                if (!(await confirm('Deseja iniciar o processo de sincronização de arquivos com o servidor? Isso pode demorar um pouco.'))) return;
                 
                 syncBtn.disabled = true;
                 syncBtn.textContent = 'Sincronizando...';
@@ -171,7 +171,7 @@
         });
 
         removeBgBtn.addEventListener('click', async () => {
-            if (!(await confirmRetro('Deseja remover a imagem de fundo e voltar para a cor padrão do site?'))) return;
+            if (!(await confirm('Deseja remover a imagem de fundo e voltar para a cor padrão do site?'))) return;
             try {
                 await saveConfig('global_bg_image', '', 'Fundo da página inicial');
                 await saveConfig('global_bg_color', '#d9d7bf', 'Cor de fundo global');

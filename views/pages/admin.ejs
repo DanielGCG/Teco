@@ -58,6 +58,9 @@
             <% if (loggedUser.roleId <= 5) { %>
                 <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/config">Fundo Global & Sistema de Arquivos</a></li>
             <% } %>
+            <% if (loggedUser.roleId === 1) { %>
+                <li><span style="color: red; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-termos">Editar Termos & Privacidade</a></li>
+            <% } %>
         </ul>
     </fieldset>
 

@@ -1,6 +1,6 @@
 const express = require("express");
 const CartinhasRouter = express.Router();
-const { Cartinha, User, sequelize } = require("../..//models");
+const { Cartinha, User, sequelize, Stamp } = require("../../models");
 const { createNotification } = require("../notifications");
 const validate = require("../../middlewares/validate");
 const { Op } = require("sequelize");
@@ -238,7 +238,6 @@ CartinhasRouter.delete('/batch/delete', async (req, res) => {
 // GET /cartinhas/stamps - Listar selos disponíveis
 CartinhasRouter.get('/stamps', async (req, res) => {
     try {
-        const { Stamp } = require("../../models");
         const stamps = await Stamp.findAll({ order: [['createdat', 'DESC']] });
         res.json(stamps);
     } catch (err) {

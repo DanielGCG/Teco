@@ -77,7 +77,7 @@ const RetroPosts = {
      */
     initHandlers: function(callbackReload) {
         window.handleRetroDelete = async (postId) => {
-            const confirm = await window.confirmRetro('Tem certeza que deseja apagar esta mensagem permanentemente?', 'Confirmar Exclusão');
+            const confirm = await confirm('Tem certeza que deseja apagar esta mensagem permanentemente?', 'Confirmar Exclusão');
             if (!confirm) return;
             try {
                 const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
@@ -106,7 +106,7 @@ const RetroPosts = {
         };
 
         window.handleRetroRepost = async (postId) => {
-            const confirmed = await window.confirmRetro('Deseja compartilhar este post em seu perfil?', 'Repostar');
+            const confirmed = await confirm('Deseja compartilhar este post em seu perfil?', 'Repostar');
             if (!confirmed) return;
             try {
                 const res = await fetch('/api/posts', {

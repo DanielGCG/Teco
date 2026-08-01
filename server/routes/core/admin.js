@@ -5,13 +5,17 @@ const { renderStaticPage } = require('../../utils/render');
 const { authMiddleware } = require('../../middlewares/authMiddleware');
 
 const adminRender = (view, title, description) => 
-    renderStaticPage(`pages/${view}`, { title, description, layout: 'layouts/no-sidebar' });
+    renderStaticPage(`pages/${view}`, { title, description });
 
 // Todos na rota /admin já passaram pelo authMiddleware(10) no main.js
-// Apenas revalidamos para rotas que exigem Admin(5).
+// Apenas revalidamos para rotas que exigem Admin(5) ou Dono(1).
 const requireAdmin = authMiddleware(5);
+const requireDono = authMiddleware(1);
 
 AdminRouter.get('', adminRender('admin', 'Area de administrador', 'Use com cuidado!'));
+
+// Rotas de Dono (1)
+AdminRouter.get('/editar-termos', requireDono, adminRender('admin/editar-termos', 'Termos & Privacidade', 'Atualize os termos e exija re-consentimento'));
 
 // Rotas de Admin (5)
 AdminRouter.get('/criar-chat', requireAdmin, adminRender('admin/criar-chat', 'Gerenciar Chats & DMs', 'Crie, edite ou remova chats e DMs'));

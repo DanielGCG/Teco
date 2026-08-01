@@ -28,6 +28,14 @@
                 </div>
 
                 <div style="margin-bottom: 15px;">
+                    <label for="email"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">E-mail:</label>
+                    <input type="email" id="email" name="email" required autocomplete="email"
+                        style="width: 100%; box-sizing: border-box; height: 24px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text);">
+                    <div style="font-size: 9px; color: var(--retro-border-dark); margin-top: 3px;">Necessário para confirmação de conta.</div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
                     <label for="password"
                         style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: var(--retro-text);">Senha:</label>
                     <div style="display: flex; gap: 5px; margin-bottom: 3px;">
@@ -50,6 +58,15 @@
                             style="font-size: 10px; padding: 0 8px; font-weight: bold;">Ver</button>
                     </div>
                 </div>
+
+                <% if (locals.requireConsent) { %>
+                <div style="margin-bottom: 15px; font-size: 10px; color: var(--retro-text); display: flex; gap: 8px; align-items: start;">
+                    <input type="checkbox" id="consent" name="consent" required style="margin-top: 2px;">
+                    <label for="consent">
+                        Eu li e aceito os <a href="/termos" target="_blank" style="color: var(--retro-link);">Termos de Uso</a> e a <a href="/privacidade" target="_blank" style="color: var(--retro-link);">Política de Privacidade</a>.
+                    </label>
+                </div>
+                <% } %>
 
                 <div style="display: flex; justify-content: center; margin-bottom: 15px;">
                     <button type="submit"
@@ -85,8 +102,11 @@
 
         const usernameRaw = usernameInput.value.trim();
         const username = '@' + usernameRaw.replace(/^@/, '');
+        const email = document.getElementById('email').value.trim();
         const password = passwordInput.value;
         const passwordConfirm = passwordConfirmInput.value;
+        const consentCheckbox = document.getElementById('consent');
+        const consent = consentCheckbox ? consentCheckbox.checked : true;
 
         messageDiv.textContent = 'Processando...';
         messageDiv.style.color = 'var(--retro-link)';
@@ -104,11 +124,16 @@
                 return;
             }
 
+            if (consentCheckbox && !consent) {
+                messageDiv.style.color = 'var(--retro-link-hover)';
+                messageDiv.textContent = 'Você deve aceitar os termos.';
+                return;
+            }
+
             const response = await fetch('/api/users/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-                credentials: 'include'
+                body: JSON.stringify({ username, email, password, consent })
             });
 
             const data = await response.json();

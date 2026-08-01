@@ -1,6 +1,9 @@
 const express = require("express");
 const FeaturesRouter = express.Router();
-const { execSync } = require("child_process");
+const { exec } = require("child_process");
+const util = require("util");
+const execAsync = util.promisify(exec);
+let cachedCommits = null;
 const { renderStaticPage, renderPage } = require("../../utils/render");
 const { Op } = require('sequelize');
 const { Cutucada } = require('../../models');
@@ -24,30 +27,18 @@ FeaturesRouter.get('/galeria/:id', async (req, res) => {
 });
 
 FeaturesRouter.get('/cutucar', async (req, res) => {
-    let remainingNormalPokes = 20;
-    let remainingGlobalPokes = 1;
+    let remainingNormalCutucadas = 20;
+    let remainingGlobalCutucadas = 1;
 
     try {
         if (req.user && req.user.id) {
             const senderId = req.user.id;
-            
             const currentUser = await require('../../models/Social/User').User.findByPk(senderId);
+            
             if (currentUser) {
-                const now = new Date();
-                
-                // Cutucadas Normais
-                if (!currentUser.lastCutucadaReset || (now - new Date(currentUser.lastCutucadaReset)) >= 60 * 60 * 1000) {
-                    remainingNormalPokes = 20;
-                } else {
-                    remainingNormalPokes = currentUser.cutucadasRestantes;
-                }
-
-                // Cutucada Geral
-                if (!currentUser.lastCutucadaGeral || (now - new Date(currentUser.lastCutucadaGeral)) >= 24 * 60 * 60 * 1000) {
-                    remainingGlobalPokes = 1;
-                } else {
-                    remainingGlobalPokes = 0;
-                }
+                const status = currentUser.getCutucadasStatus();
+                remainingNormalCutucadas = status.remainingNormalCutucadas;
+                remainingGlobalCutucadas = status.remainingGlobalCutucadas;
             }
         }
     } catch (err) {
@@ -57,8 +48,8 @@ FeaturesRouter.get('/cutucar', async (req, res) => {
     renderPage(req, res, 'pages/features/cutucar', {
         title: 'Cutucar',
         description: 'Cutucar',
-        remainingNormalPokes,
-        remainingGlobalPokes
+        remainingNormalCutucadas,
+        remainingGlobalCutucadas
     });
 });
 
@@ -104,33 +95,36 @@ FeaturesRouter.get('/imagemdodia/sugerir', renderStaticPage('pages/imagemdodia/s
 FeaturesRouter.get('/credits', renderStaticPage('utils/credits', {
     title: 'Créditos',
     description: 'Agracedimentos e créditos',
-    layout: 'layouts/empty'
+    layout: 'layouts/main'
 }));
 
 FeaturesRouter.get('/changelog', async (req, res) => {
-    let commits = [];
     try {
-        const gitLog = execSync('git log -n 30 --pretty=format:"%h|%as|%an|%s|%b[END_COMMIT]"').toString();
-        
-        commits = gitLog.split('[END_COMMIT]').filter(c => c.trim()).map(line => {
-            const parts = line.trim().split('|');
-            const hash = parts[0];
-            const date = parts[1];
-            const author = parts[2];
-            const subject = parts[3] || '';
-            const body = parts.slice(4).join('|').trim();
+        if (!cachedCommits) {
+            const { stdout } = await execAsync('git log -n 30 --pretty=format:"%h|%as|%an|%s|%b[END_COMMIT]"');
+            const gitLog = stdout.toString();
             
-            return { hash, date, author, subject, body };
-        });
+            cachedCommits = gitLog.split('[END_COMMIT]').filter(c => c.trim()).map(line => {
+                const parts = line.trim().split('|');
+                const hash = parts[0];
+                const date = parts[1];
+                const author = parts[2];
+                const subject = parts[3] || '';
+                const body = parts.slice(4).join('|').trim();
+                
+                return { hash, date, author, subject, body };
+            });
+        }
     } catch (err) {
         console.error('[Changelog] Erro ao buscar git log:', err);
+        cachedCommits = []; // Evita travar a página em caso de erro no git
     }
 
     renderPage(req, res, 'utils/changelog', {
         title: 'Changelog',
         description: 'Histórico de atualizações do sistema',
-        layout: 'layouts/empty',
-        commits: commits
+        layout: 'layouts/main',
+        commits: cachedCommits
     });
 });
 

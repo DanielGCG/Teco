@@ -8,12 +8,12 @@
     <section class="window-content" style="background: var(--retro-bg);">
     
         <aside style="margin-top: 10px; padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
-            <b>Dica:</b> Você tem direito a 20 cutucadas individuais por hora e 1 cutucar geral por dia!
+            <b>Dica:</b> Você tem direito a 20 cutucadas individuais por hora e 1 cutucada geral por hora!
         </aside>
 
         <form id="cutucarForm" style="margin-top: 10px;">
             <fieldset style="position: relative; margin-bottom: 15px;">
-                <legend>Cutucada Individual (<span id="individualCounter"><%= remainingNormalPokes %></span> restantes nesta hora)</legend>
+                <legend>Cutucada Individual (<span id="individualCounter"><%= remainingNormalCutucadas %></span> restantes nesta hora)</legend>
                 
                 <div style="margin-bottom: 10px; position: relative;">
                     <label style="display: block; font-size: 11px; margin-bottom: 3px;">Para quem?</label>
@@ -32,14 +32,14 @@
                 </div>
                 
                 <footer style="margin-top: 10px; text-align: right;">
-                    <button type="submit" style="font-weight: bold;" <%= remainingNormalPokes <= 0 ? 'disabled' : '' %>>Cutucar</button>
+                    <button type="submit" style="font-weight: bold;" <%= remainingNormalCutucadas <= 0 ? 'disabled' : '' %>>Cutucar</button>
                 </footer>
             </fieldset>
         </form>
 
         <form id="cutucarGeralForm">
             <fieldset>
-                <legend>Cutucar Geral (<%= remainingGlobalPokes %> restante(s) hoje)</legend>
+                <legend>Cutucada Geral (<%= remainingGlobalCutucadas %> restante(s) nesta hora)</legend>
                 
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-size: 11px; margin-bottom: 3px;">Mensagem para todos do servidor</label>
@@ -47,10 +47,20 @@
                 </div>
                 
                 <footer style="margin-top: 10px; text-align: right;">
-                    <button type="submit" style="font-weight: bold;" <%= remainingGlobalPokes <= 0 ? 'disabled' : '' %>>Cutucar Geral</button>
+                    <button type="submit" style="font-weight: bold;" <%= remainingGlobalCutucadas <= 0 ? 'disabled' : '' %>>Cutucada Geral</button>
                 </footer>
             </fieldset>
         </form>
+
+        <fieldset style="margin-top: 20px;">
+            <legend>Histórico Global de Cutucadas</legend>
+            <div id="historyContainer" style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid var(--retro-border-dark); padding: 10px;">
+                <ul id="historyList" style="list-style: none; padding: 0; margin: 0; font-size: 11px;">
+                    <!-- Cutucadas injetadas via JS -->
+                </ul>
+                <div id="historyLoading" style="text-align: center; margin-top: 10px; color: gray;">Carregando...</div>
+            </div>
+        </fieldset>
 
     </section>
 </article>
@@ -153,7 +163,7 @@
         e.preventDefault();
         const msg = document.getElementById('mensagemGeral').value;
         
-        const confirmar = await window.confirmRetro('Você está prestes a notificar TODOS os usuários da plataforma. Tem certeza disso? (Lembre-se, isso conta no seu limite de 1 por dia)', 'Confirmação');
+        const confirmar = await confirm('Você está prestes a notificar TODOS os usuários da plataforma. Tem certeza disso? (Lembre-se, isso conta no seu limite de 1 por hora)', 'Confirmação');
         if (!confirmar) return;
 
         const btn = this.querySelector('button[type="submit"]');
@@ -183,4 +193,67 @@
             btn.textContent = 'Cutucar Geral';
         }
     });
+
+    // == LÓGICA DO HISTÓRICO LAZY LOADING ==
+    let currentHistoryPage = 1;
+    let isLoadingHistory = false;
+    let hasMoreHistory = true;
+
+    async function loadHistory() {
+        if (isLoadingHistory || !hasMoreHistory) return;
+        isLoadingHistory = true;
+        
+        const loadingEl = document.getElementById('historyLoading');
+        loadingEl.innerText = 'Carregando...';
+        loadingEl.style.display = 'block';
+
+        try {
+            const res = await fetch(`/api/cutucadas/history?page=${currentHistoryPage}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                const list = document.getElementById('historyList');
+                
+                data.data.forEach(cut => {
+                    const li = document.createElement('li');
+                    li.style.borderBottom = '1px dashed #ccc';
+                    li.style.padding = '5px 0';
+                    li.style.marginBottom = '5px';
+                    
+                    const timeStr = new Date(cut.createdAt).toLocaleString();
+                    const text = cut.isGlobal ? 'Alguém cutucou <b>Geral!</b>' : `Alguém cutucou <b>${cut.target ? cut.target.username : 'Desconhecido'}</b>`;
+                    const msg = cut.message ? `<br><i style="color: #666;">"${cut.message}"</i>` : '';
+                    
+                    li.innerHTML = `<span style="color: gray; font-size: 9px;">[${timeStr}]</span> ${text} ${msg}`;
+                    list.appendChild(li);
+                });
+
+                hasMoreHistory = data.hasMore;
+                if (hasMoreHistory) {
+                    currentHistoryPage++;
+                }
+            }
+        } catch (e) {
+            console.error('Erro ao carregar histórico:', e);
+        } finally {
+            isLoadingHistory = false;
+            loadingEl.style.display = hasMoreHistory ? 'block' : 'none';
+            if (!hasMoreHistory) {
+                loadingEl.innerText = 'Fim do histórico.';
+                loadingEl.style.display = 'block';
+            }
+        }
+    }
+
+    // Inicializa carregamento
+    loadHistory();
+
+    // Intersection Observer pro Lazy Loading
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            loadHistory();
+        }
+    }, { root: document.getElementById('historyContainer'), threshold: 0.1 });
+    
+    observer.observe(document.getElementById('historyLoading'));
 </script>

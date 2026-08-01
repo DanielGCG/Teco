@@ -1,4 +1,5 @@
-const { User, UserSession } = require('../models');
+const { User, UserSession, Chat, ChatMessage, DM, DMMessage, Notification } = require('../models');
+const { Op } = require('sequelize');
 const { createNotification } = require('../api/notifications');
 
 // ==================== Socket.IO Event Handlers ====================
@@ -70,23 +71,29 @@ module.exports = (io) => {
 
     io.on('connection', (socket) => {
         async function authenticateSocket() {
+            if (socket.userId && socket.publicid) {
+                return { userId: socket.userId, publicid: socket.publicid };
+            }
             const cookies = socket.handshake.headers.cookie;
             if (!cookies) return null;
             const sessionCookie = cookies.split(';').find(c => c.trim().startsWith('session='));
             if (!sessionCookie) return null;
             const cookieValue = sessionCookie.split('=')[1];
             try {
-                const { Op } = require('sequelize');
                 const session = await UserSession.findOne({
                     where: { cookie: cookieValue, expiresat: { [Op.gt]: new Date() } },
                     include: [{ model: User, attributes: ['id', 'publicid'] }]
                 });
-                return session?.User ? { userId: session.User.id, publicid: session.User.publicid } : null;
+                if (session?.User) {
+                    socket.userId = session.User.id;
+                    socket.publicid = session.User.publicid;
+                    return { userId: socket.userId, publicid: socket.publicid };
+                }
+                return null;
             } catch (err) { return null; }
         }
 
         async function resolveChatId(publicid, type = 'chat') {
-            const { Chat, DM } = require('../models');
             const model = type === 'dm' ? DM : Chat;
             const res = await model.findOne({ where: { publicid }, attributes: ['id'] });
             return res ? res.id : null;
@@ -108,11 +115,10 @@ module.exports = (io) => {
                 if (!realChatId) return socket.emit('error', { message: 'Chat não encontrado' });
 
                 updateUserActivity(auth.userId);
-                const { ChatMessage, DM, DMMessage, User: UserModel, Notification } = require('../models');
                 
                 if (type === 'dm') {
                     const newMessage = await DMMessage.create({ dmId: realChatId, userId: auth.userId, message: mensagem });
-                    const msg = await DMMessage.findByPk(newMessage.id, { include: [{ model: UserModel, as: 'Sender', attributes: ['username', 'publicid'] }] });
+                    const msg = await DMMessage.findByPk(newMessage.id, { include: [{ model: User, as: 'Sender', attributes: ['username', 'publicid'] }] });
                     
                     io.to(`chat_${publicChatId}`).emit('newMessage', {
                         chatId: publicChatId, type: 'dm',
@@ -147,7 +153,7 @@ module.exports = (io) => {
                     }
                 } else {
                     const newMessage = await ChatMessage.create({ chatId: realChatId, userId: auth.userId, message: mensagem });
-                    const msg = await ChatMessage.findByPk(newMessage.id, { include: [{ model: UserModel, as: 'author', attributes: ['username', 'publicid'] }] });
+                    const msg = await ChatMessage.findByPk(newMessage.id, { include: [{ model: User, as: 'author', attributes: ['username', 'publicid'] }] });
                     io.to(`chat_${publicChatId}`).emit('newMessage', {
                         chatId: publicChatId, type: 'chat',
                         message: { publicid: msg.publicid, message: msg.message, username: msg.author.username, userId: msg.author.publicid, createdat: msg.createdat }
@@ -162,8 +168,6 @@ module.exports = (io) => {
                 if (!auth) return;
                 const realChatId = await resolveChatId(publicChatId, 'dm');
                 if (!realChatId) return;
-                const { DMMessage } = require('../models');
-                const { Op } = require('sequelize');
                 await DMMessage.update({ isread: true }, { where: { dmId: realChatId, userId: { [Op.ne]: auth.userId }, isread: false } });
                 io.to(`chat_${publicChatId}`).emit('messageRead', { chatId: publicChatId, userId: auth.publicid });
                 socket.emit('messageRead');
@@ -211,7 +215,6 @@ module.exports = (io) => {
             try {
                 const auth = await authenticateSocket();
                 if (!auth) return;
-                const { Notification } = require('../models');
                 const count = await Notification.count({ where: { targetUserId: auth.userId, readat: null } });
                 socket.emit('notificationsCount', { count });
             } catch (err) {}
@@ -223,19 +226,17 @@ module.exports = (io) => {
                 if (!auth) return;
                 const realChatId = await resolveChatId(publicChatId, type);
                 if (!realChatId) return;
-                const { Chat, ChatMessage, DM, DMMessage, User: UserModel } = require('../models');
-                const { Op } = require('sequelize');
                 const limit = 50, offset = (page - 1) * limit;
                 let messages = [], hasMore = false;
 
                 if (type === 'dm') {
                     const dm = await DM.findOne({ where: { id: realChatId, [Op.or]: [{ userId1: auth.userId }, { userId2: auth.userId }] } });
                     if (!dm) return;
-                    const msgs = await DMMessage.findAll({ where: { dmId: realChatId }, include: [{ model: UserModel, as: 'Sender', attributes: ['username', 'publicid'] }], order: [['createdat', 'DESC']], limit: limit + 1, offset });
+                    const msgs = await DMMessage.findAll({ where: { dmId: realChatId }, include: [{ model: User, as: 'Sender', attributes: ['username', 'publicid'] }], order: [['createdat', 'DESC']], limit: limit + 1, offset });
                     hasMore = msgs.length > limit;
                     messages = msgs.slice(0, limit).map(m => ({ ...m.toJSON(), isMine: m.userId === auth.userId, username: m.Sender?.username, userId: m.Sender?.publicid }));
                 } else {
-                    const msgs = await ChatMessage.findAll({ where: { chatId: realChatId }, include: [{ model: UserModel, as: 'author', attributes: ['username', 'publicid'] }], order: [['createdat', 'DESC']], limit: limit + 1, offset });
+                    const msgs = await ChatMessage.findAll({ where: { chatId: realChatId }, include: [{ model: User, as: 'author', attributes: ['username', 'publicid'] }], order: [['createdat', 'DESC']], limit: limit + 1, offset });
                     hasMore = msgs.length > limit;
                     messages = msgs.slice(0, limit).map(m => ({ ...m.toJSON(), isMine: m.userId === auth.userId, username: m.author?.username, userId: m.author?.publicid }));
                 }

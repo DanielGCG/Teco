@@ -24,13 +24,13 @@ router.post('/poke', async (req, res) => {
         const currentUser = await User.findByPk(senderId);
         if (!currentUser) return res.status(404).json({ success: false, error: 'Usuário logado não encontrado.' });
 
-        const now = new Date();
-        let cutucadasRestantes = currentUser.cutucadasRestantes;
+        const status = currentUser.getCutucadasStatus();
+        let cutucadasRestantes = status.remainingNormalCutucadas;
         
-        // Se já passou 1 hora desde o último reset, restaura para 20
-        if (!currentUser.lastCutucadaReset || (now - new Date(currentUser.lastCutucadaReset)) >= 60 * 60 * 1000) {
-            cutucadasRestantes = 20;
-            currentUser.lastCutucadaReset = now;
+        // Se houve recarga no getCutucadasStatus(), a gente salva
+        if (cutucadasRestantes === 20 && currentUser.cutucadasRestantes !== 20) {
+            currentUser.lastCutucadaReset = new Date();
+            currentUser.cutucadasRestantes = 20;
         }
 
         if (cutucadasRestantes <= 0) {
@@ -111,10 +111,11 @@ router.post('/poke-all', async (req, res) => {
         if (!currentUser) return res.status(404).json({ success: false, error: 'Usuário logado não encontrado.' });
 
         const now = new Date();
+        const status = currentUser.getCutucadasStatus();
         
-        // Verifica limite (1 por dia - 24 horas)
-        if (currentUser.lastCutucadaGeral && (now - new Date(currentUser.lastCutucadaGeral)) < 24 * 60 * 60 * 1000) {
-            return res.status(429).json({ success: false, error: 'Você já deu sua cutucada geral hoje. Volte amanhã!' });
+        // Verifica limite (1 por hora)
+        if (status.remainingGlobalCutucadas <= 0) {
+            return res.status(429).json({ success: false, error: 'Você já deu sua cutucada geral nesta hora. Tente novamente mais tarde!' });
         }
 
         currentUser.lastCutucadaGeral = now;
@@ -177,6 +178,34 @@ router.post('/poke-all', async (req, res) => {
     } catch (err) {
         console.error('[Cutucar Geral API]', err);
         res.status(500).json({ success: false, error: 'Erro ao enviar cutucada geral.' });
+    }
+});
+
+// GET /api/cutucadas/history
+router.get('/history', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        const { count, rows } = await Cutucada.findAndCountAll({
+            attributes: ['id', 'message', 'isGlobal', 'createdAt'], // Omite senderUserId intencionalmente
+            include: [{
+                model: User,
+                as: 'target', // Alias definido na associação
+                attributes: ['username']
+            }],
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset
+        });
+
+        const hasMore = offset + rows.length < count;
+
+        res.json({ success: true, data: rows, hasMore });
+    } catch (err) {
+        console.error('[Cutucar History API]', err);
+        res.status(500).json({ success: false, error: 'Erro ao buscar histórico.' });
     }
 });
 

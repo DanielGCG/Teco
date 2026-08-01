@@ -132,11 +132,11 @@ AdminChatsRouter.get('/', async (req, res) => {
                 order: [['createdat', 'DESC']]
             });
 
-            for (let chat of publicChats) {
+            const chatResults = await Promise.all(publicChats.map(async chat => {
                 const messageCount = await ChatMessage.count({ where: { chatId: chat.id } });
                 const lastMsg = await ChatMessage.findOne({ where: { chatId: chat.id }, order: [['createdat', 'DESC']] });
 
-                results.push({
+                return {
                     publicid: chat.publicid,
                     title: chat.title,
                     type: 'public',
@@ -145,8 +145,9 @@ AdminChatsRouter.get('/', async (req, res) => {
                     messagecount: messageCount,
                     lastmessageat: lastMsg?.createdat || chat.createdat,
                     participants: []
-                });
-            }
+                };
+            }));
+            results.push(...chatResults);
         }
 
         // 2. Buscar DMs
@@ -159,15 +160,15 @@ AdminChatsRouter.get('/', async (req, res) => {
                 order: [['createdat', 'DESC']]
             });
 
-            for (let dm of dms) {
+            const dmResultsPromises = dms.map(async dm => {
                 // Filtro manual de busca por username em DM
                 if (search && !dm.user1.username.toLowerCase().includes(search.toLowerCase()) && 
-                            !dm.user2.username.toLowerCase().includes(search.toLowerCase())) continue;
+                            !dm.user2.username.toLowerCase().includes(search.toLowerCase())) return null;
 
                 const messageCount = await DMMessage.count({ where: { dmId: dm.id } });
                 const lastMsg = await DMMessage.findOne({ where: { dmId: dm.id }, order: [['createdat', 'DESC']] });
 
-                results.push({
+                return {
                     publicid: dm.publicid,
                     title: `${dm.user1.username} & ${dm.user2.username}`,
                     type: 'dm',
@@ -179,8 +180,10 @@ AdminChatsRouter.get('/', async (req, res) => {
                         { publicid: dm.user1.publicid, username: dm.user1.username },
                         { publicid: dm.user2.publicid, username: dm.user2.username }
                     ]
-                });
-            }
+                };
+            });
+            const dmResults = (await Promise.all(dmResultsPromises)).filter(Boolean);
+            results.push(...dmResults);
         }
 
         // Ordenar por última atividade globalmente

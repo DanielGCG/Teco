@@ -1,6 +1,6 @@
 const express = require("express");
 const UsersRouter = express.Router();
-const { User, UserSession, Role } = require("../../models");
+const { User, UserSession, Role, SystemConfig, Post, LegalDocument, UserConsentHistory } = require("../../models");
 const { authMiddleware, setUserCookie } = require("../../middlewares/authMiddleware");
 const validate = require("../../middlewares/validate");
 const bcrypt = require("bcrypt");
@@ -11,6 +11,9 @@ const { processImage } = require("../../utils/imageProcessor");
 const { uploadToFileServer } = require('../../utils/fileServer');
 const axios = require('axios'); // Mantém para outros usos
 const FormData = require('form-data'); // Mantém para outros usos
+const { Resend } = require('resend');
+// Initialize Resend only if API key is present; otherwise keep null to avoid crash
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const {
     registerSchema,
     loginSchema,
@@ -19,6 +22,25 @@ const {
     validateSessionSchema,
     searchUsersSchema
 } = require("../../validators/users.validator");
+
+// Helper para envio de email de verificação
+async function sendVerificationEmail(user, req) {
+    if (!process.env.RESEND_API_KEY) return;
+    
+    user.verificationToken = crypto.randomUUID();
+    user.verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
+
+    const link = `${req.protocol}://${req.get('host')}/api/users/verify-email?token=${user.verificationToken}`;
+    try {
+        await resend.emails.send({
+            from: 'Teco <noreply@sitedoboteco.com.br>',
+            to: user.email,
+            subject: 'Confirme seu e-mail no Teco',
+            html: `<p>Olá ${user.username},</p><p>Bem-vindo ao Teco! Por favor, confirme seu e-mail clicando no link abaixo:</p><p><a href="${link}">${link}</a></p><p>Válido por 24 horas.</p>`
+        });
+    } catch (err) { console.error("Erro envio e-mail:", err); }
+}
 
 // Helper para proteger rotas
 const protect = (minRole = 20) => authMiddleware(minRole);
@@ -75,28 +97,102 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
 });
 
 UsersRouter.post('/register', validate(registerSchema), async (req, res) => {
-    let { username, password, bio } = req.body;
+    let { username, password, bio, consent, email } = req.body;
     username = ('@' + username.trim().replace(/^@/, '')).slice(0, 16).toLowerCase();
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
+        const latestDoc = await LegalDocument.findOne({ order: [['version', 'DESC']], attributes: ['id', 'version'] });
+        const currentConsentVersion = latestDoc ? latestDoc.version : 0;
+
+        if (currentConsentVersion > 0 && !consent) {
+            return res.status(400).json({ message: "Você deve aceitar os Termos de Uso e a Política de Privacidade para se registrar." });
+        }
+
+        const existingEmail = await User.findOne({ where: { email } });
+        if (existingEmail) {
+            return res.status(409).json({ message: "E-mail já cadastrado." });
+        }
+
         const existing = await User.findOne({ where: { username } });
         if (existing) {
             return res.status(409).json({ message: "Username já existe" });
         }
 
-        await User.create({
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const newUser = await User.create({
             username,
             passwordhash: hashedPassword,
-            bio: bio
+            email,
+            emailVerified: false,
+            bio: bio,
+            consentVersion: currentConsentVersion
         });
 
-        res.status(201).json({ message: "Conta criada com sucesso", username });
+        if (currentConsentVersion > 0 && latestDoc) {
+            await UserConsentHistory.create({ userId: newUser.id, legalDocumentId: latestDoc.id });
+        }
+
+        await sendVerificationEmail(newUser, req);
+        res.status(201).json({ message: "Conta criada. Verifique seu e-mail.", username });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao criar conta" });
     }
+});
+
+// GET /api/users/verify-email?token=...
+UsersRouter.get('/verify-email', async (req, res) => {
+    try {
+        const user = await User.findOne({ where: { verificationToken: req.query.token || '' } });
+        if (!user || (user.verificationExpires && user.verificationExpires < new Date())) {
+            return res.send("Token inválido ou expirado. Faça login e solicite um novo envio.");
+        }
+
+        user.emailVerified = true;
+        user.verificationToken = null;
+        user.verificationExpires = null;
+        await user.save();
+        res.redirect('/');
+    } catch (err) { res.status(500).send("Erro ao verificar."); }
+});
+
+// POST /api/users/resend-verification
+UsersRouter.post('/resend-verification', protect(20), async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+        if (user.emailVerified || !user.email) return res.status(400).json({ message: "Inválido" });
+
+        // Cooldown lógico de 60 segundos baseado no tempo de expiração do token atual
+        if (user.verificationExpires) {
+            const timeSinceLastEmail = (24 * 60 * 60 * 1000) - (user.verificationExpires.getTime() - Date.now());
+            if (timeSinceLastEmail < 60000 && timeSinceLastEmail >= 0) {
+                const waitTime = Math.ceil((60000 - timeSinceLastEmail) / 1000);
+                return res.status(429).json({ message: `Aguarde ${waitTime} segundos antes de reenviar.` });
+            }
+        }
+
+        await sendVerificationEmail(user, req);
+        res.json({ message: "E-mail reenviado." });
+    } catch (err) { res.status(500).json({ message: "Erro." }); }
+});
+
+// POST /api/users/update-email (Para usuários legados)
+UsersRouter.post('/update-email', protect(20), async (req, res) => {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) return res.status(400).json({ message: "E-mail inválido." });
+
+    try {
+        const existing = await User.findOne({ where: { email } });
+        if (existing && existing.id !== req.user.id) return res.status(409).json({ message: "E-mail em uso." });
+
+        const user = await User.findByPk(req.user.id);
+        user.email = email;
+        user.emailVerified = false;
+        
+        await sendVerificationEmail(user, req);
+        res.json({ message: "E-mail atualizado. Verifique sua caixa de entrada." });
+    } catch (err) { res.status(500).json({ message: "Erro ao atualizar." }); }
 });
 
 UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
@@ -162,6 +258,47 @@ UsersRouter.post('/logout', async (req, res) => {
     res.clearCookie('session');
     res.clearCookie('teco_user');
     res.json({ message: "Logout realizado com sucesso" });
+});
+
+// POST /api/users/consent - Consentimento de usuário logado
+UsersRouter.post('/consent', protect(20), async (req, res) => {
+    try {
+        const latestDoc = await LegalDocument.findOne({ order: [['version', 'DESC']] });
+        if (!latestDoc) {
+            return res.status(400).json({ message: "Não há termos cadastrados." });
+        }
+
+        await User.update({ consentVersion: latestDoc.version }, { where: { id: req.user.id } });
+        
+        await UserConsentHistory.create({
+            userId: req.user.id,
+            legalDocumentId: latestDoc.id
+        });
+
+        // Atualiza cookie local do frontend, não da session do DB, pois o authMiddleware vai refazer depois, ou recriar a sessão
+        res.json({ message: "Consentimento atualizado com sucesso." });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao atualizar consentimento." });
+    }
+});
+
+// DELETE /api/users/delete-account
+UsersRouter.delete('/delete-account', protect(20), async (req, res) => {
+    try {
+        // Remover todas as sessões para deslogar
+        await UserSession.destroy({ where: { userId: req.user.id } });
+
+        // Apagar completamente o usuário do banco de dados (o CASCADE tratará do resto)
+        await User.destroy({ where: { id: req.user.id } });
+
+        res.clearCookie('session');
+        res.clearCookie('teco_user');
+        res.json({ message: "Conta deletada com sucesso." });
+    } catch (err) {
+        console.error("Erro ao deletar conta:", err);
+        res.status(500).json({ message: "Erro interno ao deletar conta." });
+    }
 });
 
 UsersRouter.get('/me', protect(20), async (req, res) => {
@@ -322,8 +459,7 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
 
 UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
     try {
-        const lastfmUser = req.params.lastfmUser;
-        const botecoUrl = process.env.BOTECOANALYTICS_URL;
+        const botecoUrl = process.env.BOTECOANALYTICS_URL ? process.env.BOTECOANALYTICS_URL.trim() : null;
         const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN ? process.env.BOTECOANALYTICS_WIDGET_TOKEN.trim() : null;
 
         if (!botecoUrl || !botecoToken) {
@@ -331,7 +467,7 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
         }
 
         const baseUrl = botecoUrl.replace(/\/$/, "");
-        const targetUrl = `${baseUrl}/api/widget/${encodeURIComponent(lastfmUser)}`.replace('localhost', '127.0.0.1');
+        const targetUrl = `${baseUrl}/api/widget/${encodeURIComponent(req.params.lastfmUser)}`.replace('localhost', '127.0.0.1');
         
         const response = await fetch(targetUrl, {
             method: 'GET',

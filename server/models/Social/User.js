@@ -43,6 +43,24 @@ const User = sequelize.define('User', {
         unique: true,
         defaultValue: DataTypes.UUIDV4
     },
+    email: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: true
+    },
+    emailVerified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    verificationToken: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    verificationExpires: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
     roleId: {
         type: DataTypes.TINYINT.UNSIGNED,
         allowNull: false,
@@ -109,6 +127,11 @@ const User = sequelize.define('User', {
         type: DataTypes.DATE,
         allowNull: true
     },
+    consentVersion: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0
+    },
     createdat: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -135,6 +158,30 @@ User.prototype.toJSON = function () {
     delete values.id;
     delete values.passwordhash;
     return values;
+};
+
+// Método para calcular o status das cutucadas
+User.prototype.getCutucadasStatus = function() {
+    const now = new Date();
+    let remainingNormalCutucadas = this.cutucadasRestantes;
+    let remainingGlobalCutucadas = 1;
+
+    // Cutucadas Normais (recarrega para 20 a cada 1 hora)
+    if (!this.lastCutucadaReset || (now - new Date(this.lastCutucadaReset)) >= 60 * 60 * 1000) {
+        remainingNormalCutucadas = 20;
+    }
+
+    // Cutucada Geral (recarrega 1 a cada 1 hora)
+    if (!this.lastCutucadaGeral || (now - new Date(this.lastCutucadaGeral)) >= 60 * 60 * 1000) {
+        remainingGlobalCutucadas = 1;
+    } else {
+        remainingGlobalCutucadas = 0;
+    }
+
+    return {
+        remainingNormalCutucadas,
+        remainingGlobalCutucadas
+    };
 };
 
 // Relacionamentos expostos via objeto

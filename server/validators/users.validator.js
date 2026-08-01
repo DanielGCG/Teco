@@ -7,6 +7,8 @@ const registerSchema = z.object({
         .min(1, "Username é obrigatório")
         .max(16, "Username deve ter no máximo 16 caracteres"),
     password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres"),
+    consent: z.boolean().optional(),
+    email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
     bio: z.string()
         .max(160, "Bio deve ter no máximo 160 caracteres")
         .optional()

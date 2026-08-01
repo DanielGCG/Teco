@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { SystemConfig } = require('../../models');
+const { SystemConfig, LegalDocument } = require('../../models');
 const { runGarbageCollector } = require('../../utils/garbageCollector');
 const { upload } = require('../../utils/upload');
 const { uploadToFileServer } = require('../../utils/fileServer');
@@ -14,6 +14,52 @@ router.get('/', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Erro ao buscar configurações' });
+    }
+});
+
+// @route   GET /api/admin/config/legal-document
+// @desc    Obtém os termos mais recentes
+router.get('/legal-document', async (req, res) => {
+    try {
+        const latestDoc = await LegalDocument.findOne({ order: [['version', 'DESC']] });
+        if (latestDoc) {
+            res.json(latestDoc);
+        } else {
+            res.json({ version: 0, termsText: '', privacyText: '' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Erro ao buscar termos' });
+    }
+});
+
+// @route   POST /api/admin/config/legal-document
+// @desc    Salva uma nova versão dos termos
+router.post('/legal-document', async (req, res) => {
+    const { termsText, privacyText, incrementVersion } = req.body;
+    try {
+        const latestDoc = await LegalDocument.findOne({ order: [['version', 'DESC']] });
+        let newVersion = latestDoc ? latestDoc.version : 0;
+        
+        if (incrementVersion || newVersion === 0) {
+            newVersion++;
+            await LegalDocument.create({
+                version: newVersion,
+                termsText,
+                privacyText
+            });
+        } else {
+            // Se não incrementa, apenas atualiza o último
+            await latestDoc.update({
+                termsText,
+                privacyText
+            });
+        }
+        
+        res.json({ message: 'Termos salvos com sucesso', version: newVersion });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Erro ao salvar termos' });
     }
 });
 

@@ -84,12 +84,19 @@
                         font-family: ${b.fontfamily ? (b.fontfamily.toLowerCase().includes('comic sans') ? `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive` : `'${b.fontfamily}', sans-serif`) : 'var(--retro-font-family)'};
                     ">
                         <!-- Coluna do Autor -->
-                        <div class="blog-list-author">
-                            <strong onclick="window.location.href='/${b.author.username}'">${b.author.username}</strong>
-                            <img src="${b.author.profileimage || '/images/default_avatar.png'}" alt="${b.author.username}" onclick="window.location.href='/${b.author.username}'">
-                            <div class="blog-list-date">
-                                <div>${new Date(b.createdat).toLocaleDateString()}</div>
-                                <div>${new Date(b.createdat).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        <div class="blog-author">
+                            <div class="blog-author-profile">
+                                <img src="${b.author.profileimage || '/images/default_avatar.png'}" alt="Avatar" style="width: 48px; height: 48px; border: 1px solid var(--retro-border-dark); margin: 5px 0; object-fit: cover; cursor: pointer;" onclick="window.location.href='/${b.author.username}'">
+                                <div class="blog-author-name-date">
+                                    <strong style="cursor: pointer;" onclick="window.location.href='/${b.author.username}'">${b.author.username}</strong>
+                                    <div class="blog-author-date">
+                                        <div>${new Date(b.createdat).toLocaleDateString()}</div>
+                                        <div>${new Date(b.createdat).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="blog-author-meta-box">
+                                <div><span>${b.applausecount || 0}</span> aplausos</div>
                             </div>
                         </div>
                         
@@ -143,34 +150,84 @@
         padding: 0;
     }
     
-    .blog-list-author {
-        width: 100px;
-        min-width: 100px;
+    .blog-author {
+        width: 120px;
+        min-width: 120px;
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+        word-break: break-word;
         border-right: 1px solid var(--retro-border-light);
-        background: rgba(244, 244, 244, 1);
-        backdrop-filter: blur(2px);
+        background: var(--retro-sidebar-bg, #f4f4f4);
         padding: 10px;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        color: #000;
     }
     
-    .blog-list-author img {
-        width: 48px;
-        height: 48px;
-        border: 1px solid var(--retro-border-dark);
-        margin: 5px 0;
-        object-fit: cover;
-        cursor: pointer;
+    .blog-author-profile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     
-    .blog-list-date {
+    .blog-author-name-date {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .blog-author-date {
         font-size: 10px;
         color: var(--retro-border-dark);
         line-height: 1.2;
     }
+    
+    .blog-author-meta-box {
+        margin-top: 15px; 
+        font-size: 10px; 
+        color: var(--retro-border-dark); 
+        border-top: 1px dashed var(--retro-border-dark); 
+        padding-top: 10px; 
+        width: 100%;
+    }
+    
+    @media (max-width: 600px) {
+        .blog-list-card {
+            flex-direction: column;
+        }
+        .blog-author {
+            width: 100%;
+            min-width: auto;
+            border-right: none;
+            border-bottom: 1px solid var(--retro-border-light);
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        .blog-author-profile {
+            flex-direction: row;
+            text-align: left;
+            align-items: center;
+            gap: 10px;
+        }
+        .blog-author-name-date {
+            align-items: flex-start;
+        }
+        .blog-author-meta-box {
+            margin-top: 0;
+            border-top: none;
+            border-left: 1px dashed var(--retro-border-dark);
+            padding-top: 0;
+            padding-left: 10px;
+            width: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: right;
+        }
+    }
+    
+
     
     .blog-list-content {
         padding: 10px;

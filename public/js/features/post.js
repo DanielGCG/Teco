@@ -464,8 +464,8 @@ window.PostActions = {
         const isRetro = document.querySelector('link[href*="retro.css"]');
         let confirmacao;
         
-        if (isRetro && typeof window.confirmRetro === 'function') {
-            confirmacao = await window.confirmRetro('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.', 'Confirmar Exclusão');
+        if (isRetro && typeof confirm === 'function') {
+            confirmacao = await confirm('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.', 'Confirmar Exclusão');
         } else {
             confirmacao = await confirm('Tem certeza que deseja deletar este post? Esta ação não pode ser desfeita.');
         }

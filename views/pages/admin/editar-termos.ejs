@@ -1,0 +1,102 @@
+<div class="window" style="width: 100%; max-width: 800px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); margin: 0 auto;">
+    <div class="window-header">
+        <span>Editar Termos e Privacidade</span>
+    </div>
+    <div class="window-content" style="padding: 20px;">
+        <div style="margin-bottom: 20px; font-size: 12px; color: var(--retro-text);">
+            Aqui você pode editar os Termos de Uso e a Política de Privacidade do Teco. 
+            <strong>Ao clicar em Salvar e Exigir Re-consentimento, todos os usuários logados serão deslogados ou bloqueados até aceitarem a nova versão.</strong>
+        </div>
+
+        <form id="termos-form">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; font-size: 14px; color: var(--retro-text); display: block; margin-bottom: 5px;">Termos de Uso:</label>
+                <textarea id="terms_text" rows="10" style="width: 100%; box-sizing: border-box; padding: 5px; font-family: monospace; font-size: 12px; background: var(--retro-bg); color: var(--retro-text); border: 2px inset var(--retro-border-dark);"></textarea>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; font-size: 14px; color: var(--retro-text); display: block; margin-bottom: 5px;">Política de Privacidade:</label>
+                <textarea id="privacy_text" rows="10" style="width: 100%; box-sizing: border-box; padding: 5px; font-family: monospace; font-size: 12px; background: var(--retro-bg); color: var(--retro-text); border: 2px inset var(--retro-border-dark);"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; font-size: 14px; color: var(--retro-text); display: block; margin-bottom: 5px;">Versão Atual de Consentimento: <span id="current_version_display">Carregando...</span></label>
+                <div style="font-size: 10px; color: var(--retro-border-dark);">Aumentar esta versão fará com que todos precisem aceitar novamente.</div>
+            </div>
+
+            <div id="message" style="margin-bottom: 15px; font-size: 12px; font-weight: bold;"></div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="btn-save-only" style="padding: 10px; flex: 1; font-weight: bold; cursor: pointer; font-size: 13px; background-color: var(--retro-window-bg); border: 2px outset var(--retro-border-light); color: var(--retro-text);">
+                    Apenas Salvar Textos (Sem exigir)
+                </button>
+                <button type="button" id="btn-save-require" style="padding: 10px; flex: 1; font-weight: bold; cursor: pointer; font-size: 13px; background-color: var(--retro-link-hover); border: 2px outset var(--retro-border-dark); color: white;">
+                    Salvar e Exigir Re-consentimento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentVersion = 0;
+
+    async function loadData() {
+        try {
+            const res = await fetch('/api/admin/config/legal-document');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('terms_text').value = data.termsText || '';
+                document.getElementById('privacy_text').value = data.privacyText || '';
+                currentVersion = data.version || 0;
+                document.getElementById('current_version_display').textContent = currentVersion === 0 ? 'Nenhum termo cadastrado' : currentVersion;
+            } else {
+                document.getElementById('current_version_display').textContent = 'Erro ao carregar';
+            }
+        } catch (err) {
+            console.error('Erro ao carregar dados:', err);
+        }
+    }
+
+    async function handleSave(incrementVersion) {
+        const termsText = document.getElementById('terms_text').value;
+        const privacyText = document.getElementById('privacy_text').value;
+        const msgDiv = document.getElementById('message');
+
+        msgDiv.textContent = 'Salvando...';
+        msgDiv.style.color = 'var(--retro-link)';
+
+        try {
+            const res = await fetch('/api/admin/config/legal-document', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ termsText, privacyText, incrementVersion })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                currentVersion = data.version;
+                document.getElementById('current_version_display').textContent = currentVersion;
+                msgDiv.textContent = 'Salvo com sucesso!';
+                msgDiv.style.color = 'var(--retro-header-bg)';
+            } else {
+                msgDiv.textContent = 'Erro ao salvar.';
+                msgDiv.style.color = 'var(--retro-link-hover)';
+            }
+        } catch (err) {
+            console.error(err);
+            msgDiv.textContent = 'Erro de rede ao salvar.';
+            msgDiv.style.color = 'var(--retro-link-hover)';
+        }
+    }
+
+    document.getElementById('btn-save-only').addEventListener('click', () => handleSave(false));
+    
+    document.getElementById('btn-save-require').addEventListener('click', () => {
+        if (confirm("Tem certeza que deseja exigir o re-consentimento? Isso afetará todos os usuários ativos.")) {
+            handleSave(true);
+        }
+    });
+
+    loadData();
+</script>

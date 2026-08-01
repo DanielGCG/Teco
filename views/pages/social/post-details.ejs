@@ -84,7 +84,7 @@
         }
 
         window.handleRetroDelete = async (targetId) => {
-            const confirmed = await window.confirmRetro('Tem certeza que deseja apagar esta mensagem?', 'Confirmar Exclusão');
+            const confirmed = await confirm('Tem certeza que deseja apagar esta mensagem?', 'Confirmar Exclusão');
             if (!confirmed) return;
 
             try {

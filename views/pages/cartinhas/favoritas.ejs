@@ -82,14 +82,14 @@ async function carregarCartinhas(page = 1) {
 }
 
 async function toggleFav(id) {
-    if (!await window.confirmRetro('Desfavoritar esta mensagem?')) return;
+    if (!await confirm('Desfavoritar esta mensagem?')) return;
     await toggleFavoritoCommon(id, dataCache);
     window.modalCartinha.fechar();
     carregarCartinhas();
 }
 
 async function confirmDel(id) {
-    if (!await window.confirmRetro('Excluir esta favorita permanentemente?')) return;
+    if (!await confirm('Excluir esta favorita permanentemente?')) return;
     try {
         await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
         window.modalCartinha.fechar();

@@ -75,11 +75,14 @@ AdminUsersRouter.put('/:publicid', async (req, res) => {
         if (nomeUser.length > 16) nomeUser = nomeUser.slice(0, 16);
         nomeUser = nomeUser.toLowerCase();
 
-        // Admin (5) só pode editar usuários de nível inferior
-        if (req.user.roleId >= 5 && targetUser.roleId <= 5 && req.user.id != targetUser.id) {
-            if (req.user.roleId !== 1) {
-                return res.status(403).json({ message: "Você não tem permissão para editar este usuário (nível superior ou igual)" });
-            }
+        // Usuários não podem editar outros com cargo igual ou superior, exceto Dono
+        if (req.user.roleId > 1 && req.user.roleId >= targetUser.roleId && req.user.id != targetUser.id) {
+            return res.status(403).json({ message: "Você não tem permissão para modificar usuários com cargo igual ou superior ao seu" });
+        }
+
+        // Impede a concessão de um cargo igual ou superior ao seu próprio, exceto Dono
+        if (roleId !== undefined && req.user.roleId > 1 && req.user.roleId >= roleId) {
+            return res.status(403).json({ message: "Você não tem permissão para conceder um cargo igual ou superior ao seu" });
         }
 
         // Verifica se username já está em uso por outro usuário
@@ -136,9 +139,9 @@ AdminUsersRouter.put('/:publicid/reset-password', async (req, res) => {
             return res.status(403).json({ message: "Use a rota de perfil para alterar sua própria senha" });
         }
 
-        // Admin (>=5) só pode resetar senha de níveis inferiores
-        if (req.user.roleId >= 5 && targetUser.roleId <= 5 && req.user.id != targetUser.id) {
-             return res.status(403).json({ message: "Você não pode resetar senha de administradores ou donos" });
+        // Usuários não podem resetar senha de outros com cargo igual ou superior, exceto Dono
+        if (req.user.roleId > 1 && req.user.roleId >= targetUser.roleId && req.user.id != targetUser.id) {
+             return res.status(403).json({ message: "Você não tem permissão para modificar usuários com cargo igual ou superior ao seu" });
         }
 
         // Atualiza a senha
@@ -170,9 +173,9 @@ AdminUsersRouter.delete('/:publicid', async (req, res) => {
             return res.status(403).json({ message: "Você não pode deletar sua própria conta" });
         }
 
-        // Admin (>=5) só pode deletar usuários de nível inferior
-        if (req.user.roleId >= 5 && targetUser.roleId <= 5) {
-            return res.status(403).json({ message: "Você não pode deletar administradores ou donos" });
+        // Usuários não podem deletar outros com cargo igual ou superior, exceto Dono
+        if (req.user.roleId > 1 && req.user.roleId >= targetUser.roleId) {
+            return res.status(403).json({ message: "Você não tem permissão para modificar usuários com cargo igual ou superior ao seu" });
         }
 
         // Verifica se é o último dono

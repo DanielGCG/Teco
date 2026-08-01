@@ -1,0 +1,123 @@
+<div style="display: flex; flex-direction: column; min-height: 80vh; justify-content: center; align-items: center; padding: 20px;">
+    <div class="window" style="width: 100%; max-width: 400px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
+        <div class="window-header">
+            <span>Verificação de Segurança</span>
+        </div>
+        <div class="window-content" style="padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; color: var(--retro-text);">Verificação de E-mail</h2>
+                <div style="font-size: 11px; color: var(--retro-border-dark); margin-top: 5px;">Isso mantém spammers e bots longe!</div>
+            </div>
+
+            <% if (locals.hasEmail) { %>
+                <p style="font-size: 12px; color: var(--retro-text); text-align: center; line-height: 1.5;">
+                    Sua conta está aguardando a confirmação do e-mail <strong><%= locals.email %></strong>.<br>
+                    Por favor, cheque sua caixa de entrada (e caixa de spam) para ativar sua conta.
+                </p>
+
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                    <button id="resendBtn" style="padding: 6px 12px; font-weight: bold; cursor: pointer; font-size: 12px;">
+                        Reenviar E-mail
+                    </button>
+                    <button id="verifiedBtn" onclick="window.location.href='/'" style="padding: 6px 12px; font-weight: bold; cursor: pointer; font-size: 12px; background-color: var(--retro-success-bg, #008000); color: white;">
+                        Já Verifiquei
+                    </button>
+                </div>
+            <% } else { %>
+                <p style="font-size: 12px; color: var(--retro-text); text-align: center; line-height: 1.5;">
+                    Para continuar acessando o Teco, é obrigatório cadastrar um e-mail válido na sua conta. Isso nos ajuda a manter a comunidade segura.
+                </p>
+
+                <form id="updateEmailForm" style="margin-top: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label for="newEmail" style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px;">Seu E-mail:</label>
+                        <input type="email" id="newEmail" required style="width: 100%; box-sizing: border-box; height: 26px; font-size: 12px; background-color: var(--retro-window-bg); border-top: 2px solid var(--retro-border-dark); border-left: 2px solid var(--retro-border-dark); border-bottom: 2px solid var(--retro-border-light); border-right: 2px solid var(--retro-border-light); color: var(--retro-text); padding: 0 5px;">
+                    </div>
+                    
+                    <div style="display: flex; justify-content: center;">
+                        <button type="submit" style="padding: 6px 15px; font-weight: bold; cursor: pointer; font-size: 12px;">
+                            Salvar e Enviar Confirmação
+                        </button>
+                    </div>
+                </form>
+            <% } %>
+
+            <div id="message" style="margin-top: 15px; text-align: center; font-size: 11px; min-height: 15px; font-weight: bold;"></div>
+
+            <div style="margin-top: 20px; text-align: center; border-top: 1px dashed var(--retro-border-dark); padding-top: 10px;">
+                <a href="/logout" style="font-size: 11px;">Sair da conta</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const messageDiv = document.getElementById('message');
+
+    function showMessage(msg, isError = false) {
+        messageDiv.textContent = msg;
+        messageDiv.style.color = isError ? 'red' : 'green';
+    }
+
+    const resendBtn = document.getElementById('resendBtn');
+    if (resendBtn) {
+        resendBtn.addEventListener('click', async () => {
+            resendBtn.disabled = true;
+            try {
+                const response = await fetch('/api/users/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                showMessage(data.message, !response.ok);
+
+                if (response.ok || response.status === 429) {
+                    const seconds = response.status === 429 ? parseInt(data.message.match(/\d+/)?.[0] || 60) : 60;
+                    let left = seconds;
+                    resendBtn.textContent = `Aguarde ${left}s...`;
+                    const interval = setInterval(() => {
+                        left--;
+                        if (left <= 0) {
+                            clearInterval(interval);
+                            resendBtn.disabled = false;
+                            resendBtn.textContent = 'Reenviar E-mail';
+                        } else {
+                            resendBtn.textContent = `Aguarde ${left}s...`;
+                        }
+                    }, 1000);
+                    return; // previne o reenable imediato
+                }
+            } catch (err) {
+                showMessage('Erro ao processar a requisição.', true);
+            }
+            setTimeout(() => { resendBtn.disabled = false; }, 3000);
+        });
+    }
+
+    const updateEmailForm = document.getElementById('updateEmailForm');
+    if (updateEmailForm) {
+        updateEmailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('newEmail').value.trim();
+            const btn = updateEmailForm.querySelector('button');
+            
+            btn.disabled = true;
+            try {
+                const response = await fetch('/api/users/update-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
+                showMessage(data.message, !response.ok);
+                
+                if (response.ok) {
+                    setTimeout(() => window.location.reload(), 2000);
+                }
+            } catch (err) {
+                showMessage('Erro ao processar a requisição.', true);
+            }
+            btn.disabled = false;
+        });
+    }
+</script>

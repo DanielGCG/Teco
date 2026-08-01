@@ -213,7 +213,7 @@
     }
 
     async function deleteItem(publicid) {
-        if (!(await window.confirmRetro('Tem certeza que deseja excluir este item? Ele sumirá do banco.', 'Atenção'))) return;
+        if (!(await confirm('Tem certeza que deseja excluir este item? Ele sumirá do banco.', 'Atenção'))) return;
         await fetch(`/api/admin/pet/items/${publicid}`, { method: 'DELETE' });
         carregarTudo();
     }

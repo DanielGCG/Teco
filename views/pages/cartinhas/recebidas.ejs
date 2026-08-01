@@ -79,7 +79,7 @@ async function toggleFav(id) {
 }
 
 async function confirmDel(id) {
-    if (!await window.confirmRetro('Excluir esta recebida?')) return;
+    if (!await confirm('Excluir esta recebida?')) return;
     try {
         await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
         window.modalCartinha.fechar();

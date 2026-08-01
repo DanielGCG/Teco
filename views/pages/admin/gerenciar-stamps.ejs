@@ -99,7 +99,7 @@
     }
 
     async function deletarStamp(publicid) {
-        if (!await window.confirmRetro('Deletar este selo permanentemente?', 'Aviso')) return;
+        if (!await confirm('Deletar este selo permanentemente?', 'Aviso')) return;
         try {
             const res = await fetch('/api/admin/stamps/' + publicid, { method: 'DELETE' });
             if (res.ok) {

@@ -1,0 +1,109 @@
+<div style="display: flex; flex-direction: column; min-height: 80vh; justify-content: center; align-items: center; padding: 20px;">
+    <div class="window" style="width: 100%; max-width: 600px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);">
+        <div class="window-header" style="background-color: var(--retro-link-hover);">
+            <span style="color: white; font-weight: bold;">Atualização Obrigatória: Termos de Uso e Privacidade</span>
+        </div>
+        <div class="window-content" style="padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; color: var(--retro-text);">Precisamos da sua atenção!</h2>
+                <div style="font-size: 11px; color: var(--retro-border-dark);">Nossos termos foram atualizados. Você precisa aceitá-los para continuar usando o Teco.</div>
+            </div>
+
+            <div style="background-color: var(--retro-bg); border: 1px inset var(--retro-border-dark); padding: 10px; height: 150px; overflow-y: scroll; margin-bottom: 15px; font-size: 12px; color: var(--retro-text);">
+                <strong>Resumo dos Termos de Uso:</strong><br/>
+                <div style="white-space: pre-wrap;"><%= locals.termsText %></div>
+            </div>
+
+            <div style="background-color: var(--retro-bg); border: 1px inset var(--retro-border-dark); padding: 10px; height: 150px; overflow-y: scroll; margin-bottom: 20px; font-size: 12px; color: var(--retro-text);">
+                <strong>Resumo da Política de Privacidade:</strong><br/>
+                <div style="white-space: pre-wrap;"><%= locals.privacyText %></div>
+            </div>
+
+            <div id="message" style="margin-top: 10px; text-align: center; font-size: 11px; min-height: 15px; font-weight: bold;"></div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px; gap: 10px;">
+                <button type="button" id="btn-accept" style="flex: 1; padding: 10px; font-weight: bold; cursor: pointer; font-size: 13px; background-color: var(--retro-header-bg); border: 2px outset var(--retro-border-light); color: black;">
+                    Li e Concordo (Continuar)
+                </button>
+                <button type="button" id="btn-decline" style="flex: 1; padding: 10px; font-weight: bold; cursor: pointer; font-size: 13px; background-color: var(--retro-link-hover); border: 2px outset var(--retro-border-dark); color: white;">
+                    Não Concordo (Deletar Conta)
+                </button>
+            </div>
+            
+            <div style="margin-top: 15px; text-align: center; border-top: 1px dashed var(--retro-border-dark); padding-top: 10px;">
+                <button type="button" id="btn-logout" style="font-size: 11px; background: none; border: none; color: var(--retro-link); text-decoration: underline; cursor: pointer;">
+                    Fazer Logout e Pensar Depois
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const btnAccept = document.getElementById('btn-accept');
+    const btnDecline = document.getElementById('btn-decline');
+    const btnLogout = document.getElementById('btn-logout');
+    const messageDiv = document.getElementById('message');
+
+    btnAccept.addEventListener('click', async () => {
+        messageDiv.textContent = 'Processando...';
+        messageDiv.style.color = 'var(--retro-link)';
+        
+        try {
+            const response = await fetch('/api/users/consent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                messageDiv.style.color = 'var(--retro-header-bg)';
+                messageDiv.textContent = 'Obrigado! Redirecionando...';
+                setTimeout(() => window.location.href = '/', 1000);
+            } else {
+                messageDiv.style.color = 'var(--retro-link-hover)';
+                messageDiv.textContent = 'Erro ao processar.';
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    btnDecline.addEventListener('click', async () => {
+        if(!await confirm("Atenção: Ao não concordar, sua conta será DELETADA de forma irreversível (seus posts antigos ficarão órfãos e anonimizados, mas não poderão ser recuperados). Você tem certeza disso?")) return;
+        
+        messageDiv.textContent = 'Deletando conta...';
+        messageDiv.style.color = 'var(--retro-link-hover)';
+        
+        try {
+            const response = await fetch('/api/users/delete-account', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                messageDiv.textContent = 'Conta apagada. Redirecionando...';
+                setTimeout(() => window.location.href = '/', 1500);
+            } else {
+                messageDiv.textContent = 'Erro ao deletar conta.';
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    btnLogout.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/users/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error(err);
+            window.location.href = '/login';
+        }
+    });
+</script>

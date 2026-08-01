@@ -563,8 +563,8 @@
         const nome = tmdbItem.title || tmdbItem.name;
         const confirmMsg = `Adicionar "${nome}"?`;
 
-        if (window.confirmRetro) {
-            const ans = await window.confirmRetro(confirmMsg, 'Confirmação');
+        if (confirm) {
+            const ans = await confirm(confirmMsg, 'Confirmação');
             if (!ans) return;
         } else {
             if (!confirm(confirmMsg)) return;
@@ -593,10 +593,9 @@
             const data = await res.json();
             if (data.success) {
                 carregarWatchlist();
-                if (window.alertRetro) window.alertRetro('Obra adicionada com sucesso!');
+                alert('Obra adicionada com sucesso!');
             } else {
-                if (window.alertRetro) window.alertRetro(data.message || 'Erro ao adicionar.');
-                else alert(data.message || 'Erro ao adicionar.');
+                alert(data.message || 'Erro ao adicionar.');
             }
         } catch (e) { console.error('Erro:', e); }
     }
