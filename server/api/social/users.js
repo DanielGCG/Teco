@@ -163,7 +163,7 @@ UsersRouter.post('/resend-verification', protect(20), async (req, res) => {
         const user = await User.findByPk(req.user.id);
         if (user.emailVerified || !user.email) return res.status(400).json({ message: "Inválido" });
 
-        // Cooldown lógico de 60 segundos baseado no tempo de expiração do token atual
+        // Cooldown de 60 segundos baseado no tempo de expiração do token atual
         if (user.verificationExpires) {
             const timeSinceLastEmail = (24 * 60 * 60 * 1000) - (user.verificationExpires.getTime() - Date.now());
             if (timeSinceLastEmail < 60000 && timeSinceLastEmail >= 0) {
@@ -187,6 +187,16 @@ UsersRouter.post('/update-email', protect(20), async (req, res) => {
         if (existing && existing.id !== req.user.id) return res.status(409).json({ message: "E-mail em uso." });
 
         const user = await User.findByPk(req.user.id);
+        
+        // Cooldown de 60 segundos baseado no tempo de expiração do token atual
+        if (user.verificationExpires) {
+            const timeSinceLastEmail = (24 * 60 * 60 * 1000) - (user.verificationExpires.getTime() - Date.now());
+            if (timeSinceLastEmail < 60000 && timeSinceLastEmail >= 0) {
+                const waitTime = Math.ceil((60000 - timeSinceLastEmail) / 1000);
+                return res.status(429).json({ message: `Aguarde ${waitTime} segundos antes de tentar novamente.` });
+            }
+        }
+
         user.email = email;
         user.emailVerified = false;
         
@@ -304,7 +314,7 @@ UsersRouter.delete('/delete-account', protect(20), async (req, res) => {
 UsersRouter.get('/me', protect(20), async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: ['publicid', 'username', 'roleId', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'lastfmusername', 'postcount', 'createdat']
+            attributes: ['publicid', 'username', 'roleId', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'lastfmusername', 'postcount', 'createdat', 'email', 'emailVerified']
         });
 
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });

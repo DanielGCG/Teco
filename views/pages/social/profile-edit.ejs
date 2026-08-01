@@ -168,6 +168,26 @@
         <span>Segurança</span>
     </header>
     <section class="window-content">
+        <form id="change-email-form" style="margin-bottom: 20px;">
+            <fieldset>
+                <legend>Alterar E-mail</legend>
+                <table border="0" cellpadding="2" cellspacing="0" style="font-size: 11px;">
+                    <tr>
+                        <td width="120"><b>E-mail Atual:</b></td>
+                        <td id="display_current_email" style="color: var(--retro-border-dark);">Carregando...</td>
+                    </tr>
+                    <tr>
+                        <td><b>Novo E-mail:</b></td>
+                        <td><input type="email" id="new_email" required class="inline-input"
+                                style="border: 1px solid var(--retro-border-dark); background: white;"></td>
+                    </tr>
+                </table>
+                <footer style="margin-top: 10px;">
+                    <button type="submit" class="btn-sm">ALTERAR E-MAIL</button>
+                </footer>
+            </fieldset>
+        </form>
+
         <form id="change-password-form">
             <fieldset>
                 <legend>Alterar Senha</legend>
@@ -261,6 +281,15 @@
             const date = new Date(user.createdat).toLocaleDateString();
             previewJoinedDate.textContent = `Membro desde: ${date}`;
         }
+        
+        const displayEmail = document.getElementById('display_current_email');
+        if (displayEmail) {
+            displayEmail.textContent = user.email || 'Nenhum e-mail cadastrado';
+            if (user.email && !user.emailVerified) {
+                displayEmail.innerHTML += ' <span style="color: #aa0000;">(Não verificado)</span>';
+            }
+        }
+        
         atualizarContadorBio();
     }
 
@@ -420,6 +449,34 @@
             }
         } catch (err) {
             await alert(new Error("Erro de conexão ao mudar a senha. Verifique sua internet."));
+        }
+    });
+
+    document.getElementById('change-email-form')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const newEmail = document.getElementById('new_email').value;
+
+        try {
+            const res = await fetch('/api/users/update-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: newEmail })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                await alert(data.message || "E-mail atualizado. Verifique sua caixa de entrada.");
+                this.reset();
+                carregarPerfil(); // Recarrega para mostrar o novo email
+            } else {
+                let msg = data.message;
+                if (data.errors && Array.isArray(data.errors)) {
+                    msg = data.errors.map(err => err.msg || err.message).join('\n');
+                }
+                await alert(new Error(msg || "Ocorreu um problema ao mudar o e-mail."));
+            }
+        } catch (err) {
+            await alert(new Error("Erro de conexão ao mudar o e-mail. Verifique sua internet."));
         }
     });
 

@@ -62,7 +62,7 @@ const SocketUI = (() => {
         // Encontra todos os elementos que representam este usuário
         const elements = document.querySelectorAll(`[data-user-id="${publicid}"]`);
         
-        const colors = { online: '#00ff00', ausente: '#ffff00', offline: '#808080' };
+        const colors = { online: '#4caf50', ausente: '#ffc107', offline: '#808080' };
         const labels = { online: 'Online', ausente: 'Ausente', offline: 'Offline' };
 
         elements.forEach(el => {

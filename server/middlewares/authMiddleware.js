@@ -117,8 +117,8 @@ const authMiddleware = (minRole = 20, refresh = true) => {
             }
 
             // Verifica consentimento e e-mail para usuários em rotas restritas
-            // Isenta staff (Dono = 1, Admin = 5) dessas exigências
-            if (!isPublic && user.roleId > 5) {
+            // Isenta apenas o Dono (Dono = 1) dessas exigências
+            if (!isPublic && user.roleId > 1) {
                 const isApi = req.originalUrl.startsWith('/api/');
 
                 // 1. Consentimento

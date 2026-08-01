@@ -155,6 +155,59 @@ AdminUsersRouter.put('/:publicid/reset-password', async (req, res) => {
     }
 });
 
+// PUT /admin/users/:publicid/update-email - Atualizar email de qualquer usuário (admin)
+AdminUsersRouter.put('/:publicid/update-email', async (req, res) => {
+    const publicid = req.params.publicid;
+    const { newEmail } = req.body;
+
+    if (!newEmail || !newEmail.includes('@')) {
+        return res.status(400).json({ message: "E-mail inválido" });
+    }
+
+    try {
+        const targetUser = await User.findOne({ where: { publicid } });
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const userId = targetUser.id;
+
+        // Impede que o usuário mude seu próprio email por aqui (exceto Dono)
+        if (req.user.id == userId && req.user.roleId > 1) {
+            return res.status(403).json({ message: "Use a rota de perfil para alterar seu próprio e-mail" });
+        }
+
+        // Usuários não podem alterar email de outros com cargo igual ou superior, exceto Dono
+        if (req.user.roleId > 1 && req.user.roleId >= targetUser.roleId && req.user.id != targetUser.id) {
+             return res.status(403).json({ message: "Você não tem permissão para modificar usuários com cargo igual ou superior ao seu" });
+        }
+
+        // Verifica se email já está em uso por outro usuário
+        const existing = await User.findOne({
+            where: {
+                email: newEmail,
+                id: { [Op.ne]: userId }
+            }
+        });
+
+        if (existing) {
+            return res.status(409).json({ message: "E-mail já está em uso" });
+        }
+
+        // Atualiza o email (marcando como verificado, pois foi admin quem alterou)
+        await targetUser.update({ 
+            email: newEmail,
+            emailVerified: true 
+        });
+
+        res.json({ message: "E-mail atualizado com sucesso" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao atualizar e-mail" });
+    }
+});
+
 // DELETE /admin/users/:publicid - Deletar qualquer usuário (admin)
 AdminUsersRouter.delete('/:publicid', async (req, res) => {
     const publicid = req.params.publicid;

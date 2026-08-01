@@ -1,8 +1,8 @@
-<title>Resetar Senha - Administração</title>
+<title>Segurança do Usuário - Administração</title>
 
 <div class="window" style="max-width: 500px; margin: 40px auto;">
     <div class="window-header">
-        <span>Resetar Senha</span>
+        <span>Segurança do Usuário</span>
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
             Painel ]</a>
     </div>
@@ -11,9 +11,8 @@
         <div style="text-align: center; margin-bottom: 20px;">
             <img src="/images/naorelacionado/easter_egg/alert.png" alt="Aviso"
                 style="width: 48px; height: 48px; display: none;" onerror="this.style.display='none'">
-            <h3 style="margin: 0;">Resetar Senha</h3>
-            <p style="color: gray; font-size: 12px; margin-top: 5px;">Selecione um usuário para redefinir a senha de
-                acesso para o padrão.</p>
+            <h3 style="margin: 0;">Segurança do Usuário</h3>
+            <p style="color: gray; font-size: 12px; margin-top: 5px;">Selecione um usuário para redefinir a senha ou alterar o e-mail.</p>
         </div>
 
         <div
@@ -28,6 +27,19 @@
                 <button id="resetBtn"
                     style="width: 100%; padding: 8px; font-weight: bold; color: #cc0000; border: 2px outset var(--retro-border-light);">
                     [ ! ] Resetar senha para 12345
+                </button>
+            </div>
+            
+            <hr style="margin: 10px 0; border: 1px dashed var(--retro-border-dark);">
+            
+            <div><strong>Alterar E-mail do usuário:</strong></div>
+            <div style="display: flex; gap: 5px;">
+                <input type="email" id="newEmail" placeholder="Novo e-mail do usuário..." style="flex-grow: 1; padding: 4px; font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div style="padding-top: 5px; text-align: center;">
+                <button id="updateEmailBtn"
+                    style="width: 100%; padding: 8px; font-weight: bold; border: 2px outset var(--retro-border-light);">
+                    Alterar E-mail
                 </button>
             </div>
         </div>
@@ -109,6 +121,45 @@
         } catch (err) {
             console.error(err);
             alert("Erro ao resetar senha");
+        }
+    });
+
+    // ==================== Alterar E-mail ====================
+    document.getElementById("updateEmailBtn").addEventListener("click", async () => {
+        const select = document.getElementById("selectUser");
+        const userId = select.value;
+        const newEmail = document.getElementById("newEmail").value;
+
+        if (!userId) {
+            return alert("Selecione um usuário");
+        }
+        
+        if (!newEmail || !newEmail.includes('@')) {
+            return alert("Insira um e-mail válido");
+        }
+
+        let confirmado = await confirm(`Tem certeza que deseja alterar o e-mail deste usuário para ${newEmail}?`);
+
+        if (!confirmado) return;
+
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/update-email`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ newEmail }),
+                credentials: "include"
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert("E-mail atualizado com sucesso!");
+                document.getElementById("newEmail").value = "";
+            } else {
+                alert("Erro: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao alterar e-mail");
         }
     });
 
