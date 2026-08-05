@@ -477,8 +477,8 @@ UsersRouter.get('/buscar', protect(20), validate(searchUsersSchema, 'query'), as
 
 UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
     try {
-        const botecoUrl = process.env.BOTECOANALYTICS_URL ? process.env.BOTECOANALYTICS_URL.trim() : null;
-        const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN ? process.env.BOTECOANALYTICS_WIDGET_TOKEN.trim() : null;
+        const botecoUrl = process.env.BOTECOANALYTICS_URL;
+        const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN;
 
         if (!botecoUrl || !botecoToken) {
             return res.status(500).json({ error: "Integração musical não configurada no servidor." });
@@ -508,6 +508,41 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
         res.json(JSON.parse(rawText));
     } catch (err) {
         console.error("Erro interno no proxy widget:", err);
+        res.status(500).json({ error: "Falha na comunicação com o Analytics." });
+    }
+});
+
+UsersRouter.get('/music-top5/data', protect(20), async (req, res) => {
+    try {
+        const botecoUrl = process.env.BOTECOANALYTICS_URL ? process.env.BOTECOANALYTICS_URL.trim() : null;
+
+        if (!botecoUrl) {
+            return res.status(500).json({ error: "Integração musical não configurada no servidor." });
+        }
+
+        const baseUrl = botecoUrl.replace(/\/$/, "");
+        const targetUrl = `${baseUrl}/api/top5`.replace('localhost', '127.0.0.1');
+        
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'TecoApp/1.0'
+            }
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: "Erro na API de músicas" });
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<')) {
+            return res.status(502).json({ error: "A API retornou HTML em vez de JSON." });
+        }
+
+        res.json(JSON.parse(rawText));
+    } catch (err) {
+        console.error("Erro interno no proxy top5:", err);
         res.status(500).json({ error: "Falha na comunicação com o Analytics." });
     }
 });

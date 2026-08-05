@@ -1,0 +1,105 @@
+<div class="window">
+    <div class="window-header">Top Músicas e Artistas</div>
+    <div class="window-content">
+        
+        <div id="musica-content" style="display: flex; gap: 15px; flex-direction: column;">
+            
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <!-- Top Tracks Hoje -->
+                <div class="window" style="flex: 1; min-width: 300px;">
+                    <div class="window-header">Top 5 Músicas (Hoje)</div>
+                    <div class="window-content" id="list-daily-tracks" style="padding: 5px; background: white;">
+                        <div style="padding: 10px; text-align: center; color: #666;">Carregando...</div>
+                    </div>
+                </div>
+
+                <!-- Top Tracks Semana -->
+                <div class="window" style="flex: 1; min-width: 300px;">
+                    <div class="window-header">Top 5 Músicas (Semana)</div>
+                    <div class="window-content" id="list-weekly-tracks" style="padding: 5px; background: white;">
+                        <div style="padding: 10px; text-align: center; color: #666;">Carregando...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <!-- Top Artists Hoje -->
+                <div class="window" style="flex: 1; min-width: 300px;">
+                    <div class="window-header">Top 5 Artistas (Hoje)</div>
+                    <div class="window-content" id="list-daily-artists" style="padding: 5px; background: white;">
+                        <div style="padding: 10px; text-align: center; color: #666;">Carregando...</div>
+                    </div>
+                </div>
+
+                <!-- Top Artists Semana -->
+                <div class="window" style="flex: 1; min-width: 300px;">
+                    <div class="window-header">Top 5 Artistas (Semana)</div>
+                    <div class="window-content" id="list-weekly-artists" style="padding: 5px; background: white;">
+                        <div style="padding: 10px; text-align: center; color: #666;">Carregando...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('/api/users/music-top5/data', { credentials: 'include' });
+        if (!res.ok) throw new Error('Falha ao carregar');
+        const data = await res.json();
+        
+        const renderTrack = (t, index) => `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 5px; border-bottom: 1px dotted var(--retro-border-dark);">
+                <div style="font-weight: bold; font-size: 14px; width: 20px; text-align: center;">${index+1}</div>
+                <img src="${t.image || '/images/placeholder.webp'}" style="width: 40px; height: 40px; object-fit: cover; border: 1px solid var(--retro-border-dark);" alt="Capa">
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #000080;">${t.track}</div>
+                    <div style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333;">${t.artist}</div>
+                </div>
+                <div style="font-size: 11px; background: var(--retro-bg); padding: 2px 4px; border: 1px solid var(--retro-border-dark); white-space: nowrap;">${t.playcount} plays</div>
+            </div>
+        `;
+
+        const renderArtist = (a, index) => `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 5px; border-bottom: 1px dotted var(--retro-border-dark);">
+                <div style="font-weight: bold; font-size: 14px; width: 20px; text-align: center;">${index+1}</div>
+                <img src="${a.image || '/images/placeholder.webp'}" style="width: 40px; height: 40px; object-fit: cover; border: 1px solid var(--retro-border-dark);" alt="Foto">
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #000080;">${a.artist}</div>
+                </div>
+                <div style="font-size: 11px; background: var(--retro-bg); padding: 2px 4px; border: 1px solid var(--retro-border-dark); white-space: nowrap;">${a.playcount} plays</div>
+            </div>
+        `;
+
+        const renderList = (id, items, renderFn) => {
+            const container = document.getElementById(id);
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div style="padding: 10px; text-align: center; color: #666;">Nenhum dado encontrado</div>';
+                return;
+            }
+            container.innerHTML = items.map((item, i) => renderFn(item, i)).join('');
+            if(container.lastElementChild) {
+                container.lastElementChild.style.borderBottom = 'none';
+            }
+        };
+
+        renderList('list-daily-tracks', data.daily.tracks, renderTrack);
+        renderList('list-weekly-tracks', data.weekly.tracks, renderTrack);
+        renderList('list-daily-artists', data.daily.artists, renderArtist);
+        renderList('list-weekly-artists', data.weekly.artists, renderArtist);
+
+        if (data.updatedAt) {
+            const date = new Date(data.updatedAt);
+            const timeStr = date.toLocaleTimeString('pt-BR');
+            const dateStr = date.toLocaleDateString('pt-BR');
+            document.getElementById('musica-content').insertAdjacentHTML('beforeend', `<div style="text-align: center; font-size: 10px; color: #666; margin-top: 5px;">Última atualização do cache: ${dateStr} às ${timeStr}</div>`);
+        }
+
+    } catch(err) {
+        console.error(err);
+        document.getElementById('musica-content').insertAdjacentHTML('beforebegin', '<div style="color: red; border: 1px solid red; background: #fee; padding: 10px; margin: 10px; text-align: center;">Erro ao carregar dados do BotecoAnalytics. Tente novamente mais tarde.</div>');
+    }
+});
+</script>

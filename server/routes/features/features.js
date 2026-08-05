@@ -5,13 +5,18 @@ const util = require("util");
 const execAsync = util.promisify(exec);
 let cachedCommits = null;
 const { renderStaticPage, renderPage } = require("../../utils/render");
-const { Op } = require('sequelize');
-const { Cutucada } = require('../../models');
 
 FeaturesRouter.get('/watchlist', renderStaticPage('pages/features/watchlist', {
     title: 'Watchlist',
     description: 'Lista de filmes'
 }));
+
+FeaturesRouter.get('/musica', async (req, res) => {
+    renderPage(req, res, 'pages/features/musica', {
+        title: 'Top Músicas e Artistas',
+        description: 'Ranking diário e semanal do Boteco'
+    });
+});
 
 FeaturesRouter.get('/galerias', renderStaticPage('pages/features/galerias', {
     title: 'Galerias',
