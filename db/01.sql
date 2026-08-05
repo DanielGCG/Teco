@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS user (
 -- ==========================
 -- TABELAS DE TERMOS E CONSENTIMENTO
 -- ==========================
-CREATE TABLE IF NOT EXISTS legal_document (
+CREATE TABLE IF NOT EXISTS legaldocument (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     version INT NOT NULL,
     termsText TEXT,
@@ -58,13 +58,13 @@ CREATE TABLE IF NOT EXISTS legal_document (
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS user_consent_history (
+CREATE TABLE IF NOT EXISTS userconsenthistory (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     userId INT UNSIGNED NOT NULL,
     legalDocumentId INT UNSIGNED NOT NULL,
     consentedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
-    FOREIGN KEY (legalDocumentId) REFERENCES legal_document(id) ON DELETE CASCADE
+    FOREIGN KEY (legalDocumentId) REFERENCES legaldocument(id) ON DELETE CASCADE
 );
 
 DELIMITER //
@@ -499,7 +499,7 @@ CREATE TABLE IF NOT EXISTS cartinha (
     publicid VARCHAR(36) NOT NULL UNIQUE,
     senderUserId INT UNSIGNED,
     recipientUserId INT UNSIGNED NOT NULL,
-    title VARCHAR(160) NOT NULL,
+    title TEXT NOT NULL,
     body TEXT,
     contenturl VARCHAR(255),
     stampUrl VARCHAR(255),

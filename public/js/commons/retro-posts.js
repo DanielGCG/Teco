@@ -100,8 +100,8 @@ const RetroPosts = {
 
         window.handleRetroCopyLink = (username, postId) => {
             const url = `${window.location.origin}/${username}/status/${postId}`;
-            navigator.clipboard.writeText(url).then(() => {
-                alert('Link copiado para a área de transferência!');
+            navigator.clipboard.writeText(url).then(async () => {
+                await alert('Link copiado para a área de transferência!');
             });
         };
 

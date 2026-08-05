@@ -16,7 +16,7 @@ class ModalCartinha {
         if (modal) return;
 
         document.body.insertAdjacentHTML('beforeend', `
-            <div id="modalCartinhaGlobal" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; width: 90%; max-width: 500px; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); background-image: url('/images/cartinhas/papel.png'); background-repeat: repeat;">
+            <div id="modalCartinhaGlobal" class="window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; width: 90%; max-width: 500px; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); background-image: url('/images/cartinhas/papel.png'); background-repeat: repeat;">
                 <div class="window-header">
                     <span id="modal-cartinha-title" class="window-title">Cartinha</span>
                     <button type="button" class="window-btn" onclick="window.modalCartinha.fechar()" style="float: right;">[Fechar]</button>
@@ -27,7 +27,7 @@ class ModalCartinha {
                 <div class="window-footer" id="modal-cartinha-footer" style="padding: 10px; display: flex; justify-content: space-between; gap: 5px; background: transparent;">
                 </div>
             </div>
-            <div id="overlayCartinhaRetro" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 10000;" onclick="window.modalCartinha.fechar()"></div>
+            <div id="overlayCartinhaRetro" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1000;" onclick="window.modalCartinha.fechar()"></div>
         `);
     }
 
@@ -103,7 +103,7 @@ class ModalCartinha {
             
             <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;">
                 <h4 style="margin: 0; overflow-wrap: break-word; word-break: break-word;">${cartinha.title}</h4>
-                <div style="box-sizing: border-box; background: white; border: 2px inset var(--retro-border-dark); padding: 10px; min-height: 120px; font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; overflow-y: auto;">${cartinha.body}</div>
+                <div style="box-sizing: border-box; background: white; border: 2px inset var(--retro-border-dark); padding: 10px; min-height: 120px; font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; overflow-y: auto;">${cartinha.body || ''}</div>
                 <div style="text-align: right; font-size: 11px; margin-top: 5px;">
                     <span style="color: #666;">Atenciosamente,</span> <br>
                     <strong>${assinatura}</strong>
@@ -168,7 +168,7 @@ class ModalCartinha {
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px;">Mensagem:</label>
-                    <textarea id="edit-conteudo" rows="8" style="width: 100%; box-sizing: border-box; resize: vertical;">${cartinha.body}</textarea>
+                    <textarea id="edit-conteudo" rows="8" style="width: 100%; box-sizing: border-box; resize: vertical;">${cartinha.body || ''}</textarea>
                 </div>
             </div>
         `;

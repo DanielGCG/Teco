@@ -1,32 +1,30 @@
-<title>Carrossel Principal - Administração</title>
+<div class="window">
+    <div class="window-header">
+        <span>Carrossel da Página Inicial</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
 
-<div class="window-header">
-    <span>Carrossel da Página Inicial</span>
-    <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
-</div>
-
-<div class="window-content">
-    <div class="window">
-        <div class="window-header">Gerenciar Carrossel</div>
+    <div class="window-content">
         <div class="window-content">
-            <p style="font-size: 11px;">Imagens exibidas acima da barra de links na página inicial. Elas trocam a cada 10s.</p>
-            
             <fieldset>
                 <legend>Adicionar ao Carrossel:</legend>
-                <div style="display: flex; gap: 10px; align-items: flex-end; margin-top: 5px;">
-                    <div style="flex: 1;">
-                        <span style="font-size: 10px;">Imagem:</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-top: 5px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="font-size: 10px; display: block; margin-bottom: 3px;">Imagem:</label>
                         <input type="file" id="carousel-upload" accept="image/*" style="width: 100%;">
                     </div>
-                    <div style="flex: 2;">
-                        <span style="font-size: 10px;">Link ao clicar (opcional):</span>
+                    <div style="flex: 2; min-width: 200px;">
+                        <label style="font-size: 10px; display: block; margin-bottom: 3px;">Link ao clicar (opcional):</label>
                         <input type="text" id="carousel-link" placeholder="Ex: /feed ou https://google.com" style="width: 100%; box-sizing: border-box; padding: 3px;">
                     </div>
-                    <button id="add-carousel-btn" class="retro-button">Adicionar</button>
+                    <button id="add-carousel-btn" class="window-btn" style="padding: 4px 10px; font-weight: bold; margin-bottom: 2px;">Adicionar</button>
                 </div>
             </fieldset>
+            <aside style="margin-top: 10px; padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
+                <b>Info:</b> As imagens são transicionadas a cada 10s. A proporção é 4/1. 
+            </aside>
 
-            <div id="carousel-list" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
+            <div id="carousel-list" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; margin-top: 10px;">
                 <!-- Itens carregados aqui -->
             </div>
             <div style="text-align: right;">

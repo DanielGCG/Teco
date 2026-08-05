@@ -234,7 +234,7 @@
                 const conversa = todasConversas.find(c => c.publicid === data.dmId);
                 abrirDM(data.dmId, username, conversa?.otherUser);
             } else {
-                alert(data.message || 'Erro ao iniciar conversa');
+                await alert(data.message || 'Erro ao iniciar conversa');
             }
         } catch (err) {
             console.error('[DMs] Erro ao iniciar conversa:', err);

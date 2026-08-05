@@ -2,10 +2,6 @@ const express = require("express");
 const AdminCartinhasRouter = express.Router();
 const { Cartinha, User } = require("../../models");
 const { Op, fn, col, literal } = require("sequelize");
-const { Stamp } = require("../../models");
-const { upload } = require('../../utils/upload');
-const { uploadToFileServer } = require('../../utils/fileServer');
-const { processImage } = require('../../utils/imageProcessor');
 
 // GET /admin/cartinhas/estatisticas - Estatísticas gerais
 AdminCartinhasRouter.get('/estatisticas', async (req, res) => {
@@ -84,64 +80,7 @@ AdminCartinhasRouter.get('/usuarios', async (req, res) => {
     }
 });
 
-// GET /admin/cartinhas - Listar cartinhas com filtros
-AdminCartinhasRouter.get('/', async (req, res) => {
-    const { recipientPublicId, senderPublicId, search, status, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-
-    try {
-        const where = {};
-        
-        if (recipientPublicId) {
-            const recipient = await User.findOne({ where: { publicid: recipientPublicId } });
-            if (recipient) where.recipientUserId = recipient.id;
-        }
-
-        if (senderPublicId) {
-            const sender = await User.findOne({ where: { publicid: senderPublicId } });
-            if (sender) where.senderUserId = sender.id;
-        }
-
-        if (status === 'naolida') where.isread = false;
-        else if (status === 'lida') where.isread = true;
-        else if (status === 'favorita') where.isfavorited = true;
-        
-        if (search) {
-            where[Op.or] = [
-                { title: { [Op.like]: `%${search}%` } },
-                { body: { [Op.like]: `%${search}%` } }
-            ];
-        }
-
-        const { count, rows } = await Cartinha.findAndCountAll({
-            where,
-            attributes: { exclude: ['body'] }, // Não vazar conteúdo na listagem admin, mas permitir título mascarado
-            include: [
-                { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
-                { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
-            ],
-            order: [['createdat', 'DESC']],
-            limit,
-            offset
-        });
-
-        // Mascarar títulos na listagem para manter a regra de privacidade
-        const rowsMasked = rows.map(r => {
-            const json = r.toJSON();
-            json.title = "[Conteúdo privado]";
-            return json;
-        });
-
-        res.json({
-            cartinhas: rowsMasked,
-            total: count,
-            pages: Math.ceil(count / limit)
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao listar cartinhas" });
-    }
-});
+    // Rota GET /admin/cartinhas removida (não utilizada e risco de privacidade)
 
 // GET /admin/cartinhas/usuario/:publicid - Listar cartinhas de um usuário específico
 AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
@@ -160,16 +99,9 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
         else if (status === 'lida') where.isread = true;
         else if (status === 'favorita') where.isfavorited = true;
 
-        if (search) {
-            where[Op.or] = [
-                { title: { [Op.like]: `%${search}%` } },
-                { body: { [Op.like]: `%${search}%` } }
-            ];
-        }
-
         const { count, rows } = await Cartinha.findAndCountAll({
             where,
-            attributes: { exclude: ['body'] }, // Não vazar conteúdo na listagem admin, mas permitir título mascarado
+            attributes: { exclude: ['body', 'contenturl'] }, // Ocultar dados sensíveis
             include: [
                 { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
                 { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
@@ -179,7 +111,7 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
             offset: parseInt(offset)
         });
 
-        // Mascarar títulos na listagem para manter a regra de privacidade
+        // Mascarar títulos
         const rowsMasked = rows.map(r => {
             const json = r.toJSON();
             json.title = "[Conteúdo privado]";
@@ -198,29 +130,7 @@ AdminCartinhasRouter.get('/usuario/:publicid', async (req, res) => {
     }
 });
 
-// GET /admin/cartinhas/:publicid - Detalhes de uma cartinha
-AdminCartinhasRouter.get('/:publicid', async (req, res) => {
-    try {
-        const cartinha = await Cartinha.findOne({
-            where: { publicid: req.params.publicid },
-            include: [
-                { model: User, as: 'remetente', attributes: ['username', 'publicid'] },
-                { model: User, as: 'destinatario', attributes: ['username', 'publicid'] }
-            ]
-        });
-        if (!cartinha) return res.status(404).json({ message: "Cartinha não encontrada" });
-        
-        // Bloqueia acesso ao conteúdo real para Admins/Staff na rota admin
-        const infoRestrita = cartinha.toJSON();
-        infoRestrita.title = "[Conteúdo privado]";
-        infoRestrita.body = "Conteúdo privado.";
-        
-        res.json(infoRestrita);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao buscar detalhes da cartinha" });
-    }
-});
+    // Rota GET /admin/cartinhas/:publicid removida
 
 // DELETE /admin/cartinhas/remover - Remover múltiplas cartinhas
 AdminCartinhasRouter.delete('/remover', async (req, res) => {
@@ -235,26 +145,6 @@ AdminCartinhasRouter.delete('/remover', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao remover cartinhas" });
-    }
-});
-
-// POST /admin/cartinhas/limpeza - Limpeza automática (lidas > 30 dias e não favoritas)
-AdminCartinhasRouter.post('/limpeza', async (req, res) => {
-    try {
-        const trintaDiasAtras = new Date();
-        trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-
-        const result = await Cartinha.destroy({
-            where: {
-                isread: true,
-                isfavorited: false,
-                readat: { [Op.lt]: trintaDiasAtras }
-            }
-        });
-        res.json({ message: "Limpeza concluída", removidas: result });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao executar limpeza" });
     }
 });
 

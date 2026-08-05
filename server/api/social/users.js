@@ -1,6 +1,6 @@
 const express = require("express");
 const UsersRouter = express.Router();
-const { User, UserSession, Role, SystemConfig, Post, LegalDocument, UserConsentHistory } = require("../../models");
+const { User, UserSession, Role, LegalDocument, UserConsentHistory, Galeria, GaleriaItem, GaleriaContributor } = require("../../models");
 const { authMiddleware, setUserCookie } = require("../../middlewares/authMiddleware");
 const validate = require("../../middlewares/validate");
 const bcrypt = require("bcrypt");
@@ -9,8 +9,6 @@ const { Op } = require("sequelize");
 const { upload } = require('../../utils/upload');
 const { processImage } = require("../../utils/imageProcessor");
 const { uploadToFileServer } = require('../../utils/fileServer');
-const axios = require('axios'); // Mantém para outros usos
-const FormData = require('form-data'); // Mantém para outros usos
 const { Resend } = require('resend');
 // Initialize Resend only if API key is present; otherwise keep null to avoid crash
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -298,6 +296,16 @@ UsersRouter.delete('/delete-account', protect(20), async (req, res) => {
     try {
         // Remover todas as sessões para deslogar
         await UserSession.destroy({ where: { userId: req.user.id } });
+
+        // --- Exclusão em cascata de Galerias ---
+        const userGalleries = await Galeria.findAll({ where: { createdbyUserId: req.user.id } });
+        for (const galeria of userGalleries) {
+            await GaleriaItem.destroy({ where: { galleryId: galeria.id } });
+            await GaleriaContributor.destroy({ where: { galleryId: galeria.id } });
+            await galeria.destroy();
+        }
+        await GaleriaContributor.destroy({ where: { userId: req.user.id } });
+        // ----------------------------------------
 
         // Apagar completamente o usuário do banco de dados (o CASCADE tratará do resto)
         await User.destroy({ where: { id: req.user.id } });

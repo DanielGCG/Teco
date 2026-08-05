@@ -28,7 +28,7 @@
         background-color: transparent;
     }
 
-    /* Carousel Styles */
+    /* Estilos do carrossel */
     .index-carousel {
         position: relative;
         aspect-ratio: 4 / 1;
@@ -36,6 +36,24 @@
         background: black;
         overflow: hidden;
         cursor: pointer;
+    }
+
+    /* ----- Animações ----- */
+    @keyframes panDown {
+        0% { object-position: 50% 0%; transform: scale(1.05); }
+        100% { object-position: 50% 100%; transform: scale(1.05); }
+    }
+    @keyframes panUp {
+        0% { object-position: 50% 100%; transform: scale(1.05); }
+        100% { object-position: 50% 0%; transform: scale(1.05); }
+    }
+    @keyframes zoomIn {
+        0% { transform: scale(1); object-position: 50% 50%; }
+        100% { transform: scale(1.15); object-position: 50% 50%; }
+    }
+    @keyframes zoomOut {
+        0% { transform: scale(1.15); object-position: 50% 50%; }
+        100% { transform: scale(1); object-position: 50% 50%; }
     }
 
     .index-carousel img {
@@ -46,13 +64,53 @@
         top: 0;
         left: 0;
         opacity: 0;
-        transition: opacity 0.5s ease-in-out;
         -webkit-user-drag: none;
         user-select: none;
+        z-index: 1;
     }
 
     .index-carousel img.active {
-        opacity: 1;
+        z-index: 2;
+    }
+    
+    .index-carousel img.exit {
+        z-index: 1;
+    }
+
+    /* ----- Estilos de Transição ----- */
+    /* 1. TransFade: fade suave */
+    .index-carousel img.trans-fade {
+        transition: opacity 0.5s ease-in-out;
+    }
+    .index-carousel img.trans-fade.active { opacity: 1; }
+
+    /* 2. TransBlur: Desfoca e foca */
+    .index-carousel img.trans-blur {
+        transition: opacity 0.5s ease-in-out, filter 0.5s ease-in-out;
+    }
+    .index-carousel img.trans-blur:not(.active) { filter: blur(20px); }
+    .index-carousel img.trans-blur.active { opacity: 1; filter: blur(0); }
+
+    /* 3. TransFlash: Clarão de luz */
+    .index-carousel img.trans-flash {
+        transition: opacity 0.5s ease-in-out, filter 0.5s ease-in-out;
+    }
+    .index-carousel img.trans-flash:not(.active) { filter: brightness(5) contrast(2); }
+    .index-carousel img.trans-flash.active { opacity: 1; filter: brightness(1) contrast(1); }
+
+
+    /* Mantêm tanto na entrada (active) quanto na saída */
+    .index-carousel img.anim-pan-down.active, .index-carousel img.anim-pan-down.exit {
+        animation: panDown 10s linear forwards;
+    }
+    .index-carousel img.anim-pan-up.active, .index-carousel img.anim-pan-up.exit {
+        animation: panUp 10s linear forwards;
+    }
+    .index-carousel img.anim-zoom-in.active, .index-carousel img.anim-zoom-in.exit {
+        animation: zoomIn 10s linear forwards;
+    }
+    .index-carousel img.anim-zoom-out.active, .index-carousel img.anim-zoom-out.exit {
+        animation: zoomOut 10s linear forwards;
     }
 </style>
 
@@ -74,11 +132,36 @@
             let intervalId = null;
             let startX = 0;
             let endX = 0;
+            const animations = ['anim-pan-down', 'anim-pan-up', 'anim-zoom-in', 'anim-zoom-out'];
+            const transitions = ['trans-fade', 'trans-blur', 'trans-flash'];
+
+            // Inicia a primeira imagem com efeitos aleatórios
+            images[0].classList.add(
+                animations[Math.floor(Math.random() * animations.length)],
+                transitions[Math.floor(Math.random() * transitions.length)]
+            );
 
             function showImage(index) {
-                images[currentIndex].classList.remove('active');
+                const currentImg = images[currentIndex];
+                currentImg.classList.remove('active');
+                currentImg.classList.add('exit');
+
+                // Remove a classe exit e as classes de efeito depois do fade (0.5s)
+                setTimeout(() => {
+                    if (!currentImg.classList.contains('active')) {
+                        currentImg.classList.remove('exit', ...animations, ...transitions);
+                    }
+                }, 500);
+
                 currentIndex = (index + images.length) % images.length;
-                images[currentIndex].classList.add('active');
+                const nextImg = images[currentIndex];
+                
+                // Escolhe os próximos efeitos
+                const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+                const randomTrans = transitions[Math.floor(Math.random() * transitions.length)];
+                
+                nextImg.classList.remove('exit', ...animations, ...transitions);
+                nextImg.classList.add('active', randomAnim, randomTrans);
             }
 
             function nextImage() { showImage(currentIndex + 1); }

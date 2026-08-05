@@ -483,7 +483,7 @@
     document.getElementById('btn-delete-account')?.addEventListener('click', async function() {
         const conf = typeof window.confirmRetro === 'function' 
             ? await window.confirmRetro('Tem CERTEZA ABSOLUTA que deseja deletar sua conta permanentemente? Esta ação NÃO PODE ser desfeita!', 'Aviso de Segurança')
-            : confirm('Tem CERTEZA ABSOLUTA que deseja deletar sua conta permanentemente? Esta ação NÃO PODE ser desfeita!');
+            : await confirm('Tem CERTEZA ABSOLUTA que deseja deletar sua conta permanentemente? Esta ação NÃO PODE ser desfeita!');
             
         if (!conf) return;
 
@@ -496,14 +496,14 @@
             const data = await response.json();
 
             if (response.ok) {
-                alert('Conta excluída com sucesso. Adeus!');
+                await alert('Conta excluída com sucesso. Adeus!');
                 window.location.href = '/login';
             } else {
                 throw new Error(data.message || 'Erro ao deletar conta');
             }
         } catch (error) {
             console.error('Erro:', error);
-            alert(error.message);
+            await alert(error.message);
         }
     });
 

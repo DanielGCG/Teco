@@ -266,10 +266,10 @@ window.PostUI = {
     },
 
     // Gerencia seleção de mídia
-    handleMediaSelect: function(e, containerId) {
+    handleMediaSelect: async function(e, containerId) {
         const files = Array.from(e.target.files);
         if (window.selectedFiles.length + files.length > 4) {
-            alert('Máximo de 4 arquivos permitidos.');
+            await alert('Máximo de 4 arquivos permitidos.');
             e.target.value = '';
             return;
         }
@@ -454,8 +454,8 @@ window.PostActions = {
     // Compartilhar post
     compartilhar: function(postId, authorUsername) {
         const url = `${window.location.origin}/${authorUsername}/status/${postId}`;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Link copiado para a área de transferência!');
+        navigator.clipboard.writeText(url).then(async () => {
+            await alert('Link copiado para a área de transferência!');
         });
     },
 
@@ -490,7 +490,7 @@ window.PostActions = {
                     setTimeout(() => postEl.remove(), 300);
                 }
             } else {
-                alert('Erro ao deletar post.');
+                await alert('Erro ao deletar post.');
             }
         } catch (error) {
             console.error('Erro ao deletar post:', error);
@@ -547,7 +547,7 @@ window.PostActions = {
                 // o Socket.io cuidará de inserir o post no topo para todos (incluindo o autor).
             } else {
                 const err = await res.json();
-                alert(err.error || 'Erro ao enviar post.');
+                await alert(err.error || 'Erro ao enviar post.');
             }
         } catch (e) {
             console.error('Erro ao enviar post:', e);

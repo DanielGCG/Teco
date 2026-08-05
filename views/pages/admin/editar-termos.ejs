@@ -1,36 +1,37 @@
-<div class="window" style="width: 100%; max-width: 800px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); margin: 0 auto;">
+<div class="window">
     <div class="window-header">
         <span>Editar Termos e Privacidade</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
     </div>
-    <div class="window-content" style="padding: 20px;">
-        <div style="margin-bottom: 20px; font-size: 12px; color: var(--retro-text);">
-            Aqui você pode editar os Termos de Uso e a Política de Privacidade do Teco. 
-            <strong>Ao clicar em Salvar e Exigir Re-consentimento, todos os usuários logados serão deslogados ou bloqueados até aceitarem a nova versão.</strong>
-        </div>
+    <div class="window-content">
+        <p>
+            Aqui você pode editar os Termos de Uso e a Política de Privacidade do Teco. <br>
+            <strong>Ao clicar em "Salvar e Exigir Re-consentimento", todos os usuários logados serão deslogados ou bloqueados até aceitarem a nova versão.</strong>
+        </p>
 
         <form id="termos-form">
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; font-size: 14px; color: var(--retro-text); display: block; margin-bottom: 5px;">Termos de Uso:</label>
-                <textarea id="terms_text" rows="10" style="width: 100%; box-sizing: border-box; padding: 5px; font-family: monospace; font-size: 12px; background: var(--retro-bg); color: var(--retro-text); border: 2px inset var(--retro-border-dark);"></textarea>
-            </div>
+            <fieldset style="margin-bottom: 15px;">
+                <legend>Termos de Uso:</legend>
+                <textarea id="terms_text" rows="10" style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </fieldset>
 
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; font-size: 14px; color: var(--retro-text); display: block; margin-bottom: 5px;">Política de Privacidade:</label>
-                <textarea id="privacy_text" rows="10" style="width: 100%; box-sizing: border-box; padding: 5px; font-family: monospace; font-size: 12px; background: var(--retro-bg); color: var(--retro-text); border: 2px inset var(--retro-border-dark);"></textarea>
-            </div>
+            <fieldset style="margin-bottom: 15px;">
+                <legend>Política de Privacidade:</legend>
+                <textarea id="privacy_text" rows="10" style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </fieldset>
 
-            <div style="margin-bottom: 20px;">
-                <label style="font-weight: bold; font-size: 14px; color: var(--retro-text); display: block; margin-bottom: 5px;">Versão Atual de Consentimento: <span id="current_version_display">Carregando...</span></label>
-                <div style="font-size: 10px; color: var(--retro-border-dark);">Aumentar esta versão fará com que todos precisem aceitar novamente.</div>
-            </div>
+            <p>
+                <strong>Versão Atual de Consentimento:</strong> <span id="current_version_display">Carregando...</span><br>
+                <span style="font-size: 11px; color: gray;">Aumentar esta versão fará com que todos precisem aceitar novamente.</span>
+            </p>
 
-            <div id="message" style="margin-bottom: 15px; font-size: 12px; font-weight: bold;"></div>
+            <div id="message" style="margin-bottom: 15px; font-weight: bold;"></div>
 
             <div style="display: flex; gap: 10px;">
-                <button type="button" id="btn-save-only" style="padding: 10px; flex: 1; font-weight: bold; cursor: pointer; font-size: 13px; background-color: var(--retro-window-bg); border: 2px outset var(--retro-border-light); color: var(--retro-text);">
+                <button type="button" id="btn-save-only" class="window-btn" style="flex: 1; padding: 10px; font-weight: bold;">
                     Apenas Salvar Textos (Sem exigir)
                 </button>
-                <button type="button" id="btn-save-require" style="padding: 10px; flex: 1; font-weight: bold; cursor: pointer; font-size: 13px; background-color: var(--retro-link-hover); border: 2px outset var(--retro-border-dark); color: white;">
+                <button type="button" id="btn-save-require" class="window-btn" style="flex: 1; padding: 10px; font-weight: bold; color: red;">
                     Salvar e Exigir Re-consentimento
                 </button>
             </div>
@@ -92,8 +93,8 @@
 
     document.getElementById('btn-save-only').addEventListener('click', () => handleSave(false));
     
-    document.getElementById('btn-save-require').addEventListener('click', () => {
-        if (confirm("Tem certeza que deseja exigir o re-consentimento? Isso afetará todos os usuários ativos.")) {
+    document.getElementById('btn-save-require').addEventListener('click', async () => {
+        if (await confirm("Tem certeza que deseja exigir o re-consentimento? Isso afetará todos os usuários ativos.")) {
             handleSave(true);
         }
     });

@@ -6,26 +6,24 @@
         <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
     </div>
     <div class="window-content">
-        <div style="background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; margin-bottom: 15px;">
-            <h4 style="margin: 0 0 10px 0; color: var(--retro-text);">Novo Stamp</h4>
-            <form id="formNovoStamp" style="display: flex; gap: 10px; align-items: flex-end;">
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; font-weight: bold;">Nome:</label>
-                    <input type="text" id="stampName" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; font-weight: bold;">Imagem:</label>
-                    <input type="file" id="stampFile" accept="image/*" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
-                </div>
-                <div>
-                    <button type="submit" class="window-btn" id="btnSalvarStamp" style="font-weight: bold;">Salvar</button>
-                </div>
-            </form>
-        </div>
+        <h4 style="margin: 0 0 10px 0; color: var(--retro-text);">Novo Stamp</h4>
+        <form id="formNovoStamp" style="display: flex; border-top: 2px inset var(--retro-border-dark); gap: 10px; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label style="font-size: 11px; font-weight: bold;">Nome:</label>
+                <input type="text" id="stampName" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 11px; font-weight: bold;">Imagem:</label>
+                <input type="file" id="stampFile" accept="image/*" required style="width: 100%; box-sizing: border-box; background: var(--retro-window-bg); border: 2px inset var(--retro-border-dark);">
+            </div>
+            <div>
+                <button type="submit" class="window-btn" id="btnSalvarStamp" style="font-weight: bold;">Salvar</button>
+            </div>
+        </form>
 
-        <fieldset style="border: 2px groove var(--retro-border-light); margin: 0; padding: 10px;">
+        <fieldset style="border: 2px groove var(--retro-border-light); margin-top: 10px; padding: 10px;">
             <legend style="color: var(--retro-text); font-weight: bold;">Stamps Atuais</legend>
-            <div id="stampsList" style="height: 350px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start;">
+            <div id="stampsList" style="height: 350px; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start;">
                 <!-- Stamps carregados via JS -->
             </div>
         </fieldset>

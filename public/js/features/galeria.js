@@ -1,5 +1,5 @@
 const Utils = {
-    alert: (msg, title) => alert(msg),
+    alert: async (msg, title) => await alert(msg),
     confirm: async (msg, title) => confirm(msg),
     escapeHtml: (str) => (!str ? '' : str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")),
     formatSize: (bytes) => (bytes / (1024 * 1024)).toFixed(2) + ' MB',
@@ -165,6 +165,7 @@ const GaleriaManager = {
             const radiusSmall = containerWidth * (8 / 1200);
             grid.style.setProperty('--gallery-radius', `${radius}px`);
             grid.style.setProperty('--gallery-radius-small', `${radiusSmall}px`);
+            grid.style.setProperty('--gallery-scale', (containerWidth / 1200).toFixed(4));
         }
     },
 
@@ -271,11 +272,11 @@ const GaleriaManager = {
             if (type === 'video') {
                 content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<video src="${item.contenturl}" class="media-preview-box fit-${fit}" controls preload="metadata" playsinline muted></video>`;
             } else if (type === 'audio') {
-                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio" style="display:flex; align-items:center; justify-content:center; background:#ccc; font-size:48px;">🎵</div>`;
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box placeholder-audio" style="display:flex; align-items:center; justify-content:center; background:#ccc; font-size:calc(48px * var(--gallery-scale, 1));">🎵</div>`;
             } else if (type === 'text') {
-                content = `<div class="media-preview-box" style="display: block; background: var(--gallery-card-bg, #ffffff); color: inherit; border: 2px inset #fff; padding: 10px; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; font-size: 14px; text-align: center; word-break: break-word; white-space: pre-wrap;">${Utils.escapeHtml(item.textbody || '')}</div>`;
+                content = `<div class="media-preview-box" style="display: block; background: var(--gallery-card-bg, #ffffff); color: inherit; border: calc(2px * var(--gallery-scale, 1)) inset #fff; padding: calc(10px * var(--gallery-scale, 1)); box-sizing: border-box; overflow-x: hidden; overflow-y: auto; font-size: calc(14px * var(--gallery-scale, 1)); line-height: 1.2; text-align: center; word-break: break-word; white-space: pre-wrap;">${Utils.escapeHtml(item.textbody || '')}</div>`;
             } else if (type === 'link') {
-                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box" style="display:flex; align-items:center; justify-content:center; background: #eee; font-size:48px; border: 2px outset #fff;">🔗</div>`;
+                content = previewSrc ? `<img src="${previewSrc}" class="media-preview-box fit-${fit}" loading="lazy">` : `<div class="media-preview-box" style="display:flex; align-items:center; justify-content:center; background: #eee; font-size:calc(48px * var(--gallery-scale, 1)); border: calc(2px * var(--gallery-scale, 1)) outset #fff;">🔗</div>`;
             } else {
                 content = `<img src="${previewSrc || item.contenturl || ''}" class="media-preview-box fit-${fit}" loading="lazy">`;
             }

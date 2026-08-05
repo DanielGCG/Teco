@@ -16,7 +16,7 @@ const FollowAPI = (() => {
                 if (onSuccess) await onSuccess(data);
                 return { success: true, data };
             } else {
-                if (showAlert) alert(data.message);
+                if (showAlert) await alert(data.message);
                 if (onError) onError(data);
                 return { success: false, data };
             }
@@ -41,7 +41,7 @@ const FollowAPI = (() => {
                 if (onSuccess) await onSuccess(data);
                 return { success: true, data };
             } else {
-                if (showAlert) alert(data.message);
+                if (showAlert) await alert(data.message);
                 if (onError) onError(data);
                 return { success: false, data };
             }

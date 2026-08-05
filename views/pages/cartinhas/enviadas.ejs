@@ -71,7 +71,7 @@
                                             window.modalCartinha.fechar();
                                             carregarCartinhas();
                                         }
-                                    } catch (e) { alert('Erro ao salvar'); }
+                                    } catch (e) { await alert('Erro ao salvar'); }
                                 });
                             }}
                         ]
@@ -91,7 +91,7 @@
                 window.modalCartinha.fechar();
                 carregarCartinhas();
             }
-        } catch (e) { alert('Erro ao excluir'); }
+        } catch (e) { await alert('Erro ao excluir'); }
     }
 
     document.addEventListener('DOMContentLoaded', carregarCartinhas);

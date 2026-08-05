@@ -241,7 +241,7 @@ if (typeof window.UIUtils !== 'undefined') {
         let container = document.querySelector('.feedback-container') || (() => {
             const c = document.createElement('div');
             c.className = 'feedback-container';
-            c.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;';
+            c.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 500;';
             document.body.appendChild(c);
             return c;
         })();

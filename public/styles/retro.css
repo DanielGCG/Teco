@@ -237,16 +237,13 @@ input[type="password"]:focus,
 select:focus {
     outline: none;
     background-color: #ffffd0;
-    /* Sutil destaque ao focar */
 }
 
-/* Custom Checkbox/Radio para manter o estilo retro */
 input[type="checkbox"],
 input[type="radio"] {
     accent-color: var(--retro-header-bg);
 }
 
-/* Scrollbar estilizada retro */
 ::-webkit-scrollbar {
     width: 16px;
     height: 16px;
@@ -263,7 +260,6 @@ input[type="radio"] {
 
 ::-webkit-scrollbar-track {
     background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQImWNkYGBoYGBgYGBgYGBgAAAABQAB66666AAAAABJRU5ErkJggg==");
-    /* Dither pattern opcional */
     background-color: #dfdfdf;
 }
 
@@ -353,7 +349,7 @@ marquee {
 
 
 
-/* Mobile Responsive */
+/* Mobile */
 @media (max-width: 768px) {
     .retro-layout {
         flex-direction: column;
@@ -382,9 +378,6 @@ marquee {
         padding: 5px;
     }
 
-
-
-    /* Adjust windows for mobile */
     .window {
         width: 100% !important;
         max-width: 100% !important;
@@ -395,7 +388,6 @@ marquee {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    /* Notification dropdown fix */
     #retro-notifications-list {
         width: 100% !important;
         position: fixed !important;
@@ -436,7 +428,6 @@ marquee {
 fieldset {
     border: 2px groove var(--retro-border-light);
     padding: 10px;
-    margin-bottom: 10px;
 }
 
 legend {
@@ -445,7 +436,7 @@ legend {
 }
 .retro-fieldset { border: 2px groove var(--retro-border-light); padding: 10px; margin-bottom: 20px; } .retro-fieldset legend { font-weight: bold; font-size: 13px; }
 
-/* Remove bordas inferiores indesejadas dos títulos do Markdown (h1, h2) */
+/* Remove bordas inferiores títulos do Markdown (h1, h2) */
 .markdown-body h1, .markdown-body h2,
 .markdown-preview h1, .markdown-preview h2,
 .editor-preview h1, .editor-preview h2,

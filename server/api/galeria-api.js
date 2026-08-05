@@ -3,9 +3,6 @@ const { Galeria, GaleriaItem, GaleriaContributor, User, UserSession } = require(
 const { uploadImage, uploadVideo } = require('../utils/upload');
 const { uploadToFileServer } = require('../utils/fileServer');
 const { sanitizeFilename } = require('../utils/sanitize');
-const axios = require('axios'); 
-const FormData = require('form-data'); 
-const { Op } = require('sequelize');
 const router = express.Router();
 
 const validateFileSize = (req, res, next) => {

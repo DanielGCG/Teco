@@ -1,19 +1,18 @@
-<div class="window-header">
-    <span>Configurações de Marquee</span>
-    <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
-</div>
+<div class="window">
+    <div class="window-header">
+        <span>Configurações de Marquee</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
 
-<div class="window-content">
-    <div class="window">
-        <div class="window-header">Editar Marquee</div>
-        <div class="window-content">
-            <p>Este texto aparecerá no topo de todas as páginas com o layout principal.</p>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="text" id="marquee-input" style="flex-grow: 1; padding: 5px;" placeholder="Digite o texto do marquee...">
-                <button id="save-marquee-btn" class="retro-button">Salvar</button>
-            </div>
-            <p id="marquee-status" style="margin-top: 10px; font-size: 12px; display: none;"></p>
+    <div class="window-content">
+        <aside style="padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
+            <b>Info:</b> Este texto aparecerá no topo de todas as páginas. 
+        </aside>
+        <div style="display: flex; margin-top: 10px; gap: 10px; align-items: center;">
+            <input type="text" id="marquee-input" style="flex-grow: 1; padding: 5px;" placeholder="Digite o texto do marquee...">
+            <button id="save-marquee-btn" class="retro-button">Salvar</button>
         </div>
+        <p id="marquee-status" style="margin-top: 10px; font-size: 12px; display: none;"></p>
     </div>
 </div>
 

@@ -432,7 +432,7 @@
                     loadUserPosts();
                 }
             } catch (e) {
-                alert('Erro ao postar');
+                await alert('Erro ao postar');
             } finally {
                 btnPostar.disabled = false;
                 btnPostar.textContent = 'POSTAR';

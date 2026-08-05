@@ -31,7 +31,7 @@
 
 <!-- Modal Adicionar Mídia -->
 <div id="modalUpload" class="window"
-    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 400px; max-width: 95vw; box-sizing: border-box;">
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; width: 600px; max-width: 95vw; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title">Adicionar Mídia</span>
         <button type="button" class="btn-micro"
@@ -93,7 +93,7 @@
 
 <!-- Modal Configurações -->
 <div id="modalConfig" class="window"
-    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 600px; max-width: 95vw; box-sizing: border-box;">
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; width: 600px; max-width: 95vw; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title">Configurações</span>
         <button type="button" class="btn-micro"
@@ -206,8 +206,8 @@
 </div>
 
 <!-- Modal Editar Item -->
-<div id="modalEditItem" class="window"
-    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 400px; max-width: 95vw; box-sizing: border-box;">
+<div id="modalEditarGaleria" class="window"
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; width: 400px; max-width: 95vw; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title">Editar Item</span>
         <button type="button" class="window-btn"
@@ -273,7 +273,7 @@
 
 <!-- Modal Media Fullscreen -->
 <div id="modalMedia" class="window"
-    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: fit-content; min-width: 300px; max-width: min(95vw, 1200px); max-height: 90vh; box-sizing: border-box;">
+    style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; width: fit-content; min-width: 300px; max-width: min(95vw, 1200px); max-height: 90vh; box-sizing: border-box;">
     <div class="window-header">
         <span class="window-title" id="modalMediaTitle">Visualizador</span>
         <button type="button" class="window-btn"
@@ -288,7 +288,7 @@
 </div>
 
 <div id="modalBackdrop"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 999;"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1000;"
     onclick="document.querySelectorAll('.window[id^=\'modal\']').forEach(m => m.style.display='none'); this.style.display='none'; if(document.getElementById('media-container')) document.getElementById('media-container').innerHTML = '';">
 </div>
 </div>

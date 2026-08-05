@@ -20,7 +20,7 @@ const LegalDocument = sequelize.define('LegalDocument', {
         allowNull: true,
     }
 }, {
-    tableName: 'legal_document',
+    tableName: 'legaldocument',
     timestamps: true,
 });
 

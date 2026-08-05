@@ -135,12 +135,16 @@ main.container-glass {
 
 .image-card .card-body {
     flex-shrink: 0;
-    height: 32px;
+    height: calc(32px * var(--gallery-scale, 1));
     display: flex;
     align-items: center;
     background-color: var(--gallery-card-bg, #ffffff);
-    padding: 0 12px;
+    padding: 0 calc(12px * var(--gallery-scale, 1));
     border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.image-card .card-body small {
+    font-size: calc(12px * var(--gallery-scale, 1));
 }
 
 .btn-delete {

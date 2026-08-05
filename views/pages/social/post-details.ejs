@@ -91,7 +91,7 @@
                 const res = await fetch(`/api/posts/${targetId}`, { method: 'DELETE' });
                 if (res.ok) {
                     if (targetId === postId) {
-                        alert('Post principal deletado. Voltando...');
+                        await alert('Post principal deletado. Voltando...');
                         window.history.back();
                     } else {
                         const el = document.getElementById(`post-${targetId}`);
@@ -121,7 +121,7 @@
                     selectedCommentFiles = [];
                     carregarPost(); 
                 }
-            } catch (e) { alert('Erro ao comentar!'); }
+            } catch (e) { await alert('Erro ao comentar!'); }
         }
 
         document.getElementById('comment-media-input').addEventListener('change', (e) => {

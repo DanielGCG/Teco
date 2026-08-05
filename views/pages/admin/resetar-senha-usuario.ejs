@@ -1,28 +1,21 @@
-<title>Segurança do Usuário - Administração</title>
-
-<div class="window" style="max-width: 500px; margin: 40px auto;">
+<div class="window" style="margin: auto;">
     <div class="window-header">
-        <span>Segurança do Usuário</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
-            Painel ]</a>
+        <span>Redefinir Senha</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
     </div>
     <div class="window-content">
-
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/images/naorelacionado/easter_egg/alert.png" alt="Aviso"
-                style="width: 48px; height: 48px; display: none;" onerror="this.style.display='none'">
-            <h3 style="margin: 0;">Segurança do Usuário</h3>
-            <p style="color: gray; font-size: 12px; margin-top: 5px;">Selecione um usuário para redefinir a senha ou alterar o e-mail.</p>
+        <div style="margin-bottom: 10px;">
+            <strong>Lista de Usuários no Sistema:</strong>
         </div>
 
-        <div
-            style="background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-direction: column; gap: 10px;">
-            <div><strong>Selecione o usuário alvo:</strong></div>
-            <div>
+        <div style="border-top: 2px inset var(--retro-border-dark); padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+            <fieldset>
+                <legend>Selecione o usuário alvo:</legend>
                 <select id="selectUser" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 14px;">
                     <option value="">Carregando usuários...</option>
                 </select>
-            </div>
+            </fieldset>
+            
             <div style="padding-top: 5px; text-align: center;">
                 <button id="resetBtn"
                     style="width: 100%; padding: 8px; font-weight: bold; color: #cc0000; border: 2px outset var(--retro-border-light);">
@@ -32,10 +25,12 @@
             
             <hr style="margin: 10px 0; border: 1px dashed var(--retro-border-dark);">
             
-            <div><strong>Alterar E-mail do usuário:</strong></div>
-            <div style="display: flex; gap: 5px;">
-                <input type="email" id="newEmail" placeholder="Novo e-mail do usuário..." style="flex-grow: 1; padding: 4px; font-size: 14px; box-sizing: border-box;">
-            </div>
+            <fieldset>
+                <legend>Alterar E-mail do usuário:</legend>
+                <div style="display: flex; gap: 5px;">
+                    <input type="email" id="newEmail" placeholder="Novo e-mail do usuário..." style="flex-grow: 1; padding: 4px; font-size: 14px; box-sizing: border-box;">
+                </div>
+            </fieldset>
             <div style="padding-top: 5px; text-align: center;">
                 <button id="updateEmailBtn"
                     style="width: 100%; padding: 8px; font-weight: bold; border: 2px outset var(--retro-border-light);">
@@ -88,7 +83,7 @@
             });
         } catch (err) {
             console.error(err);
-            alert("Erro ao carregar usuários");
+            await alert("Erro ao carregar usuários");
         }
     }
 
@@ -98,7 +93,7 @@
         const userId = select.value;
 
         if (!userId) {
-            return alert("Selecione um usuário");
+            return await alert("Selecione um usuário");
         }
 
         let confirmado = await confirm("Tem certeza que deseja resetar a senha para 12345?");
@@ -113,14 +108,14 @@
 
             const data = await res.json();
             if (res.ok) {
-                alert("Senha resetada com sucesso!");
+                await alert("Senha resetada com sucesso!");
                 select.value = "";
             } else {
-                alert("Erro: " + data.message);
+                await alert("Erro: " + data.message);
             }
         } catch (err) {
             console.error(err);
-            alert("Erro ao resetar senha");
+            await alert("Erro ao resetar senha");
         }
     });
 
@@ -131,11 +126,11 @@
         const newEmail = document.getElementById("newEmail").value;
 
         if (!userId) {
-            return alert("Selecione um usuário");
+            return await alert("Selecione um usuário");
         }
         
         if (!newEmail || !newEmail.includes('@')) {
-            return alert("Insira um e-mail válido");
+            return await alert("Insira um e-mail válido");
         }
 
         let confirmado = await confirm(`Tem certeza que deseja alterar o e-mail deste usuário para ${newEmail}?`);
@@ -152,14 +147,14 @@
 
             const data = await res.json();
             if (res.ok) {
-                alert("E-mail atualizado com sucesso!");
+                await alert("E-mail atualizado com sucesso!");
                 document.getElementById("newEmail").value = "";
             } else {
-                alert("Erro: " + data.message);
+                await alert("Erro: " + data.message);
             }
         } catch (err) {
             console.error(err);
-            alert("Erro ao alterar e-mail");
+            await alert("Erro ao alterar e-mail");
         }
     });
 

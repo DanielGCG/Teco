@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../config/database');
 const User = require('./User');
+const { encrypt, decrypt } = require('../../utils/encryption');
 
 const Cartinha = sequelize.define('Cartinha', {
     id: {
@@ -23,12 +24,26 @@ const Cartinha = sequelize.define('Cartinha', {
         allowNull: false
     },
     title: {
-        type: DataTypes.STRING(160),
-        allowNull: false
+        type: DataTypes.TEXT,
+        allowNull: false,
+        get() {
+            const rawValue = this.getDataValue('title');
+            return decrypt(rawValue);
+        },
+        set(value) {
+            this.setDataValue('title', encrypt(value));
+        }
     },
     body: {
         type: DataTypes.TEXT,
-        allowNull: true
+        allowNull: true,
+        get() {
+            const rawValue = this.getDataValue('body');
+            return decrypt(rawValue);
+        },
+        set(value) {
+            this.setDataValue('body', encrypt(value));
+        }
     },
     contenturl: {
         type: DataTypes.STRING(255),

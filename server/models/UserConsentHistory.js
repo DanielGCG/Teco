@@ -22,7 +22,7 @@ const UserConsentHistory = sequelize.define('UserConsentHistory', {
         defaultValue: DataTypes.NOW,
     }
 }, {
-    tableName: 'user_consent_history',
+    tableName: 'userconsenthistory',
     timestamps: false,
 });
 

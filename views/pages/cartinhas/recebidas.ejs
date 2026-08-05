@@ -84,7 +84,7 @@ async function confirmDel(id) {
         await fetch(`/api/cartinhas/${id}`, { method: 'DELETE', credentials: 'include' });
         window.modalCartinha.fechar();
         carregarCartinhas();
-    } catch (e) { alert('Erro ao excluir'); }
+    } catch (e) { await alert('Erro ao excluir'); }
 }
 
 document.addEventListener('DOMContentLoaded', carregarCartinhas);

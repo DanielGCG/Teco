@@ -1,80 +1,81 @@
-<div class="window-header">
-    <span>Gerenciar BoteGotchi</span>
-    <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
-</div>
+<div class="window">
+    <div class="window-header">
+        <span>Gerenciar BoteGotchi</span>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao Painel ]</a>
+    </div>
 
-<div class="window-content">
-    
-    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-        <!-- Lado Esquerdo: Itens -->
-        <fieldset style="flex: 1;">
-            <legend>Catálogo de Itens</legend>
-            <form id="form-item" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; border: 2px inset var(--retro-border-dark); padding: 10px; background: var(--retro-bg);">
-                <input type="hidden" id="item-publicid">
-                
-                <label style="font-size: 11px; font-weight: bold;">Nome do Item:</label> 
-                <input type="text" id="item-name" required placeholder="Ex: Bolo de Chocolate">
-                
-                <label style="font-size: 11px; font-weight: bold;">Tipo:</label>
-                <select id="item-type" required>
-                    <option value="food">Comida</option>
-                    <option value="water">Bebida</option>
-                    <option value="soap">Sabão</option>
-                    <option value="toy">Brinquedo</option>
-                </select>
-                
-                <label style="font-size: 11px; font-weight: bold;">Poder de Recuperação:</label> 
-                <input type="number" id="item-value" required placeholder="Ex: 30">
-                
-                <label style="font-size: 11px; font-weight: bold;">Emoji (a ser mudado):</label> 
-                <input type="text" id="item-emoji" placeholder="Ex: 🍰">
-                
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="retro-button" style="font-weight: bold;">Salvar Item</button>
-                    <button type="button" class="retro-button" onclick="document.getElementById('form-item').reset(); document.getElementById('item-publicid').value=''">Cancelar</button>
-                </div>
-            </form>
-
-            <div id="items-list" style="max-height: 250px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
-        </fieldset>
+    <div class="window-content">
         
-        <!-- Lado Direito: Builder de Resgate -->
-        <fieldset style="flex: 1;">
-            <legend>Pacote de Resgate Diário</legend>
-            <p style="font-size: 11px;">Configure quais itens os usuários ganham no pacote diário.</p>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <!-- Lado Esquerdo: Itens -->
+            <fieldset style="flex: 1;">
+                <legend>Catálogo de Itens</legend>
+                <form id="form-item" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; border: 2px inset var(--retro-border-dark); padding: 10px; background: var(--retro-bg);">
+                    <input type="hidden" id="item-publicid">
+                    
+                    <label style="font-size: 11px; font-weight: bold;">Nome do Item:</label> 
+                    <input type="text" id="item-name" required placeholder="Ex: Bolo de Chocolate">
+                    
+                    <label style="font-size: 11px; font-weight: bold;">Tipo:</label>
+                    <select id="item-type" required>
+                        <option value="food">Comida</option>
+                        <option value="water">Bebida</option>
+                        <option value="soap">Sabão</option>
+                        <option value="toy">Brinquedo</option>
+                    </select>
+                    
+                    <label style="font-size: 11px; font-weight: bold;">Poder de Recuperação:</label> 
+                    <input type="number" id="item-value" required placeholder="Ex: 30">
+                    
+                    <label style="font-size: 11px; font-weight: bold;">Emoji (a ser mudado):</label> 
+                    <input type="text" id="item-emoji" placeholder="Ex: 🍰">
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="submit" class="retro-button" style="font-weight: bold;">Salvar Item</button>
+                        <button type="button" class="retro-button" onclick="document.getElementById('form-item').reset(); document.getElementById('item-publicid').value=''">Cancelar</button>
+                    </div>
+                </form>
+
+                <div id="items-list" style="max-height: 250px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;"></div>
+            </fieldset>
             
-            <!-- Builder UI -->
-            <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; padding: 10px; border: 2px inset var(--retro-border-dark); background: var(--retro-bg);">
-                <div style="flex: 2;">
-                    <label style="display: block; font-size: 11px; font-weight: bold;">Item:</label>
-                    <select id="builder-item-select" style="width: 100%;"></select>
+            <!-- Lado Direito: Builder de Resgate -->
+            <fieldset style="flex: 1;">
+                <legend>Pacote de Resgate Diário</legend>
+                <p style="font-size: 11px;">Configure quais itens os usuários ganham no pacote diário.</p>
+                
+                <!-- Builder UI -->
+                <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; padding: 10px; border: 2px inset var(--retro-border-dark); background: var(--retro-bg);">
+                    <div style="flex: 2;">
+                        <label style="display: block; font-size: 11px; font-weight: bold;">Item:</label>
+                        <select id="builder-item-select" style="width: 100%;"></select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 11px; font-weight: bold;">Qtd:</label>
+                        <input type="number" id="builder-item-qty" value="1" min="1" style="width: 100%;">
+                    </div>
+                    <div>
+                        <button type="button" id="add-to-package-btn" class="retro-button" style="font-weight: bold; padding: 4px 8px;">Adicionar</button>
+                    </div>
                 </div>
-                <div style="flex: 1;">
-                    <label style="display: block; font-size: 11px; font-weight: bold;">Qtd:</label>
-                    <input type="number" id="builder-item-qty" value="1" min="1" style="width: 100%;">
+
+                <!-- Lista Visual do Pacote -->
+                <div id="package-list" style="min-height: 150px; max-height: 200px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px; margin-bottom: 10px;">
+                    <!-- items rendered here via JS -->
                 </div>
-                <div>
-                    <button type="button" id="add-to-package-btn" class="retro-button" style="font-weight: bold; padding: 4px 8px;">Adicionar</button>
+
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                    <button type="button" id="save-package-btn" class="retro-button" style="font-weight: bold;">Salvar Pacote</button>
+                    <button type="button" id="view-json-btn" class="retro-button">Ver JSON Interno</button>
                 </div>
-            </div>
+                
+                <!-- JSON escondido para debug/backup -->
+                <textarea id="claim-config" style="display: none; width: 100%; margin-top: 10px; font-family: monospace; height: 60px;" readonly></textarea>
+            </fieldset>
 
-            <!-- Lista Visual do Pacote -->
-            <div id="package-list" style="min-height: 150px; max-height: 200px; overflow-y: auto; background: white; border: 2px inset var(--retro-border-dark); padding: 5px; margin-bottom: 10px;">
-                <!-- items rendered here via JS -->
-            </div>
-
-            <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
-                <button type="button" id="save-package-btn" class="retro-button" style="font-weight: bold;">Salvar Pacote</button>
-                <button type="button" id="view-json-btn" class="retro-button">Ver JSON Interno</button>
-            </div>
-            
-            <!-- JSON escondido para debug/backup -->
-            <textarea id="claim-config" style="display: none; width: 100%; margin-top: 10px; font-family: monospace; height: 60px;" readonly></textarea>
-        </fieldset>
-
+        </div>
     </div>
 </div>
-
 <script>
     let globalItems = []; // Itens do banco
     let packageItems = []; // Array representando o pacote atual [{name, quantity}]
@@ -152,13 +153,13 @@
         }).join('');
     }
 
-    document.getElementById('add-to-package-btn').addEventListener('click', () => {
+    document.getElementById('add-to-package-btn').addEventListener('click', async () => {
         const select = document.getElementById('builder-item-select');
         const qty = parseInt(document.getElementById('builder-item-qty').value, 10);
         const name = select.value;
 
-        if (!name) return alert('Selecione um item primeiro.', true);
-        if (qty < 1) return alert('A quantidade deve ser no mínimo 1.', true);
+        if (!name) return await alert('Selecione um item primeiro.', true);
+        if (qty < 1) return await alert('A quantidade deve ser no mínimo 1.', true);
 
         // Check if already exists in package to sum qty
         const existing = packageItems.find(p => p.name === name);
@@ -185,12 +186,12 @@
                 body: JSON.stringify({ configJson }) 
             });
             if (res.ok) {
-                alert('Pacote de resgate salvo com sucesso!');
+                await alert('Pacote de resgate salvo com sucesso!');
             } else {
-                alert('Erro ao salvar o pacote.', true);
+                await alert('Erro ao salvar o pacote.', true);
             }
         } catch (e) {
-            alert('Erro de conexão ao salvar pacote.', true);
+            await alert('Erro de conexão ao salvar pacote.', true);
         }
     });
 
@@ -230,7 +231,7 @@
         await fetch('/api/admin/pet/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         document.getElementById('form-item').reset();
         document.getElementById('item-publicid').value = '';
-        alert('Item salvo com sucesso!');
+        await alert('Item salvo com sucesso!');
         carregarTudo();
     });
 

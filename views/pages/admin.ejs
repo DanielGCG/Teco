@@ -1,67 +1,68 @@
-<div class="window-header">
-    <span>Painel de Administração</span>
-</div>
-
-<div class="window-content" style="background: var(--retro-bg); padding: 10px;">
-    
-    <div style="background: var(--retro-window-bg); border: 1px inset var(--retro-border-light); padding: 5px; margin-bottom: 15px; font-size: 11px; text-align: center;">
-        <strong>Legenda de Acesso:</strong> 
-        <span style="color: red; margin: 0 5px;">● Dono</span>
-        <span style="color: blue; margin: 0 5px;">● Admin</span>
-        <span style="color: green; margin: 0 5px;">● Moderador</span>
+<div class="window">
+    <div class="window-header">
+        <span>Painel de Administração</span>
     </div>
 
-    <% if (loggedUser.roleId <= 5) { %>
-    <fieldset>
-        <legend>Gestão de Usuários</legend>
-        <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
-            <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-usuario">Gerenciar Usuário</a></li>
-            <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/resetar-senha-usuario">Resetar Senha de Usuário</a></li>
-        </ul>
-    </fieldset>
-    <% } %>
+    <div class="window-content" style="padding: 10px;">
+        
+        <div style="background: var(--retro-window-bg); border: 1px inset var(--retro-border-light); padding: 5px; margin-bottom: 15px; font-size: 11px; text-align: center;">
+            <strong>Legenda de Acesso:</strong> 
+            <span style="color: red; margin: 0 5px;">● Dono</span>
+            <span style="color: blue; margin: 0 5px;">● Admin</span>
+            <span style="color: green; margin: 0 5px;">● Moderador</span>
+        </div>
 
-    <fieldset>
-        <legend>Comunidades & Conteúdo</legend>
-        <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
-            <% if (loggedUser.roleId <= 5) { %>
-                <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/criar-chat">Gerenciar Chats & DMs</a></li>
-                <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/gerenciar-stamps">Gerenciar Stamps</a></li>
-            <% } %>
-            <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-cartinha">Moderar Cartinhas</a></li>
-            <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/imagemdodia">Gerenciar Imagem do Dia</a></li>
-            <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/badges">Gerenciar Badges</a></li>
-            <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/carrossel">Gerenciar Carrossel Principal</a></li>
-        </ul>
-    </fieldset>
+        <% if (loggedUser.roleId <= 5) { %>
+        <fieldset>
+            <legend>Gestão de Usuários</legend>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
+                <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-usuario">Gerenciar Usuário</a></li>
+                <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/resetar-senha-usuario">Resetar Senha de Usuário</a></li>
+            </ul>
+        </fieldset>
+        <% } %>
 
-    <fieldset>
-        <legend>Notificações & Engajamento</legend>
-        <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
-            <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/notificacoes">Enviar Notificações Broadcast</a></li>
-        </ul>
-    </fieldset>
+        <fieldset>
+            <legend>Comunidades & Conteúdo</legend>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
+                <% if (loggedUser.roleId <= 5) { %>
+                    <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/criar-chat">Gerenciar Chats & DMs [descontinuado]</a></li>
+                    <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/gerenciar-stamps">Gerenciar Stamps</a></li>
+                <% } %>
+                <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-cartinha">Moderar Cartinhas</a></li>
+                <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/imagemdodia">Gerenciar Imagem do Dia</a></li>
+                <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/badges">Gerenciar Badges</a></li>
+                <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/carrossel">Gerenciar Carrossel de Fotos</a></li>
+            </ul>
+        </fieldset>
 
-    <% if (loggedUser.roleId <= 5) { %>
-    <fieldset>
-        <legend>BoteGotchi</legend>
-        <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
-            <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/pet">Gerenciar BoteGotchi</a></li>
-        </ul>
-    </fieldset>
-    <% } %>
+        <fieldset>
+            <legend>Notificações & Engajamento</legend>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
+                <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/notificacoes">Notificações Broadcast</a></li>
+            </ul>
+        </fieldset>
 
-    <fieldset>
-        <legend>Sistema & Global</legend>
-        <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
-            <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/marquee">Configurar Letreiro (Marquee)</a></li>
-            <% if (loggedUser.roleId <= 5) { %>
-                <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/config">Fundo Global & Sistema de Arquivos</a></li>
-            <% } %>
-            <% if (loggedUser.roleId === 1) { %>
-                <li><span style="color: red; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-termos">Editar Termos & Privacidade</a></li>
-            <% } %>
-        </ul>
-    </fieldset>
+        <% if (loggedUser.roleId <= 5) { %>
+        <fieldset>
+            <legend>BoteGotchi</legend>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
+                <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/pet">Gerenciar BoteGotchi</a></li>
+            </ul>
+        </fieldset>
+        <% } %>
 
+        <fieldset>
+            <legend>Sistema & Global</legend>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: none; line-height: 1.6;">
+                <li><span style="color: green; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/marquee">Configurar Letreiro</a></li>
+                <% if (loggedUser.roleId <= 5) { %>
+                    <li><span style="color: blue; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/config">Fundo Global & Sistema de Arquivos</a></li>
+                <% } %>
+                <% if (loggedUser.roleId === 1) { %>
+                    <li><span style="color: red; margin-right: 5px; font-size: 10px;">●</span><a href="/admin/editar-termos">Editar Termos & Privacidade</a></li>
+                <% } %>
+            </ul>
+        </fieldset>
+    </div>
 </div>

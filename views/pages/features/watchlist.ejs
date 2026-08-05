@@ -567,7 +567,7 @@
             const ans = await confirm(confirmMsg, 'Confirmação');
             if (!ans) return;
         } else {
-            if (!confirm(confirmMsg)) return;
+            if (!(await confirm(confirmMsg))) return;
         }
 
         fecharTodosModais();
@@ -593,9 +593,9 @@
             const data = await res.json();
             if (data.success) {
                 carregarWatchlist();
-                alert('Obra adicionada com sucesso!');
+                await alert('Obra adicionada com sucesso!');
             } else {
-                alert(data.message || 'Erro ao adicionar.');
+                await alert(data.message || 'Erro ao adicionar.');
             }
         } catch (e) { console.error('Erro:', e); }
     }

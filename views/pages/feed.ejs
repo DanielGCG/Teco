@@ -121,10 +121,10 @@
                     await loadPosts();
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Erro ao postar!');
+                    await alert(err.error || 'Erro ao postar!');
                 }
             } catch (e) {
-                alert('Erro de conexão!');
+                await alert('Erro de conexão!');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'POSTAR';

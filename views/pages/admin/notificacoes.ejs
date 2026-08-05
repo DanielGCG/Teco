@@ -38,7 +38,7 @@
                 <tr>
                     <td valign="top"><strong>Mensagem (Corpo):</strong></td>
                     <td>
-                        <textarea id="notifBody" rows="4" placeholder="Detalhes da sua notificação..." style="width: 100%; box-sizing: border-box; resize: vertical;" required></textarea>
+                        <textarea id="notifBody" rows="4" placeholder="Detalhes da sua notificação..." style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
                     </td>
                 </tr>
                 <tr>
@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const isEveryone = document.getElementById("targetUser").value === "everyone";
 
         if (isEveryone) {
-            let conf = confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
+            let conf = await confirm("CUIDADO: Isso vai enviar um alerta sonoro e vibrar o dispositivo de TODOS os usuários logados. Deseja continuar?");
             if (!conf) return;
         }
 

@@ -1,13 +1,10 @@
 const express = require("express");
 const DMsRouter = express.Router();
-const { DM, DMMessage, User, Follow, sequelize } = require("../../models");
+const { DM, DMMessage, User, Follow } = require("../../models");
 const socketRouter = require("../../routes/socket.router");
 const validate = require("../../middlewares/validate");
 const { Op } = require("sequelize");
 const {
-    publicidSchema,
-    getMessagesSchema,
-    sendMessageSchema,
     createDmSchema,
     searchUsersSchema
 } = require("../../validators/dms.validator");

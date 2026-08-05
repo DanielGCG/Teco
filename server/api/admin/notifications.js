@@ -13,8 +13,8 @@ webpush.setVapidDetails(subject, publicVapidKey, privateVapidKey);
 AdminNotificationsRouter.post('/send', async (req, res) => {
     const { targetUserPublicId, title, body, link, type } = req.body;
 
-    if (!title || !body) {
-        return res.status(400).json({ error: "Título e corpo são obrigatórios." });
+    if (!title) {
+        return res.status(400).json({ error: "O Título é obrigatório." });
     }
 
     try {

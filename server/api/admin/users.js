@@ -1,6 +1,6 @@
 const express = require("express");
 const AdminUsersRouter = express.Router();
-const { User } = require("../../models");
+const { User, Galeria, GaleriaItem, GaleriaContributor } = require("../../models");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 
@@ -239,8 +239,23 @@ AdminUsersRouter.delete('/:publicid', async (req, res) => {
             }
         }
 
+        // --- Exclusão em cascata de Galerias ---
+        // Pega todas as galerias onde este usuário é o dono
+        const userGalleries = await Galeria.findAll({ where: { createdbyUserId: userId } });
+        for (const galeria of userGalleries) {
+            // 1. Exclui todos os itens dessa galeria
+            await GaleriaItem.destroy({ where: { galleryId: galeria.id } });
+            
+            // 2. Remove todos os colaboradores dessa galeria
+            await GaleriaContributor.destroy({ where: { galleryId: galeria.id } });
+            
+            // 3. Deleta a própria galeria
+            await galeria.destroy();
+        }
 
-
+        // E também remove este usuário como colaborador de qualquer outra galeria
+        await GaleriaContributor.destroy({ where: { userId: userId } });
+        // ----------------------------------------
 
         await targetUser.destroy();
 

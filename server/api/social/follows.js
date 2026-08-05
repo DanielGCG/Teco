@@ -1,6 +1,6 @@
 const express = require("express");
 const FollowsRouter = express.Router();
-const { Follow, User, DM, sequelize } = require("../../models");
+const { Follow, User, DM } = require("../../models");
 const { authMiddleware } = require("../../middlewares/authMiddleware");
 const { createNotification } = require("../notifications");
 const validate = require("../../middlewares/validate");

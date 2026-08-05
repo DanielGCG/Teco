@@ -1,100 +1,76 @@
-<title>Gerenciar Cartinhas - Administração</title>
-
-<div class="window">
+<div class="window" style="margin: auto;">
     <div class="window-header">
         <span>Gerenciar Cartinhas</span>
-        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px;">[ Voltar ao
-            Painel ]</a>
+        <a href="/admin" style="text-decoration: none; color: var(--retro-header-text); font-size: 11px; float: right;">[ Voltar ao Painel ]</a>
     </div>
-    <div class="window-content" style="padding: 10px; background: var(--retro-bg);">
-        <p style="margin: 0; font-size: 11px; text-align: center;">Selecione um usuário para visualizar e moderar suas cartinhas recebidas.</p>
+    
+    <div class="window-content">
+        <aside style="padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
+            <b>Info:</b> As imagens são transicionadas a cada 10s. A proporção é 4/1. 
+        </aside>
+
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+            <div>
+                <strong>Filtrar Status:</strong>
+                <select id="statusFilter" style="width: 100%; box-sizing: border-box; padding: 4px;">
+                    <option value="">Todas as mensagens</option>
+                    <option value="naolida">Não lidas</option>
+                    <option value="lida">Lidas</option>
+                    <option value="favorita">Favoritas</option>
+                </select>
+            </div>
+            
+            <div>
+                <strong>Buscar Usuário:</strong>
+                <input type="text" id="searchInput" placeholder="Nome do usuário..." style="width: 100%; box-sizing: border-box; padding: 4px;">
+            </div>
+            
+            <div style="text-align: right; margin-top: 5px;">
+                <button id="refreshBtn" style="padding: 4px 10px;">Buscar</button>
+            </div>
+        </div>
+        
+        <br>
+        
+        <div style="height: 350px; overflow-y: auto;">
+            <div id="usuariosList">
+                <div style="text-align: center; color: gray; padding: 20px;">Carregando...</div>
+            </div>
+        </div>
+        
+        <div id="pagination" style="text-align: center; margin-top: 10px;"></div>
     </div>
 </div>
 
-<div style="display: flex; gap: 20px;">
-    <!-- Filtros -->
-    <div style="flex: 0 0 300px; display: flex; flex-direction: column; gap: 10px;">
-        <div class="window">
-            <div class="window-header">Filtros & Busca</div>
-            <div class="window-content" style="display: flex; flex-direction: column; gap: 10px;">
-                <div>
-                    <label for="statusFilter"
-                        style="display: block; margin-bottom: 5px; font-weight: bold;">Status:</label>
-                    <select id="statusFilter" style="width: 100%; box-sizing: border-box;">
-                        <option value="">Todas as mensagens</option>
-                        <option value="naolida">Não lidas</option>
-                        <option value="lida">Lidas</option>
-                        <option value="favorita">Favoritas</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="searchInput" style="display: block; margin-bottom: 5px; font-weight: bold;">Buscar
-                        Usuário:</label>
-                    <input type="text" id="searchInput" placeholder="Nome do usuário..."
-                        style="width: 100%; box-sizing: border-box;">
-                </div>
-                <div style="text-align: right; margin-top: 5px;">
-                    <button id="refreshBtn">Atualizar</button>
-                </div>
-        </div>
-    </div>
-
-    <!-- Lista de Usuários -->
-    <div style="flex: 1; min-width: 0;">
-        <div class="window">
-            <div class="window-header">Usuários e suas Cartinhas</div>
-            <div class="window-content" style="padding: 0; background: var(--retro-bg); height: 400px; overflow-y: auto;">
-                <div id="loading" style="padding: 20px; text-align: center; color: gray; display: none;">Carregando...
-                </div>
-                <div id="usuariosList"></div>
-            </div>
-            <div style="padding: 5px; background: var(--retro-window-bg); border-top: 2px outset var(--retro-border-light); text-align: center;"
-                id="pagination">
-                <!-- Paginação -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Cartinhas do Usuário -->
-<dialog id="cartinhasModal" class="window" style="padding: 0; width: 600px; max-width: 95vw; box-sizing: border-box;">
+<dialog id="cartinhasModal" class="window" style="padding: 0; width: 600px; max-width: 95vw; box-sizing: border-box; margin: auto;">
     <div class="window-header">
         <span id="modalTitle">Cartinhas do Usuário</span>
-        <button type="button" class="window-btn" onclick="document.getElementById('cartinhasModal').close()"
-            style="float: right;">[Fechar]</button>
+        <button type="button" class="window-btn" onclick="document.getElementById('cartinhasModal').close()" style="float: right;">[ Fechar ]</button>
     </div>
-    <div
-        style="background: var(--retro-bg); border-bottom: 2px solid var(--retro-border-dark); padding: 5px; display: flex; gap: 5px; align-items: center; justify-content: space-between;">
-        <div style="display: flex; gap: 5px; flex: 1;">
-            <select id="modalStatusFilter" style="flex: 1;">
+    
+    <div class="window-content">
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <select id="modalStatusFilter" style="flex: 1; padding: 4px;">
                 <option value="">Status: Todos</option>
                 <option value="naolida">Não lidas</option>
                 <option value="lida">Lidas</option>
                 <option value="favorita">Favoritas</option>
             </select>
-            <input type="text" id="modalSearch" placeholder="Buscar por remetente..." style="flex: 2;">
+            <input type="text" id="modalSearch" placeholder="Buscar por remetente..." style="flex: 2; padding: 4px;">
         </div>
-    </div>
-    <div class="window-content">
-        <div id="cartinhasList"
-            style="height: 350px; overflow-y: auto; background: var(--retro-bg); border: 2px inset var(--retro-border-dark); padding: 5px;">
+        
+        <div style="border: 2px inset var(--retro-border-dark); height: 300px; overflow-y: auto; padding: 5px;" id="cartinhasList">
         </div>
+        
+        <div id="modalPagination" style="margin-top: 10px; text-align: center;"></div>
 
-        <div style="margin-top: 5px; text-align: center;" id="modalPagination"></div>
-
-        <div
-            style="margin-top: 15px; border-top: 1px solid var(--retro-border-dark); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <button id="deleteSelectedBtn" style="color: #800000; font-weight: bold;" disabled>Excluir
-                Selecionadas</button>
-            <button onclick="document.getElementById('cartinhasModal').close()">Fechar</button>
+        <div style="margin-top: 15px; text-align: center;">
+            <button id="deleteSelectedBtn" style="color: #cc0000; font-weight: bold; padding: 5px 10px;" disabled>Excluir Selecionadas</button>
         </div>
     </div>
 </dialog>
 
-
-
 <script>
-    // ==================== Variáveis Globais ====================
     let currentPage = 1;
     let currentModalPage = 1;
     let currentUserId = null;
@@ -105,7 +81,6 @@
     const ITEMS_PER_PAGE = 20;
     const CARTINHAS_PER_PAGE = 15;
 
-    // ==================== Inicialização ====================
     document.addEventListener('DOMContentLoaded', () => {
         carregarUsuarios();
 
@@ -114,9 +89,7 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(aplicarFiltros, 500);
         });
-        document.getElementById('refreshBtn').addEventListener('click', () => {
-            carregarUsuarios();
-        });
+        document.getElementById('refreshBtn').addEventListener('click', carregarUsuarios);
 
         document.getElementById('modalStatusFilter').addEventListener('change', () => {
             currentModalPage = 1;
@@ -132,10 +105,10 @@
         document.getElementById('deleteSelectedBtn').addEventListener('click', confirmarRemocaoSelecionadas);
     });
 
-    // ==================== Carregamento de Dados ====================
     async function carregarUsuarios() {
         try {
-            mostrarLoading(true);
+            document.getElementById('usuariosList').innerHTML = '<div style="text-align: center; padding: 20px; color: gray;">Carregando...</div>';
+            
             const status = document.getElementById('statusFilter').value;
             const search = document.getElementById('searchInput').value.trim();
             const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
@@ -143,66 +116,59 @@
             if (search) params.append('search', search);
 
             const response = await fetch(`/api/admin/cartinhas/usuarios?${params.toString()}`, { credentials: 'include' });
-            if (!response.ok) throw new Error('Erro ao carregar usuários');
+            if (!response.ok) throw new Error('Erro ao carregar');
 
             const data = await response.json();
             renderizarUsuarios(data.usuarios || []);
             renderizarPaginacao(data.currentPage, data.totalPages, 'pagination');
         } catch (error) {
             alert('Erro ao carregar usuários');
-        } finally {
-            mostrarLoading(false);
         }
     }
-
-
 
     async function carregarCartinhasUsuario() {
         if (!currentUserId) return;
         try {
             const status = document.getElementById('modalStatusFilter').value;
-            const search = document.getElementById('modalSearch').value;
+            const search = document.getElementById('modalSearch').value.trim();
             const params = new URLSearchParams({ page: currentModalPage, limit: CARTINHAS_PER_PAGE });
             if (status) params.append('status', status);
             if (search) params.append('search', search);
 
             const response = await fetch(`/api/admin/cartinhas/usuario/${currentUserId}?${params.toString()}`, { credentials: 'include' });
-            if (!response.ok) throw new Error('Erro ao carregar cartinhas');
+            if (!response.ok) throw new Error('Erro ao carregar');
 
             const data = await response.json();
             renderizarCartinhas(data.cartinhas);
             renderizarPaginacao(data.currentPage, data.totalPages, 'modalPagination');
         } catch (error) {
-            alert('Erro ao carregar cartinhas');
+            alert('Erro ao carregar cartinhas do usuário');
         }
     }
 
-    // ==================== Renderização ====================
     function renderizarUsuarios(usuarios) {
         const container = document.getElementById('usuariosList');
         if (usuarios.length === 0) {
-            container.innerHTML = '<div style="padding: 20px; text-align: center; color: gray;">Nenhum usuário encontrado</div>';
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: gray;">Nenhum usuário encontrado</div>';
             return;
         }
 
         container.innerHTML = usuarios.map(u => `
-        <div style="border-bottom: 1px solid var(--retro-border-dark); padding: 5px; cursor: pointer;" onclick="abrirCartinhasUsuario('${u.publicid}', '${u.username}')">
-            <table width="100%">
-                <tr>
-                    <td width="48"><img src="${u.profileimage || '/images/default-avatar.webp'}" style="width: 40px; height: 40px; border: 1px solid var(--retro-border-dark);"></td>
-                    <td>
+            <div style="border-bottom: 1px dashed var(--retro-border-dark); padding: 5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;" onclick="abrirCartinhasUsuario('${u.publicid}', '${u.username}')">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${u.profileimage || '/images/default-avatar.webp'}" style="width: 32px; height: 32px; border: 1px solid var(--retro-border-dark);">
+                    <div>
                         <strong>${u.username}</strong><br>
                         <small style="color: gray;">Total: ${u.totalcartinhas}</small>
-                    </td>
-                    <td align="right" style="font-size: 11px;">
-                        <span style="background: #ffcc00; padding: 1px 4px; border: 1px inset;">NL: ${u.naolidas}</span> 
-                        <span style="background: #00cc00; color: white; padding: 1px 4px; border: 1px inset;">L: ${u.lidas}</span> 
-                        <span style="background: #0099ff; color: white; padding: 1px 4px; border: 1px inset;">F: ${u.favoritas}</span>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    `).join('');
+                    </div>
+                </div>
+                <div style="font-size: 11px; text-align: right;">
+                    <span style="background: #ffcc00; padding: 1px 4px; border: 1px inset; margin-left: 2px;">NL: ${u.naolidas}</span> 
+                    <span style="background: #00cc00; color: white; padding: 1px 4px; border: 1px inset; margin-left: 2px;">L: ${u.lidas}</span> 
+                    <span style="background: #0099ff; color: white; padding: 1px 4px; border: 1px inset; margin-left: 2px;">F: ${u.favoritas}</span>
+                </div>
+            </div>
+        `).join('');
     }
 
     function renderizarCartinhas(cartinhas) {
@@ -214,52 +180,33 @@
 
         container.innerHTML = cartinhas.map(c => {
             const isSelected = selectedCartinhas.has(c.publicid);
+            const bgColor = isSelected ? 'rgba(0, 0, 128, 0.1)' : 'transparent';
 
-            // Polimento visual dos badges de status
             let statusBadge = '';
-            if (c.isfavorited) {
-                statusBadge = '<span style="font-size: 10px; border: 1px outset var(--retro-border-light); padding: 0 4px; background: #ffffd0; color: #808000; font-weight: bold; margin-left: 5px;" title="Favoritada">★ FAV</span>';
-            } else if (c.isread) {
-                statusBadge = '<span style="font-size: 10px; border: 1px inset var(--retro-border-light); padding: 0 4px; background: #e0e0e0; color: #666; margin-left: 5px;">LIDA</span>';
-            } else {
-                statusBadge = '<span style="font-size: 10px; border: 2px outset var(--retro-border-light); padding: 0 4px; background: #ffffff; color: #000080; font-weight: bold; margin-left: 5px;">NOVA</span>';
-            }
+            if (c.isfavorited) statusBadge = '<span style="font-size: 10px; background: #ffffd0; color: #808000; border: 1px outset; padding: 0 4px; font-weight: bold;">FAV</span>';
+            else if (c.isread) statusBadge = '<span style="font-size: 10px; background: #e0e0e0; color: #666; border: 1px inset; padding: 0 4px;">LIDA</span>';
+            else statusBadge = '<span style="font-size: 10px; background: #fff; color: #000080; border: 2px outset; padding: 0 4px; font-weight: bold;">NOVA</span>';
 
-            const bgColor = isSelected ? 'rgba(0, 0, 128, 0.05)' : 'transparent';
+            const dataStr = c.createdat ? new Date(c.createdat).toLocaleString('pt-BR') : '-';
+            const remetente = c.remetente?.username || 'Ex-membro';
+            const destinatario = c.destinatario?.username || 'Ex-membro';
 
             return `
-            <div style="border-bottom: 1px dashed var(--retro-border-dark); padding: 6px; background: ${bgColor}; transition: background 0.2s;">
-                <table width="100%" cellspacing="0" cellpadding="0">
-                    <tr>
-                        <td width="25" valign="middle" align="center">
-                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelecaoCartinha(this, '${c.publicid}')" style="cursor: pointer;">
-                        </td>
-                        <td valign="top" style="padding-left: 5px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                                    <strong style="color: #444; font-size: 13px;">
-                                        <span style="color: #800000;">${c.remetente?.username || 'Ex-membro'}</span> 
-                                        <span style="color: #888;">&rarr;</span> 
-                                        <span style="color: #000080;">${c.destinatario?.username || 'Ex-membro'}</span>
-                                    </strong>
-                                </div>
-                                <div style="display: flex; gap: 5px; align-items: center;">
-                                    ${statusBadge}
-                                </div>
-                            </div>
-                            <div style="margin-top: 4px;">
-                                ${ (c.createdat) ? `<span style="font-size: 11px; color: #666; font-family: monospace;">Enviada em: ${new Date(c.createdAt || c.createdat).toLocaleString('pt-BR')}</span>` : ''}
-                            </div>
-                        </td>
-                        <td width="40" align="right" valign="middle">
-                            <button onclick="confirmarRemocaoUnica('${c.publicid}')" 
-                                    style="color: #800000; font-size: 10px; padding: 1px 4px; min-width: 20px;" 
-                                    title="Remover Cartinha">[Excluir]</button>
-                        </td>
-                    </tr>
-                </table>
+            <div style="display: flex; align-items: center; border-bottom: 1px dashed var(--retro-border-dark); padding: 5px; background: ${bgColor};">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelecaoCartinha(this, '${c.publicid}')" style="margin-right: 10px;">
+                
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <strong style="color: #800000;">${remetente}</strong> &rarr; <strong style="color: #000080;">${destinatario}</strong>
+                    </div>
+                    <div style="font-size: 11px; color: gray;">Enviada: ${dataStr}</div>
+                </div>
+                
+                <div style="margin: 0 5px;">${statusBadge}</div>
+                
+                <button onclick="confirmarRemocaoUnica('${c.publicid}')" style="font-size: 10px; color: #cc0000; padding: 2px 4px;">Excluir</button>
             </div>
-        `;
+            `;
         }).join('');
     }
 
@@ -275,7 +222,6 @@
         container.innerHTML = html;
     }
 
-    // ==================== Ações ====================
     function abrirCartinhasUsuario(userId, username) {
         currentUserId = userId;
         currentUsername = username;
@@ -292,7 +238,6 @@
         if (checkbox.checked) selectedCartinhas.add(cartinhaId);
         else selectedCartinhas.delete(cartinhaId);
 
-        // Atualizar visual (re-renderiza a lista para aplicar bg-color rápido - ou usa DOM traversal)
         checkbox.closest('div').style.background = checkbox.checked ? 'rgba(0, 0, 128, 0.1)' : 'transparent';
 
         const btn = document.getElementById('deleteSelectedBtn');
@@ -302,7 +247,7 @@
 
     async function confirmarRemocaoUnica(id) {
         let conf = typeof mostrarConfirmacao !== 'undefined'
-            ? await mostrarConfirmacao('Remover cartinha?', 'Excluir')
+            ? await mostrarConfirmacao('Remover cartinha permanentemente?', 'Excluir')
             : await confirm('Deseja remover esta cartinha?');
         if (conf) removerCartinhas([id]);
     }
@@ -310,7 +255,7 @@
     async function confirmarRemocaoSelecionadas() {
         if (selectedCartinhas.size === 0) return;
         let conf = typeof mostrarConfirmacao !== 'undefined'
-            ? await mostrarConfirmacao(`Remover ${selectedCartinhas.size} cartinhas?`, 'Excluir Selecionadas')
+            ? await mostrarConfirmacao(`Remover ${selectedCartinhas.size} cartinhas permanentemente?`, 'Excluir Selecionadas')
             : await confirm(`Remover ${selectedCartinhas.size} cartinhas?`);
         if (conf) removerCartinhas(Array.from(selectedCartinhas));
     }
@@ -328,9 +273,9 @@
                 document.getElementById('deleteSelectedBtn').disabled = true;
                 document.getElementById('deleteSelectedBtn').textContent = 'Excluir Selecionadas';
                 carregarCartinhasUsuario();
-                carregarUsuarios();
+                carregarUsuarios(); 
             } else {
-                alert('Erro ao remover cartinhas');
+                alert('Erro ao remover');
             }
         } catch (error) {
             alert('Erro de conexão ao remover');
@@ -338,11 +283,9 @@
     }
 
     function aplicarFiltros() { currentPage = 1; carregarUsuarios(); }
+    
     function mudarPagina(p, id) {
         if (id === 'pagination') { currentPage = p; carregarUsuarios(); }
         else { currentModalPage = p; carregarCartinhasUsuario(); }
     }
-    function mostrarLoading(s) { document.getElementById('loading').style.display = s ? 'block' : 'none'; }
-
-
 </script>
