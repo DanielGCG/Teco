@@ -20,6 +20,7 @@ const setUserCookie = (res, user) => {
         httpOnly: false, // Permitir acesso via JS
         secure: false, // Desativado para facilitar desenvolvimento local
         sameSite: 'lax',
+        domain: process.env.COOKIE_DOMAIN || undefined,
         path: '/'
     });
 };

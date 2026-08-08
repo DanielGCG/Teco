@@ -240,7 +240,7 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
             });
         }
 
-        res.cookie('session', cookieValue, { httpOnly: true, maxAge: 7*24*60*60*1000 });
+        res.cookie('session', cookieValue, { httpOnly: true, maxAge: 7*24*60*60*1000, domain: process.env.COOKIE_DOMAIN || undefined });
         setUserCookie(res, user);
 
         res.json({ message: "Login realizado com sucesso", cookie: cookieValue, expiresAt });
@@ -254,8 +254,8 @@ UsersRouter.post('/login', validate(loginSchema), async (req, res) => {
 UsersRouter.post('/logout', async (req, res) => {
     const cookieValue = req.cookies?.['session'];
     if (!cookieValue || !req.user || !req.user.id) {
-        res.clearCookie('session');
-        res.clearCookie('teco_user');
+        res.clearCookie('session', { domain: process.env.COOKIE_DOMAIN || undefined });
+        res.clearCookie('teco_user', { domain: process.env.COOKIE_DOMAIN || undefined });
         return res.json({ message: "Logout realizado com sucesso" });
     }
     try {
@@ -263,8 +263,8 @@ UsersRouter.post('/logout', async (req, res) => {
     } catch (err) {
         console.error(err);
     }
-    res.clearCookie('session');
-    res.clearCookie('teco_user');
+    res.clearCookie('session', { domain: process.env.COOKIE_DOMAIN || undefined });
+    res.clearCookie('teco_user', { domain: process.env.COOKIE_DOMAIN || undefined });
     res.json({ message: "Logout realizado com sucesso" });
 });
 
@@ -310,8 +310,8 @@ UsersRouter.delete('/delete-account', protect(20), async (req, res) => {
         // Apagar completamente o usuário do banco de dados (o CASCADE tratará do resto)
         await User.destroy({ where: { id: req.user.id } });
 
-        res.clearCookie('session');
-        res.clearCookie('teco_user');
+        res.clearCookie('session', { domain: process.env.COOKIE_DOMAIN || undefined });
+        res.clearCookie('teco_user', { domain: process.env.COOKIE_DOMAIN || undefined });
         res.json({ message: "Conta deletada com sucesso." });
     } catch (err) {
         console.error("Erro ao deletar conta:", err);
