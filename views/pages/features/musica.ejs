@@ -1,8 +1,11 @@
 <div class="window">
-    <div class="window-header">Top Músicas e Artistas</div>
+    <div class="window-header">Top Músicas e Artistas do Teco</div>
     <div class="window-content">
+        <aside style="padding: 5px; border: 1px dashed #808080; background: #ffffcc; font-size: 11px;">
+            <b>Dica:</b> Para participar, adicione sua conta do Last.fm no perfil!
+        </aside>
         
-        <div id="musica-content" style="display: flex; gap: 15px; flex-direction: column;">
+        <div id="musica-content" style="display: flex; gap: 15px; flex-direction: column; margin-top: 10px;">
             
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <!-- Top Tracks Hoje -->
@@ -94,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const date = new Date(data.updatedAt);
             const timeStr = date.toLocaleTimeString('pt-BR');
             const dateStr = date.toLocaleDateString('pt-BR');
-            document.getElementById('musica-content').insertAdjacentHTML('beforeend', `<div style="text-align: center; font-size: 10px; color: #666; margin-top: 5px;">Última atualização do cache: ${dateStr} às ${timeStr}</div>`);
+            document.getElementById('musica-content').insertAdjacentHTML('beforeend', `<div style="text-align: center; font-size: 10px; color: #666;">Última atualização do cache: ${dateStr} às ${timeStr}</div>`);
         }
 
     } catch(err) {

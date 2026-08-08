@@ -515,8 +515,9 @@ UsersRouter.get('/music-widget/:lastfmUser', protect(20), async (req, res) => {
 UsersRouter.get('/music-top5/data', protect(20), async (req, res) => {
     try {
         const botecoUrl = process.env.BOTECOANALYTICS_URL ? process.env.BOTECOANALYTICS_URL.trim() : null;
+        const botecoToken = process.env.BOTECOANALYTICS_WIDGET_TOKEN;
 
-        if (!botecoUrl) {
+        if (!botecoUrl || !botecoToken) {
             return res.status(500).json({ error: "Integração musical não configurada no servidor." });
         }
 
@@ -527,7 +528,8 @@ UsersRouter.get('/music-top5/data', protect(20), async (req, res) => {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'TecoApp/1.0'
+                'User-Agent': 'TecoApp/1.0',
+                'Authorization': `Bearer ${botecoToken}`
             }
         });
 
