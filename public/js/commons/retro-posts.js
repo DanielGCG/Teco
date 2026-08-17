@@ -154,7 +154,6 @@ const RetroPosts = {
         // Criar o sensor de scroll ao final do container
         const sentinel = document.createElement('div');
         sentinel.id = `sentinel-${containerId}`;
-        sentinel.style.padding = '20px 0';
         sentinel.innerHTML = '<p style="text-align: center; color: #888; font-size: 11px;">Carregando mais posts...</p>';
         container.after(sentinel);
 
@@ -181,7 +180,7 @@ const RetroPosts = {
                         
                         if (!posts || posts.length < limit) {
                             hasMore = false;
-                            sentinel.innerHTML = '<hr style="border: 0; border-top: 1px dashed var(--retro-border-dark); margin: 20px 0;"><p style="text-align: center; color: #888; font-size: 11px;">Fim do feed.</p>';
+                            sentinel.innerHTML = '<hr style="border: 0; border-top: 1px dashed var(--retro-border-dark);"><p style="text-align: center; color: #888; font-size: 11px;">Fim do feed.</p>';
                         }
 
                         if (posts && posts.length > 0) {

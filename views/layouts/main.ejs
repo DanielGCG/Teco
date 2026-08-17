@@ -17,19 +17,7 @@
         .invisible-scrollbar::-webkit-scrollbar { display: none; }
         .invisible-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        #sidebar-amigos {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 5px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
 
-        @media (max-width: 768px) {
-            #sidebar-amigos {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-        }
     </style>
     <script>
         // Fallback global para imagens quebradas
@@ -169,7 +157,7 @@
                                     <a href="<%= `/${locals.loggedUser.username}` %>" style="text-decoration: none;">
                                         <img src="<%= locals.loggedUser.profileimage %>" border="1"
                                             style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg); border: 1px solid var(--retro-border-dark);">
-                                        <div style="margin-top: 5px; color: black; text-decoration: none; font-weight: bold;">
+                                        <div style="color: black; text-decoration: none;">
                                             <%= locals.loggedUser.username %>
                                         </div>
                                     </a>
@@ -255,19 +243,19 @@
                     </div>
 
                     <% if (locals.loggedUser) { %>
-                    <div class="window" id="sidebar-amigos-window" style="display: none;">
-                        <div class="window-header">Meus Amigos</div>
-                        <div class="window-content">
-                            <div id="sidebar-amigos"></div>
-                        </div>
-                    </div>
+                    <article class="window" id="sidebar-amigos-window" style="display: none;">
+                        <header class="window-header">Amigos</header>
+                        <section id="sidebar-amigos" class="window-content">
+                            <!-- Lista carregada via JS -->
+                        </section>
+                    </article>
                     <% } %>
 
                     <div class="window">
                         <div id="botecoanalytics" class="window-content" style="text-align: center;">
                             <div style="position: relative; margin: 0 auto 5px; overflow: hidden;">
-                                <a href="https://analytics.sitedoboteco.com.br" target="_blank">
-                                    <img id="botecoanalytics-img" src="/images/BotecoAnalytics.webp" border="0"
+                                <a href="https://altteco.sitedoboteco.com.br" target="_blank">
+                                    <img id="botecoanalytics-img" src="/images/Altteco.webp" border="0"
                                         style="width: 100%; object-fit: fit; display: block; align-content:center; box-sizing: border-box;">
                                 </a>
                             </div>

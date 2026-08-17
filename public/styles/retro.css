@@ -398,13 +398,20 @@ marquee {
 
 
 
-/* Sidebar Amigos Grid */
-#sidebar-amigos {
+/* Sidebar e Perfil Amigos Grid */
+#sidebar-amigos, #retro-amigos {
     display: grid;
     grid-template-columns: 1fr;
     gap: 5px;
-    max-height: 250px;
+    max-height: 190px;
     overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+#sidebar-amigos::-webkit-scrollbar, 
+#retro-amigos::-webkit-scrollbar {
+    display: none;
 }
 
 /* Mobile */
@@ -455,7 +462,7 @@ marquee {
         max-width: 100% !important;
     }
 
-    #sidebar-amigos {
+    #sidebar-amigos, #retro-amigos {
         grid-template-columns: repeat(2, 1fr) !important;
     }
 }

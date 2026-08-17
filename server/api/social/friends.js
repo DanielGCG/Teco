@@ -52,10 +52,12 @@ FriendsRouter.get('/', protect(20), async (req, res) => {
             status: getUserStatus(f.id)
         }));
 
-        // Ordena por status (online -> ausente -> offline)
+        // Ordena por status (online -> ausente -> offline) e depois alfabeticamente
         formatted.sort((a, b) => {
             const order = { online: 0, ausente: 1, offline: 2 };
-            return (order[a.status] || 2) - (order[b.status] || 2);
+            const statusDiff = (order[a.status] || 2) - (order[b.status] || 2);
+            if (statusDiff !== 0) return statusDiff;
+            return (a.username || '').localeCompare(b.username || '', 'pt-BR', { sensitivity: 'base' });
         });
 
         res.json({ friends: formatted });
@@ -104,6 +106,14 @@ FriendsRouter.get('/user/:publicid', validate(publicidSchema, 'params'), async (
             bio: f.bio,
             status: getUserStatus(f.id)
         }));
+
+        // Ordena por status (online -> ausente -> offline) e depois alfabeticamente
+        formatted.sort((a, b) => {
+            const order = { online: 0, ausente: 1, offline: 2 };
+            const statusDiff = (order[a.status] || 2) - (order[b.status] || 2);
+            if (statusDiff !== 0) return statusDiff;
+            return (a.username || '').localeCompare(b.username || '', 'pt-BR', { sensitivity: 'base' });
+        });
 
         res.json({ friends: formatted });
     } catch (err) {
