@@ -46,10 +46,7 @@ async function emitStatusChange(io, userId, publicid, status) {
     return false;
 }
 
-module.exports.isUserOnline = isUserOnline;
-module.exports.getUserStatus = getUserStatus;
-
-module.exports = (io) => {
+const setupSockets = (io) => {
     // Timer para verificar mudanças de status por inatividade
     setInterval(async () => {
         const now = Date.now();
@@ -268,3 +265,8 @@ module.exports = (io) => {
         });
     });
 };
+
+setupSockets.isUserOnline = isUserOnline;
+setupSockets.getUserStatus = getUserStatus;
+
+module.exports = setupSockets;

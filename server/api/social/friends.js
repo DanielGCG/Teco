@@ -14,8 +14,11 @@ const protect = (minRole = 20) => {
 // Helper para obter status do usuário
 function getUserStatus(userId) {
     if (socketRouter.getUserStatus) {
-        return socketRouter.getUserStatus(userId);
+        const status = socketRouter.getUserStatus(userId);
+        console.log(`[friends.js] Status para userId ${userId}: ${status}`);
+        return status;
     }
+    console.log(`[friends.js] socketRouter.getUserStatus indisponível para userId ${userId}`);
     return 'offline';
 }
 
@@ -55,7 +58,7 @@ FriendsRouter.get('/', protect(20), async (req, res) => {
         // Ordena por status (online -> ausente -> offline) e depois alfabeticamente
         formatted.sort((a, b) => {
             const order = { online: 0, ausente: 1, offline: 2 };
-            const statusDiff = (order[a.status] || 2) - (order[b.status] || 2);
+            const statusDiff = (order[a.status] ?? 2) - (order[b.status] ?? 2);
             if (statusDiff !== 0) return statusDiff;
             return (a.username || '').localeCompare(b.username || '', 'pt-BR', { sensitivity: 'base' });
         });
@@ -110,7 +113,7 @@ FriendsRouter.get('/user/:publicid', validate(publicidSchema, 'params'), async (
         // Ordena por status (online -> ausente -> offline) e depois alfabeticamente
         formatted.sort((a, b) => {
             const order = { online: 0, ausente: 1, offline: 2 };
-            const statusDiff = (order[a.status] || 2) - (order[b.status] || 2);
+            const statusDiff = (order[a.status] ?? 2) - (order[b.status] ?? 2);
             if (statusDiff !== 0) return statusDiff;
             return (a.username || '').localeCompare(b.username || '', 'pt-BR', { sensitivity: 'base' });
         });
