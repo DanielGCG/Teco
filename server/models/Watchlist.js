@@ -56,6 +56,10 @@ const Filme = sequelize.define('Filme', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    watchedat: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
     createdbyUserId: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: true,

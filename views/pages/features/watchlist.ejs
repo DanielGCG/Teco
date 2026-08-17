@@ -125,31 +125,6 @@
         padding: 10px;
     }
 
-    /* Componente de Estrelas Interativas */
-    .star-wrapper {
-        display: inline-block;
-        position: relative;
-        font-size: 14px;
-        color: #ffcc00;
-        text-shadow: 1px 1px 0 #000;
-    }
-
-    .star-half-zone {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 50%;
-        z-index: 2;
-        cursor: pointer;
-    }
-
-    .star-half-zone.left {
-        left: 0;
-    }
-
-    .star-half-zone.right {
-        right: 0;
-    }
 
     .stars-display-box {
         background: var(--retro-sidebar-bg);
@@ -265,6 +240,7 @@
                 <label>
                     <input type="checkbox" id="sw-watched"> Já assistimos
                 </label>
+                <div id="watched-date" style="font-size: 11px; color: var(--retro-border-dark); margin-left: 20px; display: none;"></div>
 
                 <div style="margin-top: 10px;">
                     <strong>Nota coletiva:</strong><br>
@@ -329,22 +305,14 @@
     // ==========================================
     function renderStars(nota, interactive = false, publicid = null) {
         const rating = (nota !== null && nota !== undefined && nota !== '') ? parseFloat(nota) : 0;
-        let html = `<div style="display: inline-flex; gap: 2px; margin-top: 5px;">`;
+        let html = `<div style="display: inline-flex; gap: 2px; margin-top: 5px; font-size: 14px; flex-wrap: wrap;">`;
 
-        for (let i = 1; i <= 5; i++) {
-            const fullVal = i * 2;
-            const halfVal = fullVal - 1;
-
-            const starChar = (rating >= halfVal) ? '★' : '☆';
-            const colorStyle = (rating >= halfVal) ? 'color: #ffcc00; text-shadow: 1px 1px 0 #000;' : 'color: var(--retro-border-dark);';
+        for (let i = 1; i <= 10; i++) {
+            const starChar = (rating >= i) ? '★' : '☆';
+            const colorStyle = (rating >= i) ? 'color: #ffcc00; text-shadow: 1px 1px 0 #000; cursor: pointer;' : 'color: var(--retro-border-dark); cursor: pointer;';
 
             if (interactive) {
-                html += `
-                <span class="star-wrapper">
-                    ${starChar}
-                    <span class="star-half-zone left" onclick="atualizarStatusObra('${publicid}', null, ${halfVal}); updateModalStars('${publicid}', ${halfVal})"></span>
-                    <span class="star-half-zone right" onclick="atualizarStatusObra('${publicid}', null, ${fullVal}); updateModalStars('${publicid}', ${fullVal})"></span>
-                </span>`;
+                html += `<span style="${colorStyle}" onclick="atualizarStatusObra('${publicid}', null, ${i}); updateModalStars('${publicid}', ${i})">${starChar}</span>`;
             } else {
                 html += `<span style="${colorStyle}">${starChar}</span>`;
             }
@@ -452,9 +420,19 @@
         document.getElementById('modal-requester').innerHTML = obra.requester ?
             `<a href="/${obra.requester.username}" target="_blank" style="color: blue; text-decoration: underline;">${obra.requester.username}</a>` : 'Sistema';
 
-        // Status Interativos
         const swWatched = document.getElementById('sw-watched');
+        const watchedDateLabel = document.getElementById('watched-date');
+        
         swWatched.checked = !!obra.iswatched;
+        
+        if (obra.iswatched && obra.watchedat) {
+            const date = new Date(obra.watchedat);
+            watchedDateLabel.textContent = `Assistido em ${date.toLocaleDateString('pt-BR')}`;
+            watchedDateLabel.style.display = 'block';
+        } else {
+            watchedDateLabel.style.display = 'none';
+        }
+
         swWatched.onchange = (e) => atualizarStatusObra(obra.publicid, e.target.checked, null);
 
         updateModalStars(obra.publicid, obra.voteboteco);
@@ -485,8 +463,20 @@
             if (data.success) {
                 const index = obrasWatchlist.findIndex(o => o.publicid === publicid);
                 if (index !== -1) {
-                    if (watched !== null) obrasWatchlist[index].iswatched = watched;
-                    if (custom_rating !== null) obrasWatchlist[index].voteboteco = body.custom_rating;
+                    if (watched !== null) {
+                        obrasWatchlist[index].iswatched = watched;
+                        obrasWatchlist[index].watchedat = data.movie.watchedat; // Atualiza data cacheada
+                        
+                        const watchedDateLabel = document.getElementById('watched-date');
+                        if (watched && data.movie.watchedat) {
+                            const date = new Date(data.movie.watchedat);
+                            watchedDateLabel.textContent = `Assistido em ${date.toLocaleDateString('pt-BR')}`;
+                            watchedDateLabel.style.display = 'block';
+                        } else {
+                            watchedDateLabel.style.display = 'none';
+                        }
+                    }
+                    if (custom_rating !== null) obrasWatchlist[index].voteboteco = custom_rating;
                     listarObras();
                 }
             }

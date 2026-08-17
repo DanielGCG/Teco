@@ -38,4 +38,18 @@ router.post('/subscribe', async (req, res) => {
     }
 });
 
+// Remove a inscrição do usuário no banco
+router.post('/unsubscribe', async (req, res) => {
+    const { endpoint } = req.body;
+    const userId = req.user.id;
+
+    try {
+        await PushSubscription.destroy({ where: { endpoint: endpoint, userId: userId } });
+        res.status(200).json({ success: true, message: 'Inscrição removida com sucesso.' });
+    } catch (error) {
+        console.error('[Push API] Erro ao remover subscription:', error);
+        res.status(500).json({ error: 'Erro ao remover inscrição' });
+    }
+});
+
 module.exports = router;

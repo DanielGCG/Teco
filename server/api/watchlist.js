@@ -117,7 +117,10 @@ watchlistRouter.patch('/watchlistupdate-status', validate(updateMovieStatusSchem
             return res.status(404).json({ success: false, message: 'Filme/série não encontrado.' });
         }
 
-        if (watched !== undefined) movie.iswatched = watched;
+        if (watched !== undefined) {
+            movie.iswatched = watched;
+            movie.watchedat = watched ? new Date() : null;
+        }
         if (custom_rating !== undefined) movie.voteboteco = custom_rating;
 
         await movie.save();

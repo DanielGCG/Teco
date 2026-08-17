@@ -11,11 +11,10 @@ const RetroPosts = {
         if (post.media && post.media.length > 0) {
             mediaHtml = '<div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">';
             post.media.forEach(m => {
-                const borderStyle = 'border: 1px dashed var(--retro-border-dark);';
                 if (m.type === 'video') {
-                    mediaHtml += `<video src="${m.url}" style="max-width: 250px; ${borderStyle} object-fit: cover;" controls></video>`;
+                    mediaHtml += `<video src="${m.url}" style="max-width: 250px; border: 1px dashed var(--retro-border-dark); object-fit: cover;" controls></video>`;
                 } else {
-                    mediaHtml += `<img src="${m.url}" style="max-width: 250px; ${borderStyle} cursor: pointer; object-fit: cover;" onclick="window.open('${m.url}')">`;
+                    mediaHtml += `<img src="${m.url}" style="max-width: 250px; border: 1px dashed var(--retro-border-dark); cursor: pointer; object-fit: cover;" onclick="window.open('${m.url}')">`;
                 }
             });
             mediaHtml += '</div>';
@@ -28,7 +27,15 @@ const RetroPosts = {
             const pDate = new Date(p.createdat).toLocaleString();
             let pMediaHtml = '';
             if (p.media && p.media.length > 0) {
-                pMediaHtml = `<div style="margin-top: 5px;"><img src="${p.media[0].url}" style="max-width: 150px; border: 1px dashed var(--retro-border-dark); object-fit: cover;"></div>`;
+                pMediaHtml = '<div style="margin-top: 5px; display: flex; gap: 5px; flex-wrap: wrap;">';
+                p.media.forEach(m => {
+                    if (m.type === 'video') {
+                        pMediaHtml += `<video src="${m.url}" style="max-width: 150px; border: 1px dashed var(--retro-border-dark); object-fit: cover;" controls></video>`;
+                    } else {
+                        pMediaHtml += `<img src="${m.url}" style="max-width: 150px; border: 1px dashed var(--retro-border-dark); cursor: pointer; object-fit: cover;" onclick="window.open('${m.url}')">`;
+                    }
+                });
+                pMediaHtml += '</div>';
             }
             
             repostHtml = `
@@ -43,6 +50,9 @@ const RetroPosts = {
         
         const isAuthor = post.author.username === currentUsername;
         const isMod = currentUserRole <= 10;
+        const isLiked = post.likes && post.likes.some(l => l.user && l.user.username === currentUsername);
+        const likeColor = isLiked ? 'red' : 'var(--retro-link-hover)';
+        const likeFontWeight = isLiked ? 'bold' : 'normal';
         const deleteBtn = (isAuthor || isMod) ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETAR]</a>` : '';
 
         return `
@@ -62,7 +72,7 @@ const RetroPosts = {
                 ${mediaHtml}
                 <div style="margin-top: 10px; font-size: 11px; border-top: 1px dashed var(--retro-border-dark); padding-top: 5px; display: flex; gap: 15px; align-items: center;">
                     <a href="/${post.author.username}/status/${post.publicid}" style="font-weight: bold;">[ABRIR]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: var(--retro-link-hover);">[LIKE ${post.likecount || 0}]</a>
+                    <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: ${likeColor}; font-weight: ${likeFontWeight};" id="retro-like-btn-${post.publicid}">[LIKE ${post.likecount || 0}]</a>
                     <a href="javascript:void(0)" onclick="handleRetroReply('${post.publicid}', '${post.author.username}')" style="color: var(--retro-header-bg);">[REPLY ${post.replycount || 0}]</a>
                     <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: #555;">[REPOST ${post.repostcount || 0}]</a>
                     <a href="javascript:void(0)" onclick="handleRetroCopyLink('${post.author.username}', '${post.publicid}')" style="color: var(--retro-link);">[LINK]</a>
@@ -77,8 +87,8 @@ const RetroPosts = {
      */
     initHandlers: function(callbackReload) {
         window.handleRetroDelete = async (postId) => {
-            const confirm = await confirm('Tem certeza que deseja apagar esta mensagem permanentemente?', 'Confirmar Exclusão');
-            if (!confirm) return;
+            const confirmacao = await confirm('Tem certeza que deseja apagar esta mensagem permanentemente?', 'Confirmar Exclusão');
+            if (!confirmacao) return;
             try {
                 const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
                 if (res.ok) {
@@ -90,7 +100,15 @@ const RetroPosts = {
         window.handleRetroLike = async (postId) => {
             try {
                 const res = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
-                if (res.ok && callbackReload) callbackReload();
+                if (res.ok) {
+                    const data = await res.json();
+                    const btn = document.getElementById(`retro-like-btn-${postId}`);
+                    if (btn) {
+                        btn.style.color = data.liked ? 'red' : 'var(--retro-link-hover)';
+                        btn.style.fontWeight = data.liked ? 'bold' : 'normal';
+                        btn.textContent = `[LIKE ${data.likecount}]`;
+                    }
+                }
             } catch (e) { console.error(e); }
         };
 
@@ -197,5 +215,147 @@ const RetroPosts = {
             const msg = sentinel.querySelector('p');
             if (msg) msg.textContent = 'Carregando mais posts...';
         };
+    },
+
+    /**
+     * Configura o comportamento da área de novo post (Retrô)
+     */
+    setupNewPost: function(config) {
+        const { textareaId, mediaInputId, previewId, btnPostarId, progressContainerId, progressBarId, callbackReload, extraFormData } = config;
+        const textarea = document.getElementById(textareaId);
+        const mediaInput = document.getElementById(mediaInputId);
+        const preview = document.getElementById(previewId);
+        const btnPostar = document.getElementById(btnPostarId);
+        
+        let selectedFiles = [];
+
+        const renderPreview = () => {
+            preview.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                container.style.display = 'inline-block';
+                container.style.marginRight = '5px';
+                
+                const mediaUrl = URL.createObjectURL(file);
+                
+                if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = mediaUrl;
+                    video.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    video.muted = true;
+                    video.autoplay = true;
+                    video.loop = true;
+                    container.appendChild(video);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = mediaUrl;
+                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    container.appendChild(img);
+                }
+                
+                const removeBtn = document.createElement('div');
+                removeBtn.innerHTML = '&times;';
+                removeBtn.style = "position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; font-weight: bold; z-index: 10;";
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    selectedFiles.splice(index, 1);
+                    renderPreview();
+                };
+                
+                container.appendChild(removeBtn);
+                preview.appendChild(container);
+            });
+        };
+
+        if (mediaInput) {
+            mediaInput.addEventListener('change', (e) => {
+                const newFiles = Array.from(e.target.files);
+                selectedFiles = selectedFiles.concat(newFiles);
+                if (selectedFiles.length > 4) {
+                    alert('Máximo de 4 arquivos permitidos.');
+                    selectedFiles = selectedFiles.slice(0, 4);
+                }
+                renderPreview();
+                e.target.value = '';
+            });
+        }
+
+        if (btnPostar) {
+            btnPostar.addEventListener('click', () => {
+                const content = textarea.value.trim();
+                if (!content && selectedFiles.length === 0) return;
+
+                btnPostar.disabled = true;
+                btnPostar.textContent = 'ENVIANDO...';
+
+                const formData = new FormData();
+                formData.append('content', content);
+                
+                if (extraFormData) {
+                    for (const key in extraFormData) {
+                        formData.append(key, extraFormData[key]);
+                    }
+                } else {
+                    formData.append('type', 'post');
+                }
+                
+                selectedFiles.forEach(file => formData.append('media', file));
+
+                const progressContainer = document.getElementById(progressContainerId);
+                const progressBar = document.getElementById(progressBarId);
+                
+                if (selectedFiles.length > 0 && progressContainer && progressBar) {
+                    progressContainer.style.display = 'block';
+                    progressBar.style.width = '0%';
+                }
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/posts', true);
+                
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable && progressBar) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+
+                xhr.onload = async () => {
+                    if (progressContainer && progressBar) {
+                        progressContainer.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        textarea.value = '';
+                        if (mediaInput) mediaInput.value = '';
+                        selectedFiles = [];
+                        renderPreview();
+                        if (callbackReload) await callbackReload();
+                    } else {
+                        try {
+                            const err = JSON.parse(xhr.responseText);
+                            alert(err.error || 'Erro ao postar!');
+                        } catch (e) {
+                            alert('Erro ao postar!');
+                        }
+                    }
+                    btnPostar.disabled = false;
+                    btnPostar.textContent = 'POSTAR';
+                };
+
+                xhr.onerror = () => {
+                    if (progressContainer && progressBar) {
+                        progressContainer.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }
+                    alert('Erro de conexão!');
+                    btnPostar.disabled = false;
+                    btnPostar.textContent = 'POSTAR';
+                };
+
+                xhr.send(formData);
+            });
+        }
     }
 };

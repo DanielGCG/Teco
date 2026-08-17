@@ -70,7 +70,7 @@
     });
 
     btnDecline.addEventListener('click', async () => {
-        if(!await confirm("Atenção: Ao não concordar, sua conta será DELETADA de forma irreversível (seus posts antigos ficarão órfãos e anonimizados, mas não poderão ser recuperados). Você tem certeza disso?")) return;
+        if(!await confirm("Atenção: Ao não concordar, sua conta será DELETADA de forma irreversível. Você tem certeza disso?")) return;
         
         messageDiv.textContent = 'Deletando conta...';
         messageDiv.style.color = 'var(--retro-link-hover)';
@@ -94,15 +94,9 @@
     });
 
     btnLogout.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/api/users/logout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-            window.location.href = '/login';
-        } catch (err) {
-            console.error(err);
+        if (window.UserContext) {
+            await window.UserContext.logout();
+        } else {
             window.location.href = '/login';
         }
     });

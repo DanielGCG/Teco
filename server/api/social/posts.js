@@ -1,6 +1,6 @@
 const express = require("express");
 const PostsRouter = express.Router();
-const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Follow } = require("../../models");
+const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Follow, Notification } = require("../../models");
 const { createNotification } = require("../notifications");
 const { Op } = require("sequelize");
 const { upload } = require('../../utils/upload');
@@ -358,15 +358,26 @@ PostsRouter.post('/:publicid/like', async (req, res) => {
 
             // Notificar autor do post
             if (post.authorUserId !== userId) {
-                await createNotification({
-                    userId: post.authorUserId,
-                    type: 'info',
-                    title: 'Nova Curtida',
-                    body: `${req.user.username} curtiu seu post.`,
-                    link: `/${post.author.username}/status/${post.publicid}`,
-                    io: req.app.get('io'),
-                    socketType: 'like'
+                const existingNotif = await Notification.findOne({
+                    where: {
+                        targetUserId: post.authorUserId,
+                        link: `/${post.author.username}/status/${post.publicid}`,
+                        body: `${req.user.username} curtiu seu post.`,
+                        readat: null
+                    }
                 });
+
+                if (!existingNotif) {
+                    await createNotification({
+                        userId: post.authorUserId,
+                        type: 'info',
+                        title: 'Nova Curtida',
+                        body: `${req.user.username} curtiu seu post.`,
+                        link: `/${post.author.username}/status/${post.publicid}`,
+                        io: req.app.get('io'),
+                        socketType: 'like'
+                    });
+                }
             }
             
             return res.json({ liked: true, likecount: post.likecount, publicid: post.publicid });

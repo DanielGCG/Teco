@@ -4,16 +4,17 @@
             <div class="profile-avatar-col">
                 <div id="profile-avatar-container" style="position: relative; display: inline-block;">
                     <img id="retro-avatar" src="" border="1" style="width: 100px; height: 100px; object-fit: cover; background: var(--retro-window-bg);  border: 1px solid var(--retro-border-dark);">
-                    <span id="user-status-dot" class="status-dot" style="position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: gray;"></span>
+                    <span id="user-status-dot" class="status-dot" style="position: absolute; bottom: 3px; right: 0px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; background: gray;"></span>
                 </div>
-                <span id="retro-username">...</span>
+                <span id="retro-username"></span>
                 <div class="roles-pronouns-container" style="display: flex; justify-content: space-evenly; align-items: center; margin-top: 3px; font-weight: bold;">
-                    <div id="retro-role" style="font-size: 10px; text-transform: uppercase; color: #555;"></div>
+                    <div id="retro-role" style="font-size: 10px; text-transform: uppercase;"></div>
                     <div id="retro-pronouns" style="font-size: 11px; color: var(--retro-border-dark);"></div>
                 </div>
-                <div class="buttons-container" style="margin-top: 8px; text-align: center;">
-                    <button id="btn-edit" class="btn-block btn-sm" style="display: none; margin: 0 auto;" onclick="window.location.href='/editar'">EDITAR</button>
-                    <button id="btn-follow" class="btn-block btn-sm" style="display: none; margin: 0 auto;">SEGUIR</button>
+                <div class="buttons-container" style="margin-top: 8px; display: flex; gap: 3px; justify-content: center;">
+                    <button id="btn-edit" class="btn-sm" style="display: none; width: 100%;" onclick="window.location.href='/editar'">EDITAR</button>
+                    <button id="btn-follow" class="btn-sm" style="display: none; flex-grow: 1;">SEGUIR</button>
+                    <button id="btn-message" class="btn-sm" style="display: none; padding: 2px 6px;" title="Enviar Cartinha">✉️</button>
                 </div>
             </div>
             <div class="profile-info-col">
@@ -101,6 +102,9 @@
                         </div>
                         <button id="btn-retro-postar" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
                     </footer>
+                    <div id="retro-upload-progress-container" style="display: none; margin-top: 5px; width: 100%; height: 10px; border: 1px solid var(--retro-border-dark); background: #eee;">
+                        <div id="retro-upload-progress-bar" style="width: 0%; height: 100%; background: var(--retro-header-bg); transition: width 0.1s;"></div>
+                    </div>
                 </fieldset>
             </section>
         </article>
@@ -147,9 +151,10 @@
             if (user.role) {
                 roleEl.textContent = user.role.name;
                 // Cores baseadas no cargo
-                if (user.roleId === 1) roleEl.style.color = "#d32f2f"; // Dono
-                else if (user.roleId <= 5) roleEl.style.color = "#1976d2"; // Admin
-                else if (user.roleId <= 10) roleEl.style.color = "#388e3c"; // Mod
+                if (user.roleId === 1) roleEl.classList.add("role-dono");
+                else if (user.roleId <= 5) roleEl.classList.add("role-admin");
+                else if (user.roleId <= 10) roleEl.classList.add("role-mod");
+                else roleEl.classList.add("role-default");
             }
             
             if (user.bannerimage) {
@@ -198,6 +203,11 @@
                     document.getElementById("retro-new-post-area").style.display = "block";
                 } else {
                     document.getElementById("btn-follow").style.display = "block";
+                    
+                    const btnMessage = document.getElementById("btn-message");
+                    btnMessage.style.display = "block";
+                    btnMessage.onclick = () => window.location.href = `/cartinhas/escrever?para=${user.publicid}&nome=${encodeURIComponent(user.username)}`;
+
                     verificarSeguimento(user.publicid);
                 }
             }
@@ -369,74 +379,27 @@
     async function carregarAmigos(userId) {
         const friends = await FollowAPI.carregarAmigos(userId);
         const list = document.getElementById("retro-amigos");
+        
+        list.innerHTML = FollowAPI.renderFriendsHtml(friends);
+
         if (friends && friends.length) {
-            list.innerHTML = friends.map(f => `
-                <a href="/${f.username}" class="retro-friend-item" data-user-id="${f.publicid}">
-                    <img src="${f.profileimage}" border="1">
-                    <span>${f.username}</span>
-                    <span class="status-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: auto; background-color: #808080;"></span>
-                </a>
-            `).join('');
-            
             // Solicita os status iniciais dos amigos carregados
             if (typeof SocketUI !== 'undefined') SocketUI.requestInitialStatus();
-        } else {
-            list.innerHTML = '<span style="font-size: 11px;">Nenhum amigo</span>';
         }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         carregarPerfil();
 
-        // Lógica de Postar Retrô Sincronizada
-        const textarea = document.getElementById('retro-post-textarea');
-        const mediaInput = document.getElementById('retro-post-media');
-        const btnPostar = document.getElementById('btn-retro-postar');
-        const preview = document.getElementById('retro-media-preview');
-        let selectedFiles = [];
-
-        mediaInput.addEventListener('change', (e) => {
-            preview.innerHTML = '';
-            selectedFiles = Array.from(e.target.files);
-            selectedFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = document.createElement('img');
-                    img.src = ev.target.result;
-                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
-                    preview.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
-        });
-
-        btnPostar.addEventListener('click', async () => {
-            const content = textarea.value.trim();
-            if (!content && selectedFiles.length === 0) return;
-
-            btnPostar.disabled = true;
-            btnPostar.textContent = '...';
-
-            const formData = new FormData();
-            formData.append('content', content);
-            formData.append('type', 'post');
-            selectedFiles.forEach(file => formData.append('media', file));
-
-            try {
-                const res = await fetch('/api/posts', { method: 'POST', body: formData });
-                if (res.ok) {
-                    textarea.value = '';
-                    mediaInput.value = '';
-                    preview.innerHTML = '';
-                    selectedFiles = [];
-                    loadUserPosts();
-                }
-            } catch (e) {
-                await alert('Erro ao postar');
-            } finally {
-                btnPostar.disabled = false;
-                btnPostar.textContent = 'POSTAR';
-            }
+        // Lógica de Postar Retrô Sincronizada usando componente centralizado
+        RetroPosts.setupNewPost({
+            textareaId: 'retro-post-textarea',
+            mediaInputId: 'retro-post-media',
+            previewId: 'retro-media-preview',
+            btnPostarId: 'btn-retro-postar',
+            progressContainerId: 'retro-upload-progress-container',
+            progressBarId: 'retro-upload-progress-bar',
+            callbackReload: loadUserPosts
         });
     });
 </script>

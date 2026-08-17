@@ -157,6 +157,9 @@
             </fieldset>
 
             <footer style="margin-top: 15px; text-align: right;">
+                <div id="profile-upload-progress-container" style="display: none; margin-bottom: 10px; width: 100%; height: 10px; border: 1px solid var(--retro-border-dark); background: #eee; text-align: left;">
+                    <div id="profile-upload-progress-bar" style="width: 0%; height: 100%; background: var(--retro-header-bg); transition: width 0.1s;"></div>
+                </div>
                 <button type="submit" class="btn-bold" style="padding: 5px 20px;">SALVAR ALTERAÇÕES</button>
             </footer>
         </form>
@@ -404,22 +407,64 @@
         if (bgFile) formData.append('background_file', bgFile);
         if (pfFile) formData.append('profile_file', pfFile);
 
-        try {
-            const res = await fetch('/api/users/me', { method: 'PUT', body: formData });
-            const data = await res.json();
-            if (res.ok) {
-                await alert("Perfil atualizado com sucesso!");
+        const btnSave = document.querySelector('#edit-profile-form button[type="submit"]');
+        btnSave.disabled = true;
+        btnSave.textContent = 'SALVANDO...';
+
+        const progressContainer = document.getElementById('profile-upload-progress-container');
+        const progressBar = document.getElementById('profile-upload-progress-bar');
+        
+        const hasFiles = bannerFile || bgFile || pfFile;
+        if (hasFiles) {
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', '/api/users/me', true);
+        
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable && hasFiles) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                progressBar.style.width = percentComplete + '%';
+            }
+        };
+
+        xhr.onload = async () => {
+            if (hasFiles) {
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+            }
+            btnSave.disabled = false;
+            btnSave.textContent = 'SALVAR ALTERAÇÕES';
+            
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const data = JSON.parse(xhr.responseText);
                 window.location.href = '/' + data.username;
             } else {
-                let msg = data.message;
-                if (data.errors && Array.isArray(data.errors)) {
-                    msg = data.errors.map(err => err.message || err.msg).join('\n');
-                }
-                await alert(new Error(msg || "Erro ao atualizar perfil."));
+                let msg = "Erro ao atualizar perfil.";
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    msg = data.message || msg;
+                    if (data.errors && Array.isArray(data.errors)) {
+                        msg = data.errors.map(err => err.message || err.msg).join('\n');
+                    }
+                } catch (e) {}
+                await alert(new Error(msg));
             }
-        } catch (err) {
+        };
+
+        xhr.onerror = async () => {
+            if (hasFiles) {
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+            }
+            btnSave.disabled = false;
+            btnSave.textContent = 'SALVAR ALTERAÇÕES';
             await alert(new Error("Erro de conexão ao salvar perfil."));
-        }
+        };
+
+        xhr.send(formData);
     });
 
     document.getElementById('change-password-form').addEventListener('submit', async function (e) {

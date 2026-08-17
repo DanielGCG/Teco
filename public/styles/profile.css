@@ -49,13 +49,10 @@
 }
 
 /* --- Profile Widgets & Components --- */
-.status-dot.online { background-color: #4caf50 !important; }
-.status-dot.ausente { background-color: #ffc107 !important; }
+
 .retro-badge-item { width: 100%; aspect-ratio: 1; border: 1px solid var(--retro-border-dark); overflow: hidden; background: var(--retro-sidebar-bg); }
 .retro-badge-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.retro-friend-item { display: flex; align-items: center; gap: 5px; text-decoration: none; font-size: 12px; border: 1px solid transparent; padding: 2px; }
-.retro-friend-item:hover { border: 1px dashed var(--retro-border-dark); }
-.retro-friend-item img { width: 24px; height: 24px; border: 1px solid var(--retro-border-dark); }
+
 
 .retro-gallery-item { display: block; text-decoration: none; font-size: 11px; text-align: center; }
 .retro-gallery-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--retro-border-dark); background: var(--retro-sidebar-bg); }

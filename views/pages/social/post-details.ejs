@@ -21,8 +21,11 @@
                     <button type="button" onclick="document.getElementById('comment-media-input').click()" class="btn-sm">ADICIONAR MÍDIA</button>
                     <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="display: none;">
                 </div>
-                <button onclick="enviarComentario()" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
+                <button class="btn-bold" style="padding: 2px 20px;" id="btn-enviar-comentario">POSTAR</button>
             </footer>
+            <div id="comment-upload-progress-container" style="display: none; margin-top: 5px; width: 100%; height: 10px; border: 1px solid var(--retro-border-dark); background: #eee;">
+                <div id="comment-upload-progress-bar" style="width: 0%; height: 100%; background: var(--retro-header-bg); transition: width 0.1s;"></div>
+            </div>
         </fieldset>
     </section>
 </article>
@@ -101,43 +104,18 @@
             } catch (e) { console.error(e); }
         };
 
-        window.enviarComentario = async function() {
-            const textarea = document.getElementById('comment-textarea');
-            const content = textarea.value.trim();
-            if (!content && selectedCommentFiles.length === 0) return;
-
-            const formData = new FormData();
-            formData.append('content', content);
-            formData.append('type', 'comment');
-            formData.append('attachedPostPublicId', postId);
-            selectedCommentFiles.forEach(file => formData.append('media', file));
-
-            try {
-                const res = await fetch('/api/posts', { method: 'POST', body: formData });
-                if (res.ok) {
-                    textarea.value = '';
-                    document.getElementById('comment-media-input').value = '';
-                    document.getElementById('comment-media-preview').innerHTML = '';
-                    selectedCommentFiles = [];
-                    carregarPost(); 
-                }
-            } catch (e) { await alert('Erro ao comentar!'); }
-        }
-
-        document.getElementById('comment-media-input').addEventListener('change', (e) => {
-            const preview = document.getElementById('comment-media-preview');
-            preview.innerHTML = '';
-            selectedCommentFiles = Array.from(e.target.files);
-            selectedCommentFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = document.createElement('img');
-                    img.src = ev.target.result;
-                    img.style = "width: 40px; height: 40px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
-                    preview.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
+        RetroPosts.setupNewPost({
+            textareaId: 'comment-textarea',
+            mediaInputId: 'comment-media-input',
+            previewId: 'comment-media-preview',
+            btnPostarId: 'btn-enviar-comentario',
+            progressContainerId: 'comment-upload-progress-container',
+            progressBarId: 'comment-upload-progress-bar',
+            callbackReload: carregarPost,
+            extraFormData: {
+                type: 'comment',
+                attachedPostPublicId: postId
+            }
         });
 
         carregarPost();

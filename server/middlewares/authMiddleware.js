@@ -1,4 +1,4 @@
-const { User, UserSession, LegalDocument } = require("../models");
+const { User, UserSession, LegalDocument, Role } = require("../models");
 const { Op } = require("sequelize");
 
 const PUBLIC_ROUTES = ['/register', '/login', '/logout', '/validate-session', '/termos', '/privacidade']; // rotas públicas
@@ -76,7 +76,8 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 },
                 include: [{
                     model: User,
-                    attributes: ['id', 'publicid', 'username', 'email', 'emailVerified', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'consentVersion']
+                    attributes: ['id', 'publicid', 'username', 'email', 'emailVerified', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'consentVersion', 'pronouns'],
+                    include: [{ model: Role, as: 'role', attributes: ['name'] }]
                 }]
             });
 
@@ -169,7 +170,9 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 backgroundimage: userData.backgroundimage,
                 backgroundcolor: userData.backgroundcolor,
                 backgroundfill: userData.backgroundfill,
-                consentVersion: userData.consentVersion
+                consentVersion: userData.consentVersion,
+                pronouns: userData.pronouns,
+                role: userData.role
             };
 
             if (res.locals) {

@@ -14,6 +14,12 @@
     --retro-sidebar-bg: #e0e0e0;
 }
 
+/* Cores dos Cargos */
+.role-dono { color: #d32f2f; }
+.role-admin { color: #1976d2; }
+.role-mod { color: #388e3c; }
+.role-default { color: #555; }
+
 body {
     background-color: var(--retro-bg);
     color: var(--retro-text);
@@ -171,6 +177,49 @@ dialog::backdrop {
 .retro-sidebar-cell {
     background-color: var(--retro-sidebar-bg);
 }
+
+.retro-friend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px;
+    text-decoration: none;
+    font-size: 12px;
+    border: 1px solid transparent;
+    color: var(--retro-link);
+}
+
+.retro-friend-item:hover {
+    color: var(--retro-link-hover);
+    text-decoration: underline;
+    border: 1px dashed var(--retro-border-dark);
+}
+
+.retro-friend-item img {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border: 1px solid var(--retro-border-dark);
+}
+
+.retro-friend-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.retro-friend-item .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: auto;
+    flex-shrink: 0;
+    background-color: #808080;
+}
+
+.status-dot.online { background-color: #4caf50 !important; }
+.status-dot.ausente { background-color: #ffc107 !important; }
 
 a {
     color: var(--retro-link);
@@ -349,6 +398,15 @@ marquee {
 
 
 
+/* Sidebar Amigos Grid */
+#sidebar-amigos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
     .retro-layout {
@@ -395,6 +453,10 @@ marquee {
         left: 0 !important;
         right: 0 !important;
         max-width: 100% !important;
+    }
+
+    #sidebar-amigos {
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 

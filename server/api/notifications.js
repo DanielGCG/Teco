@@ -115,6 +115,10 @@ NotificationsRouter.put('/:publicid/read', validate(notificationIdSchema, 'param
 
         await notification.update({ readat: new Date() });
 
+        if (publicVapidKey && privateVapidKey) {
+            await clearPushNotifications(req.user.id);
+        }
+
         res.json({ success: true, message: "Notificação marcada como lida" });
     } catch (err) {
         console.error(err);
@@ -134,6 +138,10 @@ NotificationsRouter.put('/read-all', async (req, res) => {
                 }
             }
         );
+
+        if (publicVapidKey && privateVapidKey) {
+            await clearPushNotifications(req.user.id);
+        }
 
         res.json({ success: true, message: "Todas as notificações foram marcadas como lidas" });
     } catch (err) {
@@ -188,8 +196,8 @@ async function createNotification({ userId, type, title, body, link = null, io =
             }
         }
 
-        // 2. Emite via Web Push sempre (para chegar no celular mesmo com o PC aberto)
-        if (publicVapidKey && privateVapidKey) {
+        // 2. Emite via Web Push apenas se offline (para não enviar push inútil)
+        if (publicVapidKey && privateVapidKey && !isOnline) {
             const user = await User.findByPk(userId, {
                 include: [{ model: PushSubscription, as: 'pushSubscriptions' }]
             });
@@ -225,6 +233,34 @@ async function createNotification({ userId, type, title, body, link = null, io =
     }
 }
 
+// ==================== Função helper para limpar pushes antigos ====================
+async function clearPushNotifications(userId) {
+    try {
+        const user = await User.findByPk(userId, {
+            include: [{ model: PushSubscription, as: 'pushSubscriptions' }]
+        });
+
+        if (user && user.pushSubscriptions && user.pushSubscriptions.length > 0) {
+            const payload = JSON.stringify({ action: 'clear_all' });
+            for (const sub of user.pushSubscriptions) {
+                try {
+                    await webpush.sendNotification({
+                        endpoint: sub.endpoint,
+                        keys: { p256dh: sub.p256dh, auth: sub.auth }
+                    }, payload);
+                } catch (err) {
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        await sub.destroy();
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[clearPushNotifications] Erro:', err);
+    }
+}
+
 // Exporta o router e a função helper
 module.exports = NotificationsRouter;
 module.exports.createNotification = createNotification;
+module.exports.clearPushNotifications = clearPushNotifications;

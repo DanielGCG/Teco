@@ -76,10 +76,23 @@ const FollowAPI = (() => {
         }
     }
 
+    // Renderizar HTML da lista de amigos
+    function renderFriendsHtml(friends) {
+        if (!friends || !friends.length) return '<span style="font-size: 11px;">Nenhum amigo</span>';
+        return friends.map(f => `
+            <a href="/${f.username}" class="retro-friend-item" data-user-id="${f.publicid}">
+                <img src="${f.profileimage}">
+                <span>${f.username}</span>
+                <span class="status-dot"></span>
+            </a>
+        `).join('');
+    }
+
     return {
         seguir,
         deixarDeSeguir,
         verificarStatus,
-        carregarAmigos
+        carregarAmigos,
+        renderFriendsHtml
     };
 })();

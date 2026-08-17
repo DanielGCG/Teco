@@ -1,8 +1,26 @@
+// Força a atualização imediata do Service Worker
+self.addEventListener('install', function(event) {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(clients.claim());
+});
+
 // Listener para receber a notificação via Web Push
 self.addEventListener('push', function(event) {
     if (event.data) {
         const data = event.data.json();
         
+        if (data.action === 'clear_all') {
+            event.waitUntil(
+                self.registration.getNotifications().then(notifications => {
+                    notifications.forEach(n => n.close());
+                })
+            );
+            return;
+        }
+
         const options = {
             body: data.body,
             icon: data.icon || '/images/icon.ico',

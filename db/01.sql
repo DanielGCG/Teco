@@ -364,6 +364,7 @@ CREATE TABLE IF NOT EXISTS movie (
     votecount INT,
     voteboteco FLOAT,
     iswatched BOOLEAN DEFAULT FALSE,
+    watchedat DATETIME DEFAULT NULL,
     createdbyUserId INT UNSIGNED,
     createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (createdbyUserId) REFERENCES user(id) ON DELETE SET NULL

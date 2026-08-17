@@ -65,12 +65,32 @@ window.UserContext = (() => {
         },
         logout: async () => {
             try {
+                if ('serviceWorker' in navigator && 'PushManager' in window) {
+                    try {
+                        const reg = await navigator.serviceWorker.ready;
+                        const sub = await reg.pushManager.getSubscription();
+                        if (sub) {
+                            await fetch('/api/push/unsubscribe', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ endpoint: sub.endpoint })
+                            });
+                            await sub.unsubscribe();
+                        }
+                    } catch (e) {
+                        console.error('[UserContext] Erro ao cancelar assinatura push:', e);
+                    }
+                }
+
                 const res = await fetch('/api/users/logout', { method: 'POST' });
                 if (res.ok) {
                     window.location.href = '/login';
+                } else {
+                    window.location.href = '/';
                 }
             } catch (e) {
                 console.error('[UserContext] Erro ao fazer logout:', e);
+                window.location.href = '/';
             }
         }
     };

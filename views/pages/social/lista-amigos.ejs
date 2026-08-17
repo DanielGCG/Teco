@@ -34,12 +34,20 @@
     </section>
 </article>
 
-<aside id="search-header" class="window"
-    style="display: none; margin-bottom: 10px; background: var(--retro-bg); border: 1px dashed var(--retro-border-dark);">
-    <div class="window-content" style="padding: 5px; font-size: 11px; color: var(--retro-text);">
-        <b>Resultados da busca:</b>
+<article id="search-results-section" style="display: none; margin-bottom: 10px;">
+    <aside id="search-header" class="window" style="margin-bottom: 5px; background: var(--retro-bg); border: 1px dashed var(--retro-border-dark);">
+        <div class="window-content" style="padding: 5px; font-size: 11px; color: var(--retro-text);">
+            <b>Resultados da busca:</b>
+        </div>
+    </aside>
+    <div class="window">
+        <section class="window-content" style="padding: 0; background: var(--retro-bg);">
+            <div id="search-list-container">
+                <!-- Search results will appear here -->
+            </div>
+        </section>
     </div>
-</aside>
+</article>
 
 <article class="window">
     <nav id="tabs-container" class="window-header"
@@ -126,9 +134,9 @@
                     searchBtn.textContent = '...';
                     await searchUsers(query);
                     searchBtn.textContent = 'BUSCAR';
-                    document.getElementById('search-header').style.display = 'block';
+                    document.getElementById('search-results-section').style.display = 'block';
                     clearBtn.style.display = 'block';
-                    renderList();
+                    renderList(dataCache.search, 'search-list-container');
                 } else {
                     clearSearch();
                 }
@@ -145,7 +153,6 @@
     });
 
     function updateUserStatusInUI(publicid, status) {
-        // Esta função agora é legada, o SocketUI cuida disso globalmente
         if (typeof SocketUI !== 'undefined') {
             SocketUI.updateUserStatus(publicid, status);
         }
@@ -173,27 +180,20 @@
     function clearSearch() {
         isSearching = false;
         document.getElementById('user-search-input').value = '';
-        document.getElementById('search-header').style.display = 'none';
+        document.getElementById('search-results-section').style.display = 'none';
         document.getElementById('btn-clear-search').style.display = 'none';
-        renderList();
     }
 
     function changeSection(type) {
-        if (isSearching) {
-            isSearching = false;
-            document.getElementById('search-header').style.display = 'none';
-            document.getElementById('btn-clear-search').style.display = 'none';
-        }
         currentSection = type;
         document.querySelectorAll('.feed-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.type === type);
         });
-        renderList();
+        renderList(dataCache[currentSection], 'social-list-container');
     }
 
-    function renderList() {
-        const container = document.getElementById('social-list-container');
-        const list = isSearching ? dataCache.search : dataCache[currentSection];
+    function renderList(list, containerId) {
+        const container = document.getElementById(containerId);
 
         if (!list || list.length === 0) {
             container.innerHTML = `<div style="text-align: center; padding: 30px; font-size: 11px; color: var(--retro-border-dark);">Nenhum usuário nesta lista.</div>`;
@@ -244,7 +244,7 @@
                     </td>
                     <td align="center">
                         <div style="display: flex; flex-direction: column; gap: 4px; padding: 0 5px;">
-                            <button onclick="handleFollow('${user.publicid}', ${isFollowing})" 
+                            <button onclick="handleFollow('${user.publicid}', this)" 
                                     style="width: 100%; height: 24px; cursor: pointer; font-size: 11px; font-weight: ${isFollowing ? 'normal' : 'bold'}; ${isFollowing ? 'color: var(--retro-author);' : ''}">
                                 ${isFollowing ? 'Deixar Seguir' : 'Seguir'}
                             </button>
@@ -263,18 +263,32 @@
         }
     }
 
-    async function handleFollow(id, isFollowing) {
-        const action = isFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
+    async function handleFollow(id, buttonEl) {
+        const isCurrentlyFollowing = dataCache.following.some(f => f.publicid === id);
+        const action = isCurrentlyFollowing ? FollowAPI.deixarDeSeguir : FollowAPI.seguir;
 
         const res = await action(id, {
             showAlert: false,
-            confirmMessage: isFollowing ? 'Deseja realmente deixar de seguir este usuário?' : null
+            confirmMessage: isCurrentlyFollowing ? 'Deseja realmente deixar de seguir este usuário?' : null
         });
 
         if (res.success) {
-            await loadAllData();
-            if (isSearching) await searchUsers(document.getElementById('user-search-input').value);
-            renderList();
+            // Update local state without reloading everything
+            if (isCurrentlyFollowing) {
+                dataCache.following = dataCache.following.filter(f => f.publicid !== id);
+                dataCache.friends.delete(id); // Optimistic UI
+            } else {
+                dataCache.following.push({ publicid: id });
+            }
+
+            // Manipulate DOM directly
+            const isNowFollowing = !isCurrentlyFollowing;
+            buttonEl.textContent = isNowFollowing ? 'Deixar Seguir' : 'Seguir';
+            buttonEl.style.fontWeight = isNowFollowing ? 'normal' : 'bold';
+            buttonEl.style.color = isNowFollowing ? 'var(--retro-author)' : '';
+            
+            // Reload sidebar/global data silently for stats updating
+            loadAllData();
         }
     }
 
@@ -283,7 +297,9 @@
         try {
             const res = await fetch(`/api/dms/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
-            dataCache.search = data.users || [];
+            
+            const followingIds = new Set(dataCache.following.map(f => f.publicid));
+            dataCache.search = (data.users || []).filter(u => !followingIds.has(u.publicid));
         } catch (err) { console.error('Erro busca:', err); }
     }
 </script>

@@ -141,16 +141,10 @@
     <script>
         async function handleLogout() {
             if (!(await confirm('Deseja realmente sair?'))) return;
-            try {
-                const res = await fetch('/api/users/logout', { method: 'POST' });
-                if (res.ok) {
-                    window.location.href = '/';
-                } else {
-                    window.location.href = '/';
-                }
-            } catch (e) {
-                console.error('Erro no logout:', e);
-                window.location.href = '/';
+            if (window.UserContext) {
+                await window.UserContext.logout();
+            } else {
+                window.location.href = '/login';
             }
         }
     </script>
