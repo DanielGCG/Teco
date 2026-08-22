@@ -1,6 +1,7 @@
 const { ImagemDoDia, User } = require('../models');
 const { Op } = require('sequelize');
 const { createNotification } = require('../api/notifications');
+const systemConfigMiddleware = require('../middlewares/systemConfigMiddleware');
 
 /**
  * Notifica todos os usuários de que há uma nova imagem do dia.
@@ -38,6 +39,7 @@ async function activateImage(proxima, io) {
     proxima.activatedat = new Date();
     await proxima.save();
     
+    systemConfigMiddleware.clearCache(); // Atualiza o cache global
     notifyNewImage(io);
     return proxima;
 }

@@ -17,9 +17,13 @@
             <textarea id="comment-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="Escreva sua resposta..."></textarea>
             <div id="comment-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
             <footer style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                <div style="flex-grow: 1;">
-                    <button type="button" onclick="document.getElementById('comment-media-input').click()" class="btn-sm">ADICIONAR MÍDIA</button>
+                <div style="flex-grow: 1; display: flex; gap: 5px; align-items: center;">
+                    <label for="comment-media-input" style="cursor: pointer; display: inline-block;">
+                        <button type="button" onclick="document.getElementById('comment-media-input').click()" class="btn-sm">MÍDIA</button>
+                    </label>
                     <input type="file" id="comment-media-input" multiple accept="image/*,video/*" style="display: none;">
+                    
+                    <button type="button" class="btn-sm" id="btn-rodinha-toggle-comment" onclick="RetroPosts.openRodinhaModal()" style="border-color: red; color: red;">RODINHA</button>
                 </div>
                 <button class="btn-bold" style="padding: 2px 20px;" id="btn-enviar-comentario">POSTAR</button>
             </footer>
@@ -52,6 +56,13 @@
                 const post = await res.json();
                 
                 document.getElementById('retro-comment-box').style.display = 'block';
+
+                if (post.isrodinha) {
+                    const btnCommentRodinha = document.getElementById('btn-rodinha-toggle-comment');
+                    if (btnCommentRodinha) {
+                        btnCommentRodinha.style.display = 'none';
+                    }
+                }
 
                 renderPostDetails(post);
                 carregarComentarios();
@@ -121,3 +132,26 @@
         carregarPost();
     });
 </script>
+
+<!-- Modal da Rodinha -->
+<article class="window" id="modal-rodinha" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 350px; max-width: calc(100vw - 40px);">
+    <header class="window-header">
+        Configurar Rodinha
+        <button type="button" class="btn-sm" style="float: right;" onclick="RetroPosts.closeRodinhaModal()">X</button>
+    </header>
+    <section class="window-content">
+        <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-weight: bold; font-size: 11px;">
+            <input type="checkbox" id="rodinha-post-toggle" onchange="RetroPosts.toggleRodinhaState()"> Ligar modo Rodinha para este post
+        </label>
+        
+        <p style="font-size: 11px;">Selecione usuários que você segue para a Rodinha:</p>
+        <div id="rodinha-contacts-list" style="max-height: 200px; overflow-y: auto; border: 1px inset var(--retro-border-dark); padding: 5px; background: #fff; margin-bottom: 10px;">
+            Carregando...
+        </div>
+        <div style="text-align: right;">
+            <button type="button" class="btn-bold" onclick="RetroPosts.saveRodinha()">SALVAR</button>
+        </div>
+    </section>
+</article>
+<!-- Overlay do Modal -->
+<div id="modal-rodinha-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;" onclick="RetroPosts.closeRodinhaModal()"></div>

@@ -809,7 +809,7 @@ const GaleriaManager = {
         try {
             const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
             const json = await res.json();
-            const list = json.users || json.usuarios || [];
+            const list = json.users || [];
             if (list.length > 0) {
                 results.innerHTML = list.map(u => `
                     <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" 

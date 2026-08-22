@@ -4,6 +4,7 @@ const { SystemConfig, LegalDocument } = require('../../models');
 const { runGarbageCollector } = require('../../utils/garbageCollector');
 const { upload } = require('../../utils/upload');
 const { uploadToFileServer } = require('../../utils/fileServer');
+const systemConfigMiddleware = require('../../middlewares/systemConfigMiddleware');
 
 // @route   GET /api/admin/config
 // @desc    Obtém todas as configurações do sistema
@@ -98,6 +99,9 @@ router.post('/', async (req, res) => {
             if (description) config.description = description;
             await config.save();
         }
+
+        // Limpa o cache para que a alteração tenha efeito imediato no site todo
+        systemConfigMiddleware.clearCache();
 
         res.json({ message: 'Configuração salva com sucesso', config });
     } catch (err) {

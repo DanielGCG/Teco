@@ -183,11 +183,11 @@ CREATE TABLE IF NOT EXISTS post (
     isrodinha BOOLEAN NOT NULL DEFAULT FALSE,
     attachedPostId INT UNSIGNED DEFAULT NULL,
     content TEXT,
-    type ENUM('post', 'repost', 'reply', 'comment') NOT NULL DEFAULT 'post',
+    type ENUM('post', 'repost', 'reply') NOT NULL DEFAULT 'post',
     likecount INT UNSIGNED NOT NULL DEFAULT 0,
     replycount INT UNSIGNED NOT NULL DEFAULT 0,
     repostcount INT UNSIGNED NOT NULL DEFAULT 0,
-    bookmarkcount INT UNSIGNED NOT NULL DEFAULT 0,
+
     isedited BOOLEAN NOT NULL DEFAULT FALSE,
     createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -239,17 +239,6 @@ CREATE TABLE IF NOT EXISTS postlike (
     FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS postbookmark (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    publicid VARCHAR(36) NOT NULL UNIQUE,
-    userId INT UNSIGNED NOT NULL,
-    postId INT UNSIGNED NOT NULL,
-    createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY (userId, postId),
-    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
-    FOREIGN KEY (postId) REFERENCES post(id) ON DELETE CASCADE
-);
-
 -- trigger para atualizar contadores de like, reply e repostcount na tabela post
 DELIMITER //
 CREATE TRIGGER atualizacontadorespost_like
@@ -269,25 +258,6 @@ BEGIN
 END;
 //
 DELIMITER ;
-
-DELIMITER //
-CREATE TRIGGER atualizacontadorespost_bookmark
-AFTER INSERT ON postbookmark
-FOR EACH ROW
-BEGIN
-    UPDATE post SET bookmarkcount = bookmarkcount + 1 WHERE id = NEW.postId;
-END;
-//
-DELIMITER ;
-DELIMITER //
-CREATE TRIGGER atualizacontadorespost_delete_bookmark
-AFTER DELETE ON postbookmark
-FOR EACH ROW
-BEGIN
-    UPDATE post SET bookmarkcount = bookmarkcount - 1 WHERE id = OLD.postId;
-END;
-//
-DELIMITER ; 
 
 -- ==========================
 -- TABELA DE GALERIA

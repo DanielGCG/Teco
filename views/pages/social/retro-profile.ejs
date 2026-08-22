@@ -96,9 +96,12 @@
                     <textarea id="retro-post-textarea" style="width: 100%; height: 60px; box-sizing: border-box; display: block;" placeholder="No que você está pensando agora?"></textarea>
                     <div id="retro-media-preview" style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;"></div>
                     <footer style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                        <div style="flex-grow: 1;">
-                            <button type="button" onclick="document.getElementById('retro-post-media').click()" class="btn-sm">ADICIONAR MÍDIA</button>
+                        <div style="flex-grow: 1; display: flex; gap: 5px; align-items: center;">
+                            <label for="retro-post-media" style="cursor: pointer; display: inline-block;">
+                                <button type="button" onclick="document.getElementById('retro-post-media').click()" class="btn-sm">MÍDIA</button>
+                            </label>
                             <input type="file" id="retro-post-media" multiple accept="image/*,video/*" style="display: none;">
+                            <button type="button" class="btn-sm" id="btn-rodinha-toggle" onclick="RetroPosts.openRodinhaModal()" style="border-color: red; color: red;">RODINHA</button>
                         </div>
                         <button id="btn-retro-postar" class="btn-bold" style="padding: 2px 20px;">POSTAR</button>
                     </footer>
@@ -120,7 +123,6 @@
 <link rel="stylesheet" href="/styles/profile.css">
 
 <script src="/js/commons/follow-common.js"></script>
-<script src="/js/features/post.js"></script>
 <script>
     const pathParts = window.location.pathname.split('/');
     const username = pathParts[1];

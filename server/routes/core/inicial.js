@@ -1,18 +1,18 @@
 const express = require("express");
 const InicialRouter = express.Router();
 const { renderStaticPage, renderPage } = require("../../utils/render");
-const { Post, PostMedia, User, PostLike, PostBookmark, PostMention, Follow, SystemConfig, LegalDocument } = require("../../models");
+const { LegalDocument } = require("../../models");
 const { authMiddleware } = require("../../middlewares/authMiddleware");
 
 const protect = (minRole = 20) => authMiddleware(minRole);
 
 InicialRouter.get('/', async (req, res) => {
     try {
-        const carouselConfig = await SystemConfig.findOne({ where: { key: 'index_carousel' } });
+        const carouselConfigValue = req.systemConfig ? req.systemConfig.index_carousel : null;
         
         let indexCarousel = [];
-        if (carouselConfig && carouselConfig.value) {
-            try { indexCarousel = JSON.parse(carouselConfig.value); } catch(e){}
+        if (carouselConfigValue) {
+            try { indexCarousel = JSON.parse(carouselConfigValue); } catch(e){}
         }
 
         renderPage(req, res, 'pages/index', {

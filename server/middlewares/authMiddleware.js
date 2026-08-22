@@ -13,7 +13,9 @@ const setUserCookie = (res, user) => {
         backgroundimage: userData.backgroundimage,
         backgroundcolor: userData.backgroundcolor,
         backgroundfill: userData.backgroundfill,
-        roleId: userData.roleId
+        roleId: userData.roleId,
+        bio: userData.bio,
+        pronouns: userData.pronouns
     });
     res.cookie('teco_user', Buffer.from(userInfo).toString('base64'), {
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -76,7 +78,7 @@ const authMiddleware = (minRole = 20, refresh = true) => {
                 },
                 include: [{
                     model: User,
-                    attributes: ['id', 'publicid', 'username', 'email', 'emailVerified', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'consentVersion', 'pronouns'],
+                    attributes: ['id', 'publicid', 'username', 'email', 'emailVerified', 'roleId', 'profileimage', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'consentVersion', 'pronouns', 'bio'],
                     include: [{ model: Role, as: 'role', attributes: ['name'] }]
                 }]
             });

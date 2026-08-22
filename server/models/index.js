@@ -6,7 +6,7 @@ const Cartinha = require('./Social/Cartinha');
 const Stamp = require('./Social/Stamp');
 const Follow = require('./Social/Follow');
 const Notification = require('./Notification');
-const { Post, PostMedia, PostLike, PostBookmark, PostMention, Rodinha } = require('./Social/Post');
+const { Post, PostMedia, PostLike, PostMention, Rodinha } = require('./Social/Post');
 const { Filme } = require('./Watchlist');
 const { ImagemDoDia, ImagemDoDiaBorder } = require('./ImagemDoDia');
 const { Galeria, GaleriaItem, GaleriaContributor } = require('./Galeria');
@@ -56,9 +56,7 @@ PostMedia.belongsTo(Post, { foreignKey: 'postId' });
 Post.hasMany(PostLike, { foreignKey: 'postId', as: 'likes' });
 PostLike.belongsTo(Post, { foreignKey: 'postId' });
 PostLike.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Post.hasMany(PostBookmark, { foreignKey: 'postId', as: 'bookmarks' });
-PostBookmark.belongsTo(Post, { foreignKey: 'postId' });
-PostBookmark.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 Post.hasMany(PostMention, { foreignKey: 'postId', as: 'mentions' });
 PostMention.belongsTo(Post, { foreignKey: 'postId' });
 PostMention.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -157,7 +155,7 @@ BlogApplause.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = {
     sequelize, User, UserSession, ChatTopic, Chat, ChatMessage, DM, DMMessage,
-    Cartinha, Follow, Notification, Post, PostMedia, PostLike, PostBookmark, PostMention,
+    Cartinha, Follow, Notification, Post, PostMedia, PostLike, PostMention,
     Rodinha, Filme, ImagemDoDia, ImagemDoDiaBorder, Galeria, GaleriaItem, GaleriaContributor,
     Badge, BadgeUser, SystemConfig, Pet, Item, PetInventory, Role, PushSubscription, Stamp, Cutucada, Blog, BlogApplause,
     LegalDocument, UserConsentHistory

@@ -32,6 +32,26 @@ async function uploadToFileServer({ buffer, filename, folder, mimetype }) {
     }
 }
 
+async function deleteFromFileServer(fileUrl) {
+    if (!SERVER_URL || !API_KEY) return;
+    try {
+        // Extrai o caminho relativo a partir da URL do File Server
+        const urlObj = new URL(fileUrl);
+        let filepath = urlObj.pathname.replace(/^\/files\//, '');
+        
+        const deleteUrl = `${SERVER_URL}/delete`;
+        await axios.delete(deleteUrl, {
+            headers: { 'x-api-key': API_KEY },
+            data: { filepath }
+        });
+        return true;
+    } catch (err) {
+        console.error(`[fileServer] Erro ao deletar: ${err.message}`);
+        return false;
+    }
+}
+
 module.exports = {
-    uploadToFileServer
+    uploadToFileServer,
+    deleteFromFileServer
 };

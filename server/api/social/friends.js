@@ -15,7 +15,6 @@ const protect = (minRole = 20) => {
 function getUserStatus(userId) {
     if (socketRouter.getUserStatus) {
         const status = socketRouter.getUserStatus(userId);
-        console.log(`[friends.js] Status para userId ${userId}: ${status}`);
         return status;
     }
     console.log(`[friends.js] socketRouter.getUserStatus indisponível para userId ${userId}`);

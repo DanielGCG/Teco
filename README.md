@@ -19,7 +19,7 @@ A aplicação foi estruturada utilizando **Node.js**, **Express**, **Sequelize**
 - **Redefinição de Senha**: Funcionalidades de recuperação e alteração de credenciais.
 
 ### 🤝 Interações
-- **Feed de Publicações**: Criação de postagens com suporte a anexos de mídia, curtidas, menções e bookmarks.
+- **Feed de Publicações**: Criação de postagens com suporte a anexos de mídia, curtidas, menções.
 - **Sistema de Conexões**: Lista de amigos e seguidores.
 - **Conquistas e Selos**: Atribuição de Insígnias (Badges) e Selos (Stamps) visíveis nos perfis.
 - **Cutucadas**: Envio de interação entre usuários, semelhante ao do MSN.

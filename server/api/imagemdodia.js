@@ -128,6 +128,8 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
 
         // Se a imagem foi ativada imediatamente
         if (novaImagem.position > 0) {
+            const systemConfigMiddleware = require('../middlewares/systemConfigMiddleware');
+            systemConfigMiddleware.clearCache();
             notifyNewImage(req.app.get('io'));
         }
 

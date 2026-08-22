@@ -86,7 +86,7 @@
         try {
             const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
             const data = await res.json();
-            const users = data.usuarios || [];
+            const users = data.users || [];
             
             if (users.length === 0) {
                 divSugestoes.innerHTML = '<div style="padding: 10px; font-size: 11px; color: #666;">Nenhum usuário...</div>';

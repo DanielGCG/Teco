@@ -12,7 +12,7 @@ const {
 // Configuração do Web Push
 const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
 const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
-const subject = process.env.VAPID_SUBJECT || 'mailto:suporte@seusite.com';
+const subject = process.env.VAPID_SUBJECT;
 if (publicVapidKey && privateVapidKey) {
     webpush.setVapidDetails(subject, publicVapidKey, privateVapidKey);
 }

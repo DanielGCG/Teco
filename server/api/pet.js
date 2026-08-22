@@ -1,6 +1,6 @@
 const express = require("express");
 const GotchiRouter = express.Router();
-const { Pet, Item, PetInventory, SystemConfig } = require("../models");
+const { Pet, Item, PetInventory } = require("../models");
 const {
   getDeathMessage,
   STAT_CONFIG,
@@ -174,8 +174,9 @@ GotchiRouter.post("/claim", async (req, res) => {
     return sendPet(res, pet, 409, { error: "Resgate ja realizado hoje" });
   }
   
-  const config = await SystemConfig.findOne({ where: { key: 'gotchi_daily_claim' } });
-  const claimItems = config ? JSON.parse(config.value || '[]') : [];
+  // Agora pega direto do middleware unificado de backend (req.systemConfig)
+  const configValue = req.systemConfig ? req.systemConfig.gotchi_daily_claim : null;
+  const claimItems = configValue ? JSON.parse(configValue) : [];
 
   for (const reward of claimItems) {
      const itemRecord = await Item.findOne({ where: { name: reward.name } });

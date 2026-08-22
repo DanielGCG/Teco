@@ -179,7 +179,7 @@
         try {
             const res = await fetch(`/api/users/buscar?limit=20&q=${encodeURIComponent(q)}`);
             const data = await res.json();
-            const users = data.usuarios || [];
+            const users = data.users || [];
             
             divSug.innerHTML = users.map(u => `
                 <div style="padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;" onclick="selecionarUsuario({publicid:'${u.publicid}',username:'${u.username}'})">

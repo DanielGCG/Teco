@@ -54,13 +54,15 @@ const RetroPosts = {
         const likeColor = isLiked ? 'red' : 'var(--retro-link-hover)';
         const likeFontWeight = isLiked ? 'bold' : 'normal';
         const deleteBtn = (isAuthor || isMod) ? `<a href="javascript:void(0)" onclick="handleRetroDelete('${post.publicid}')" style="color: red;">[DELETAR]</a>` : '';
+        const rodinhaBadge = post.isrodinha ? `<span style="color: #2E7D32; padding: 2px 5px; font-size: 12px; margin-left: 5px; font-weight: bold;">[RODINHA]</span>` : '';
+        const repostBtn = post.isrodinha ? '' : `<a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: #555;">[REPOST ${post.repostcount || 0}]</a>`;
 
         return `
-            <div class="feed-post" id="post-${post.publicid}" style="border-bottom: 1px solid var(--retro-border-light); padding-bottom: 10px; margin-bottom: 15px;">
+            <div class="feed-post" id="post-${post.publicid}" style="border-bottom: 1px solid var(--retro-border-light); padding-bottom: 10px; margin-bottom: 15px; ${post.isrodinha ? 'border: 2px dashed #2E7D32; padding-left: 10px;' : ''}">
                 <div style="margin-bottom: 5px; display: flex; align-items: start; gap: 8px;">
                     <img src="${post.author.profileimage}" style="width: 32px; height: 32px; border: 1px solid var(--retro-border-dark); object-fit: cover; cursor: pointer;" onclick="window.location.href='/${post.author.username}'">
                     <div style="flex-grow: 1;">
-                        <strong class="post-author" style="cursor: pointer;" onclick="window.location.href='/${post.author.username}'">${post.author.username}</strong>
+                        <strong class="post-author" style="cursor: pointer;" onclick="window.location.href='/${post.author.username}'">${post.author.username}</strong>${rodinhaBadge}
                         <div style="font-size: 10px; color: var(--retro-border-dark);">${date}</div>
                     </div>
                     <div style="display: flex; gap: 5px; align-items: center; align-self: flex-start;">
@@ -74,9 +76,9 @@ const RetroPosts = {
                     <a href="/${post.author.username}/status/${post.publicid}" style="font-weight: bold;">[ABRIR]</a>
                     <a href="javascript:void(0)" onclick="handleRetroLike('${post.publicid}')" style="color: ${likeColor}; font-weight: ${likeFontWeight};" id="retro-like-btn-${post.publicid}">[LIKE ${post.likecount || 0}]</a>
                     <a href="javascript:void(0)" onclick="handleRetroReply('${post.publicid}', '${post.author.username}')" style="color: var(--retro-header-bg);">[REPLY ${post.replycount || 0}]</a>
-                    <a href="javascript:void(0)" onclick="handleRetroRepost('${post.publicid}')" style="color: #555;">[REPOST ${post.repostcount || 0}]</a>
+                    ${repostBtn}
                     <a href="javascript:void(0)" onclick="handleRetroCopyLink('${post.author.username}', '${post.publicid}')" style="color: var(--retro-link);">[LINK]</a>
-                    <span style="margin-left: auto; color: #888; display: none;"></b>Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</span>
+                    <span style="margin-left: auto; color: #888; display: none;">Curtidas: <b>${post.likecount || 0}</b> | Comentários: <b>${post.replycount || 0}</b> | Reposts: <b>${post.repostcount || 0}</b></span>
                 </div>
             </div>
         `;
@@ -226,22 +228,22 @@ const RetroPosts = {
         const preview = document.getElementById(previewId);
         const btnPostar = document.getElementById(btnPostarId);
         
-        let selectedFiles = [];
+        let selectedFiles = []; // Agora armazena objetos { file, url, type, status }
 
         const renderPreview = () => {
             preview.innerHTML = '';
-            selectedFiles.forEach((file, index) => {
+            selectedFiles.forEach((item, index) => {
                 const container = document.createElement('div');
                 container.style.position = 'relative';
                 container.style.display = 'inline-block';
                 container.style.marginRight = '5px';
                 
-                const mediaUrl = URL.createObjectURL(file);
+                const mediaUrl = URL.createObjectURL(item.file);
                 
-                if (file.type.startsWith('video/')) {
+                if (item.file.type.startsWith('video/')) {
                     const video = document.createElement('video');
                     video.src = mediaUrl;
-                    video.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    video.style = "width: auto; max-height: 100px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
                     video.muted = true;
                     video.autoplay = true;
                     video.loop = true;
@@ -249,17 +251,32 @@ const RetroPosts = {
                 } else {
                     const img = document.createElement('img');
                     img.src = mediaUrl;
-                    img.style = "width: 50px; height: 50px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
+                    img.style = "width: auto; max-height: 100px; border: 1px solid var(--retro-border-dark); object-fit: cover;";
                     container.appendChild(img);
                 }
                 
+                if (item.status === 'uploading') {
+                    const overlay = document.createElement('div');
+                    overlay.innerHTML = '<span style="color:white; font-size:10px;">Enviando...</span>';
+                    overlay.style = "position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center;";
+                    container.appendChild(overlay);
+                }
+
                 const removeBtn = document.createElement('div');
                 removeBtn.innerHTML = '&times;';
                 removeBtn.style = "position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; font-weight: bold; z-index: 10;";
                 removeBtn.onclick = (e) => {
                     e.stopPropagation();
-                    selectedFiles.splice(index, 1);
+                    const removedItem = selectedFiles.splice(index, 1)[0];
                     renderPreview();
+                    
+                    if (removedItem && removedItem.status === 'done' && removedItem.url) {
+                        fetch('/api/posts/media/upload', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: removedItem.url })
+                        }).catch(err => console.error('Erro ao deletar mídia:', err));
+                    }
                 };
                 
                 container.appendChild(removeBtn);
@@ -270,13 +287,84 @@ const RetroPosts = {
         if (mediaInput) {
             mediaInput.addEventListener('change', (e) => {
                 const newFiles = Array.from(e.target.files);
-                selectedFiles = selectedFiles.concat(newFiles);
+                
+                const newItems = newFiles.map(file => ({
+                    file,
+                    url: null,
+                    type: null,
+                    status: 'uploading'
+                }));
+
+                selectedFiles = selectedFiles.concat(newItems);
                 if (selectedFiles.length > 4) {
                     alert('Máximo de 4 arquivos permitidos.');
                     selectedFiles = selectedFiles.slice(0, 4);
                 }
                 renderPreview();
                 e.target.value = '';
+
+                // Upload em background usando a barra global
+                const uploadingItems = selectedFiles.filter(item => item.status === 'uploading');
+                if (uploadingItems.length > 0) {
+                    const formData = new FormData();
+                    uploadingItems.forEach(item => formData.append('media', item.file));
+
+                    const progressContainer = document.getElementById(progressContainerId);
+                    const progressBar = document.getElementById(progressBarId);
+
+                    if (progressContainer && progressBar) {
+                        progressContainer.style.display = 'block';
+                        progressBar.style.width = '0%';
+                    }
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/posts/media/upload', true);
+
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable && progressBar) {
+                            const percentComplete = (event.loaded / event.total) * 100;
+                            progressBar.style.width = percentComplete + '%';
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (progressContainer && progressBar) {
+                            progressContainer.style.display = 'none';
+                            progressBar.style.width = '0%';
+                        }
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const data = JSON.parse(xhr.responseText);
+                                const returnedUrls = data.mediaUrls || [];
+                                uploadingItems.forEach((item, idx) => {
+                                    if (returnedUrls[idx]) {
+                                        item.url = returnedUrls[idx].url;
+                                        item.type = returnedUrls[idx].type;
+                                        item.status = 'done';
+                                    } else {
+                                        item.status = 'error';
+                                    }
+                                });
+                            } catch (err) {
+                                uploadingItems.forEach(item => item.status = 'error');
+                            }
+                        } else {
+                            uploadingItems.forEach(item => item.status = 'error');
+                        }
+                        renderPreview();
+                    };
+
+                    xhr.onerror = () => {
+                        if (progressContainer && progressBar) {
+                            progressContainer.style.display = 'none';
+                            progressBar.style.width = '0%';
+                        }
+                        uploadingItems.forEach(item => item.status = 'error');
+                        renderPreview();
+                    };
+
+                    xhr.send(formData);
+                }
             });
         }
 
@@ -285,76 +373,203 @@ const RetroPosts = {
                 const content = textarea.value.trim();
                 if (!content && selectedFiles.length === 0) return;
 
+                const uploadingCount = selectedFiles.filter(item => item.status === 'uploading').length;
+                if (uploadingCount > 0) {
+                    alert('Aguarde o carregamento das mídias antes de postar.');
+                    return;
+                }
+
                 btnPostar.disabled = true;
                 btnPostar.textContent = 'ENVIANDO...';
 
-                const formData = new FormData();
-                formData.append('content', content);
-                
-                if (extraFormData) {
-                    for (const key in extraFormData) {
-                        formData.append(key, extraFormData[key]);
-                    }
-                } else {
-                    formData.append('type', 'post');
-                }
-                
-                selectedFiles.forEach(file => formData.append('media', file));
+                const type = extraFormData && extraFormData.type ? extraFormData.type : 'post';
+                let attachedPostPublicId = extraFormData && extraFormData.attachedPostPublicId ? extraFormData.attachedPostPublicId : null;
+
+                const mediaUrls = selectedFiles.filter(item => item.status === 'done').map(item => ({
+                    url: item.url,
+                    type: item.type
+                }));
+
+                const isrodinha = RetroPosts.isRodinhaOn || false;
+
+                const payload = {
+                    content,
+                    type,
+                    attachedPostPublicId,
+                    mediaUrls,
+                    isrodinha
+                };
 
                 const progressContainer = document.getElementById(progressContainerId);
                 const progressBar = document.getElementById(progressBarId);
                 
-                if (selectedFiles.length > 0 && progressContainer && progressBar) {
+                if (progressContainer && progressBar) {
                     progressContainer.style.display = 'block';
                     progressBar.style.width = '0%';
+                    // Pequena animação fictícia para posts apenas com texto ou instantâneos
+                    setTimeout(() => { progressBar.style.width = '100%'; }, 50);
                 }
 
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/posts', true);
-                
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable && progressBar) {
-                        const percentComplete = (event.loaded / event.total) * 100;
-                        progressBar.style.width = percentComplete + '%';
-                    }
-                };
-
-                xhr.onload = async () => {
+                fetch('/api/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(async res => {
                     if (progressContainer && progressBar) {
                         progressContainer.style.display = 'none';
                         progressBar.style.width = '0%';
                     }
-                    
-                    if (xhr.status >= 200 && xhr.status < 300) {
+
+                    if (res.ok) {
                         textarea.value = '';
                         if (mediaInput) mediaInput.value = '';
                         selectedFiles = [];
+                        
+                        // Reseta a rodinha
+                        if (RetroPosts.isRodinhaOn) {
+                            RetroPosts.toggleRodinhaState();
+                        }
+                        
                         renderPreview();
                         if (callbackReload) await callbackReload();
                     } else {
-                        try {
-                            const err = JSON.parse(xhr.responseText);
-                            alert(err.error || 'Erro ao postar!');
-                        } catch (e) {
-                            alert('Erro ao postar!');
-                        }
+                        const err = await res.json();
+                        alert(err.error || 'Erro ao postar!');
                     }
-                    btnPostar.disabled = false;
-                    btnPostar.textContent = 'POSTAR';
-                };
-
-                xhr.onerror = () => {
+                }).catch(e => {
                     if (progressContainer && progressBar) {
                         progressContainer.style.display = 'none';
                         progressBar.style.width = '0%';
                     }
-                    alert('Erro de conexão!');
+                    alert('Erro ao postar!');
+                }).finally(() => {
                     btnPostar.disabled = false;
                     btnPostar.textContent = 'POSTAR';
-                };
-
-                xhr.send(formData);
+                });
             });
+        }
+    },
+
+    // ================================
+    // LÓGICA DA RODINHA (CLOSE FRIENDS)
+    // ================================
+
+    isRodinhaOn: false,
+
+    toggleRodinhaState: function() {
+        const checkbox = document.getElementById('rodinha-post-toggle');
+        if (checkbox) {
+            this.isRodinhaOn = checkbox.checked;
+        } else {
+            this.isRodinhaOn = !this.isRodinhaOn;
+        }
+        this.updateRodinhaButton();
+    },
+
+    updateRodinhaButton: function() {
+        const btnFeed = document.getElementById('btn-rodinha-toggle');
+        if (btnFeed) {
+            btnFeed.style.color = this.isRodinhaOn ? 'green' : 'red';
+            btnFeed.style.borderColor = this.isRodinhaOn ? 'green' : 'red';
+            btnFeed.style.fontWeight = this.isRodinhaOn ? 'bold' : 'normal';
+        }
+        
+        const btnComment = document.getElementById('btn-rodinha-toggle-comment');
+        if (btnComment) {
+            btnComment.style.color = this.isRodinhaOn ? 'green' : 'red';
+            btnComment.style.borderColor = this.isRodinhaOn ? 'green' : 'red';
+            btnComment.style.fontWeight = this.isRodinhaOn ? 'bold' : 'normal';
+        }
+        
+        const checkbox = document.getElementById('rodinha-post-toggle');
+        if (checkbox && checkbox.checked !== this.isRodinhaOn) {
+            checkbox.checked = this.isRodinhaOn;
+        }
+    },
+
+    openRodinhaModal: async function() {
+        const modal = document.getElementById('modal-rodinha');
+        const overlay = document.getElementById('modal-rodinha-overlay');
+        if (modal && overlay) {
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+            this.updateRodinhaButton(); // garante q o checkbox no modal reflita o estado
+            await this.loadRodinhaContacts();
+        }
+    },
+
+    closeRodinhaModal: function() {
+        const modal = document.getElementById('modal-rodinha');
+        const overlay = document.getElementById('modal-rodinha-overlay');
+        if (modal && overlay) {
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+    },
+
+    loadRodinhaContacts: async function() {
+        const list = document.getElementById('rodinha-contacts-list');
+        if (!list) return;
+
+        list.innerHTML = '<div style="font-size: 11px; color: #888; text-align: center;">Carregando contatos...</div>';
+        try {
+            const res = await fetch('/api/rodinha/contacts');
+            if (res.ok) {
+                const data = await res.json();
+                this.renderRodinhaContacts(data.contacts);
+            } else {
+                list.innerHTML = '<div style="font-size: 11px; color: red; text-align: center;">Erro ao carregar contatos</div>';
+            }
+        } catch (e) {
+            console.error(e);
+            list.innerHTML = '<div style="font-size: 11px; color: red; text-align: center;">Erro de conexão</div>';
+        }
+    },
+
+    renderRodinhaContacts: function(contacts) {
+        const list = document.getElementById('rodinha-contacts-list');
+        list.innerHTML = '';
+        
+        if (contacts.length === 0) {
+            list.innerHTML = '<div style="font-size: 11px; color: #888; text-align: center;">Você ainda não segue ninguém.</div>';
+            return;
+        }
+
+        contacts.forEach(contact => {
+            const div = document.createElement('div');
+            div.style = 'display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--retro-border-light);';
+            
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <img src="${contact.profileimage}" style="width: 24px; height: 24px; border: 1px solid #000; object-fit: cover;">
+                    <span style="font-size: 11px;">${contact.username}</span>
+                </div>
+                <input type="checkbox" class="rodinha-checkbox" value="${contact.id}" ${contact.isRodinha ? 'checked' : ''}>
+            `;
+            list.appendChild(div);
+        });
+    },
+
+    saveRodinha: async function() {
+        const checkboxes = document.querySelectorAll('.rodinha-checkbox:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+        try {
+            const res = await fetch('/api/rodinha', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ selectedIds })
+            });
+
+            if (res.ok) {
+                alert('Rodinha salva com sucesso!');
+                this.closeRodinhaModal();
+            } else {
+                alert('Erro ao salvar rodinha.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao salvar rodinha.');
         }
     }
 };

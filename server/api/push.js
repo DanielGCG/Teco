@@ -9,12 +9,12 @@ const subject = process.env.VAPID_SUBJECT;
 
 webpush.setVapidDetails(subject, publicVapidKey, privateVapidKey);
 
-// Envia a chave publica para o client-side (front-end)
+// Envia a chave publica para o client
 router.get('/vapidPublicKey', (req, res) => {
     res.json({ publicKey: publicVapidKey });
 });
 
-// Registra/salva a inscrição do usuário no banco
+// Salva a inscrição do usuário no banco
 router.post('/subscribe', async (req, res) => {
     const subscription = req.body;
     const userId = req.user.id;

@@ -50,11 +50,7 @@ const Post = sequelize.define('Post', {
         allowNull: false,
         defaultValue: 0
     },
-    bookmarkcount: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: false,
-        defaultValue: 0
-    },
+
     isedited: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -189,42 +185,6 @@ PostLike.prototype.toJSON = function () {
     return values;
 };
 
-const PostBookmark = sequelize.define('PostBookmark', {
-    id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    publicid: {
-        type: DataTypes.STRING(36),
-        allowNull: false,
-        unique: true,
-        defaultValue: DataTypes.UUIDV4
-    },
-    userId: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: false
-    },
-    postId: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        allowNull: false
-    },
-    createdat: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
-    }
-}, {
-    tableName: 'postbookmark',
-    timestamps: false
-});
-
-PostBookmark.prototype.toJSON = function () {
-    const values = { ...this.get() };
-    delete values.id;
-    delete values.userId;
-    delete values.postId;
-    return values;
-};
 
 const Rodinha = sequelize.define('Rodinha', {
     userId: {
@@ -253,7 +213,6 @@ module.exports = {
     Post,
     PostMedia,
     PostLike,
-    PostBookmark,
     PostMention,
     Rodinha
 };

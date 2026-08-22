@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Item, SystemConfig } = require('../../models');
+const systemConfigMiddleware = require('../../middlewares/systemConfigMiddleware');
 
 // Lista todos os itens
 router.get('/items', async (req, res) => {
@@ -52,6 +53,10 @@ router.post('/claim-config', async (req, res) => {
             config.value = configJson;
             await config.save();
         }
+
+        // Limpa o cache
+        systemConfigMiddleware.clearCache();
+
         res.json({ success: true });
     } catch (err) {
         res.status(400).json({ error: "JSON inválido ou erro ao salvar" });
@@ -60,8 +65,8 @@ router.post('/claim-config', async (req, res) => {
 
 router.get('/claim-config', async (req, res) => {
     try {
-        const config = await SystemConfig.findOne({ where: { key: 'gotchi_daily_claim' } });
-        res.json({ configJson: config ? config.value : '[]' });
+        const configValue = req.systemConfig ? req.systemConfig.gotchi_daily_claim : null;
+        res.json({ configJson: configValue || '[]' });
     } catch (err) {
         res.status(500).json({ error: "Erro ao buscar config" });
     }

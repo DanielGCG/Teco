@@ -1,17 +1,17 @@
 const express = require("express");
 const PostsRouter = express.Router();
-const { Post, PostMedia, PostLike, PostBookmark, PostMention, User, Follow, Notification } = require("../../models");
+const { Post, PostMedia, PostLike, PostMention, User, Follow, Notification, Rodinha } = require("../../models");
 const { createNotification } = require("../notifications");
 const { Op } = require("sequelize");
 const { upload } = require('../../utils/upload');
-const { uploadToFileServer } = require('../../utils/fileServer');
+const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
 const { sanitizeFilename } = require('../../utils/sanitize');
 
 const POST_INCLUDES = [
     { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
     { model: PostMedia, as: 'media' },
     { model: PostLike, as: 'likes', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
-    { model: PostBookmark, as: 'bookmarks', include: [{ model: User, as: 'user', attributes: ['publicid'] }] },
+
     { model: PostMention, as: 'mentions', include: [{ model: User, as: 'user', attributes: ['username', 'publicid'] }] },
     { 
         model: Post, 
@@ -31,15 +31,57 @@ const POST_INCLUDES = [
     }
 ];
 
-// POST /posts - Criar um post (ou reply/repost)
-PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
+// POST /posts/media/upload - Pré-upload de mídia
+PostsRouter.post('/media/upload', upload.array('media', 4), async (req, res) => {
     try {
-        const { content, type } = req.body;
-        // Frontend deve enviar como attachedPostPublicId
-        const attachedPostPublicId = req.body.attachedPostPublicId || req.body.attachedPostId;
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'Nenhuma mídia enviada.' });
+        }
+
+        const mediaObjects = await Promise.all(req.files.map(async file => {
+            const mediaUrl = await uploadToFileServer({
+                buffer: file.buffer,
+                filename: sanitizeFilename(file.originalname),
+                mimetype: file.mimetype,
+                folder: 'posts'
+            });
+            const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image/gif';
+            return { url: mediaUrl, type: mediaType };
+        }));
+
+        res.status(200).json({ mediaUrls: mediaObjects });
+    } catch (err) {
+        console.error('Erro no pre-upload:', err);
+        res.status(500).json({ error: 'Erro ao fazer upload da mídia.' });
+    }
+});
+
+// DELETE /posts/media/upload - Excluir pré-upload cancelado
+PostsRouter.delete('/media/upload', express.json(), async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ error: 'URL não fornecida.' });
+        
+        const success = await deleteFromFileServer(url);
+        if (success) {
+            res.json({ message: 'Arquivo deletado com sucesso.' });
+        } else {
+            res.status(500).json({ error: 'Erro ao deletar arquivo do servidor.' });
+        }
+    } catch (err) {
+        console.error('Erro ao deletar pre-upload:', err);
+        res.status(500).json({ error: 'Erro ao deletar arquivo.' });
+    }
+});
+
+// POST /posts - Criar um post (ou reply/repost)
+PostsRouter.post('/', express.json(), async (req, res) => {
+    try {
+        const { content, type, mediaUrls = [] } = req.body;
+        const attachedPostPublicId = req.body.attachedPostPublicId;
         const userId = req.user.id;
 
-        if (!content && (!req.files || req.files.length === 0) && type !== 'repost') {
+        if (!content && (!mediaUrls || mediaUrls.length === 0) && type !== 'repost') {
             return res.status(400).json({ error: 'O post deve ter texto ou mídia.' });
         }
 
@@ -48,19 +90,30 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
         }
 
         let attachedPostId = null;
+        let isrodinha = Boolean(req.body.isrodinha);
+
         if (attachedPostPublicId) {
             const parentPost = await Post.findOne({ where: { publicid: attachedPostPublicId } });
             if (!parentPost) {
                 return res.status(404).json({ error: 'Post referenciado não encontrado.' });
             }
             attachedPostId = parentPost.id;
+            
+            // Herança obrigatória
+            if (parentPost.isrodinha) {
+                if (type === 'repost') {
+                    return res.status(403).json({ error: 'Você não pode repostar um post de rodinha.' });
+                }
+                isrodinha = true;
+            }
         }
 
         const post = await Post.create({
             authorUserId: userId,
             content: content,
             attachedPostId: attachedPostId,
-            type: type
+            type: type,
+            isrodinha: isrodinha
         });
 
         // Incrementar contador de posts do usuário
@@ -75,56 +128,51 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
             }
         }
 
-        // Processar mídia
-        if (req.files && req.files.length > 0) {
-            await Promise.all(req.files.map(async file => {
-                const mediaUrl = await uploadToFileServer({
-                    buffer: file.buffer,
-                    filename: sanitizeFilename(file.originalname),
-                    mimetype: file.mimetype,
-                    folder: 'posts'
-                });
-                const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image/gif';
-                await PostMedia.create({
-                    postId: post.id,
-                    url: mediaUrl,
-                    type: mediaType
-                });
+        // Processar mídia (Pre-upload via JSON)
+        if (mediaUrls && mediaUrls.length > 0) {
+            const mediaObjects = mediaUrls.map(media => ({
+                postId: post.id,
+                url: media.url,
+                type: media.type
             }));
+            await PostMedia.bulkCreate(mediaObjects);
         }
 
         // Processar menções
         if (content) {
             const usernames = content.match(/@(\w+)/g);
             if (usernames) {
-                const uniqueUsernames = [...new Set(usernames.map(u => u.substring(1)))];
+                const uniqueUsernames = [...new Set(usernames.map(u => u.toLowerCase()))];
                 const mentionedUsers = await User.findAll({
                     where: { username: uniqueUsernames }
                 });
 
-                await Promise.all(mentionedUsers.map(async mentionedUser => {
-                    await PostMention.create({
+                if (mentionedUsers.length > 0) {
+                    const mentionObjects = mentionedUsers.map(u => ({
                         postId: post.id,
-                        userId: mentionedUser.id
-                    });
+                        userId: u.id
+                    }));
+                    await PostMention.bulkCreate(mentionObjects);
 
-                    // Notificar usuário mencionado
-                    if (mentionedUser.id !== userId) {
-                        await createNotification({
-                            userId: mentionedUser.id,
-                            type: 'info', // 'MENTION' não está no ENUM do SQL, usando 'info'
-                            title: 'Menção em Post',
-                            body: `${req.user.username} mencionou você em um post.`,
-                            link: `/${req.user.username}/status/${post.publicid}`,
-                            io: req.app.get('io'),
-                            socketType: 'mention'
-                        });
-                    }
-                }));
+                    // Enviar notificações
+                    await Promise.all(mentionedUsers.map(async mentionedUser => {
+                        if (mentionedUser.id !== userId) {
+                            await createNotification({
+                                userId: mentionedUser.id,
+                                type: 'info',
+                                title: 'Menção em Post',
+                                body: `${req.user.username} mencionou você em um post.`,
+                                link: `/${req.user.username}/status/${post.publicid}`,
+                                io: req.app.get('io'),
+                                socketType: 'mention'
+                            });
+                        }
+                    }));
+                }
             }
         }
 
-        // Buscar post completo para emitir via socket e retornar
+        // Buscar post completo para emitir via socket
         const fullPost = await Post.findByPk(post.id, {
             include: POST_INCLUDES
         });
@@ -135,8 +183,6 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
                 include: [{ model: User, as: 'author', attributes: ['username'] }]
             });
             if (parentPost) {
-                // Já incrementamos no banco lá no início, então apenas emitimos o valor atual
-                
                 // Emitir atualização do pai via socket
                 const io = req.app.get('io');
                 if (io) {
@@ -193,7 +239,7 @@ PostsRouter.post('/', upload.array('media', 4), async (req, res) => {
     }
 });
 
-// GET /posts/feed - Feed global (seguidos + outros)
+// GET /posts/feed - Feed global
 PostsRouter.get('/feed', async (req, res) => {
     try {
         const userId = req.user.id;
@@ -201,7 +247,7 @@ PostsRouter.get('/feed', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         const type = req.query.type || 'for-you';
 
-        // Buscar IDs de quem o usuário segue
+        // Buscar quem o usuário já segue
         const following = await Follow.findAll({
             where: { followerUserId: userId },
             attributes: ['followedUserId']
@@ -211,22 +257,33 @@ PostsRouter.get('/feed', async (req, res) => {
         // Incluir o próprio usuário no feed
         followingIds.push(userId);
 
-        // Filtrar o feed: apenas posts normais, reposts e qrt (quote-posts).
-        // Comentários ('comment') NUNCA aparecem no feed, a menos que sejam repostados.
-        // Se o usuário B repostar o comentário do usuário A, o tipo do post de B será 'repost', por isso aparece.
-        let filterTypes = { [Op.in]: ['post', 'repost', 'reply'] };
+        // Buscar autores que colocaram este usuário em suas rodinhas
+        const inRodinhas = await Rodinha.findAll({
+            where: { targetUserId: userId },
+            attributes: ['userId']
+        });
+        const inRodinhasIds = inRodinhas.map(r => r.userId);
+        inRodinhasIds.push(userId); // Sempre pode ver sua própria rodinha
 
-        let where = {
-            type: filterTypes
+        const filterTypes = { [Op.in]: ['post', 'repost', 'reply'] };
+
+        const rodinhaCondition = {
+            [Op.or]: [
+                { isrodinha: false },
+                { isrodinha: true, authorUserId: { [Op.in]: inRodinhasIds } }
+            ]
         };
 
-        if (type === 'following') {
-            where.authorUserId = { [Op.in]: followingIds };
-        } else {
-            // for-you: posts de quem segue OU posts globais (respeitando o filtro de tipo)
-            where = {
+        const where = type === 'following' 
+            ? {
+                type: filterTypes,
+                authorUserId: { [Op.in]: followingIds },
+                ...rodinhaCondition
+            } 
+            : {
                 [Op.and]: [
                     { type: filterTypes },
+                    rodinhaCondition,
                     {
                         [Op.or]: [
                             { authorUserId: { [Op.in]: followingIds } },
@@ -235,7 +292,6 @@ PostsRouter.get('/feed', async (req, res) => {
                     }
                 ]
             };
-        }
 
         const posts = await Post.findAll({
             where,
@@ -262,13 +318,28 @@ PostsRouter.get('/user/:username', async (req, res) => {
         const user = await User.findOne({ where: { username: username } });
         if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
 
+        // Verificar se tem acesso a rodinha do usuário
+        let canViewRodinha = false;
+        if (req.user.id === user.id) {
+            canViewRodinha = true;
+        } else {
+            const isRodinhaMember = await Rodinha.findOne({
+                where: { userId: user.id, targetUserId: req.user.id }
+            });
+            if (isRodinhaMember) canViewRodinha = true;
+        }
+
+        const whereCondition = { 
+            authorUserId: user.id, 
+            type: { [Op.in]: ['post', 'repost', 'reply'] }
+        };
+
+        if (!canViewRodinha) {
+            whereCondition.isrodinha = false;
+        }
+
         const posts = await Post.findAll({
-            where: { 
-                authorUserId: user.id, 
-                // No perfil também só mostramos posts principais e reposts.
-                // Comentários ficam escondidos a menos que sejam repostados por ele.
-                type: { [Op.in]: ['post', 'repost', 'reply'] }
-            },
+            where: whereCondition,
             include: POST_INCLUDES,
             order: [['createdat', 'DESC']],
             limit: limit,
@@ -292,7 +363,6 @@ PostsRouter.get('/:publicid/replies', async (req, res) => {
         const replies = await Post.findAll({
             where: { 
                 attachedPostId: parentPost.id, 
-                // Agora o tipo pode ser 'comment' ou 'reply' (repost com comentário no contexto de thread)
                 type: { [Op.in]: ['comment', 'reply'] }
             },
             include: POST_INCLUDES,
@@ -389,7 +459,7 @@ PostsRouter.post('/:publicid/like', async (req, res) => {
     }
 });
 
-// GET /posts/:publicid - Buscar um post específico (com ancestralidade)
+// GET /posts/:publicid - Buscar um post específico (e seus parentes)
 PostsRouter.get('/:publicid', async (req, res) => {
     try {
         const { publicid } = req.params;
@@ -422,69 +492,6 @@ PostsRouter.get('/:publicid', async (req, res) => {
     }
 });
 
-// GET /posts/user/:username/bookmarks - Listar favoritos de um usuário
-PostsRouter.get('/user/:username/bookmarks', async (req, res) => {
-    try {
-        let username = req.params.username;
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = parseInt(req.query.offset) || 0;
-
-        const user = await User.findOne({ where: { username: username } });
-        if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
-
-        // Apenas o próprio usuário pode ver seus favoritos
-        if (req.user.id !== user.id) {
-            return res.status(403).json({ error: 'Você não tem permissão para ver os favoritos deste usuário.' });
-        }
-
-        const bookmarks = await PostBookmark.findAll({
-            where: { userId: user.id },
-            include: [{
-                model: Post,
-                required: true,
-                include: POST_INCLUDES
-            }],
-            order: [['createdat', 'DESC']],
-            limit: limit,
-            offset: offset
-        });
-
-        const posts = bookmarks.map(b => b.Post);
-        res.json(posts);
-    } catch (error) {
-        console.error('[Posts] Erro ao buscar favoritos:', error);
-        res.status(500).json({ error: 'Erro interno ao buscar favoritos.' });
-    }
-});
-
-// POST /posts/:publicid/bookmark - Favoritar/Desfavoritar
-PostsRouter.post('/:publicid/bookmark', async (req, res) => {
-    try {
-        const { publicid } = req.params;
-        const userId = req.user.id;
-
-        const post = await Post.findOne({ where: { publicid: publicid } });
-        if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
-        const postId = post.id;
-
-        const existingBookmark = await PostBookmark.findOne({
-            where: { postId: postId, userId: userId }
-        });
-
-        if (existingBookmark) {
-            await existingBookmark.destroy();
-            await post.reload();
-            return res.json({ bookmarked: false, bookmarkcount: post.bookmarkcount, publicid: post.publicid });
-        } else {
-            await PostBookmark.create({ postId: postId, userId: userId });
-            await post.reload();
-            return res.json({ bookmarked: true, bookmarkcount: post.bookmarkcount, publicid: post.publicid });
-        }
-    } catch (error) {
-        console.error('[Posts] Erro ao favoritar:', error);
-        res.status(500).json({ error: 'Erro interno ao processar favorito.' });
-    }
-});
 // DELETE /posts/:publicid - Deletar um post
 PostsRouter.delete('/:publicid', async (req, res) => {
     try {
@@ -492,14 +499,12 @@ PostsRouter.delete('/:publicid', async (req, res) => {
         const post = await Post.findOne({ where: { publicid: publicid } });
         if (!post) return res.status(404).json({ error: 'Post não encontrado.' });
 
-        const isOwner = req.user.roleId === 1;
-        const isAdmin = req.user.roleId <= 5;
         const isMod = req.user.roleId <= 10;
         const isAuthor = post.authorUserId === req.user.id;
 
         // Regra de permissão: 
         // 1. Autor pode deletar o próprio post
-        // 2. Moderador (<=10) pode deletar posts de qualquer um (conforme solicitado e confirmado para Dono/Admin)
+        // 2. Moderador (<=10) pode deletar posts de qualquer um
         if (!isAuthor && !isMod) {
             return res.status(403).json({ error: 'Você não tem permissão para deletar este post.' });
         }
@@ -528,15 +533,12 @@ PostsRouter.delete('/:publicid', async (req, res) => {
             }
         }
 
-
-
         // Buscar autor para emitir via socket e decrementar postcount
         const author = await User.findByPk(post.authorUserId);
         if (author) {
             await author.decrement('postcount');
         }
 
-        // Hard delete: remove completamente (o banco cuida dos ON DELETE CASCADE para mídia, likes, etc.)
         await post.destroy();
 
         // Emitir deleção via socket

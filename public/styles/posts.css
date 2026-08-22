@@ -196,18 +196,6 @@
     color: var(--vermelho);
 }
 
-.post-action.bookmark:hover {
-    color: var(--verde-escuro);
-}
-
-.post-action.bookmark:hover i {
-    background-color: rgba(29, 155, 240, 0.1);
-}
-
-.post-action.bookmarked {
-    color: var(--verde-escuro);
-}
-
 .post-action.share:hover {
     color: var(--verde-escuro);
 }
