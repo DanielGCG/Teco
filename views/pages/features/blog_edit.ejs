@@ -206,8 +206,9 @@
             if (font.toLowerCase().includes('comic sans')) {
                 fontVal = `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive`;
             } else {
-                fontVal = `'${font}', sans-serif`;
-                if (font !== 'Inter') loadGoogleFont = true;
+                const formattedFont = font.replace(/\b\w/g, c => c.toUpperCase());
+                fontVal = `'${formattedFont}', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+                if (formattedFont.toLowerCase() !== 'inter') loadGoogleFont = true;
             }
         }
 
@@ -232,11 +233,12 @@
         `;
         
         if (loadGoogleFont) {
-            const fontId = 'font-' + font.replace(/\s+/g, '-');
+            const formattedFont = font.replace(/\b\w/g, c => c.toUpperCase());
+            const fontId = 'font-' + formattedFont.replace(/\s+/g, '-');
             if (!document.getElementById(fontId)) {
                 const link = document.createElement('link');
                 link.id = fontId;
-                link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+                link.href = `https://fonts.googleapis.com/css2?family=${formattedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
                 link.rel = 'stylesheet';
                 document.head.appendChild(link);
             }

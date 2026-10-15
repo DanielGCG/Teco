@@ -59,7 +59,7 @@ router.post('/poke', async (req, res) => {
         });
 
         const title = `Alguém te cutucou!`;
-        const body = message || 'Você recebeu uma cutucada.';
+        const body = message || '';
         const link = `/cutucar`;
 
         // Cria a notificação
@@ -189,7 +189,7 @@ router.get('/history', async (req, res) => {
         const offset = (page - 1) * limit;
 
         const { count, rows } = await Cutucada.findAndCountAll({
-            attributes: ['id', 'message', 'isGlobal', 'createdAt'], // Omite senderUserId intencionalmente
+            attributes: ['id', 'message', 'isGlobal', 'createdAt'], // Omite senderUserId
             include: [{
                 model: User,
                 as: 'target', // Alias definido na associação
