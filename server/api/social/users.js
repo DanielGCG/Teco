@@ -78,27 +78,6 @@ UsersRouter.post('/validate-session', validate(validateSessionSchema), async (re
     }
 });
 
-// GET /api/users/:username - Carregar perfil de um usuário
-UsersRouter.get('/:username', authMiddleware(20), async (req, res) => {
-    try {
-        let username = req.params.username;
-
-        const user = await User.findOne({
-            where: { username: username },
-            attributes: ['publicid', 'username', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId', 'lastfmusername'],
-            include: [{ model: Role, as: 'role', attributes: ['name'] }]
-        });
-        if (!user) return res.status(404).json({
-            message: "Usuário não encontrado"
-        });
-
-        res.json(user);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao carregar perfil do usuário" });
-    }
-});
-
 // GET /api/users/music-widget/:lastfmUser - Carregar widget de músicas do Last.fm
 UsersRouter.get('/music-widget/:lastfmUser', authMiddleware(20), async (req, res) => {
     try {
@@ -542,6 +521,27 @@ UsersRouter.get('/music-top5/data', authMiddleware(20), async (req, res) => {
     } catch (err) {
         console.error("Erro interno no proxy top5:", err);
         res.status(500).json({ error: "Falha na comunicação com o Analytics." });
+    }
+});
+
+// GET /api/users/:username - Carregar perfil de um usuário
+UsersRouter.get('/:username', authMiddleware(20), async (req, res) => {
+    try {
+        let username = req.params.username;
+
+        const user = await User.findOne({
+            where: { username: username },
+            attributes: ['publicid', 'username', 'bannerimage', 'backgroundimage', 'backgroundcolor', 'backgroundfill', 'profileimage', 'bio', 'pronouns', 'postcount', 'createdat', 'lastaccess', 'roleId', 'lastfmusername'],
+            include: [{ model: Role, as: 'role', attributes: ['name'] }]
+        });
+        if (!user) return res.status(404).json({
+            message: "Usuário não encontrado"
+        });
+
+        res.json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erro ao carregar perfil do usuário" });
     }
 });
 

@@ -1,11 +1,36 @@
-const axios = require('axios');
 const sequelize = require('../config/database');
+const { deleteFromFileServer, listFileServerResources, urlToPath, normalizePath, SERVER_URL } = require('./fileServer');
 
-const SERVER_URL = process.env.SERVIDORDEARQUIVOS_URL;
-const API_KEY = process.env.SERVIDORDEARQUIVOS_KEY;
+// Apenas estas pastas são varridas. /boteco-legacy e qualquer outra pasta NUNCA são tocadas.
+const MANAGED_FOLDERS = [
+    'backgrounds',
+    'blogs',
+    'configs',
+    'badges',
+    'galerias',
+    'imagemdodia',
+    'pagebackgrounds',
+    'posts',
+    'profiles',
+    'stamps'
+];
+
+// Encontra URLs de arquivos no formato oficial do FileBrowser Quantum (inclui markdown/JSON)
+const URL_REGEX = /(https?:\/\/[^\s"'<>()\\]+?\/public\/api\/resources\/download\?[^\s"'<>()\\]+)/gi;
+
+async function collectFilesRecursively(dirPath) {
+    const files = [];
+    const data = await listFileServerResources(dirPath);
+    if (!data) return files;
+
+    const base = normalizePath(dirPath).replace(/\/$/, '');
+    for (const f of data.files || []) files.push(`${base}/${f.name}`);
+    for (const d of data.folders || []) files.push(...await collectFilesRecursively(`${base}/${d.name}`));
+    return files;
+}
 
 async function runGarbageCollector() {
-    if (!SERVER_URL || !API_KEY) {
+    if (!SERVER_URL || !process.env.SERVIDORDEARQUIVOS_KEY) {
         console.error('[GarbageCollector] Configurações ausentes: SERVIDORDEARQUIVOS_URL ou SERVIDORDEARQUIVOS_KEY');
         return { error: 'Configurações ausentes' };
     }
@@ -26,7 +51,6 @@ async function runGarbageCollector() {
             )
         `);
 
-        // Agrupar colunas por tabela
         const tables = {};
         for (const col of columns) {
             if (!tables[col.TABLE_NAME]) tables[col.TABLE_NAME] = [];
@@ -35,29 +59,22 @@ async function runGarbageCollector() {
 
         const validPaths = new Set();
 
-        // Expressão regular para encontrar URLs do servidor de arquivos.
-        const escapedServerUrl = SERVER_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const urlRegex = new RegExp(escapedServerUrl + '/files/([^"\'<>\\n? )]+)', 'g');
-
-        // 2. Procurar nas tabelas e colunas filtradas
         for (const [tableName, cols] of Object.entries(tables)) {
-            const whereClause = cols.map(c => `\`${c}\` LIKE '%${SERVER_URL}/files/%'`).join(' OR ');
-            const selectClause = cols.map(c => `\`${c}\``).join(', ');
-
-            const query = `SELECT ${selectClause} FROM \`${tableName}\` WHERE ${whereClause}`;
-
+            const where = cols.map(c => `\`${c}\` LIKE '%/public/api/resources/download%'`).join(' OR ');
+            const select = cols.map(c => `\`${c}\``).join(', ');
             try {
-                const [rows] = await sequelize.query(query);
+                const [rows] = await sequelize.query(`SELECT ${select} FROM \`${tableName}\` WHERE ${where}`);
                 for (const row of rows) {
                     for (const col of cols) {
                         const val = row[col];
-                        if (typeof val === 'string' && val.includes(SERVER_URL + '/files/')) {
-                            let match;
-                            while ((match = urlRegex.exec(val)) !== null) {
-                                // Limpar espaços em branco acidentais e decodificar a URI
-                                let relPath = match[1].trim();
-                                validPaths.add(decodeURIComponent(relPath));
-                            }
+                        if (typeof val !== 'string') continue;
+                        // JSON pode ter "&" como \u0026 e barras escapadas
+                        const text = val.replace(/\\u0026/g, '&').replace(/\\\//g, '/');
+                        let m;
+                        URL_REGEX.lastIndex = 0;
+                        while ((m = URL_REGEX.exec(text)) !== null) {
+                            const p = urlToPath(m[1]);
+                            if (p) validPaths.add(p);
                         }
                     }
                 }
@@ -66,22 +83,32 @@ async function runGarbageCollector() {
             }
         }
 
-        const validPathsArray = Array.from(validPaths);
-        console.log(`[GarbageCollector] Encontrados ${validPathsArray.length} caminhos válidos. Enviando para sincronização...`);
+        console.log(`[GarbageCollector] Encontrados ${validPaths.size} caminhos válidos no banco de dados.`);
 
-        // 3. Enviar para o servidor de arquivos
-        const response = await axios.post(`${SERVER_URL}/sync`, { validPaths: validPathsArray }, {
-            headers: { 'x-api-key': API_KEY }
-        });
+        // Trava de segurança: se o banco não retornou nada, não apaga nada
+        if (validPaths.size === 0) {
+            console.warn('[GarbageCollector] Nenhum caminho válido encontrado. Abortando para evitar remoção em massa.');
+            return { success: false, error: 'Nenhum caminho válido encontrado no banco' };
+        }
 
-        console.log('[GarbageCollector] Sincronização concluída no servidor de arquivos:', response.data);
-        return response.data;
+        let scannedCount = 0;
+        let deletedCount = 0;
 
+        for (const folder of MANAGED_FOLDERS) {
+            const remoteFiles = await collectFilesRecursively(`/${folder}`);
+            for (const filePath of remoteFiles) {
+                scannedCount++;
+                if (!validPaths.has(filePath)) {
+                    console.log(`[GarbageCollector] Arquivo órfão: ${filePath}. Removendo...`);
+                    if (await deleteFromFileServer(filePath)) deletedCount++;
+                }
+            }
+        }
+
+        console.log(`[GarbageCollector] Concluído! Arquivos verificados: ${scannedCount}, Deletados: ${deletedCount}`);
+        return { success: true, scannedCount, deletedCount, validPathsCount: validPaths.size };
     } catch (err) {
         console.error(`[GarbageCollector] Erro na execução: ${err.message}`);
-        if (err.response) {
-            console.error(`[GarbageCollector] Resposta do servidor:`, err.response.data);
-        }
         return { error: err.message };
     }
 }

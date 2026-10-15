@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon --watch . --ext js,ejs,html,css main.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node main.js"
+    "start": "node main.js",
+    "migrate:files": "node scripts/migrateFileServer.js"
   },
   "engines": {
     "node": "20.x"
