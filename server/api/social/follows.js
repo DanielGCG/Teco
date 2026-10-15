@@ -1,24 +1,19 @@
 const express = require("express");
 const FollowsRouter = express.Router();
 const { Follow, User, DM } = require("../../models");
+const { authMiddleware } = require("../../middlewares/authMiddleware");
 const { createNotification } = require("../notifications");
 const validate = require("../../middlewares/validate");
 const { publicidSchema } = require("../../validators/follows.validator");
 const { Op } = require("sequelize");
-const socketRouter = require("../../routes/socket.router");
 
-// Helper para obter status do usuário
-function getUserStatus(userId) {
-    if (socketRouter.getUserStatus) {
-        const status = socketRouter.getUserStatus(userId);
-        return status;
-    }
-    console.log(`[follows.js] socketRouter.getUserStatus indisponível para userId ${userId}`);
-    return 'offline';
-}
+// Helper para proteger rotas
+const protect = (minRole = 20) => {
+    return authMiddleware(minRole);
+};
 
 // POST /follow/:publicid - Seguir um usuário
-FollowsRouter.post('/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
+FollowsRouter.post('/:publicid', protect(20), validate(publicidSchema, 'params'), async (req, res) => {
     try {
         const publicid = req.params.publicid;
         const followerId = req.user.id;
@@ -95,6 +90,8 @@ FollowsRouter.post('/:publicid', validate(publicidSchema, 'params'), async (req,
             });
         }
 
+        // (evento emitido via createNotification) socket já tratado
+
         res.status(201).json({ message: "Seguindo com sucesso", follow });
     } catch (err) {
         console.error(err);
@@ -103,7 +100,7 @@ FollowsRouter.post('/:publicid', validate(publicidSchema, 'params'), async (req,
 });
 
 // DELETE /unfollow/:publicid - Parar de seguir um usuário
-FollowsRouter.delete('/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
+FollowsRouter.delete('/:publicid', protect(20), validate(publicidSchema, 'params'), async (req, res) => {
     try {
         const publicid = req.params.publicid;
         const followerId = req.user.id;
@@ -133,7 +130,7 @@ FollowsRouter.delete('/:publicid', validate(publicidSchema, 'params'), async (re
 });
 
 // GET /status/:publicid - Verificar status de seguimento
-FollowsRouter.get('/status/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
+FollowsRouter.get('/status/:publicid', protect(20), validate(publicidSchema, 'params'), async (req, res) => {
     try {
         const publicid = req.params.publicid;
         const currentUserId = req.user.id;
@@ -210,112 +207,6 @@ FollowsRouter.get('/following/:publicid', validate(publicidSchema, 'params'), as
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Erro ao listar seguindo" });
-    }
-});
-
-// GET /friends - Listar amigos do usuário logado
-FollowsRouter.get('/friends', async (req, res) => {
-    try {
-        const userId = req.user.id;
-
-        // Amigos são seguidores mútuos
-        const friends = await User.findAll({
-            include: [
-                {
-                    model: Follow,
-                    as: 'followers',
-                    where: { followerUserId: userId },
-                    attributes: []
-                },
-                {
-                    model: Follow,
-                    as: 'following',
-                    where: { followedUserId: userId },
-                    attributes: []
-                }
-            ],
-            attributes: ['id', 'publicid', 'username', 'profileimage', 'bio', 'roleId', 'pronouns']
-        });
-
-        const formatted = friends.map(f => ({
-            publicid: f.publicid,
-            username: f.username,
-            profileimage: f.profileimage,
-            bio: f.bio,
-            roleId: f.roleId,
-            pronouns: f.pronouns,
-            status: getUserStatus(f.id)
-        }));
-
-        // Ordena por status (online -> ausente -> offline) e depois alfabeticamente
-        formatted.sort((a, b) => {
-            const order = { online: 0, ausente: 1, offline: 2 };
-            const statusDiff = (order[a.status] ?? 2) - (order[b.status] ?? 2);
-            if (statusDiff !== 0) return statusDiff;
-            return (a.username || '').localeCompare(b.username || '', 'pt-BR', { sensitivity: 'base' });
-        });
-
-        res.json({ friends: formatted });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao listar amigos" });
-    }
-});
-
-// GET /friends/:publicid - Listar amigos de outro usuário
-FollowsRouter.get('/friends/:publicid', validate(publicidSchema, 'params'), async (req, res) => {
-    try {
-        const publicid = req.params.publicid;
-
-        // Busca o usuário por publicid
-        const targetUser = await User.findOne({ where: { publicid } });
-
-        if (!targetUser) {
-            return res.status(404).json({ message: "Usuário não encontrado" });
-        }
-
-        const targetId = targetUser.id;
-
-        const friends = await User.findAll({
-            include: [
-                {
-                    model: Follow,
-                    as: 'followers',
-                    where: { followerUserId: targetId },
-                    attributes: []
-                },
-                {
-                    model: Follow,
-                    as: 'following',
-                    where: { followedUserId: targetId },
-                    attributes: []
-                }
-            ],
-            attributes: ['id', 'publicid', 'username', 'profileimage', 'bio', 'roleId', 'pronouns']
-        });
-
-        const formatted = friends.map(f => ({
-            publicid: f.publicid,
-            username: f.username,
-            profileimage: f.profileimage,
-            bio: f.bio,
-            roleId: f.roleId,
-            pronouns: f.pronouns,
-            status: getUserStatus(f.id)
-        }));
-
-        // Ordena por status (online -> ausente -> offline) e depois alfabeticamente
-        formatted.sort((a, b) => {
-            const order = { online: 0, ausente: 1, offline: 2 };
-            const statusDiff = (order[a.status] ?? 2) - (order[b.status] ?? 2);
-            if (statusDiff !== 0) return statusDiff;
-            return (a.username || '').localeCompare(b.username || '', 'pt-BR', { sensitivity: 'base' });
-        });
-
-        res.json({ friends: formatted });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Erro ao listar amigos do usuário" });
     }
 });
 

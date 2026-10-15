@@ -66,7 +66,7 @@ const FollowAPI = (() => {
     // Listar amigos (seguidores mútuos)
     async function carregarAmigos(userId = null) {
         try {
-            const url = userId ? `/api/follows/friends/${userId}` : '/api/follows/friends';
+            const url = userId ? `/api/friends/user/${userId}` : '/api/friends';
             const res = await fetch(url, { credentials: 'include' });
             const data = await res.json();
             return data.friends || [];

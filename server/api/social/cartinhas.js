@@ -4,7 +4,23 @@ const { Cartinha, User, sequelize, Stamp } = require("../../models");
 const { createNotification } = require("../notifications");
 const validate = require("../../middlewares/validate");
 const { Op } = require("sequelize");
-const { createCartinhaSchema, updateCartinhaSchema, publicidSchema } = require("../../validators/cartinhas.validator");
+const {
+    createCartinhaSchema,
+    updateCartinhaSchema,
+    publicidSchema
+} = require("../../validators/cartinhas.validator");
+
+// Verifica se o usuário tem acesso à cartinha (remetente, destinatário ou admin)
+async function verifyCartinhaAccess(cartinhaPublicId, userId, userRole) {
+    const cartinha = await Cartinha.findOne({
+        where: { publicid: cartinhaPublicId },
+        attributes: ['senderUserId', 'recipientUserId']
+    });
+
+    if (!cartinha) return false;
+    if (userRole >= 1) return true;
+    return cartinha.senderUserId === userId || cartinha.recipientUserId === userId;
+}
 
 // GET /cartinhas/enviadas - Carregar cartinhas enviadas pelo usuário
 CartinhasRouter.get('/enviadas', async (req, res) => {
@@ -157,6 +173,8 @@ CartinhasRouter.get('/favoritas', async (req, res) => {
     }
 });
 
+// Ações em Lote
+
 // PUT /cartinhas/batch/lida - Marcar cartinhas como lida em lote
 CartinhasRouter.put('/batch/lida', async (req, res) => {
     try {
@@ -245,7 +263,7 @@ CartinhasRouter.get('/:publicid', validate(publicidSchema, 'params'), async (req
         const isParticipant = cartinha.senderUserId === req.user.id || cartinha.recipientUserId === req.user.id;
 
         if (!isParticipant) {
-            // Mascarar título e corpo para qualquer um
+            // Mascarar título e corpo para qualquer um que não seja participante (incluindo Admin/Staff)
             const cartinhaLimitada = cartinha.toJSON();
             cartinhaLimitada.title = "[Conteúdo privado]";
             cartinhaLimitada.body = "Conteúdo privado. Apenas remetente e destinatário podem ler.";
@@ -308,7 +326,7 @@ CartinhasRouter.post('/', validate(createCartinhaSchema), async (req, res) => {
             isanonymous: isanonymous || false
         });
 
-        const notifBody = isanonymous ? 'Alguém te enviou uma cartinha anônima' : `${req.user.username} te enviou uma cartinha`;
+        const notifBody = isanonymous ? 'Alguém te enviou uma cartinha anonimamente' : `${req.user.username} te enviou uma cartinha`;
 
         await createNotification({
             userId: destinatario.id,

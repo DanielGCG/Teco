@@ -50,14 +50,13 @@
                 const rawContent = processCustomTags(b.content);
                 const htmlContent = DOMPurify.sanitize(marked.parse(rawContent));
 
-                if (b.fontfamily && b.fontfamily.toLowerCase() !== 'inter') {
+                if (b.fontfamily && b.fontfamily !== 'Inter') {
                     if (!b.fontfamily.toLowerCase().includes('comic sans')) {
-                        const formattedFont = b.fontfamily.replace(/\b\w/g, c => c.toUpperCase());
-                        const fontId = 'font-' + formattedFont.replace(/\s+/g, '-');
+                        const fontId = 'font-' + b.fontfamily.replace(/\s+/g, '-');
                         if (!document.getElementById(fontId)) {
                             const link = document.createElement('link');
                             link.id = fontId;
-                            link.href = `https://fonts.googleapis.com/css2?family=${formattedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+                            link.href = `https://fonts.googleapis.com/css2?family=${b.fontfamily.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
                             link.rel = 'stylesheet';
                             document.head.appendChild(link);
                         }
@@ -89,7 +88,7 @@
                             ${b.backgroundurl ? `background-image: url('${b.backgroundurl}'); background-size: ${b.backgroundfill === 'repeat' ? 'auto' : 'cover'}; background-repeat: ${b.backgroundfill === 'repeat' ? 'repeat' : 'no-repeat'};` : ''}
                             background-color: ${b.backgroundcolor};
                             color: ${b.fontcolor};
-                            font-family: ${b.fontfamily ? (b.fontfamily.toLowerCase().includes('comic sans') ? `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive` : `'${b.fontfamily.replace(/\b\w/g, c => c.toUpperCase())}', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`) : 'var(--retro-font-family)'};
+                            font-family: ${b.fontfamily ? (b.fontfamily.toLowerCase().includes('comic sans') ? `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive` : `'${b.fontfamily}', sans-serif`) : 'var(--retro-font-family)'};
                         ">
                             <div class="markdown-body" style="line-height: 1.6; font-size: 1rem; flex: 1;">
                                 ${htmlContent}

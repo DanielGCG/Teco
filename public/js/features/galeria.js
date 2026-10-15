@@ -534,13 +534,11 @@ const GaleriaManager = {
         if (!fontName || fontName === this.lastAppliedFont) return;
         this.lastAppliedFont = fontName;
         const clean = fontName.trim();
-        let family = `'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+        let family = `'Inter', sans-serif`;
 
-        if (clean.toLowerCase().includes('comic sans')) {
-            family = `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive`;
-        } else if (clean && clean.toLowerCase() !== 'inter') {
-            const formattedFont = clean.replace(/\b\w/g, c => c.toUpperCase());
-            let apiParam = formattedFont.replace(/\s+/g, '+');
+        if (clean.toLowerCase().includes('comic sans')) family = `'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive`;
+        else if (clean) {
+            let apiParam = clean.replace(/\s+/g, '+');
             if (!apiParam.includes(':')) apiParam += ':ital,wght@0,300;0,400;0,700;1,400';
             const oldLink = document.querySelector(`link[data-custom-font]`);
             if (oldLink) oldLink.remove();
@@ -550,7 +548,7 @@ const GaleriaManager = {
             link.rel = 'stylesheet';
             link.setAttribute('data-custom-font', 'true');
             document.head.appendChild(link);
-            family = `'${formattedFont.split(':')[0]}', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+            family = `'${clean.split(':')[0]}', sans-serif`;
         }
         document.getElementById('conteudo-principal').style.fontFamily = family;
     },
