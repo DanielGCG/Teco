@@ -31,8 +31,8 @@ router.post('/ticket', (req, res) => {
         size,
         folder: targetFolder,
         allowAudio: false,
-        videoLimitMB: 100,
-        otherLimitMB: 50
+        videoLimitMB: 500,
+        otherLimitMB: 500
     });
     res.status(result.status).json(result.body);
 });

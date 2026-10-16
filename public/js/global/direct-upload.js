@@ -1,5 +1,5 @@
 (function () {
-    const CHUNK_SIZE = 80 * 1024 * 1024;
+    const CHUNK_SIZE = 64 * 1024 * 1024;
     const MAX_CHUNK_ATTEMPTS = 3;
 
     async function directUpload(file, { folder, ticketEndpoint = '/api/uploads/ticket', onProgress } = {}) {
@@ -13,13 +13,7 @@
             throw new Error(ticket.error || ticket.message || 'Não foi possível iniciar o upload.');
         }
 
-        if (file.size > CHUNK_SIZE) {
-            return uploadInChunks(file, ticket.uploadUrl, onProgress);
-        }
-
-        const result = await uploadRequest(file, ticket.uploadUrl, onProgress);
-        if (!result.url) throw new Error('Servidor de arquivos não retornou a URL do upload.');
-        return result.url;
+        return uploadInChunks(file, ticket.uploadUrl, onProgress);
     }
 
     async function uploadInChunks(file, uploadUrl, onProgress) {
@@ -41,6 +35,8 @@
                 return result.url;
             }
         }
+
+        throw new Error('Upload não foi finalizado.');
     }
 
     async function uploadChunkWithRetry(chunk, chunkUrl, onProgress) {
