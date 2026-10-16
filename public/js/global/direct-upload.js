@@ -1,5 +1,5 @@
 (function () {
-    const CHUNK_SIZE = 64 * 1024 * 1024;
+    const CHUNK_SIZE = 8 * 1024 * 1024;
     const MAX_CHUNK_ATTEMPTS = 3;
 
     async function directUpload(file, { folder, ticketEndpoint = '/api/uploads/ticket', onProgress } = {}) {

@@ -324,39 +324,16 @@ const RetroPosts = {
                     };
 
                     const uploadOne = async (item) => {
-                        const ticketRes = await fetch('/api/posts/media/ticket', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size })
-                        });
-                        if (!ticketRes.ok) throw new Error('Ticket recusado');
-                        const ticket = await ticketRes.json();
-
-                        const url = await new Promise((resolve, reject) => {
-                            const xhr = new XMLHttpRequest();
-                            xhr.open('POST', ticket.uploadUrl, true);
-                            xhr.upload.onprogress = (event) => {
-                                if (event.lengthComputable) {
-                                    loadedByItem.set(item, Math.min(event.loaded, item.file.size));
-                                    updateProgress();
-                                }
-                            };
-                            xhr.onload = () => {
-                                if (xhr.status >= 200 && xhr.status < 300) {
-                                    try { resolve(JSON.parse(xhr.responseText).url); }
-                                    catch (err) { reject(err); }
-                                } else {
-                                    reject(new Error('Falha no upload'));
-                                }
-                            };
-                            xhr.onerror = () => reject(new Error('Erro de rede'));
-                            const formData = new FormData();
-                            formData.append('file', item.file);
-                            xhr.send(formData);
+                        const url = await directUpload(item.file, {
+                            ticketEndpoint: '/api/posts/media/ticket',
+                            onProgress: (loaded) => {
+                                loadedByItem.set(item, Math.min(loaded, item.file.size));
+                                updateProgress();
+                            }
                         });
 
                         item.url = url;
-                        item.type = ticket.mediaType;
+                        item.type = item.file.type.startsWith('video/') ? 'video' : 'image/gif';
                         item.status = 'done';
                     };
 
