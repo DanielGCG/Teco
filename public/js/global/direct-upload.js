@@ -1,5 +1,6 @@
 (function () {
-    const CHUNK_SIZE = 90 * 1024 * 1024;
+    const CHUNK_SIZE = 80 * 1024 * 1024;
+    const MAX_CHUNK_ATTEMPTS = 3;
 
     async function directUpload(file, { folder, ticketEndpoint = '/api/uploads/ticket', onProgress } = {}) {
         const ticketResponse = await fetch(ticketEndpoint, {
@@ -30,9 +31,9 @@
             const start = index * CHUNK_SIZE;
             const chunk = file.slice(start, Math.min(start + CHUNK_SIZE, file.size));
             const chunkUrl = `${uploadUrl}${separator}chunked=1&index=${index}&total=${total}`;
-            const result = await uploadRequest(chunk, chunkUrl, (loaded) => {
-                if (onProgress) onProgress(uploaded + loaded, file.size);
-            });
+            const result = await uploadChunkWithRetry(chunk, chunkUrl, (loaded) => {
+                    if (onProgress) onProgress(uploaded + loaded, file.size);
+                });
             uploaded += chunk.size;
             if (onProgress) onProgress(uploaded, file.size);
             if (index === total - 1) {
@@ -40,6 +41,21 @@
                 return result.url;
             }
         }
+    }
+
+    async function uploadChunkWithRetry(chunk, chunkUrl, onProgress) {
+        let lastError;
+        for (let attempt = 1; attempt <= MAX_CHUNK_ATTEMPTS; attempt += 1) {
+            try {
+                return await uploadRequest(chunk, chunkUrl, onProgress);
+            } catch (error) {
+                lastError = error;
+                if (attempt < MAX_CHUNK_ATTEMPTS) {
+                    await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                }
+            }
+        }
+        throw lastError;
     }
 
     function uploadRequest(bodyFile, uploadUrl, onProgress) {
