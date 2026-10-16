@@ -1,5 +1,6 @@
 const axios = require('axios');
 const FormData = require('form-data');
+const crypto = require('crypto');
 
 
 const SERVER_URL = process.env.SERVIDORDEARQUIVOS_URL;
@@ -51,7 +52,41 @@ async function deleteFromFileServer(fileUrl) {
     }
 }
 
+// URL do servidor de arquivos acessível pelo navegador (pode diferir da URL interna usada pelo backend)
+function getPublicUrl() {
+    return (process.env.SERVIDORDEARQUIVOS_PUBLIC_URL || SERVER_URL || '').replace(/\/+$/, '');
+}
+
+/**
+ * Emite um ticket de upload direto (navegador -> servidor de arquivos).
+ * O chamador deve ter autenticado o usuário e validado permissão/tipo/tamanho antes.
+ * Formato espelhado em servidor-de-arquivos/src/auth.js
+ */
+function createUploadTicket({ folder, filename, maxBytes, mimePrefixes = [], ttlMs = 10 * 60 * 1000 }) {
+    if (!SERVER_URL || !API_KEY) {
+        throw new Error('Configuração do servidor de arquivos ausente no .env');
+    }
+    const payload = {
+        f: folder || '',
+        n: filename,
+        m: maxBytes,
+        t: mimePrefixes,
+        e: Date.now() + ttlMs,
+        j: crypto.randomBytes(12).toString('hex')
+    };
+    const b64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const sig = crypto.createHmac('sha256', API_KEY + ':upload-ticket').update(b64).digest('base64url');
+    const ticket = `${b64}.${sig}`;
+    return {
+        ticket,
+        uploadUrl: `${getPublicUrl()}/upload-direct?ticket=${encodeURIComponent(ticket)}`,
+        expiresAt: payload.e
+    };
+}
+
 module.exports = {
+    createUploadTicket,
+    getPublicUrl,
     uploadToFileServer,
     deleteFromFileServer
 };

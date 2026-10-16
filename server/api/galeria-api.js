@@ -1,7 +1,8 @@
 const express = require('express');
 const { Galeria, GaleriaItem, GaleriaContributor, User, UserSession } = require("../models");
 const { uploadImage, uploadVideo } = require('../utils/upload');
-const { uploadToFileServer } = require('../utils/fileServer');
+const { uploadToFileServer, getPublicUrl } = require('../utils/fileServer');
+const { issueMediaTicket } = require('../utils/directUpload');
 const { sanitizeFilename } = require('../utils/sanitize');
 const router = express.Router();
 
@@ -57,25 +58,13 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', uploadImage.single('cover'), async (req, res) => {
+router.post('/', async (req, res) => {
     const { name, description, ispublic, backgroundcolor, cardcolor, gridxsize } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name is required.' });
 
     try {
         let coverurl = null;
-        if (req.file) {
-            const sanitizedFilename = sanitizeFilename(req.file.originalname);
-            try {
-                coverurl = await uploadToFileServer({
-                    buffer: req.file.buffer,
-                    filename: sanitizedFilename,
-                    folder: 'galerias/capas',
-                    mimetype: req.file.mimetype
-                });
-            } catch (err) {
-                return res.status(502).json({ success: false, message: 'Error uploading cover.', remoteData: err.response?.data });
-            }
-        }
+        coverurl = req.body.coverurl || null;
 
         const gallery = await Galeria.create({
             name, 
@@ -126,6 +115,21 @@ router.get('/:publicid', async (req, res) => {
     }
 });
 
+// Upload direto: o navegador envia os bytes ao servidor de arquivos usando este ticket
+router.post('/:publicid/upload-ticket', checkGalleryPermission, express.json(), (req, res) => {
+    try {
+        const { name, type, size } = req.body || {};
+        const { status, body } = issueMediaTicket({
+            name, type, size,
+            folder: `galerias/${req.gallery.publicid}`,
+            allowAudio: true
+        });
+        res.status(status).json(body);
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error issuing upload ticket.', error: error.message });
+    }
+});
+
 router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
     uploadVideo.fields([{ name: 'media', maxCount: 1 }, { name: 'cover', maxCount: 1 }, { name: 'link_cover', maxCount: 1 }])(req, res, (err) => {
         if (err) {
@@ -145,8 +149,23 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
 
         if (itemType === 'media') {
             const mainFile = req.file || (req.files && req.files.media && req.files.media[0]);
-            if (!mainFile) return res.status(400).json({ success: false, message: 'No media file provided.' });
+            const directUrl = req.body.media_url;
+            if (!mainFile && !directUrl) return res.status(400).json({ success: false, message: 'No media file provided.' });
+
+            if (!mainFile) {
+                // Arquivo já enviado direto ao servidor de arquivos: só aceita URLs da pasta desta galeria
+                const allowedPrefix = `${getPublicUrl()}/files/galerias/${req.gallery.publicid}/`;
+                if (!String(directUrl).startsWith(allowedPrefix) || String(directUrl).includes('..')) {
+                    return res.status(400).json({ success: false, message: 'Invalid media URL.' });
+                }
+                const allowedTypes = ['video', 'audio', 'image/gif'];
+                fileUrl = directUrl;
+                originalName = req.body.title || req.body.media_name || 'Sem título';
+                mediaType = allowedTypes.includes(req.body.media_type) ? req.body.media_type : 'image/gif';
+                coverUrl = coverUrl || null;
+            }
             
+            if (mainFile) {
             const sanitizedFilename = sanitizeFilename(mainFile.originalname);
             fileUrl = await uploadToFileServer({
                 buffer: mainFile.buffer,
@@ -157,6 +176,7 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
             originalName = req.body.title || mainFile.originalname;
             mediaType = mainFile.mimetype.startsWith('video/') ? 'video' : 
                         mainFile.mimetype.startsWith('audio/') ? 'audio' : 'image/gif';
+            }
 
             const coverFile = req.files && req.files.cover && req.files.cover[0];
             if (coverFile) {
@@ -249,7 +269,7 @@ router.delete('/:publicid', checkGalleryPermission, async (req, res) => {
     }
 });
 
-router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImage.single('cover'), async (req, res) => {
+router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, async (req, res) => {
     try {
         const item = await GaleriaItem.findOne({ where: { publicid: req.params.itemPublicId, galleryId: req.gallery.id } });
         if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
@@ -274,22 +294,17 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
         if (positionz !== undefined) item.positionz = parseInt(positionz) || 0;
         if (roundedcorners !== undefined) item.roundedcorners = roundedcorners;
 
-        if (req.file) {
+        if (req.body.cover_url) {
             const isImageItem = (item.type || '').toLowerCase().startsWith('image/');
             if (isImageItem) {
                 console.warn(`Ignoring cover upload for image item id=${item.id}`);
             } else {
-                try {
-                    const sanitized = sanitizeFilename(req.file.originalname);
-                    const coverUrl = await uploadToFileServer({ buffer: req.file.buffer, filename: sanitized, folder: `galerias/${req.gallery.publicid}/covers`, mimetype: req.file.mimetype });
-
-                    item.coverurl = coverUrl;
-                } catch (err) { }
+                item.coverurl = req.body.cover_url;
             }
         }
 
         const remove_cover = req.body.remove_cover;
-        if (!req.file && (remove_cover === 'true' || remove_cover === true)) {
+        if (!req.body.cover_url && (remove_cover === 'true' || remove_cover === true)) {
 
             item.coverurl = null;
         }
@@ -302,10 +317,7 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, uploadImag
 });
 
 // PATCH Gallery (Settings & Layout)
-router.patch('/:publicid', 
-    checkGalleryPermission, 
-    uploadImage.fields([{ name: 'background', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), 
-    async (req, res) => {
+router.patch('/:publicid', checkGalleryPermission, async (req, res) => {
     
     const getBodyValue = (key) => {
         const val = req.body[key];
@@ -349,29 +361,8 @@ router.patch('/:publicid',
             req.gallery.coverurl = null;
         }
 
-        const files = req.files || {};
-        
-        if (files.background && files.background[0]) {
-            const file = files.background[0];
-            const sanitizedFilename = sanitizeFilename(file.originalname);
-            req.gallery.backgroundurl = await uploadToFileServer({
-                buffer: file.buffer,
-                filename: sanitizedFilename,
-                folder: `galerias/${req.gallery.publicid}/style`,
-                mimetype: file.mimetype
-            });
-        }
-
-        if (files.cover && files.cover[0]) {
-            const file = files.cover[0];
-            const sanitizedFilename = sanitizeFilename(file.originalname);
-            req.gallery.coverurl = await uploadToFileServer({
-                buffer: file.buffer,
-                filename: sanitizedFilename,
-                folder: 'galerias/capas',
-                mimetype: file.mimetype
-            });
-        }
+        if (req.body.backgroundurl) req.gallery.backgroundurl = req.body.backgroundurl;
+        if (req.body.coverurl) req.gallery.coverurl = req.body.coverurl;
 
         await req.gallery.save();
 

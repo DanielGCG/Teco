@@ -1,9 +1,6 @@
 const express = require("express");
 const AdminStampsRouter = express.Router();
 const { Stamp } = require("../../models");
-const { upload } = require('../../utils/upload');
-const { uploadToFileServer } = require('../../utils/fileServer');
-const { processImage } = require('../../utils/imageProcessor');
 
 // GET /admin/stamps - Listar selos
 AdminStampsRouter.get('/', async (req, res) => {
@@ -17,22 +14,12 @@ AdminStampsRouter.get('/', async (req, res) => {
 });
 
 // POST /admin/stamps - Criar selo
-AdminStampsRouter.post('/', upload.single('file'), async (req, res) => {
+AdminStampsRouter.post('/', async (req, res) => {
     const { name } = req.body;
     let { image_url } = req.body;
 
     try {
         if (!name) return res.status(400).json({ message: "Nome do selo é obrigatório" });
-
-        if (req.file) {
-            const processed = await processImage(req.file, { name: 'stamp', width: 200, height: 200, maintainAspectRatio: true });
-            image_url = await uploadToFileServer({
-                buffer: processed.buffer,
-                filename: processed.filename,
-                folder: 'stamps',
-                mimetype: processed.mimetype
-            });
-        }
 
         if (!image_url) return res.status(400).json({ message: "Imagem é obrigatória" });
 

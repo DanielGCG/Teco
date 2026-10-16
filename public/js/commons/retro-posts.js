@@ -303,12 +303,9 @@ const RetroPosts = {
                 renderPreview();
                 e.target.value = '';
 
-                // Upload em background usando a barra global
+                // Upload em background direto ao servidor de arquivos (o backend só emite o ticket)
                 const uploadingItems = selectedFiles.filter(item => item.status === 'uploading');
                 if (uploadingItems.length > 0) {
-                    const formData = new FormData();
-                    uploadingItems.forEach(item => formData.append('media', item.file));
-
                     const progressContainer = document.getElementById(progressContainerId);
                     const progressBar = document.getElementById(progressBarId);
 
@@ -317,53 +314,64 @@ const RetroPosts = {
                         progressBar.style.width = '0%';
                     }
 
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/api/posts/media/upload', true);
-
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable && progressBar) {
-                            const percentComplete = (event.loaded / event.total) * 100;
-                            progressBar.style.width = percentComplete + '%';
-                        }
+                    const totalBytes = uploadingItems.reduce((acc, it) => acc + it.file.size, 0) || 1;
+                    const loadedByItem = new Map();
+                    const updateProgress = () => {
+                        if (!progressBar) return;
+                        let loaded = 0;
+                        loadedByItem.forEach(v => loaded += v);
+                        progressBar.style.width = Math.min(100, (loaded / totalBytes) * 100) + '%';
                     };
 
-                    xhr.onload = () => {
+                    const uploadOne = async (item) => {
+                        const ticketRes = await fetch('/api/posts/media/ticket', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size })
+                        });
+                        if (!ticketRes.ok) throw new Error('Ticket recusado');
+                        const ticket = await ticketRes.json();
+
+                        const url = await new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('POST', ticket.uploadUrl, true);
+                            xhr.upload.onprogress = (event) => {
+                                if (event.lengthComputable) {
+                                    loadedByItem.set(item, Math.min(event.loaded, item.file.size));
+                                    updateProgress();
+                                }
+                            };
+                            xhr.onload = () => {
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    try { resolve(JSON.parse(xhr.responseText).url); }
+                                    catch (err) { reject(err); }
+                                } else {
+                                    reject(new Error('Falha no upload'));
+                                }
+                            };
+                            xhr.onerror = () => reject(new Error('Erro de rede'));
+                            const formData = new FormData();
+                            formData.append('file', item.file);
+                            xhr.send(formData);
+                        });
+
+                        item.url = url;
+                        item.type = ticket.mediaType;
+                        item.status = 'done';
+                    };
+
+                    Promise.all(uploadingItems.map(item =>
+                        uploadOne(item).catch(err => {
+                            console.error('Erro no upload direto:', err);
+                            item.status = 'error';
+                        })
+                    )).then(() => {
                         if (progressContainer && progressBar) {
                             progressContainer.style.display = 'none';
                             progressBar.style.width = '0%';
                         }
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            try {
-                                const data = JSON.parse(xhr.responseText);
-                                const returnedUrls = data.mediaUrls || [];
-                                uploadingItems.forEach((item, idx) => {
-                                    if (returnedUrls[idx]) {
-                                        item.url = returnedUrls[idx].url;
-                                        item.type = returnedUrls[idx].type;
-                                        item.status = 'done';
-                                    } else {
-                                        item.status = 'error';
-                                    }
-                                });
-                            } catch (err) {
-                                uploadingItems.forEach(item => item.status = 'error');
-                            }
-                        } else {
-                            uploadingItems.forEach(item => item.status = 'error');
-                        }
                         renderPreview();
-                    };
-
-                    xhr.onerror = () => {
-                        if (progressContainer && progressBar) {
-                            progressContainer.style.display = 'none';
-                            progressBar.style.width = '0%';
-                        }
-                        uploadingItems.forEach(item => item.status = 'error');
-                        renderPreview();
-                    };
-
-                    xhr.send(formData);
+                    });
                 }
             });
         }

@@ -1,8 +1,5 @@
 const express = require('express');
 const { Blog, User, Follow, BlogApplause } = require("../models");
-const { uploadImage } = require('../utils/upload');
-const { uploadToFileServer } = require('../utils/fileServer');
-const { sanitizeFilename } = require('../utils/sanitize');
 const { Op } = require('sequelize');
 const router = express.Router();
 
@@ -74,7 +71,7 @@ router.get('/:publicid', async (req, res) => {
 });
 
 // POST /api/blog (Criar blog)
-router.post('/', uploadImage.single('background'), async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { content, backgroundcolor, backgroundfill, fontcolor, fontfamily } = req.body;
         
@@ -89,15 +86,7 @@ router.post('/', uploadImage.single('background'), async (req, res) => {
         const title = titleMatch[1].trim();
 
         let backgroundurl = null;
-        if (req.file) {
-            const sanitizedFilename = sanitizeFilename(req.file.originalname);
-            backgroundurl = await uploadToFileServer({
-                buffer: req.file.buffer,
-                filename: sanitizedFilename,
-                folder: `blogs/${req.user.publicid}/bg`,
-                mimetype: req.file.mimetype
-            });
-        }
+        backgroundurl = req.body.backgroundurl || null;
 
         const blog = await Blog.create({
             title,
@@ -117,7 +106,7 @@ router.post('/', uploadImage.single('background'), async (req, res) => {
 });
 
 // PUT /api/blog/:publicid
-router.put('/:publicid', uploadImage.single('background'), async (req, res) => {
+router.put('/:publicid', async (req, res) => {
     try {
         const { content, backgroundcolor, backgroundfill, fontcolor, fontfamily, remove_background } = req.body;
         const blog = await Blog.findOne({ where: { publicid: req.params.publicid } });
@@ -139,14 +128,8 @@ router.put('/:publicid', uploadImage.single('background'), async (req, res) => {
 
         if (remove_background === 'true') {
             blog.backgroundurl = null;
-        } else if (req.file) {
-            const sanitizedFilename = sanitizeFilename(req.file.originalname);
-            blog.backgroundurl = await uploadToFileServer({
-                buffer: req.file.buffer,
-                filename: sanitizedFilename,
-                folder: `blogs/${req.user.publicid}/bg`,
-                mimetype: req.file.mimetype
-            });
+        } else if (req.body.backgroundurl) {
+            blog.backgroundurl = req.body.backgroundurl;
         }
 
         if (backgroundcolor) blog.backgroundcolor = backgroundcolor;
@@ -203,27 +186,6 @@ router.post('/:publicid/applause', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ success: false, message: 'Erro ao processar aplauso', error: error.message });
-    }
-});
-
-// POST /api/blog/upload (Upload de mídia para o markdown)
-router.post('/upload', uploadImage.single('image'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'Nenhuma imagem enviada.' });
-        }
-
-        const sanitizedFilename = sanitizeFilename(req.file.originalname);
-        const imageUrl = await uploadToFileServer({
-            buffer: req.file.buffer,
-            filename: sanitizedFilename,
-            folder: `blogs/${req.user.publicid}`,
-            mimetype: req.file.mimetype
-        });
-
-        res.json({ success: true, url: imageUrl });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Erro no upload da imagem', error: error.message });
     }
 });
 

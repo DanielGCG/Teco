@@ -378,34 +378,33 @@
 
     document.getElementById('edit-profile-form').addEventListener('submit', async function (e) {
         e.preventDefault();
-        const formData = new FormData();
-        formData.append('username', '@' + normalizarUsername(document.getElementById('username').value));
-        formData.append('bannerimage', document.getElementById('bannerimage').value);
-
-        let finalBgImage = document.getElementById('backgroundimage').value;
+        const bannerFile = document.getElementById('banner_file').files[0];
+        const bgFile = document.getElementById('background_file').files[0];
+        const pfFile = document.getElementById('profile_file').files[0];
+        const [uploadedBanner, uploadedBackground, uploadedProfile] = await Promise.all([
+            bannerFile ? directUpload(bannerFile, { folder: 'backgrounds' }) : null,
+            bgFile ? directUpload(bgFile, { folder: 'pagebackgrounds' }) : null,
+            pfFile ? directUpload(pfFile, { folder: 'profiles' }) : null
+        ]);
+        let finalBgImage = uploadedBackground || document.getElementById('backgroundimage').value;
         if (document.getElementById('clear_backgroundimage').value === 'true') {
             finalBgImage = "";
         }
-        formData.append('backgroundimage', finalBgImage);
-
         let finalColor = document.getElementById('backgroundcolor').value;
         if (document.getElementById('clear_backgroundcolor').value === 'true') {
             finalColor = "";
         }
-        formData.append('backgroundcolor', finalColor);
-
-        formData.append('backgroundfill', document.getElementById('backgroundfill').value);
-        formData.append('profileimage', document.getElementById('profileimage').value);
-        formData.append('bio', document.getElementById('bio').value);
-        formData.append('pronouns', document.getElementById('pronouns').value);
-        formData.append('lastfmusername', document.getElementById('lastfmusername').value);
-
-        const bannerFile = document.getElementById('banner_file').files[0];
-        const bgFile = document.getElementById('background_file').files[0];
-        const pfFile = document.getElementById('profile_file').files[0];
-        if (bannerFile) formData.append('banner_file', bannerFile);
-        if (bgFile) formData.append('background_file', bgFile);
-        if (pfFile) formData.append('profile_file', pfFile);
+        const payload = {
+            username: '@' + normalizarUsername(document.getElementById('username').value),
+            bannerimage: uploadedBanner || document.getElementById('bannerimage').value,
+            backgroundimage: finalBgImage,
+            backgroundcolor: finalColor,
+            backgroundfill: document.getElementById('backgroundfill').value,
+            profileimage: uploadedProfile || document.getElementById('profileimage').value,
+            bio: document.getElementById('bio').value,
+            pronouns: document.getElementById('pronouns').value,
+            lastfmusername: document.getElementById('lastfmusername').value
+        };
 
         const btnSave = document.querySelector('#edit-profile-form button[type="submit"]');
         btnSave.disabled = true;
@@ -420,17 +419,12 @@
             progressBar.style.width = '0%';
         }
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', '/api/users/me', true);
-        
-        xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable && hasFiles) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                progressBar.style.width = percentComplete + '%';
-            }
-        };
-
-        xhr.onload = async () => {
+        try {
+            const response = await fetch('/api/users/me', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
             if (hasFiles) {
                 progressContainer.style.display = 'none';
                 progressBar.style.width = '0%';
@@ -438,33 +432,22 @@
             btnSave.disabled = false;
             btnSave.textContent = 'SALVAR ALTERAÇÕES';
             
-            if (xhr.status >= 200 && xhr.status < 300) {
-                const data = JSON.parse(xhr.responseText);
+            if (response.ok) {
+                const data = await response.json();
                 window.location.href = '/' + data.username;
             } else {
-                let msg = "Erro ao atualizar perfil.";
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    msg = data.message || msg;
-                    if (data.errors && Array.isArray(data.errors)) {
-                        msg = data.errors.map(err => err.message || err.msg).join('\n');
-                    }
-                } catch (e) {}
-                await alert(new Error(msg));
+                const data = await response.json().catch(() => ({}));
+                await alert(new Error(data.message || "Erro ao atualizar perfil."));
             }
-        };
-
-        xhr.onerror = async () => {
+        } catch (error) {
             if (hasFiles) {
                 progressContainer.style.display = 'none';
                 progressBar.style.width = '0%';
             }
             btnSave.disabled = false;
             btnSave.textContent = 'SALVAR ALTERAÇÕES';
-            await alert(new Error("Erro de conexão ao salvar perfil."));
-        };
-
-        xhr.send(formData);
+            await alert(new Error(error.message || "Erro de conexão ao salvar perfil."));
+        }
     });
 
     document.getElementById('change-password-form').addEventListener('submit', async function (e) {

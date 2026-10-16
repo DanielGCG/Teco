@@ -1,9 +1,6 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../models");
-const { upload } = require('../utils/upload');
-const { uploadToFileServer } = require('../utils/fileServer');
 const { Op } = require('sequelize');
-const { processImage } = require('../utils/imageProcessor');
 const { checkAndRotateImage, notifyNewImage } = require('../utils/iotdLogic');
 const router = express.Router();
 
@@ -53,18 +50,14 @@ router.get('/borders', async (req, res) => {
 });
 
 // Adiciona nova imagem (sugestão)
-router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border', maxCount: 1 }]), async (req, res) => {
+router.post('/', async (req, res) => {
     const { text, borderPublicId } = req.body;
-    if (!req.files || !req.files['file'] || !text) {
+    if (!req.body.fileUrl || !text) {
         return res.status(400).json({ message: 'Campos obrigatórios: file, text.' });
     }
 
     try {
-        const file = req.files['file'][0];
-        const { buffer, filename, mimetype } = await processImage(file, { name: 'imagemdodia' });
-        const url = await uploadToFileServer({
-            buffer, filename, mimetype, folder: 'imagemdodia'
-        });
+        const url = req.body.fileUrl;
 
         let finalBorderId = null;
 
@@ -79,15 +72,8 @@ router.post('/', upload.fields([{ name: 'file', maxCount: 1 }, { name: 'border',
             finalBorderId = defaultBorder ? defaultBorder.id : null;
         }
 
-        if (req.files['border'] && req.files['border'][0]) {
-            const borderFile = req.files['border'][0];
-            const processedBorder = await processImage(borderFile, { name: 'border' });
-            const borderUrl = await uploadToFileServer({
-                buffer: processedBorder.buffer,
-                filename: processedBorder.filename,
-                mimetype: processedBorder.mimetype,
-                folder: 'imagemdodia/borders'
-            });
+        if (req.body.borderUrl) {
+            const borderUrl = req.body.borderUrl;
             const newBorder = await ImagemDoDiaBorder.create({
                 url: borderUrl,
                 name: 'Custom',

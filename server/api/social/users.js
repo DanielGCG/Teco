@@ -6,9 +6,6 @@ const validate = require("../../middlewares/validate");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
-const { upload } = require('../../utils/upload');
-const { processImage } = require("../../utils/imageProcessor");
-const { uploadToFileServer } = require('../../utils/fileServer');
 const { Resend } = require('resend');
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -133,7 +130,7 @@ UsersRouter.get('/me', authMiddleware(20), async (req, res) => {
 });
 
 // PUT /api/users/me - Atualizar perfil do próprio usuário
-UsersRouter.put('/me', authMiddleware(20), upload.fields([{ name: 'profile_file', maxCount: 1 }, { name: 'banner_file', maxCount: 1 }, { name: 'background_file', maxCount: 1 }]), validate(updateProfileSchema), async (req, res) => {
+UsersRouter.put('/me', authMiddleware(20), validate(updateProfileSchema), async (req, res) => {
     let { username, bannerimage, backgroundimage, backgroundcolor, backgroundfill, profileimage, bio, pronouns, lastfmusername } = req.body;
     username = ('@' + username.trim().replace(/^@/, '')).slice(0, 16).toLowerCase();
     
@@ -152,29 +149,7 @@ UsersRouter.put('/me', authMiddleware(20), upload.fields([{ name: 'profile_file'
             return res.status(409).json({ message: "Username já está em uso" });
         }
 
-        if (req.files && req.files['profile_file']) {
-            const file = req.files['profile_file'][0];
-            const { buffer, filename, mimetype } = await processImage(file, { name: 'profile' });
-            profileimage = await uploadToFileServer({
-                buffer, filename, mimetype, folder: 'profiles'
-            });
-        }
-
-        if (req.files && req.files['banner_file']) {
-            const file = req.files['banner_file'][0];
-            const { buffer, filename, mimetype } = await processImage(file, { name: 'banner' });
-            bannerimage = await uploadToFileServer({
-                buffer, filename, mimetype, folder: 'backgrounds'
-            });
-        }
-
-        if (req.files && req.files['background_file']) {
-            const file = req.files['background_file'][0];
-            const { buffer, filename, mimetype } = await processImage(file, { name: 'background' });
-            backgroundimage = await uploadToFileServer({
-                buffer, filename, mimetype, folder: 'pagebackgrounds'
-            });
-        } else if (backgroundimage === "") {
+        if (backgroundimage === "") {
             backgroundimage = null;
         }
 

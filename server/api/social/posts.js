@@ -3,9 +3,9 @@ const PostsRouter = express.Router();
 const { Post, PostMedia, PostLike, PostMention, User, Follow, Notification, Rodinha } = require("../../models");
 const { createNotification } = require("../notifications");
 const { Op } = require("sequelize");
-const { upload } = require('../../utils/upload');
-const { uploadToFileServer, deleteFromFileServer } = require('../../utils/fileServer');
+const { deleteFromFileServer } = require('../../utils/fileServer');
 const { sanitizeFilename } = require('../../utils/sanitize');
+const { issueMediaTicket } = require('../../utils/directUpload');
 
 const POST_INCLUDES = [
     { model: User, as: 'author', attributes: ['username', 'profileimage', 'pronouns', 'publicid'] },
@@ -31,28 +31,15 @@ const POST_INCLUDES = [
     }
 ];
 
-// POST /posts/media/upload - Pré-upload de mídia
-PostsRouter.post('/media/upload', upload.array('media', 4), async (req, res) => {
+// POST /posts/media/ticket - Emite ticket para upload direto ao servidor de arquivos
+PostsRouter.post('/media/ticket', express.json(), (req, res) => {
     try {
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'Nenhuma mídia enviada.' });
-        }
-
-        const mediaObjects = await Promise.all(req.files.map(async file => {
-            const mediaUrl = await uploadToFileServer({
-                buffer: file.buffer,
-                filename: sanitizeFilename(file.originalname),
-                mimetype: file.mimetype,
-                folder: 'posts'
-            });
-            const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image/gif';
-            return { url: mediaUrl, type: mediaType };
-        }));
-
-        res.status(200).json({ mediaUrls: mediaObjects });
+        const { name, type, size } = req.body || {};
+        const { status, body } = issueMediaTicket({ name, type, size, folder: 'posts' });
+        res.status(status).json(body);
     } catch (err) {
-        console.error('Erro no pre-upload:', err);
-        res.status(500).json({ error: 'Erro ao fazer upload da mídia.' });
+        console.error('Erro ao emitir ticket de upload:', err);
+        res.status(500).json({ error: 'Erro ao preparar upload da mídia.' });
     }
 });
 

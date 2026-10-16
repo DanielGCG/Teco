@@ -129,23 +129,10 @@
             imageAccept: "image/png, image/jpeg, image/gif, image/webp",
             imageMaxSize: 1024 * 1024 * 10, // 10MB
             imageUploadFunction: async function(file, onSuccess, onError) {
-                const formData = new FormData();
-                formData.append("image", file);
-
                 try {
-                    const res = await fetch('/api/blog/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await res.json();
-                    
-                    if (data.success) {
-                        onSuccess(data.url);
-                    } else {
-                        onError(data.message || 'Erro no upload');
-                    }
+                    onSuccess(await directUpload(file, { folder: 'blogs' }));
                 } catch (e) {
-                    onError('Erro na conexão do upload');
+                    onError(e.message);
                 }
             }
         });
@@ -352,22 +339,25 @@
         const url = blogId ? `/api/blog/${blogId}` : '/api/blog';
         const method = blogId ? 'PUT' : 'POST';
 
-        const formData = new FormData();
-        formData.append('content', content);
-        
         const bgFile = document.getElementById('input-bg').files[0];
-        if (bgFile) formData.append('background', bgFile);
-        
-        formData.append('remove_background', document.getElementById('flag-remove-bg').value);
-        formData.append('backgroundcolor', document.getElementById('config-bg-color').value);
-        formData.append('fontcolor', document.getElementById('config-font-color').value);
-        formData.append('backgroundfill', document.getElementById('config-bg-fill').value);
-        formData.append('fontfamily', document.getElementById('config-font-family').value);
 
         try {
+            const backgroundurl = bgFile
+                ? await directUpload(bgFile, { folder: 'blogs' })
+                : undefined;
+            const payload = {
+                content,
+                backgroundurl,
+                remove_background: document.getElementById('flag-remove-bg').value,
+                backgroundcolor: document.getElementById('config-bg-color').value,
+                fontcolor: document.getElementById('config-font-color').value,
+                backgroundfill: document.getElementById('config-bg-fill').value,
+                fontfamily: document.getElementById('config-font-family').value
+            };
             const res = await fetch(url, {
                 method: method,
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
 

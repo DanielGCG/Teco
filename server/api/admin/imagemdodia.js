@@ -1,9 +1,6 @@
 const express = require('express');
 const { ImagemDoDia, ImagemDoDiaBorder, User } = require("../../models");
-const { upload } = require('../../utils/upload');
-const { uploadToFileServer } = require('../../utils/fileServer');
 const { activateImage } = require('../../utils/iotdLogic');
-const { processImage } = require('../../utils/imageProcessor');
 const router = express.Router();
 
 // Fila de Imagens (Somente as que estão com posição 0, ou seja, aguardando ativação)
@@ -67,20 +64,13 @@ router.post('/next', async (req, res) => {
 });
 
 // Adiciona nova moldura padrão
-router.post('/borders', upload.single('file'), async (req, res) => {
-    if (!req.file || !req.body.nome) {
+router.post('/borders', async (req, res) => {
+    if (!req.body.url || !req.body.nome) {
         return res.status(400).json({ message: 'Campos obrigatórios: file, nome.' });
     }
 
     try {
-        const { buffer, filename, mimetype } = await processImage(req.file, { name: 'border' });
-
-        const url = await uploadToFileServer({
-            buffer,
-            filename,
-            folder: 'imagemdodia/borders',
-            mimetype
-        });
+        const url = req.body.url;
         const novaBorder = await ImagemDoDiaBorder.create({
             url,
             name: req.body.nome,

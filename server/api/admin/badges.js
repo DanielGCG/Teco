@@ -1,9 +1,6 @@
 const express = require("express");
 const AdminBadgesRouter = express.Router();
 const { Badge, BadgeUser, User } = require("../../models");
-const { upload } = require('../../utils/upload');
-const { uploadToFileServer } = require('../../utils/fileServer');
-const { processImage } = require('../../utils/imageProcessor');
 
 // GET /admin/badges/ - Listar todas as badges
 AdminBadgesRouter.get('/', async (req, res) => {
@@ -54,22 +51,11 @@ AdminBadgesRouter.get('/user/:publicid', async (req, res) => {
 });
 
 // POST /admin/badges/ - Criar um novo badge
-AdminBadgesRouter.post('/', upload.single('file'), async (req, res) => {
+AdminBadgesRouter.post('/', async (req, res) => {
     const { name, description } = req.body;
     let { url } = req.body;
 
     try {
-        if (req.file) {
-            // Se enviou arquivo, faz o upload para o servidor de arquivos
-            const processed = await processImage(req.file, { name: 'badge', width: 100, height: 100 });
-            url = await uploadToFileServer({
-                buffer: processed.buffer,
-                filename: processed.filename,
-                folder: 'badges',
-                mimetype: processed.mimetype
-            });
-        }
-
         const newBadge = await Badge.create({ 
             name, 
             description, 
@@ -84,7 +70,7 @@ AdminBadgesRouter.post('/', upload.single('file'), async (req, res) => {
 });
 
 // PUT /admin/badges/:publicid - Editar um badge
-AdminBadgesRouter.put('/:publicid', upload.single('file'), async (req, res) => {
+AdminBadgesRouter.put('/:publicid', async (req, res) => {
     const { name, description } = req.body;
     let { url } = req.body;
 
@@ -92,17 +78,6 @@ AdminBadgesRouter.put('/:publicid', upload.single('file'), async (req, res) => {
         const badge = await Badge.findOne({ where: { publicid: req.params.publicid } });
         if (!badge) {
             return res.status(404).json({ error: 'Badge not found' });
-        }
-
-        if (req.file) {
-            const processed = await processImage(req.file, { name: 'badge', width: 100, height: 100 });
-
-            url = await uploadToFileServer({
-                buffer: processed.buffer,
-                filename: processed.filename,
-                folder: 'badges',
-                mimetype: processed.mimetype
-            });
         }
 
         await badge.update({ name, description, url });

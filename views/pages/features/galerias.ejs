@@ -95,15 +95,17 @@
     document.getElementById('formCriarGaleria').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
-        const formData = new FormData(form);
-        
-        // Garante que ispublic seja string 'true' ou 'false'
-        formData.set('ispublic', form.ispublic.checked ? 'true' : 'false');
+        const cover = form.querySelector('input[name="cover"]').files[0];
+        const coverurl = cover ? await directUpload(cover, { folder: 'galerias' }) : null;
+        const formData = Object.fromEntries(new FormData(form));
+        formData.ispublic = form.ispublic.checked;
+        formData.coverurl = coverurl;
         
         try {
             const res = await fetch('/api/galeria', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
             });
             const data = await res.json();
             

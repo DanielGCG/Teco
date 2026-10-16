@@ -230,20 +230,22 @@
 
         if (!name) return alert('Nome é obrigatório');
 
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('description', document.getElementById('badgeDescription').value);
+        const payload = {
+            name,
+            description: document.getElementById('badgeDescription').value
+        };
 
         if (document.querySelector('input[name="iconType"]:checked').value === 'file') {
-            if (badgeFile.files[0]) formData.append('file', badgeFile.files[0]);
+            if (badgeFile.files[0]) payload.url = await directUpload(badgeFile.files[0], { folder: 'badges' });
         } else {
-            formData.append('url', badgeUrl.value);
+            payload.url = badgeUrl.value;
         }
 
         try {
             const response = await fetch(publicid ? `/api/admin/badges/${publicid}` : '/api/admin/badges', {
                 method: publicid ? 'PUT' : 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {

@@ -234,14 +234,14 @@ async function removerMoldura(id) {
 document.getElementById('formNovaMoldura').onsubmit = async (e) => {
     e.preventDefault();
 
-    const formData = new FormData();
-    formData.append('file', document.getElementById('arquivoMoldura').files[0]);
-    formData.append('nome', document.getElementById('nomeMoldura').value);
-
     try {
+        const url = await directUpload(document.getElementById('arquivoMoldura').files[0], {
+            folder: 'imagemdodia/borders'
+        });
         const res = await fetch('/api/admin/imagemdodia/borders', {
             method: 'POST',
-            body: formData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, nome: document.getElementById('nomeMoldura').value })
         });
         if (res.ok) {
             alert("Moldura adicionada!");

@@ -388,18 +388,26 @@ const GaleriaManager = {
         if (!id) return Utils.alert('ID do item faltando.');
 
         try {
-            const fd = new FormData(e.target);
-            fd.set('showtitle', document.getElementById('edit-item-showtitle').checked);
+            const form = e.target;
+            const cover = form.querySelector('input[name="cover"]')?.files[0];
+            const cover_url = cover ? await directUpload(cover, { folder: 'galerias' }) : null;
+            const fd = Object.fromEntries(new FormData(form));
+            fd.showtitle = document.getElementById('edit-item-showtitle').checked;
             
             const roundedCheck = document.getElementById('edit-item-rounded');
-            if (roundedCheck) fd.set('roundedcorners', roundedCheck.checked);
+            if (roundedCheck) fd.roundedcorners = roundedCheck.checked;
             
-            if (document.getElementById('edit-flag-remove-cover').value === 'true') fd.set('remove_cover', 'true');
+            if (document.getElementById('edit-flag-remove-cover').value === 'true') fd.remove_cover = 'true';
             
             const zEl = document.getElementById('edit-item-zindex');
-            if (zEl) fd.set('positionz', parseInt(zEl.value) || 0);
+            if (zEl) fd.positionz = parseInt(zEl.value) || 0;
+            if (cover_url) fd.cover_url = cover_url;
 
-            const res = await fetch(`/api/galeria/${this.galleryId}/item/${id}`, { method: 'PATCH', body: fd });
+            const res = await fetch(`/api/galeria/${this.galleryId}/item/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fd)
+            });
             const json = await res.json();
             if (!json.success) throw new Error(json.message || 'Erro ao atualizar item');
 
@@ -585,8 +593,11 @@ const GaleriaManager = {
                 const file = form.fileInput.files[0];
                 if (!file) throw new Error('Selecione um arquivo.');
                 fd.delete('fileInput');
-                fd.append('media', file);
-                res = await this.uploadFileXHR(file, fd);
+                const direct = await this.uploadDirectToFileServer(file);
+                fd.append('media_url', direct.url);
+                fd.append('media_type', direct.mediaType);
+                fd.append('media_name', file.name);
+                res = await this.uploadFileXHR(null, fd);
             } else {
                 if (type === 'text') {
                     const textContent = document.getElementById('upload-text-content').value.trim();
@@ -638,6 +649,47 @@ const GaleriaManager = {
         } else {
             fileInput.removeAttribute('required');
         }
+    },
+
+    // Pede um ticket ao backend (autenticação/validação) e envia os bytes direto ao servidor de arquivos
+    async uploadDirectToFileServer(file) {
+        const ticketRes = await fetch(`/api/galeria/${this.galleryId}/upload-ticket`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: file.name, type: file.type, size: file.size })
+        });
+        const ticket = await ticketRes.json().catch(() => ({}));
+        if (!ticketRes.ok || !ticket.uploadUrl) {
+            throw new Error(ticket.error || ticket.message || 'Não foi possível iniciar o upload.');
+        }
+
+        const url = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100) + '%';
+                    document.getElementById('upload-progress-bar').style.width = pct;
+                    document.getElementById('upload-percent-text').textContent = pct;
+                    document.getElementById('upload-size-text').textContent = `${Utils.formatSize(e.loaded)} / ${Utils.formatSize(e.total)}`;
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try { resolve(JSON.parse(xhr.responseText).url); } catch (err) { reject(new Error('Resposta inválida do servidor de arquivos')); }
+                } else {
+                    let msg = 'Falha no upload';
+                    try { msg = JSON.parse(xhr.responseText).error || msg; } catch (err) {}
+                    reject(new Error(msg));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Erro de rede'));
+            xhr.open('POST', ticket.uploadUrl);
+            const body = new FormData();
+            body.append('file', file);
+            xhr.send(body);
+        });
+
+        return { url, mediaType: ticket.mediaType };
     },
 
     uploadFileXHR(file, formDataOrForm) {
@@ -861,18 +913,31 @@ const GaleriaManager = {
         if (formConfig) {
             formConfig.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const fd = new FormData(e.target);
-                fd.append('collaborators', JSON.stringify(this.collaborators.map(c => c.publicid)));
-                if (document.getElementById('config-is-public')) fd.set('ispublic', document.getElementById('config-is-public').checked);
+                const form = e.target;
+                const background = form.querySelector('input[name="background"]')?.files[0];
+                const cover = form.querySelector('input[name="cover"]')?.files[0];
+                const [backgroundurl, coverurl] = await Promise.all([
+                    background ? directUpload(background, { folder: 'galerias' }) : null,
+                    cover ? directUpload(cover, { folder: 'galerias' }) : null
+                ]);
+                const payload = Object.fromEntries(new FormData(form));
+                payload.collaborators = JSON.stringify(this.collaborators.map(c => c.publicid));
+                if (document.getElementById('config-is-public')) payload.ispublic = document.getElementById('config-is-public').checked;
+                if (backgroundurl) payload.backgroundurl = backgroundurl;
+                if (coverurl) payload.coverurl = coverurl;
                 try {
-                    const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: fd });
+                    const res = await fetch(`/api/galeria/${this.galleryId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
                     const json = await res.json();
                     if (json.success) {
                         const temp = { ...this.data };
-                        for(let [k, v] of fd.entries()) {
+                        for(let [k, v] of Object.entries(payload)) {
                             if (k !== 'cover' && k !== 'background') temp[k] = v;
                         }
-                        temp.ispublic = fd.has('ispublic');
+                        temp.ispublic = Boolean(payload.ispublic);
                         this.applyStyles(temp);
                         Object.assign(this.data, json.gallery);
                         this.originalStyles = null;

@@ -69,16 +69,15 @@
 
         if (!name || !file) return alert('Preencha nome e imagem!');
 
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('file', file);
+        const image_url = await directUpload(file, { folder: 'stamps' });
 
         try {
             btn.disabled = true;
             btn.textContent = 'Enviando...';
             const res = await fetch('/api/admin/stamps', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, image_url })
             });
 
             if (res.ok) {

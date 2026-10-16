@@ -16,6 +16,7 @@ const GaleriaRouter = require("./galeria-api");
 const BadgesRouter = require("./social/badges");
 const CutucadasRouter = require("./social/cutucadas");
 const BlogRouter = require("./blog");
+const UploadsRouter = require("./uploads");
 
 // Rotas praticamente descontinuadas
 const ChatsRouter = require("./social/chat");
@@ -37,6 +38,7 @@ router.use("/watchlist", authMiddleware(20), WatchlistRouter);
 router.use("/imagemdodia", authMiddleware(20), ImagemDoDiaRouter);
 router.use("/galeria", authMiddleware(20), GaleriaRouter);
 router.use("/blog", authMiddleware(20), BlogRouter);
+router.use("/uploads", authMiddleware(20), UploadsRouter);
 router.use("/pet", authMiddleware(20), GotchiRouter);
 router.use("/admin", authMiddleware(5), AdminRouter);
 

@@ -175,13 +175,17 @@
         document.getElementById("btnText").style.display = "none";
         document.getElementById("loadingText").style.display = "inline";
 
-        const formData = new FormData();
-        formData.append("file", imagemInput.files[0]);
-        formData.append("text", document.getElementById("texto").value.trim());
-        formData.append("borderPublicId", defaultBorderSelect.value);
-
         try {
-            const res = await fetch("/api/imagemdodia", { method: "POST", body: formData });
+            const fileUrl = await directUpload(imagemInput.files[0], { folder: 'imagemdodia' });
+            const res = await fetch("/api/imagemdodia", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fileUrl,
+                    text: document.getElementById("texto").value.trim(),
+                    borderPublicId: defaultBorderSelect.value
+                })
+            });
             if (res.ok) {
                 feedback.textContent = "Sugestão enviada com sucesso!";
                 feedback.style.color = "green";

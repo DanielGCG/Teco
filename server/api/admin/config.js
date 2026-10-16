@@ -2,8 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { SystemConfig, LegalDocument } = require('../../models');
 const { runGarbageCollector } = require('../../utils/garbageCollector');
-const { upload } = require('../../utils/upload');
-const { uploadToFileServer } = require('../../utils/fileServer');
 const systemConfigMiddleware = require('../../middlewares/systemConfigMiddleware');
 
 // @route   GET /api/admin/config
@@ -112,18 +110,10 @@ router.post('/', async (req, res) => {
 
 // @route   POST /api/admin/config/upload
 // @desc    Faz upload de um arquivo para o servidor de arquivos e retorna a URL
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado' });
-        
-        const url = await uploadToFileServer({
-            buffer: req.file.buffer,
-            filename: req.file.originalname,
-            mimetype: req.file.mimetype,
-            folder: 'configs'
-        });
-        
-        res.json({ url });
+        if (!req.body.url) return res.status(400).json({ message: 'URL do arquivo obrigatória' });
+        res.json({ url: req.body.url });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Erro ao fazer upload da imagem' });
