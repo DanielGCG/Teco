@@ -10,7 +10,7 @@ const MB = 1024 * 1024;
  * Valida os metadados do arquivo e emite um ticket para upload direto ao servidor de arquivos.
  * Retorna { status, body } pronto para responder.
  */
-function issueMediaTicket({ name, type, size, folder, allowAudio = false, videoLimitMB = 500, otherLimitMB = 100 }) {
+function issueMediaTicket({ name, type, size, folder, allowAudio = false, videoLimitMB = 500, otherLimitMB = 500 }) {
     const mime = String(type || '');
     const filename = sanitizeFilename(String(name || ''));
     const fileSize = Number(size);
