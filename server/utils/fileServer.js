@@ -33,7 +33,7 @@ function getPublicUrl() {
  * O chamador deve ter autenticado o usuário e validado permissão/tipo/tamanho antes.
  * Formato espelhado em servidor-de-arquivos/src/auth.js
  */
-function createUploadTicket({ folder, filename, maxBytes, mimePrefixes = [], ttlMs = 10 * 60 * 1000 }) {
+function createUploadTicket({ folder, filename, maxBytes, size, mimePrefixes = [], ttlMs = 10 * 60 * 1000 }) {
     if (!SERVER_URL || !API_KEY) {
         throw new Error('Configuração do servidor de arquivos ausente no .env');
     }
@@ -42,6 +42,7 @@ function createUploadTicket({ folder, filename, maxBytes, mimePrefixes = [], ttl
         f: folder || '',
         n: filename,
         m: maxBytes,
+        s: Number.isFinite(Number(size)) ? Number(size) : undefined,
         t: mimePrefixes,
         e: Date.now() + ttlMs,
         j: crypto.randomBytes(12).toString('hex')

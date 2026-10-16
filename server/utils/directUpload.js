@@ -40,6 +40,7 @@ function issueMediaTicket({ name, type, size, folder, allowAudio = false, videoL
         folder,
         filename,
         maxBytes: limitMB * MB,
+        size: fileSize,
         mimePrefixes
     });
 

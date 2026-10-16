@@ -1,4 +1,6 @@
 (function () {
+    const CHUNK_SIZE = 90 * 1024 * 1024;
+
     async function directUpload(file, { folder, ticketEndpoint = '/api/uploads/ticket', onProgress } = {}) {
         const ticketResponse = await fetch(ticketEndpoint, {
             method: 'POST',
@@ -10,9 +12,40 @@
             throw new Error(ticket.error || ticket.message || 'Não foi possível iniciar o upload.');
         }
 
+        if (file.size > CHUNK_SIZE) {
+            return uploadInChunks(file, ticket.uploadUrl, onProgress);
+        }
+
+        const result = await uploadRequest(file, ticket.uploadUrl, onProgress);
+        if (!result.url) throw new Error('Servidor de arquivos não retornou a URL do upload.');
+        return result.url;
+    }
+
+    async function uploadInChunks(file, uploadUrl, onProgress) {
+        const separator = uploadUrl.includes('?') ? '&' : '?';
+        const total = Math.ceil(file.size / CHUNK_SIZE);
+        let uploaded = 0;
+
+        for (let index = 0; index < total; index += 1) {
+            const start = index * CHUNK_SIZE;
+            const chunk = file.slice(start, Math.min(start + CHUNK_SIZE, file.size));
+            const chunkUrl = `${uploadUrl}${separator}chunked=1&index=${index}&total=${total}`;
+            const result = await uploadRequest(chunk, chunkUrl, (loaded) => {
+                if (onProgress) onProgress(uploaded + loaded, file.size);
+            });
+            uploaded += chunk.size;
+            if (onProgress) onProgress(uploaded, file.size);
+            if (index === total - 1) {
+                if (!result.url) throw new Error('Servidor de arquivos não retornou a URL do upload.');
+                return result.url;
+            }
+        }
+    }
+
+    function uploadRequest(bodyFile, uploadUrl, onProgress) {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', ticket.uploadUrl);
+            xhr.open('POST', uploadUrl);
             xhr.upload.onprogress = event => {
                 if (event.lengthComputable && onProgress) onProgress(event.loaded, event.total);
             };
@@ -21,23 +54,19 @@
                 try {
                     result = JSON.parse(xhr.responseText);
                 } catch (error) {
-                    const responseText = xhr.responseText ? ` ${xhr.responseText.slice(0, 200)}` : '';
-                    reject(new Error(`Servidor de arquivos respondeu HTTP ${xhr.status}.${responseText}`));
+                    reject(new Error(`Servidor de arquivos respondeu HTTP ${xhr.status}.`));
                     return;
                 }
-                if (xhr.status >= 200 && xhr.status < 300 && result.url) resolve(result.url);
-                else reject(new Error(
-                    result.error || result.message || `Falha no upload (HTTP ${xhr.status}).`
-                ));
+                if (xhr.status >= 200 && xhr.status < 300) resolve(result);
+                else reject(new Error(result.error || result.message || `Falha no upload (HTTP ${xhr.status}).`));
             };
-            xhr.onerror = () => reject(new Error(
-                'Não foi possível conectar ao servidor de arquivos. Verifique a URL pública, HTTPS e CORS.'
-            ));
-            const body = new FormData();
-            body.append('file', file);
-            xhr.send(body);
+            xhr.onerror = () => reject(new Error('Não foi possível conectar ao servidor de arquivos.'));
+            const form = new FormData();
+            form.append('file', bodyFile);
+            xhr.send(form);
         });
     }
+
 
     window.directUpload = directUpload;
 })();
