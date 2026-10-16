@@ -66,6 +66,7 @@ function createUploadTicket({ folder, filename, maxBytes, mimePrefixes = [], ttl
     if (!SERVER_URL || !API_KEY) {
         throw new Error('Configuração do servidor de arquivos ausente no .env');
     }
+    const publicUrl = getPublicUrl();
     const payload = {
         f: folder || '',
         n: filename,
@@ -79,7 +80,7 @@ function createUploadTicket({ folder, filename, maxBytes, mimePrefixes = [], ttl
     const ticket = `${b64}.${sig}`;
     return {
         ticket,
-        uploadUrl: `${getPublicUrl()}/upload-direct?ticket=${encodeURIComponent(ticket)}`,
+        uploadUrl: `${publicUrl}/upload-direct?ticket=${encodeURIComponent(ticket)}`,
         expiresAt: payload.e
     };
 }

@@ -25,7 +25,9 @@
                 if (xhr.status >= 200 && xhr.status < 300 && result.url) resolve(result.url);
                 else reject(new Error(result.error || 'Falha no upload.'));
             };
-            xhr.onerror = () => reject(new Error('Erro de rede durante o upload.'));
+            xhr.onerror = () => reject(new Error(
+                'Não foi possível conectar ao servidor de arquivos. Verifique a URL pública, HTTPS e CORS.'
+            ));
             const body = new FormData();
             body.append('file', file);
             xhr.send(body);
