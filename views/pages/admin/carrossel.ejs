@@ -65,15 +65,7 @@
         }
 
         async function uploadFile(file) {
-            const url = await directUpload(file, { folder: 'configs' });
-            const res = await fetch('/api/admin/config/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            if (!res.ok) throw new Error('Upload falhou');
-            const data = await res.json();
-            return data.url;
+            return directUpload(file, { folder: 'configs' });
         }
 
         function renderCarousel() {

@@ -1,6 +1,6 @@
 (function () {
-    async function directUpload(file, { folder, onProgress } = {}) {
-        const ticketResponse = await fetch('/api/uploads/ticket', {
+    async function directUpload(file, { folder, ticketEndpoint = '/api/uploads/ticket', onProgress } = {}) {
+        const ticketResponse = await fetch(ticketEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ folder, name: file.name, type: file.type, size: file.size })

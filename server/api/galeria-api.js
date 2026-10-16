@@ -1,27 +1,8 @@
 const express = require('express');
 const { Galeria, GaleriaItem, GaleriaContributor, User, UserSession } = require("../models");
-const { uploadImage, uploadVideo } = require('../utils/upload');
-const { uploadToFileServer, getPublicUrl } = require('../utils/fileServer');
+const { getPublicUrl } = require('../utils/fileServer');
 const { issueMediaTicket } = require('../utils/directUpload');
-const { sanitizeFilename } = require('../utils/sanitize');
 const router = express.Router();
-
-const validateFileSize = (req, res, next) => {
-    const file = req.file || (req.files && req.files.media && req.files.media[0]);
-    if (!file) return next();
-
-    const isVideo = (file.mimetype || '').startsWith('video/') || /\.(mp4|mov|webm|m4v|mkv|avi|mpg|mpeg)$/i.test(file.originalname || '');
-    const limit = isVideo ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
-
-    if (file.size > limit) {
-        const typeLabel = isVideo ? 'video' : 'image';
-        return res.status(413).json({ 
-            success: false, 
-            message: `File too large for ${typeLabel}. Limit: ${limit / (1024 * 1024)}MB` 
-        });
-    }
-    next();
-};
 
 async function checkGalleryPermission(req, res, next) {
     const { publicid } = req.params;
@@ -130,15 +111,7 @@ router.post('/:publicid/upload-ticket', checkGalleryPermission, express.json(), 
     }
 });
 
-router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
-    uploadVideo.fields([{ name: 'media', maxCount: 1 }, { name: 'cover', maxCount: 1 }, { name: 'link_cover', maxCount: 1 }])(req, res, (err) => {
-        if (err) {
-            if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, message: 'File too large. Limit: 100MB' });
-            return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
-        }
-        next();
-    });
-}, validateFileSize, async (req, res) => {
+router.post('/:publicid/upload', checkGalleryPermission, async (req, res) => {
     try {
         const itemType = req.body.item_type || 'media';
         let fileUrl = null;
@@ -148,11 +121,9 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
         let textBody = null;
 
         if (itemType === 'media') {
-            const mainFile = req.file || (req.files && req.files.media && req.files.media[0]);
             const directUrl = req.body.media_url;
-            if (!mainFile && !directUrl) return res.status(400).json({ success: false, message: 'No media file provided.' });
-
-            if (!mainFile) {
+            if (!directUrl) return res.status(400).json({ success: false, message: 'No media file provided.' });
+            {
                 // Arquivo já enviado direto ao servidor de arquivos: só aceita URLs da pasta desta galeria
                 const allowedPrefix = `${getPublicUrl()}/files/galerias/${req.gallery.publicid}/`;
                 if (!String(directUrl).startsWith(allowedPrefix) || String(directUrl).includes('..')) {
@@ -165,35 +136,7 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
                 coverUrl = coverUrl || null;
             }
             
-            if (mainFile) {
-            const sanitizedFilename = sanitizeFilename(mainFile.originalname);
-            fileUrl = await uploadToFileServer({
-                buffer: mainFile.buffer,
-                filename: sanitizedFilename,
-                folder: `galerias/${req.gallery.publicid}`,
-                mimetype: mainFile.mimetype
-            });
-            originalName = req.body.title || mainFile.originalname;
-            mediaType = mainFile.mimetype.startsWith('video/') ? 'video' : 
-                        mainFile.mimetype.startsWith('audio/') ? 'audio' : 'image/gif';
-            }
-
-            const coverFile = req.files && req.files.cover && req.files.cover[0];
-            if (coverFile) {
-                try {
-                    const sanitizedCover = sanitizeFilename(coverFile.originalname);
-                    coverUrl = await uploadToFileServer({
-                        buffer: coverFile.buffer,
-                        filename: sanitizedCover,
-                        folder: `galerias/${req.gallery.publicid}/covers`,
-                        mimetype: coverFile.mimetype
-                    });
-                } catch (err) {
-                    coverUrl = coverUrl || fileUrl;
-                }
-            } else {
-                coverUrl = coverUrl || fileUrl;
-            }
+            coverUrl = coverUrl || fileUrl;
         } else if (itemType === 'text') {
             textBody = req.body.text_content;
             if (!textBody) return res.status(400).json({ success: false, message: 'No text provided.' });
@@ -205,18 +148,6 @@ router.post('/:publicid/upload', checkGalleryPermission, (req, res, next) => {
             mediaType = 'link';
             originalName = req.body.title || 'Link';
 
-            const coverFile = req.files && req.files.link_cover && req.files.link_cover[0];
-            if (coverFile) {
-                try {
-                    const sanitizedCover = sanitizeFilename(coverFile.originalname);
-                    coverUrl = await uploadToFileServer({
-                        buffer: coverFile.buffer,
-                        filename: sanitizedCover,
-                        folder: `galerias/${req.gallery.publicid}/covers`,
-                        mimetype: coverFile.mimetype
-                    });
-                } catch (err) { }
-            }
         }
 
         const maxZ = await GaleriaItem.max('positionz', { where: { galleryId: req.gallery.id } });

@@ -593,11 +593,18 @@ const GaleriaManager = {
                 const file = form.fileInput.files[0];
                 if (!file) throw new Error('Selecione um arquivo.');
                 fd.delete('fileInput');
-                const direct = await this.uploadDirectToFileServer(file);
-                fd.append('media_url', direct.url);
-                fd.append('media_type', direct.mediaType);
+                const direct = await directUpload(file, {
+                    ticketEndpoint: `/api/galeria/${this.galleryId}/upload-ticket`,
+                    onProgress: (loaded, total) => this.updateUploadProgress(loaded, total)
+                });
+                fd.append('media_url', direct.url || direct);
+                fd.append(
+                    'media_type',
+                    file.type.startsWith('video/') ? 'video'
+                        : file.type.startsWith('audio/') ? 'audio'
+                            : 'image/gif'
+                );
                 fd.append('media_name', file.name);
-                res = await this.uploadFileXHR(null, fd);
             } else {
                 if (type === 'text') {
                     const textContent = document.getElementById('upload-text-content').value.trim();
@@ -607,8 +614,19 @@ const GaleriaManager = {
                     if (!linkUrl) throw new Error('A URL do link não pode estar vazia.');
                 }
                 fd.delete('fileInput');
-                res = await this.uploadFileXHR(null, fd);
             }
+            if (type === 'link') {
+                const linkCover = form.link_cover.files[0];
+                if (linkCover) {
+                    fd.set('cover_url', await directUpload(linkCover, { folder: 'galerias' }));
+                }
+            }
+            res = await fetch(`/api/galeria/${this.galleryId}/upload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(fd))
+            });
+            res = await res.json();
 
             if (res.success) {
                 res.item.grid_w = res.item.grid_h = suggestedSize;
@@ -651,72 +669,11 @@ const GaleriaManager = {
         }
     },
 
-    // Pede um ticket ao backend (autenticação/validação) e envia os bytes direto ao servidor de arquivos
-    async uploadDirectToFileServer(file) {
-        const ticketRes = await fetch(`/api/galeria/${this.galleryId}/upload-ticket`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: file.name, type: file.type, size: file.size })
-        });
-        const ticket = await ticketRes.json().catch(() => ({}));
-        if (!ticketRes.ok || !ticket.uploadUrl) {
-            throw new Error(ticket.error || ticket.message || 'Não foi possível iniciar o upload.');
-        }
-
-        const url = await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100) + '%';
-                    document.getElementById('upload-progress-bar').style.width = pct;
-                    document.getElementById('upload-percent-text').textContent = pct;
-                    document.getElementById('upload-size-text').textContent = `${Utils.formatSize(e.loaded)} / ${Utils.formatSize(e.total)}`;
-                }
-            };
-            xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try { resolve(JSON.parse(xhr.responseText).url); } catch (err) { reject(new Error('Resposta inválida do servidor de arquivos')); }
-                } else {
-                    let msg = 'Falha no upload';
-                    try { msg = JSON.parse(xhr.responseText).error || msg; } catch (err) {}
-                    reject(new Error(msg));
-                }
-            };
-            xhr.onerror = () => reject(new Error('Erro de rede'));
-            xhr.open('POST', ticket.uploadUrl);
-            const body = new FormData();
-            body.append('file', file);
-            xhr.send(body);
-        });
-
-        return { url, mediaType: ticket.mediaType };
-    },
-
-    uploadFileXHR(file, formDataOrForm) {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            const data = (formDataOrForm instanceof FormData) ? formDataOrForm : new FormData(formDataOrForm);
-            // We shouldn't append 'media' twice if it's already in formDataOrForm.
-            // addItem() already does fd.append('media', file)
-            // But just in case formDataOrForm was an HTMLFormElement without 'media':
-            if (file && !data.has('media')) {
-                data.append('media', file);
-            }
-            data.delete('fileInput'); // Ensure fileInput is deleted
-            
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100) + '%';
-                    document.getElementById('upload-progress-bar').style.width = pct;
-                    document.getElementById('upload-percent-text').textContent = pct;
-                    document.getElementById('upload-size-text').textContent = `${Utils.formatSize(e.loaded)} / ${Utils.formatSize(e.total)}`;
-                }
-            };
-            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(JSON.parse(xhr.responseText)) : reject(new Error('Falha no upload'));
-            xhr.onerror = () => reject(new Error('Erro de rede'));
-            xhr.open('POST', `/api/galeria/${this.galleryId}/upload`);
-            xhr.send(data);
-        });
+    updateUploadProgress(loaded, total) {
+        const pct = Math.round((loaded / total) * 100) + '%';
+        document.getElementById('upload-progress-bar').style.width = pct;
+        document.getElementById('upload-percent-text').textContent = pct;
+        document.getElementById('upload-size-text').textContent = `${Utils.formatSize(loaded)} / ${Utils.formatSize(total)}`;
     },
 
     resetProgress() {

@@ -108,18 +108,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// @route   POST /api/admin/config/upload
-// @desc    Faz upload de um arquivo para o servidor de arquivos e retorna a URL
-router.post('/upload', async (req, res) => {
-    try {
-        if (!req.body.url) return res.status(400).json({ message: 'URL do arquivo obrigatória' });
-        res.json({ url: req.body.url });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Erro ao fazer upload da imagem' });
-    }
-});
-
 // @route   POST /api/admin/config/sync-files
 // @desc    Executa manualmente o Garbage Collector de arquivos
 router.post('/sync-files', async (req, res) => {
