@@ -249,9 +249,10 @@ router.patch('/:publicid/item/:itemPublicId', checkGalleryPermission, async (req
 
 // PATCH Gallery (Settings & Layout)
 router.patch('/:publicid', checkGalleryPermission, async (req, res) => {
+    const body = req.body || {};
     
     const getBodyValue = (key) => {
-        const val = req.body[key];
+        const val = body[key];
         return Array.isArray(val) ? val[0] : val;
     };
 
@@ -292,8 +293,8 @@ router.patch('/:publicid', checkGalleryPermission, async (req, res) => {
             req.gallery.coverurl = null;
         }
 
-        if (req.body.backgroundurl) req.gallery.backgroundurl = req.body.backgroundurl;
-        if (req.body.coverurl) req.gallery.coverurl = req.body.coverurl;
+        if (body.backgroundurl) req.gallery.backgroundurl = body.backgroundurl;
+        if (body.coverurl) req.gallery.coverurl = body.coverurl;
 
         await req.gallery.save();
 

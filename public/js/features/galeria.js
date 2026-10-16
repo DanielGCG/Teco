@@ -473,10 +473,12 @@ const GaleriaManager = {
             objectfit: it.objectfit 
         }));
         
-        const formData = new FormData();
-        formData.set('layout', JSON.stringify(layout));
         try {
-            const res = await fetch(`/api/galeria/${this.galleryId}`, { method: 'PATCH', body: formData });
+            const res = await fetch(`/api/galeria/${this.galleryId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ layout })
+            });
             const json = await res.json();
             if (json.success) {
                 this.originalDataItems = JSON.stringify(this.data.items);
