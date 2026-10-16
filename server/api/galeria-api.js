@@ -123,18 +123,30 @@ router.post('/:publicid/upload', checkGalleryPermission, async (req, res) => {
         if (itemType === 'media') {
             const directUrl = req.body.media_url;
             if (!directUrl) return res.status(400).json({ success: false, message: 'No media file provided.' });
-            {
-                // Arquivo já enviado direto ao servidor de arquivos: só aceita URLs da pasta desta galeria
-                const allowedPrefix = `${getPublicUrl()}/files/galerias/${req.gallery.publicid}/`;
-                if (!String(directUrl).startsWith(allowedPrefix) || String(directUrl).includes('..')) {
-                    return res.status(400).json({ success: false, message: 'Invalid media URL.' });
-                }
-                const allowedTypes = ['video', 'audio', 'image/gif'];
-                fileUrl = directUrl;
-                originalName = req.body.title || req.body.media_name || 'Sem título';
-                mediaType = allowedTypes.includes(req.body.media_type) ? req.body.media_type : 'image/gif';
-                coverUrl = coverUrl || null;
+            let parsedUrl;
+            try {
+                parsedUrl = new URL(directUrl);
+            } catch (error) {
+                return res.status(400).json({ success: false, message: 'Invalid media URL.' });
             }
+
+            const expectedOrigin = new URL(getPublicUrl()).origin;
+            const expectedPath = `/files/galerias/${req.gallery.publicid}/`;
+            if (parsedUrl.origin !== expectedOrigin || !parsedUrl.pathname.startsWith(expectedPath) || parsedUrl.pathname.includes('..')) {
+                console.error('[Galeria] URL de mídia direta rejeitada', {
+                    origin: parsedUrl.origin,
+                    expectedOrigin,
+                    pathname: parsedUrl.pathname,
+                    expectedPath
+                });
+                return res.status(400).json({ success: false, message: 'A URL da mídia não pertence a esta galeria.' });
+            }
+
+            const allowedTypes = ['video', 'audio', 'image/gif'];
+            fileUrl = directUrl;
+            originalName = req.body.title || req.body.media_name || 'Sem título';
+            mediaType = allowedTypes.includes(req.body.media_type) ? req.body.media_type : 'image/gif';
+            coverUrl = coverUrl || null;
             
             coverUrl = coverUrl || fileUrl;
         } else if (itemType === 'text') {
@@ -171,6 +183,7 @@ router.post('/:publicid/upload', checkGalleryPermission, async (req, res) => {
         
         return res.status(201).json({ success: true, item });
     } catch (error) {
+        console.error('[Galeria] Erro ao salvar item:', error);
         res.status(500).json({ success: false, message: 'Internal processing error.', error: error.message });
     }
 });

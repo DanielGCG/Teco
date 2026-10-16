@@ -640,6 +640,8 @@ const GaleriaManager = {
                 document.getElementById('modalUpload').style.display = 'none';
                 document.getElementById('modalBackdrop').style.display = 'none';
                 Utils.alert('Item adicionado com sucesso!');
+            } else {
+                throw new Error(res.message || res.error || 'Não foi possível salvar o item da galeria.');
             }
         } catch (err) { Utils.alert(err.message, 'Erro'); }
         finally { btn.disabled = false; prog.style.display = 'none'; this.resetProgress(); }
